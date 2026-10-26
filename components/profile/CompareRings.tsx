@@ -29,7 +29,7 @@ const DEFAULT = ["fairways", "gir", "birdie", "scrambling"];
 /** DEV ONLY: only offered when the app simulator's Profile condition "Sample stats data" is on. */
 const SAMPLE: Person = { username: "__sample__", name: "Sample golfer" };
 /** The Golf Trip's pill look (GolfTripMatch.module.css .profileRoundTabs): gold outline, filled gold when picked. */
-const pill = (on: boolean) => `min-h-[32.3px] flex-none whitespace-nowrap rounded-full border px-[15.3px] font-sans text-[12.75px] font-bold leading-none tracking-[.02em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dcc495] ${on ? "border-[#dcc495] bg-[#dcc495] text-[#240001]" : "border-[rgba(220,196,149,.55)] bg-transparent text-[#dcc495]"}`;
+const pill = (on: boolean) => `min-h-[32.3px] flex-none whitespace-nowrap rounded-full border px-[15.3px] font-sans text-[12.75px] font-bold leading-none tracking-[.02em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dcc495] ${on ? "border-[#dcc495] bg-[#dcc495] text-[var(--color-maroon-900)]" : "border-[rgba(220,196,149,.55)] bg-transparent text-[#dcc495]"}`;
 /** One row of pills that scrolls sideways (runs to the screen edges; no scrollbar). */
 const pillRow = "-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;

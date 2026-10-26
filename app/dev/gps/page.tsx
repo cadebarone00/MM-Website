@@ -23,7 +23,7 @@ export default async function GolfGpsPrototypePage({ searchParams }: { searchPar
   const { course: courseId, maroonCourse, hole } = await searchParams;
   if (maroonCourse) return <SavedCourseGps maroonCourse={maroonCourse} hole={hole} />;
   if (!courseId) {
-    return <main style={{ height: "100svh", background: "#240001" }}>
+    return <main style={{ height: "100svh", background: "var(--color-maroon-900)" }}>
       <GolfGpsScreen />
     </main>;
   }
@@ -39,7 +39,7 @@ export default async function GolfGpsPrototypePage({ searchParams }: { searchPar
   const gpsCourse = loaded ? toPrototypeGpsCourse(loaded.course) : null;
   if (loaded && !gpsCourse) message = `${loaded.course.name}: no hole has playable green targets yet (OpenStreetMap: ${loaded.geometry.status.replace("_", " ")}).`;
   if (!loaded || !gpsCourse) {
-    return <main style={{ height: "100svh", background: "#240001", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
+    return <main style={{ height: "100svh", background: "var(--color-maroon-900)", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
       <p>{message}</p>
       <p><a href="/dev/course-search" style={{ color: "#dcc495" }}>Back to course search</a></p>
     </main>;
@@ -62,7 +62,7 @@ async function SavedCourseGps({ maroonCourse, hole }: { maroonCourse: string; ho
   const gpsCourse = entry ? toPrototypeGpsCourse(entry.course) : null;
   if (entry && !gpsCourse) message = `${entry.course.name}: no saved hole has playable green targets.`;
   if (!entry || !gpsCourse) {
-    return <main style={{ height: "100svh", background: "#240001", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
+    return <main style={{ height: "100svh", background: "var(--color-maroon-900)", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
       <p>{message}</p>
       <p><a href="/dev/course-search" style={{ color: "#dcc495" }}>Back to course search</a></p>
     </main>;

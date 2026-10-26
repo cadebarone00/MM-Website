@@ -11,12 +11,12 @@
 .grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:6px;margin-top:10px;text-align:center}
 .weekday{padding-bottom:6px;font-size:12px;color:#666}
 .dayCell{position:relative;display:grid;place-items:center}
-.dayCell[data-range=true]::before{content:"";position:absolute;inset:0;background:rgba(107,22,26,.2)}
+.dayCell[data-range=true]::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--color-maroon-600) 20%,transparent)}
 .dayCell[data-range=true][data-start=true]::before{left:50%}
 .dayCell[data-range=true][data-end=true]::before{right:50%}
 .day{position:relative;justify-self:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:#222;font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
 .day:disabled{color:#c4c0b8;cursor:default}
-.day[aria-pressed=true]{background:var(--color-maroon-600,#6b161a);color:#fff}
-.set{width:100%;height:44px;margin-top:18px;border:0;border-radius:999px;background:var(--color-maroon-600,#6b161a);color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.day[aria-pressed=true]{background:var(--color-maroon-600,var(--color-maroon-600));color:#fff}
+.set{width:100%;height:44px;margin-top:18px;border:0;border-radius:999px;background:var(--color-maroon-600,var(--color-maroon-600));color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .set:disabled{opacity:.45;cursor:default}
 .close:focus-visible,.monthBar button:focus-visible,.day:focus-visible,.set:focus-visible{outline:2px solid #dcc495;outline-offset:2px}

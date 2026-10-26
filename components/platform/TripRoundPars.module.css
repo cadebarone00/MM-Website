@@ -4,15 +4,15 @@
 .status{margin:0;min-height:36px;color:rgba(251,248,241,.75)}
 .grid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
 .grid label{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:#dcc495}
-.grid input{width:100%;min-width:0;padding:6px 0;border:1px solid #dcc49580;border-radius:4px;background:#34080f;color:#fff;text-align:center;font:600 14px var(--font-barlow),sans-serif}
+.grid input{width:100%;min-width:0;padding:6px 0;border:1px solid #dcc49580;border-radius:4px;background:var(--brand-34080f);color:#fff;text-align:center;font:600 14px var(--font-barlow),sans-serif}
 .grid input:disabled{opacity:.6}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .actions button{min-height:40px;padding:0 14px;border:1px solid #dcc495;border-radius:8px;background:transparent;color:#dcc495;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
-.actions button.primary{background:#dcc495;color:#240001}
+.actions button.primary{background:#dcc495;color:var(--color-maroon-900)}
 .actions button:disabled{opacity:.45;cursor:default}
 .actions button:focus-visible,.grid input:focus-visible,.groups select:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .message{margin:0;min-height:18px;color:#dcc495}
 .groups{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .groups li{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .groups span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.groups select{padding:6px;border:1px solid #dcc495;border-radius:5px;background:#34080f;color:#fff}
+.groups select{padding:6px;border:1px solid #dcc495;border-radius:5px;background:var(--brand-34080f);color:#fff}

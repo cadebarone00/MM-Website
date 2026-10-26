@@ -7,14 +7,14 @@
 .appScreen:not(#_){padding-top:0}
 .phone img{display:block}
 /* Wallpapers: default (brighter maroon + gold), darker (near black), lighter (cream + gold). */
-.wallpaper{background:radial-gradient(120% 70% at 20% 0%,#c25a5f 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#c9a86e 0%,transparent 70%),linear-gradient(170deg,#872a2e 0%,#500001 75%)}
-.wallpaperDark{background:radial-gradient(110% 60% at 20% 0%,#2a0a0c 0%,transparent 60%),linear-gradient(170deg,#120203 0%,#050101 75%)}
-.wallpaperLight{background:radial-gradient(120% 70% at 20% 0%,#ffffff 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#eadcc0 0%,transparent 70%),linear-gradient(170deg,#fbf8f1 0%,#dfd3ba 80%);color:#240001}
-.wallpaperLight .lockButtons span{background:rgba(255,255,255,.55);color:#240001}
-.wallpaperLight .homeApp i,.wallpaperLight .homeApp small:empty,.wallpaperLight .dock i{background:rgba(36,0,1,.1)}
-.wallpaperLight .homeApp small{color:#240001}
+.wallpaper{background:radial-gradient(120% 70% at 20% 0%,#c25a5f 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#c9a86e 0%,transparent 70%),linear-gradient(170deg,var(--color-maroon-500) 0%,var(--color-maroon-700) 75%)}
+.wallpaperDark{background:radial-gradient(110% 60% at 20% 0%,var(--brand-2a0a0c) 0%,transparent 60%),linear-gradient(170deg,#120203 0%,#050101 75%)}
+.wallpaperLight{background:radial-gradient(120% 70% at 20% 0%,#ffffff 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#eadcc0 0%,transparent 70%),linear-gradient(170deg,#fbf8f1 0%,#dfd3ba 80%);color:var(--color-maroon-900)}
+.wallpaperLight .lockButtons span{background:rgba(255,255,255,.55);color:var(--color-maroon-900)}
+.wallpaperLight .homeApp i,.wallpaperLight .homeApp small:empty,.wallpaperLight .dock i{background:color-mix(in srgb,var(--color-maroon-900) 10%,transparent)}
+.wallpaperLight .homeApp small{color:var(--color-maroon-900)}
 .wallpaperLight .dock{background:rgba(255,255,255,.45)}
-.wallpaperLight .stackCount,.wallpaperLight .androidStatus{color:#240001}
+.wallpaperLight .stackCount,.wallpaperLight .androidStatus{color:var(--color-maroon-900)}
 
 /* Lock screen */
 .lockTop{display:flex;flex-direction:column;align-items:center;padding-top:14px;text-align:center}
@@ -72,7 +72,7 @@
 .androidStatus{display:flex;align-items:center;gap:8px;height:30px;padding:0 18px;margin-top:2px;font:500 14px/1 var(--font-android-system),Roboto,sans-serif;color:#fff}
 .androidClock{font-weight:600}
 .androidIcons{margin-left:auto;font-size:11px;letter-spacing:4px;opacity:.85}
-.androidChip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 6px;border-radius:12px;background:var(--color-maroon-900,#240001);color:#fff;font:500 13px/1 var(--font-android-system),Roboto,sans-serif;box-shadow:0 0 0 1px rgba(220,196,149,.35)}
+.androidChip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 6px;border-radius:12px;background:var(--color-maroon-900,var(--color-maroon-900));color:#fff;font:500 13px/1 var(--font-android-system),Roboto,sans-serif;box-shadow:0 0 0 1px rgba(220,196,149,.35)}
 .smallIcon{width:15px;height:15px;flex:none}
 /* Android lock screen + the pinned Live Update (standard template, phone font, system colors). */
 .androidLockClock{display:flex;flex-direction:column;padding:24px 24px 0;font-family:var(--font-android-system),Roboto,sans-serif}
@@ -80,17 +80,17 @@
 .androidLockClock small{margin-top:6px;font-size:16px;opacity:.85}
 .androidNote{margin:28px 10px 0;padding:14px 16px 16px;border-radius:26px;background:rgba(32,32,34,.94);color:#e8e8ea;font-family:var(--font-android-system),Roboto,sans-serif}
 .androidNote header{display:flex;align-items:center;gap:8px;font-size:12px;color:#b9b9bd}
-.androidNoteIcon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--color-maroon-900,#240001);color:#fff}
+.androidNoteIcon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--color-maroon-900,var(--color-maroon-900));color:#fff}
 .androidNoteIcon .smallIcon{width:13px;height:13px}
 .androidNoteTitle{margin:10px 0 0;font-size:16px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .androidNoteText{margin:2px 0 0;font-size:14px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .androidProgress{height:6px;margin-top:12px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
-.androidProgress span{display:block;height:100%;border-radius:3px;background:#c98a8e}
+.androidProgress span{display:block;height:100%;border-radius:3px;background:var(--color-maroon-300)}
 .homeApp .androidIcon{border-radius:50%}
 .androidScreen .homeGrid{padding-top:40px}
 
 /* "Both" Live Activity — Golf tab board look, sized for Apple's 160pt lock-screen limit. */
-.both{box-sizing:border-box;max-height:160px;padding:9px 10px 9px;border-radius:22px;background:var(--color-maroon-900,#240001);color:#fff;font-family:var(--font-barlow),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
+.both{box-sizing:border-box;max-height:160px;padding:9px 10px 9px;border-radius:22px;background:var(--color-maroon-900,var(--color-maroon-900));color:#fff;font-family:var(--font-barlow),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
 .bothIsland{max-height:none;padding:0;border-radius:0;background:none;box-shadow:none}
 .bothTeams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .bothTeam{display:flex;align-items:center;justify-content:space-between;gap:6px;height:30px;padding:0 10px;box-sizing:border-box;font-family:var(--font-spectral),Georgia,serif}
@@ -116,7 +116,7 @@
 .bothBoard{list-style:none;margin:3px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
 .bothBoard li{display:grid;grid-template-columns:19px 1fr auto;align-items:center;gap:8px;height:20px}
 /* Rank boxes 15% smaller than the first version (owner 2026-10-19). */
-.bothRank{display:grid;place-items:center;width:19px;height:15px;border-radius:4px;background:#fbf8f1;color:var(--color-maroon-900,#240001);font:800 10px/1 var(--font-spectral),Georgia,serif}
+.bothRank{display:grid;place-items:center;width:19px;height:15px;border-radius:4px;background:#fbf8f1;color:var(--color-maroon-900,var(--color-maroon-900));font:800 10px/1 var(--font-spectral),Georgia,serif}
 .bothMe .bothRank{background:#000;color:#fff;box-shadow:0 0 0 1px rgba(220,196,149,.55)}
 .bothName{font:700 12px/1 var(--font-spectral),Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bothBoard b{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -141,13 +141,13 @@
 
 /* In-app */
 .phone.appScreen{padding-top:0}
-.appScreen{background:var(--color-cream-100,#f5efe2);color:#240001;font-family:var(--font-barlow),sans-serif}
-.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--color-maroon-900,#240001);color:#fff;font:700 20px/1 var(--font-spectral),Georgia,serif}
+.appScreen{background:var(--color-cream-100,#f5efe2);color:var(--color-maroon-900);font-family:var(--font-barlow),sans-serif}
+.appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--color-maroon-900,var(--color-maroon-900));color:#fff;font:700 20px/1 var(--font-spectral),Georgia,serif}
 .bell{position:relative;display:inline-flex}
-.bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:#240001;font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
+.bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:var(--color-maroon-900);font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
 .appPlaceholder{display:flex;flex-direction:column;gap:12px;padding:18px}
-.appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px rgba(36,0,1,.08)}
-.sheet{position:absolute;inset:0 0 auto;box-sizing:border-box;height:70%;overflow-y:auto;padding:16px 16px 20px;padding-top:calc(16px + env(safe-area-inset-top));border-radius:0 0 28px 28px;background:var(--color-maroon-900,#240001);color:#fff;box-shadow:0 12px 30px rgba(36,0,1,.35)}
+.appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px color-mix(in srgb,var(--color-maroon-900) 8%,transparent)}
+.sheet{position:absolute;inset:0 0 auto;box-sizing:border-box;height:70%;overflow-y:auto;padding:16px 16px 20px;padding-top:calc(16px + env(safe-area-inset-top));border-radius:0 0 28px 28px;background:var(--color-maroon-900,var(--color-maroon-900));color:#fff;box-shadow:0 12px 30px color-mix(in srgb,var(--color-maroon-900) 35%,transparent)}
 .list h2{margin:0;font:700 22px/1 var(--font-spectral),Georgia,serif}
 .listHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .listHeader span{font-size:13px;font-weight:600;color:#dcc495}
@@ -160,7 +160,7 @@
 .listMeta{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.5)}
 .dot{position:absolute;top:18px;right:10px;width:8px;height:8px;border-radius:50%;background:#b8945a}
 .listEmpty{margin:24px 8px;font-size:15px;line-height:1.4;color:rgba(255,255,255,.65);text-align:center}
-.topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--color-maroon-800,#380001);color:#fff;border:1px solid rgba(220,196,149,.3);box-shadow:0 10px 26px rgba(0,0,0,.45);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
+.topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--color-maroon-800,var(--color-maroon-800));color:#fff;border:1px solid rgba(220,196,149,.3);box-shadow:0 10px 26px rgba(0,0,0,.45);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
 .topBannerBody{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.78)}
 
 /* Signed out → sign in first */
@@ -168,9 +168,9 @@
 .signInIcon{width:72px;height:72px;border-radius:17px;margin-bottom:18px}
 .signInEyebrow{margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#806331}
 .signIn h1{margin:6px 0 0;font:700 28px/1.1 var(--font-spectral),Georgia,serif}
-.signInBody{margin:8px 0 0;font-size:16px;line-height:1.4;color:rgba(36,0,1,.75)}
-.primaryButton{margin-top:28px;width:100%;max-width:320px;height:50px;border:0;border-radius:25px;background:var(--color-maroon-900,#240001);color:#fff;font:700 16px var(--font-barlow),sans-serif}
-.signInHint{margin:12px 0 0;font-size:13px;color:rgba(36,0,1,.55)}
+.signInBody{margin:8px 0 0;font-size:16px;line-height:1.4;color:color-mix(in srgb,var(--color-maroon-900) 75%,transparent)}
+.primaryButton{margin-top:28px;width:100%;max-width:320px;height:50px;border:0;border-radius:25px;background:var(--color-maroon-900,var(--color-maroon-900));color:#fff;font:700 16px var(--font-barlow),sans-serif}
+.signInHint{margin:12px 0 0;font-size:13px;color:color-mix(in srgb,var(--color-maroon-900) 55%,transparent)}
 
 @keyframes bannerIn{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(prefers-reduced-motion:reduce){.homeBanner,.topBanner{animation:none}}

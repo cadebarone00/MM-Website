@@ -1,7 +1,7 @@
 /* Tournament Home (/play/...): the logged-in league app. Deep maroon environment,
    layered dark surfaces, the tournament's accent (--play-accent) for highlights. */
-.app{--bg:#12040a;--surface:#1d0910;--surface-2:#270d15;--line:#3a1620;--text:#f6eee8;--muted:#bba9a4;--dim:#8d7874;
-  min-height:100dvh;background:radial-gradient(120% 60% at 50% -10%,color-mix(in srgb,var(--play-brand) 55%,#3a0010) 0%,var(--bg) 62%) var(--bg) no-repeat;
+.app{--bg:#12040a;--surface:#1d0910;--surface-2:var(--brand-270d15);--line:var(--brand-3a1620);--text:#f6eee8;--muted:#bba9a4;--dim:#8d7874;
+  min-height:100dvh;background:radial-gradient(120% 60% at 50% -10%,color-mix(in srgb,var(--play-brand) 55%,var(--brand-3a0010)) 0%,var(--bg) 62%) var(--bg) no-repeat;
   color:var(--text);font-family:var(--font-barlow),system-ui,sans-serif;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 .app *{box-sizing:border-box}
 .app a{color:inherit}

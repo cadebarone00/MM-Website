@@ -12,7 +12,7 @@
 /* Course / Individual views (owner request 2026-10-15). */
 .switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:3px;border-radius:12px;background:rgba(255,255,255,.06)}
 .switch button{min-height:34px;border:0;border-radius:9px;background:transparent;color:rgba(251,248,241,.75);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
-.switch button[aria-selected=true]{background:#dcc495;color:#2a0d16}
+.switch button[aria-selected=true]{background:#dcc495;color:var(--brand-2a0d16)}
 .heading{margin:16px 0 8px;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(251,248,241,.6)}
 .heading:first-child{margin-top:0}
 .note{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(251,248,241,.6)}

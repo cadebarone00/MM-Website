@@ -7,7 +7,7 @@
 .trophy{color:#dcc495}
 .row{width:100%;border:0;background:none;text-align:left;cursor:pointer}
 .add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;border:1px dashed rgba(220,196,149,.55);border-radius:12px;background:rgba(255,255,255,.04);color:#dcc495;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
-.primary{min-height:48px;border:0;border-radius:12px;background:#dcc495;color:#240001;font:800 15px var(--font-barlow),sans-serif;cursor:pointer}
+.primary{min-height:48px;border:0;border-radius:12px;background:#dcc495;color:var(--color-maroon-900);font:800 15px var(--font-barlow),sans-serif;cursor:pointer}
 .primary:disabled{opacity:.4;cursor:default}
 .secondary{min-height:48px;border:1px solid rgba(220,196,149,.4);border-radius:12px;background:transparent;color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .field{display:grid;gap:6px;color:#dcc495;font:700 13px var(--font-barlow),sans-serif}

@@ -1,5 +1,5 @@
 /* Play a round (/rounds/new): same maroon + cream look as the Play page (MobileHome.module.css). */
-.page{--app-maroon:#1d0b11;--app-cream:#f4efe6;min-height:calc(100svh - 72px);background:var(--app-maroon);color:var(--app-cream);padding:4px 0 140px}
+.page{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;min-height:calc(100svh - 72px);background:var(--app-maroon);color:var(--app-cream);padding:4px 0 140px}
 .header{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;padding:10px 20px}
 .back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;background:transparent;color:var(--app-cream);cursor:pointer}
 .kicker{margin:0;font:500 11px/1.5 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6c5ca}
@@ -8,7 +8,7 @@
 .title{margin:0;font:400 clamp(28px,8vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
 .place{margin:6px 0 18px;font-size:13px;color:#d6c5ca}
 .note{font-size:14px;line-height:1.5;color:#d6c5ca}
-.error{padding:12px 14px;border:1px solid #e0a3a3;border-radius:12px;background:#3a1218;font-size:14px;line-height:1.5;color:#ffd9d9}
+.error{padding:12px 14px;border:1px solid #e0a3a3;border-radius:12px;background:var(--brand-3a1218);font-size:14px;line-height:1.5;color:#ffd9d9}
 .form{display:grid;gap:14px;padding:16px;border:1px solid #b99c6b;border-radius:16px;background:var(--app-cream);color:var(--app-maroon)}
 .field{display:grid;gap:8px;margin:0;padding:0;border:0;font-size:13px;font-weight:600}
 .field legend{padding:0;margin-bottom:8px}
@@ -45,11 +45,11 @@
 .teams b{font-size:11px;font-weight:600;opacity:.75}
 .toggleOff{opacity:.5;cursor:not-allowed}
 /* Play: the game strip under score entry (inside the light scoring sheet), and standings. */
-.game{display:grid;gap:8px;margin:10px 0 4px;padding:10px 12px;border:1px solid #b99c6b77;border-radius:12px;color:#2f0c0e}
+.game{display:grid;gap:8px;margin:10px 0 4px;padding:10px 12px;border:1px solid #b99c6b77;border-radius:12px;color:var(--color-maroon-850)}
 .pickRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;font-weight:600}
 .pickRow>span{flex-basis:100%;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
-.pickRow button{min-height:36px;padding:0 12px;border:1px solid #b99c6b;border-radius:999px;background:#fffdf8;color:#2f0c0e;font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
-.pickRow button[aria-pressed=true]{background:#2f0c0e;border-color:#2f0c0e;color:#fffdf8}
+.pickRow button{min-height:36px;padding:0 12px;border:1px solid #b99c6b;border-radius:999px;background:#fffdf8;color:var(--color-maroon-850);font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.pickRow button[aria-pressed=true]{background:var(--color-maroon-850);border-color:var(--color-maroon-850);color:#fffdf8}
 .standings{text-align:left}
 .standings ol{display:grid;gap:2px;margin:6px 0 0;padding:0;list-style:none}
 .standings li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #b99c6b44;font-size:15px}

@@ -17,13 +17,13 @@
 .marketTable th > span, .marketTable small { display: block; font-size: 11px; font-weight: 400; color: #777; }
 .marketTable th > .teamName { font-size: 17px; font-weight: 700; color: #171717; }
 .marketTable tbody th { padding-right: 8px; }
-.marketCell { min-height: 52px; display: flex; flex-direction: column; justify-content: center; border: 1px solid #dedede; border-radius: 4px; background: #fafafa; color: #500001; font-weight: 600; }
+.marketCell { min-height: 52px; display: flex; flex-direction: column; justify-content: center; border: 1px solid #dedede; border-radius: 4px; background: #fafafa; color: var(--color-maroon-700); font-weight: 600; }
 .marketNote { margin: 0 20px; padding: 14px 0; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: #777; }
 .predictionBody { position: relative; max-width: 540px; margin: 22px auto 8px; min-height: 260px; }
 .donut { position: relative; width: 260px; margin: auto; }
 .donut svg { display: block; width: 100%; }
 .donutTeams { position: absolute; inset: 30% 20%; display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; font-size: 12px; font-weight: 700; }
-.donutTeams span { display: flex; align-items: center; justify-content: center; color: #500001; }
+.donutTeams span { display: flex; align-items: center; justify-content: center; color: var(--color-maroon-700); }
 .donutTeams span + span { border-left: 1px solid #ddd; color: #716c63; }
 .maroonPercent, .whitePercent { position: absolute; z-index: 1; display: flex; flex-direction: column; }
 .maroonPercent { top: 0; left: 20px; }

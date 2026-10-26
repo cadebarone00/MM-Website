@@ -166,7 +166,7 @@
 .pairSide.right.leading{margin-left:0}
 .left.leading .golferName,.left.leading .standing{color:var(--team-left-text,var(--color-maroon-900))}
 .right.leading .golferName,.right.leading .standing{color:var(--team-right-text,var(--color-maroon-900))}
-.leading .tee,.leading .course{color:rgba(36,0,1,.7)}
+.leading .tee,.leading .course{color:color-mix(in srgb,var(--color-maroon-900) 70%,transparent)}
 .standing{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
 /* Match names wrap between words only (never mid-name); the smallest phones get a little more room for them. */
 .pairing .golferName{overflow-wrap:normal}
@@ -360,7 +360,7 @@
 
 .playerCardTrigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
 .playerCardTrigger:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
-.leaderboardScoreSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:0;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:auto;animation:scoreSheetUp .25s ease-out}
+.leaderboardScoreSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:0;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:var(--color-maroon-900);color:#fbf8f1;overflow:auto;animation:scoreSheetUp .25s ease-out}
 .leaderboardScoreSheet::backdrop{background:rgba(0,0,0,.45)}
 .scoreSheetHandle{width:40px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(251,248,241,.4)}
 @keyframes scoreSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -378,7 +378,7 @@
 .playerTripProfileHandle{position:absolute;top:0;left:50%;translate:-50% 0;padding:12px 20px;cursor:pointer}
 .playerTripProfileHandle .scoreSheetHandle{display:block;margin:0}
 /* The photo pokes 4px past the top, the left edge and the line (clipped): 16dvh header - 2px line + 8px. */
-.playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:#240001;font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
+.playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:var(--color-maroon-900);font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
 .playerTripProfileAvatar img{width:100%;height:100%;object-fit:cover}
 .playerTripProfileClose{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#fff;cursor:pointer}
 .playerTripProfileClose:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
@@ -387,7 +387,7 @@
 .profileRoundTabs{display:flex;position:relative;gap:10px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
 .profileRoundTabs::-webkit-scrollbar{display:none}
 .profileRoundTabs button{flex:none;min-height:32.3px;padding:0 15.3px;border:1px solid rgba(220,196,149,.55);border-radius:999px;background:transparent;color:#dcc495;font:700 12.75px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;white-space:nowrap;cursor:pointer}
-.profileRoundTabs button[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:#240001}
+.profileRoundTabs button[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:var(--color-maroon-900)}
 .profileRoundTabs button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .profileRoundEmpty{margin:12px 0 0;color:rgba(251,248,241,.65);font:13px var(--font-barlow),sans-serif}
 
@@ -417,7 +417,7 @@
 .pairingTap{cursor:pointer;border-radius:10px}
 .pairingTap:hover,.pairingTap:focus-visible{background:rgba(255,255,255,.04);outline:none}
 .matchSheet{inset:6dvh 0 0;height:94dvh;padding:0 16px 28px}
-.matchSheetTop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -16px;padding:12px 16px 8px;background:#240001}
+.matchSheetTop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -16px;padding:12px 16px 8px;background:var(--color-maroon-900)}
 .matchSheetTop p{margin:0;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#dcc495}
 .matchSheetBack{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:rgba(255,255,255,.05);color:#dcc495;cursor:pointer}
 .matchSheetHead{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid rgba(255,255,255,.12)}
@@ -426,32 +426,32 @@
 .matchSheetHead b{font:600 18px var(--font-spectral),Georgia,serif;color:#fff}
 .matchSheetHead span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .matchSheetStatus{max-width:120px;margin:0;padding:6px 10px;border-radius:12px;background:rgba(255,255,255,.08);font:700 13px/1.25 var(--font-barlow),sans-serif;text-align:center;color:#fff}
-.matchSheetStatus[data-lead=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
-.matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
+.matchSheetStatus[data-lead=left]{background:var(--team-left,var(--brand-7a1f2b));color:var(--team-left-text,#fff)}
+.matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,var(--brand-2a0d16))}
 .matchSheetTitle{margin:18px 0 8px;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
 .matchSheetNote{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
 .matchTable{min-width:100%;margin-bottom:8px}
-.matchTable th{background:#240001}
+.matchTable th{background:var(--color-maroon-900)}
 .matchTable td{position:relative;min-width:26px}
 .matchTable tr[data-side] th{font:600 13px var(--font-barlow),sans-serif}
 .strokeDot{position:absolute;top:3px;right:2px;width:4px;height:4px;border-radius:50%;background:#dcc495}
 .matchResultRow th,.matchResultRow td{border-top:1px solid rgba(255,255,255,.2);padding-top:8px}
 .leadChip{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:6px;background:rgba(255,255,255,.1);font:800 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.8)}
-.leadChip[data-side=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
-.leadChip[data-side=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
+.leadChip[data-side=left]{background:var(--team-left,var(--brand-7a1f2b));color:var(--team-left-text,#fff)}
+.leadChip[data-side=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,var(--brand-2a0d16))}
 .winChart{display:block;width:100%;height:auto;overflow:visible}
 .winGrid{stroke:rgba(255,255,255,.08);stroke-width:1}
 .winMid{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:4 4}
-.winAreaLeft{fill:var(--team-left,#7a1f2b);opacity:.55}
+.winAreaLeft{fill:var(--team-left,var(--brand-7a1f2b));opacity:.55}
 .winAreaRight{fill:var(--team-right,#f3ece0);opacity:.35}
 .winLine{fill:none;stroke:#dcc495;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.winDot{fill:#dcc495;stroke:#240001;stroke-width:2}
+.winDot{fill:#dcc495;stroke:var(--color-maroon-900);stroke-width:2}
 .winLabel{font:600 9px var(--font-barlow),sans-serif;fill:rgba(255,255,255,.5)}
 .matchChances{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin:10px 0 0}
 .matchChances div{display:grid;gap:2px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);text-align:center}
 .matchChances dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .matchChances dd{margin:0;font:800 18px var(--font-barlow),sans-serif;color:#fff}
-.matchChances div[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b)}
+.matchChances div[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,var(--brand-7a1f2b))}
 .matchChances div[data-side=right]{box-shadow:inset -3px 0 0 var(--team-right,#f3ece0)}
 .matchStatsGrid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;row-gap:8px;column-gap:12px}
 .matchStatsGrid b{font:600 15px var(--font-spectral),Georgia,serif}
@@ -464,17 +464,17 @@
 .winChartWrap{position:relative}
 .winChart{touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
 .winCursor{stroke:#dcc495;stroke-width:1;stroke-dasharray:2 3}
-.winTip{position:absolute;top:-8px;transform:translate(-50%,-100%);display:grid;gap:2px;min-width:130px;padding:8px 10px;border:1px solid rgba(220,196,149,.5);border-radius:10px;background:#3a0a12;box-shadow:0 8px 20px rgba(0,0,0,.5);font:600 12px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75);pointer-events:none;z-index:3}
+.winTip{position:absolute;top:-8px;transform:translate(-50%,-100%);display:grid;gap:2px;min-width:130px;padding:8px 10px;border:1px solid rgba(220,196,149,.5);border-radius:10px;background:var(--brand-3a0a12);box-shadow:0 8px 20px rgba(0,0,0,.5);font:600 12px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75);pointer-events:none;z-index:3}
 .winTip b{color:#dcc495;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .winTip span{display:flex;justify-content:space-between;gap:12px}
 .winTip strong{color:#fff}
-.winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b);padding-left:6px}
+.winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,var(--brand-7a1f2b));padding-left:6px}
 .winTip span[data-side=right]{box-shadow:inset 3px 0 0 var(--team-right,#f3ece0);padding-left:6px}
 .winTip span:not([data-side]){padding-left:6px}
 
 .summaryStatsTrigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .summaryStatsTrigger:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:8px}
-.teamStatsSheet{position:fixed;inset:40dvh 0 0;height:60dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:hidden;display:flex;flex-direction:column;animation:scoreSheetUp .25s ease-out}
+.teamStatsSheet{position:fixed;inset:40dvh 0 0;height:60dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:var(--color-maroon-900);color:#fbf8f1;overflow:hidden;display:flex;flex-direction:column;animation:scoreSheetUp .25s ease-out}
 .teamStatsSheet::backdrop{background:rgba(0,0,0,.45)}
 .teamStatsHeader{display:flex;align-items:center;justify-content:space-between;color:#dcc495;font-weight:700}
 .teamStatsHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}

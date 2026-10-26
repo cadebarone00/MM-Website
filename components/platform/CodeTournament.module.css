@@ -35,7 +35,7 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 .dropdownButton[aria-expanded=true]{border-color:#dcc495}
 .dropdownButton[aria-expanded=true] svg{transform:rotate(180deg)}
 .teeGroupHead .dropdownButton{min-width:116px;min-height:36px;border-radius:10px}
-.dropdownList{position:absolute;z-index:20;top:calc(100% + 6px);left:0;min-width:100%;max-height:260px;overflow-y:auto;margin:0;padding:6px;list-style:none;border:1px solid rgba(201,168,110,.55);border-radius:14px;background:#2a0a12;box-shadow:0 12px 28px rgba(0,0,0,.5)}
+.dropdownList{position:absolute;z-index:20;top:calc(100% + 6px);left:0;min-width:100%;max-height:260px;overflow-y:auto;margin:0;padding:6px;list-style:none;border:1px solid rgba(201,168,110,.55);border-radius:14px;background:var(--color-maroon-925);box-shadow:0 12px 28px rgba(0,0,0,.5)}
 .dropdownList button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:40px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#fbf8f1;font:600 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;text-align:left;cursor:pointer}
 .dropdownList button:hover{background:rgba(255,255,255,.06)}
 .dropdownList button[aria-selected=true]{background:rgba(220,196,149,.14);color:#fff3d6}
@@ -47,7 +47,7 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 .teeGroupHead b{flex:1;font:700 14px var(--font-barlow),sans-serif;color:#dcc495}
 .teePlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .teePlayers li{display:flex;align-items:center;justify-content:space-between;gap:10px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fff}
-.teeSave{background:#e8c98a;border-color:#e8c98a;color:#3b0d18}
+.teeSave{background:#e8c98a;border-color:#e8c98a;color:var(--color-maroon-825)}
 .teeSave:disabled,.organizerButton:disabled{opacity:.6}
 
 /* Organizer's cut panel (dark page): the same questions as Create. */
@@ -57,7 +57,7 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 .cutField input,.cutField select{min-height:40px;padding:0 12px;border:1px solid rgba(201,168,110,.55);border-radius:10px;background:rgba(255,255,255,.06);color:#fbf8f1;font:600 15px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color-scheme:dark}
 .cutChoices{display:flex;flex-wrap:wrap;gap:8px}
 .cutChoices button{flex:1;min-height:38px;padding:0 12px;border:1px solid rgba(201,168,110,.55);border-radius:999px;background:transparent;color:#fbf8f1;font:600 13px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
-.cutChoices button[aria-pressed="true"]{background:#e8c98a;border-color:#e8c98a;color:#3b0d18}
+.cutChoices button[aria-pressed="true"]{background:#e8c98a;border-color:#e8c98a;color:var(--color-maroon-825)}
 .cutChoices button:disabled{opacity:.45;cursor:default}
 .cutBlurb{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color:#e8d7b2}
 .cutNote{margin:-4px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;color:#e8a29a}
@@ -108,13 +108,13 @@ div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-
 .ready{display:grid;gap:14px;text-align:center}
 .bigCode{margin:8px 0;font:700 44px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:#e8c98a}
 .codeActions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.addRound{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:#591c2e;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.addRound{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:var(--color-maroon-650);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
 /* Created: the code card and the Invite players card. */
 .readyCards{display:grid;gap:14px;max-width:640px;margin:0 auto;padding:0 16px}
 .readyHead{text-align:center}
 .readyHead h1{margin:4px 0 0}
 .readyCard{width:100%;box-sizing:border-box;margin:0;padding:18px;border:1px solid rgba(201,168,110,.35);border-radius:18px;background:rgba(255,255,255,.04)}
-.readyCard .primary,.readyCard [class*=primary]{background:#e8c98a;color:#3b0d18}
+.readyCard .primary,.readyCard [class*=primary]{background:#e8c98a;color:var(--color-maroon-825)}
 .readyCardNote{margin:6px 0 12px;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
 .codeSmall{margin:4px 0 12px;font-size:30px}
 .readyCard .codeActions button{gap:6px}
@@ -129,7 +129,7 @@ div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-
 .inviteLinks small{display:block;color:#c9a86e;font-weight:500}
 .inviteLinks button{display:grid;place-items:center;width:36px;height:36px;border:1px solid rgba(201,168,110,.55);border-radius:50%;background:transparent;color:#fbf8f1;cursor:pointer}
 .readyNote{margin:0;font:500 15px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
-.openButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-top:6px;border-radius:14px;background:#e8c98a;color:#3b0d18;font:700 16px var(--font-barlow),sans-serif;text-decoration:none}
+.openButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-top:6px;border-radius:14px;background:#e8c98a;color:var(--color-maroon-825);font:700 16px var(--font-barlow),sans-serif;text-decoration:none}
 /* A trip's watch code in Trip Settings → Players. */
 .watchRow{margin:0 0 16px;padding:14px;border:1px solid rgba(201,168,110,.35);border-radius:14px;text-align:center}
 .watchRow p{margin:0 0 10px;font:500 13px/1.45 var(--font-barlow),sans-serif;color:#e8d7b2}

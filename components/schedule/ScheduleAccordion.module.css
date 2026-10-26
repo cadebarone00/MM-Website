@@ -29,7 +29,7 @@
 .libraryDialog::backdrop { background: #000b; }
 .libraryDialog header { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-bottom: 24px; }
 .libraryDialog h2 { font-size: 22px; }
-.libraryDialog button { cursor: pointer; border: 1px solid #500001; padding: 8px 14px; }
+.libraryDialog button { cursor: pointer; border: 1px solid var(--color-maroon-700); padding: 8px 14px; }
 .libraryCourse { margin: 8px 0 12px; font-size: 16px; font-weight: 600; }
 .libraryGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
 .libraryGrid img { width: 100%; height: auto; }

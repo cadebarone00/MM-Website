@@ -7,7 +7,7 @@
 
 /* ============================================================
    THE MAROON TOURNAMENT — DESIGN TOKENS
-   Ported from the Claude Design project. Maroon `#500001` anchors
+   Ported from the Claude Design project. Maroon `var(--color-maroon-700)` anchors
    everything; cream paper is the default surface; champagne gold
    signals prestige. Low corner radii, hairline rules, warm shadows.
    ============================================================ */
@@ -49,6 +49,14 @@
   --color-maroon-200: #e3c0c2;
   --color-maroon-100: #f1ddde;
   --color-maroon-50: #f9eeef;
+  /* In-between shades the app uses (named so every palette has them). */
+  --color-maroon-950: #1d0b11;
+  --color-maroon-925: #2a0a12;
+  --color-maroon-850: #2f0c0e;
+  --color-maroon-825: #3b0d18;
+  --color-maroon-725: #68000b;
+  --color-maroon-675: #63151e;
+  --color-maroon-650: #591c2e;
 
   /* ---- Cream / paper ---- */
   --color-cream-50: #fbf8f1;
@@ -97,11 +105,11 @@
   --radius-pill: 999px;
 
   /* ---- Shadows (warm-tinted, restrained) ---- */
-  --shadow-xs: 0 1px 2px rgba(36, 0, 1, 0.06);
-  --shadow-sm: 0 1px 3px rgba(36, 0, 1, 0.08), 0 1px 2px rgba(36, 0, 1, 0.06);
-  --shadow-md: 0 4px 12px rgba(36, 0, 1, 0.1), 0 1px 3px rgba(36, 0, 1, 0.06);
-  --shadow-lg: 0 12px 28px rgba(36, 0, 1, 0.14), 0 4px 8px rgba(36, 0, 1, 0.06);
-  --shadow-xl: 0 24px 56px rgba(36, 0, 1, 0.2), 0 8px 16px rgba(36, 0, 1, 0.08);
+  --shadow-xs: 0 1px 2px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-sm: 0 1px 3px color-mix(in srgb,var(--color-maroon-900) 8%,transparent), 0 1px 2px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb,var(--color-maroon-900) 10%,transparent), 0 1px 3px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-lg: 0 12px 28px color-mix(in srgb,var(--color-maroon-900) 14%,transparent), 0 4px 8px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-xl: 0 24px 56px color-mix(in srgb,var(--color-maroon-900) 20%,transparent), 0 8px 16px color-mix(in srgb,var(--color-maroon-900) 8%,transparent);
 
   /* ---- Type scale ---- */
   --text-3xs: 11px;
@@ -143,7 +151,7 @@
   --app-safe-top: var(--app-top-clearance);
   --gradient-maroon: linear-gradient(160deg, var(--color-maroon-700) 0%, var(--color-maroon-900) 100%);
   --gradient-trophy: linear-gradient(135deg, var(--color-gold-300) 0%, var(--color-gold-600) 100%);
-  --scrim-bottom: linear-gradient(to top, rgba(36, 0, 1, 0.85) 0%, rgba(36, 0, 1, 0) 70%);
+  --scrim-bottom: linear-gradient(to top, color-mix(in srgb,var(--color-maroon-900) 85%,transparent) 0%, color-mix(in srgb,var(--color-maroon-900) 0%,transparent) 70%);
   --ease-standard: cubic-bezier(0.2, 0, 0.1, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -329,4 +337,350 @@ h1, h2 {
   .app-camera-content > :first-child:has(> header:first-child) { padding-top: 0; }
   .app-camera-content > :first-child > header:first-child { padding-top: var(--app-top-clearance); }
   .fixed.inset-0 { padding-top: var(--app-top-clearance); }
+}
+
+/* App colour (Settings → App colour): each palette replaces the maroon ramp, at the same lightness steps so
+   contrast holds. Gold and cream stay. Set on <html data-palette> from the "palette" cookie (app/layout.tsx). */
+html[data-palette="navy"] {
+  --color-maroon-950: #0a121e;
+  --color-maroon-925: #09172b;
+  --color-maroon-900: #010d26;
+  --color-maroon-850: #0a1930;
+  --color-maroon-825: #0c203d;
+  --color-maroon-800: #01173b;
+  --color-maroon-725: #05316c;
+  --color-maroon-700: #032453;
+  --color-maroon-675: #143565;
+  --color-maroon-650: #1a345c;
+  --color-maroon-600: #14396e;
+  --color-maroon-500: #264e89;
+  --color-maroon-400: #4c71a8;
+  --color-maroon-300: #849fc7;
+  --color-maroon-200: #bdcbe1;
+  --color-maroon-100: #dbe3ef;
+  --color-maroon-50: #edf1f8;
+}
+html[data-palette="forest"] {
+  --color-maroon-950: #08150c;
+  --color-maroon-925: #051c0c;
+  --color-maroon-900: #011305;
+  --color-maroon-850: #061f0e;
+  --color-maroon-825: #042811;
+  --color-maroon-800: #00200b;
+  --color-maroon-725: #00401d;
+  --color-maroon-700: #003014;
+  --color-maroon-675: #02421f;
+  --color-maroon-650: #103f21;
+  --color-maroon-600: #024721;
+  --color-maroon-500: #155e32;
+  --color-maroon-400: #447f56;
+  --color-maroon-300: #81a98b;
+  --color-maroon-200: #bbd0c0;
+  --color-maroon-100: #dae6dd;
+  --color-maroon-50: #edf3ee;
+}
+html[data-palette="charcoal"] {
+  --color-maroon-950: #101213;
+  --color-maroon-925: #15171a;
+  --color-maroon-900: #0c0e12;
+  --color-maroon-850: #171a1d;
+  --color-maroon-825: #1d2024;
+  --color-maroon-800: #161a1e;
+  --color-maroon-725: #2f353d;
+  --color-maroon-700: #22272d;
+  --color-maroon-675: #32373d;
+  --color-maroon-650: #31353a;
+  --color-maroon-600: #363b42;
+  --color-maroon-500: #4a5058;
+  --color-maroon-400: #6b7178;
+  --color-maroon-300: #9a9ea3;
+  --color-maroon-200: #c8cacd;
+  --color-maroon-100: #e1e3e4;
+  --color-maroon-50: #f0f1f2;
+}
+html[data-palette="purple"] {
+  --color-maroon-950: #140e1b;
+  --color-maroon-925: #1c1127;
+  --color-maroon-900: #140621;
+  --color-maroon-850: #1f132b;
+  --color-maroon-825: #271737;
+  --color-maroon-800: #210d34;
+  --color-maroon-725: #422061;
+  --color-maroon-700: #32164b;
+  --color-maroon-675: #42275c;
+  --color-maroon-650: #3e2954;
+  --color-maroon-600: #472a64;
+  --color-maroon-500: #5d3d7e;
+  --color-maroon-400: #7d619d;
+  --color-maroon-300: #a794bf;
+  --color-maroon-200: #cfc5dc;
+  --color-maroon-100: #e5e0ed;
+  --color-maroon-50: #f3eff7;
+}
+html[data-palette="teal"] {
+  --color-maroon-950: #031517;
+  --color-maroon-925: #011b1e;
+  --color-maroon-900: #001114;
+  --color-maroon-850: #011e21;
+  --color-maroon-825: #022529;
+  --color-maroon-800: #001e21;
+  --color-maroon-725: #043c41;
+  --color-maroon-700: #022d31;
+  --color-maroon-675: #023e44;
+  --color-maroon-650: #023d42;
+  --color-maroon-600: #034349;
+  --color-maroon-500: #055a62;
+  --color-maroon-400: #0e7f89;
+  --color-maroon-300: #6ea9b0;
+  --color-maroon-200: #b3d1d4;
+  --color-maroon-100: #d6e6e8;
+  --color-maroon-50: #eaf3f4;
+}
+
+/* Other maroon shades the screens use, named by their maroon value; each palette shifts them like the ramp. */
+:root {
+  --brand-100001: #100001;
+  --brand-270d15: #270d15;
+  --brand-280001: #280001;
+  --brand-2a0a0c: #2a0a0c;
+  --brand-2a0a10: #2a0a10;
+  --brand-2a0d16: #2a0d16;
+  --brand-2b0a14: #2b0a14;
+  --brand-2b1219: #2b1219;
+  --brand-30030d: #30030d;
+  --brand-32121b: #32121b;
+  --brand-34080f: #34080f;
+  --brand-350001: #350001;
+  --brand-35121f: #35121f;
+  --brand-360708: #360708;
+  --brand-38151f: #38151f;
+  --brand-3a0010: #3a0010;
+  --brand-3a0a12: #3a0a12;
+  --brand-3a0f1c: #3a0f1c;
+  --brand-3a1218: #3a1218;
+  --brand-3a1620: #3a1620;
+  --brand-401723: #401723;
+  --brand-420001: #420001;
+  --brand-4a0508: #4a0508;
+  --brand-4a1325: #4a1325;
+  --brand-4a1525: #4a1525;
+  --brand-4a1726: #4a1726;
+  --brand-500f23: #500f23;
+  --brand-560b18: #560b18;
+  --brand-630d1a: #630d1a;
+  --brand-651b30: #651b30;
+  --brand-670f24: #670f24;
+  --brand-6b1114: #6b1114;
+  --brand-6e1f33: #6e1f33;
+  --brand-751830: #751830;
+  --brand-7a1b2e: #7a1b2e;
+  --brand-7a1f2b: #7a1f2b;
+  --brand-7a2a3e: #7a2a3e;
+  --brand-7b1e2e: #7b1e2e;
+  --brand-8b3940: #8b3940;
+}
+html[data-palette="navy"] {
+  --brand-100001: #000411;
+  --brand-270d15: #0b1728;
+  --brand-280001: #010f2a;
+  --brand-2a0a0c: #08162a;
+  --brand-2a0a10: #09162b;
+  --brand-2a0d16: #0b182b;
+  --brand-2b0a14: #09172d;
+  --brand-2b1219: #101b2c;
+  --brand-30030d: #031632;
+  --brand-32121b: #101e33;
+  --brand-34080f: #071a35;
+  --brand-350001: #011637;
+  --brand-35121f: #102037;
+  --brand-360708: #061a37;
+  --brand-38151f: #132239;
+  --brand-3a0010: #02193d;
+  --brand-3a0a12: #091e3c;
+  --brand-3a0f1c: #0d203c;
+  --brand-3a1218: #10213b;
+  --brand-3a1620: #14243b;
+  --brand-401723: #152742;
+  --brand-420001: #021d45;
+  --brand-4a0508: #06234d;
+  --brand-4a1325: #112a4d;
+  --brand-4a1525: #132a4d;
+  --brand-4a1726: #152b4c;
+  --brand-500f23: #0e2b53;
+  --brand-560b18: #0c2c59;
+  --brand-630d1a: #0e3366;
+  --brand-651b30: #193968;
+  --brand-670f24: #10366b;
+  --brand-6b1114: #10376e;
+  --brand-6e1f33: #1d3f71;
+  --brand-751830: #184079;
+  --brand-7a1b2e: #1a437e;
+  --brand-7a1f2b: #1d447d;
+  --brand-7a2a3e: #274a7d;
+  --brand-7b1e2e: #1c447e;
+  --brand-8b3940: #34588c;
+}
+html[data-palette="forest"] {
+  --brand-100001: #000602;
+  --brand-270d15: #091b0e;
+  --brand-280001: #001606;
+  --brand-2a0a0c: #051c0c;
+  --brand-2a0a10: #051c0c;
+  --brand-2a0d16: #081d0f;
+  --brand-2b0a14: #051d0d;
+  --brand-2b1219: #0e2013;
+  --brand-30030d: #001d0a;
+  --brand-32121b: #0d2414;
+  --brand-34080f: #01220d;
+  --brand-350001: #001e0a;
+  --brand-35121f: #0c2614;
+  --brand-360708: #00220d;
+  --brand-38151f: #0f2817;
+  --brand-3a0010: #01220d;
+  --brand-3a0a12: #02260f;
+  --brand-3a0f1c: #072813;
+  --brand-3a1218: #0b2815;
+  --brand-3a1620: #102a18;
+  --brand-401723: #102e1a;
+  --brand-420001: #00270f;
+  --brand-4a0508: #022e13;
+  --brand-4a1325: #073318;
+  --brand-4a1525: #0a341a;
+  --brand-4a1726: #0d341b;
+  --brand-500f23: #023618;
+  --brand-560b18: #023719;
+  --brand-630d1a: #02401d;
+  --brand-651b30: #094623;
+  --brand-670f24: #01441f;
+  --brand-6b1114: #004620;
+  --brand-6e1f33: #0d4d27;
+  --brand-751830: #024f25;
+  --brand-7a1b2e: #025327;
+  --brand-7a1f2b: #065429;
+  --brand-7a2a3e: #1b5831;
+  --brand-7b1e2e: #035428;
+  --brand-8b3940: #2b663e;
+}
+html[data-palette="charcoal"] {
+  --brand-100001: #040406;
+  --brand-270d15: #151719;
+  --brand-280001: #0e1114;
+  --brand-2a0a0c: #141619;
+  --brand-2a0a10: #151719;
+  --brand-2a0d16: #16181b;
+  --brand-2b0a14: #15171a;
+  --brand-2b1219: #191b1d;
+  --brand-30030d: #14171b;
+  --brand-32121b: #1c1e21;
+  --brand-34080f: #181b1e;
+  --brand-350001: #14181c;
+  --brand-35121f: #1e2023;
+  --brand-360708: #181b1f;
+  --brand-38151f: #202226;
+  --brand-3a0010: #181b20;
+  --brand-3a0a12: #1b1f23;
+  --brand-3a0f1c: #1e2125;
+  --brand-3a1218: #1f2225;
+  --brand-3a1620: #212427;
+  --brand-401723: #24272b;
+  --brand-420001: #1b1f24;
+  --brand-4a0508: #21252b;
+  --brand-4a1325: #272a2f;
+  --brand-4a1525: #282b30;
+  --brand-4a1726: #282c30;
+  --brand-500f23: #282c31;
+  --brand-560b18: #292d33;
+  --brand-630d1a: #30353c;
+  --brand-651b30: #363b41;
+  --brand-670f24: #32383f;
+  --brand-6b1114: #343a41;
+  --brand-6e1f33: #3b4047;
+  --brand-751830: #3c4249;
+  --brand-7a1b2e: #3f454d;
+  --brand-7a1f2b: #40464d;
+  --brand-7a2a3e: #454b51;
+  --brand-7b1e2e: #40464e;
+  --brand-8b3940: #53585f;
+}
+html[data-palette="purple"] {
+  --brand-100001: #07020e;
+  --brand-270d15: #1b1225;
+  --brand-280001: #170725;
+  --brand-2a0a0c: #1b1027;
+  --brand-2a0a10: #1b1127;
+  --brand-2a0d16: #1d1328;
+  --brand-2b0a14: #1c1128;
+  --brand-2b1219: #1f1728;
+  --brand-30030d: #1d0d2d;
+  --brand-32121b: #23182f;
+  --brand-34080f: #211230;
+  --brand-350001: #1f0c31;
+  --brand-35121f: #251933;
+  --brand-360708: #221232;
+  --brand-38151f: #281c35;
+  --brand-3a0010: #240f37;
+  --brand-3a0a12: #251536;
+  --brand-3a0f1c: #271837;
+  --brand-3a1218: #271a36;
+  --brand-3a1620: #291d37;
+  --brand-401723: #2d1f3c;
+  --brand-420001: #28113d;
+  --brand-4a0508: #2f1745;
+  --brand-4a1325: #321f46;
+  --brand-4a1525: #332146;
+  --brand-4a1726: #332246;
+  --brand-500f23: #351f4c;
+  --brand-560b18: #381e50;
+  --brand-630d1a: #40235c;
+  --brand-651b30: #452c5f;
+  --brand-670f24: #442661;
+  --brand-6b1114: #462764;
+  --brand-6e1f33: #4c3168;
+  --brand-751830: #4f2f6e;
+  --brand-7a1b2e: #523272;
+  --brand-7a1f2b: #533472;
+  --brand-7a2a3e: #563b73;
+  --brand-7b1e2e: #533473;
+  --brand-8b3940: #644982;
+}
+html[data-palette="teal"] {
+  --brand-100001: #000607;
+  --brand-270d15: #011b1e;
+  --brand-280001: #011416;
+  --brand-2a0a0c: #011a1d;
+  --brand-2a0a10: #011b1e;
+  --brand-2a0d16: #001d20;
+  --brand-2b0a14: #001c1f;
+  --brand-2b1219: #042023;
+  --brand-30030d: #001b1e;
+  --brand-32121b: #022327;
+  --brand-34080f: #011f22;
+  --brand-350001: #011c1f;
+  --brand-35121f: #012529;
+  --brand-360708: #002023;
+  --brand-38151f: #02282c;
+  --brand-3a0010: #012023;
+  --brand-3a0a12: #012327;
+  --brand-3a0f1c: #01262a;
+  --brand-3a1218: #02272b;
+  --brand-3a1620: #02292d;
+  --brand-401723: #002d32;
+  --brand-420001: #012428;
+  --brand-4a0508: #022b2f;
+  --brand-4a1325: #013135;
+  --brand-4a1525: #033136;
+  --brand-4a1726: #013237;
+  --brand-500f23: #013237;
+  --brand-560b18: #003439;
+  --brand-630d1a: #033c41;
+  --brand-651b30: #014349;
+  --brand-670f24: #033f45;
+  --brand-6b1114: #014247;
+  --brand-6e1f33: #05494f;
+  --brand-751830: #024b51;
+  --brand-7a1b2e: #034e55;
+  --brand-7a1f2b: #034f56;
+  --brand-7a2a3e: #06545c;
+  --brand-7b1e2e: #054f56;
+  --brand-8b3940: #03646c;
 }

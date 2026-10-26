@@ -33,7 +33,7 @@
 .momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}
 
 /* Drafts keep the itinerary-card inset with a dramatic maroon and gold surface. */
-.draftWidget{position:relative;isolation:isolate;box-sizing:border-box;width:100%;padding:16px 14px;border:1px solid rgba(220,196,149,.65);border-radius:12px;background:linear-gradient(135deg,#240001 0%,#651b30 52%,#30030d 100%);box-shadow:0 8px 22px rgba(36,0,1,.24),inset 0 1px 0 rgba(255,232,181,.12)}
+.draftWidget{position:relative;isolation:isolate;box-sizing:border-box;width:100%;padding:16px 14px;border:1px solid rgba(220,196,149,.65);border-radius:12px;background:linear-gradient(135deg,var(--color-maroon-900) 0%,var(--brand-651b30) 52%,var(--brand-30030d) 100%);box-shadow:0 8px 22px color-mix(in srgb,var(--color-maroon-900) 24%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
 .draftWidget::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(110deg,transparent 38%,rgba(220,196,149,.07) 44%,rgba(255,224,159,.3) 50%,rgba(220,196,149,.07) 56%,transparent 62%);background-size:350% 100%;background-position:100% 0;animation:draftShimmer 10s ease-in-out infinite}
 @keyframes draftShimmer{0%,75%{background-position:100% 0;opacity:0}78%{opacity:1}95%{background-position:0 0;opacity:1}100%{background-position:0 0;opacity:0}}
 .draftWidget .draft + .draft{margin-top:14px;padding-top:14px;border-top:1px solid rgba(220,196,149,.3)}

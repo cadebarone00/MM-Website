@@ -12,7 +12,7 @@
 /* Countdown: four flip-clock tiles (dark maroon, cream numbers split across the middle) with gold labels under them. */
 .countdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .unit{display:grid;justify-items:center;gap:6px}
-.tile{position:relative;display:grid;place-items:center;width:100%;height:56px;border-radius:10px;background:linear-gradient(180deg,#4a1525 0%,#3a0f1c 50%,#2b0a14 50%,#3a0f1c 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 14px rgba(0,0,0,.35);color:#fbf8f1;font:700 30px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
+.tile{position:relative;display:grid;place-items:center;width:100%;height:56px;border-radius:10px;background:linear-gradient(180deg,var(--brand-4a1525) 0%,var(--brand-3a0f1c) 50%,var(--brand-2b0a14) 50%,var(--brand-3a0f1c) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 14px rgba(0,0,0,.35);color:#fbf8f1;font:700 30px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
 .tile::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.45)}
 .label{color:#dcc495;font:700 10px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}
 /* Countdown sizing: labels above the tiles; the row takes the middle 70% of the screen (the section is 90% wide, so 70/90 of it);

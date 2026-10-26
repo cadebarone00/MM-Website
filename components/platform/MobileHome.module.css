@@ -1,14 +1,14 @@
-.home{--app-maroon:#1d0b11;--app-cream:#f4efe6;background:var(--app-maroon);color:var(--app-cream);min-height:calc(100svh - 72px)}
+.home{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;background:var(--app-maroon);color:var(--app-cream);min-height:calc(100svh - 72px)}
 .upper{max-width:1160px;margin:auto;padding:4px 0 0}
 .tagline{margin:0;padding:0 24px 22px;font:500 10px/1.5 var(--font-barlow),sans-serif;text-transform:uppercase;letter-spacing:.15em;color:#d6c5ca}
 .cards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:24px;padding:0 24px 8px;scrollbar-width:none}.cards::-webkit-scrollbar{display:none}
 .tripCard{flex:0 0 100%;min-width:0;overflow:hidden;border:1px solid #b99c6b;border-bottom:0;border-radius:14px;scroll-snap-align:start;background:var(--app-cream)}
-.tripPhoto{position:relative;height:215px;isolation:isolate}.tripPhoto>img{object-fit:cover;z-index:-2}.tripPhoto:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#1d0b1170,#1d0b1110 35%,#1d0b11c9)}
+.tripPhoto{position:relative;height:215px;isolation:isolate}.tripPhoto>img{object-fit:cover;z-index:-2}.tripPhoto:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,color-mix(in srgb,var(--color-maroon-950) 43.9%,transparent),color-mix(in srgb,var(--color-maroon-950) 6.3%,transparent) 35%,color-mix(in srgb,var(--color-maroon-950) 78.8%,transparent))}
 .tripOverlay{height:100%;padding:20px;display:flex;flex-direction:column;justify-content:space-between}.kicker{display:flex;align-items:center;gap:7px;margin:0;font:500 10px/1.5 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}.tripOverlay p{margin:0;font:400 clamp(27px,7.5vw,38px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.045em;text-wrap:balance}
 .cardAction{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:57px;padding:12px 18px;color:var(--app-maroon);font-size:16px;font-weight:600}.cardAction>span{display:grid;place-items:center;width:25px;height:25px;background:var(--app-maroon);color:var(--app-cream);border-radius:50%}
 .accountRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 25px 10px}.accountRow p{font-size:12px;color:#d6c5ca;margin:0}.accountRow a{display:flex;align-items:center;gap:9px;min-height:44px;font-size:13px}
 .discover{max-width:1120px;margin:0 auto;overflow:hidden;border-radius:22px 22px 0 0;background:#e6e2db;color:var(--app-maroon)}
-.filters{display:flex;align-items:center;justify-content:space-around;gap:8px;min-height:76px;padding:9px 18px}.filters button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;max-width:180px;padding:6px 4px;border:0;border-radius:16px;background:transparent;color:var(--app-maroon);font:500 13px var(--font-barlow),sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:#fffdf8;box-shadow:0 2px 8px #1d0b1110}
+.filters{display:flex;align-items:center;justify-content:space-around;gap:8px;min-height:76px;padding:9px 18px}.filters button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;max-width:180px;padding:6px 4px;border:0;border-radius:16px;background:transparent;color:var(--app-maroon);font:500 13px var(--font-barlow),sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:#fffdf8;box-shadow:0 2px 8px color-mix(in srgb,var(--color-maroon-950) 6.3%,transparent)}
 .feature{position:relative;isolation:isolate;min-height:460px;color:#fffdf8}.feature>img{object-fit:cover;z-index:-2}.feature:after{position:absolute;content:"";inset:0;background:linear-gradient(180deg,#111d16bb,#14221a55 65%,#14221a70);z-index:-1}.featureCopy{padding:28px 25px 120px;max-width:560px}.feature h2{font:400 clamp(34px,9vw,54px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em;margin:18px 0 12px}.description{max-width:280px;font-size:14px;line-height:1.6;margin:0;color:#f4efe6}.featureCopy>a{display:inline-flex;align-items:center;gap:16px;min-height:48px;border-bottom:1px solid #fff8;margin-top:16px;font-size:13px}
 .home a:focus-visible,.home button:focus-visible{outline:3px solid #b99c6b;outline-offset:3px}.cardAction:focus-visible{outline-offset:-4px}
 @media(max-width:600px){.filters{gap:2px;padding:9px 8px}.filters button{font-size:12px}.tripCard{flex-basis:calc(100% - 12px)}.tripPhoto{height:190px}.tagline{padding-bottom:19px}.feature{min-height:440px}}
@@ -35,7 +35,7 @@ button.cardAction{width:100%;border:0;background:transparent;font-family:inherit
 @media(min-width:601px){.roundCard .tripPhoto{height:220px}}
 /* Play page: invites to rounds with friends, above the Play a round card. */
 .invites{display:grid;gap:10px;margin:0 24px 12px}
-.invite{display:grid;gap:10px;padding:14px 16px;border:1px solid #b99c6b;border-radius:14px;background:#2b1219}
+.invite{display:grid;gap:10px;padding:14px 16px;border:1px solid #b99c6b;border-radius:14px;background:var(--brand-2b1219)}
 .invite p{margin:0;font-size:14px;line-height:1.45}
 .invite div{display:flex;gap:8px}
 .invite button{min-height:42px;padding:0 18px;border:1px solid #b99c6b;border-radius:10px;background:transparent;color:var(--app-cream);font:600 14px var(--font-barlow),sans-serif;cursor:pointer}

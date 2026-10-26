@@ -47,7 +47,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
               profile, friends from golf trips, and the handicap index from all counting rounds). */}
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <span className="flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-[26px] font-bold text-maroon-900 shadow-[0_0_0_3px_#380001]">
+              <span className="flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-[26px] font-bold text-maroon-900 shadow-[0_0_0_3px_var(--color-maroon-800)]">
                 {identity.avatarSrc
                   ? <Image src={identity.avatarSrc} alt="" width={82} height={82} unoptimized className="h-full w-full object-cover" />
                   : identity.initials}

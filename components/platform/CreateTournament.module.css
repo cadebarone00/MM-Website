@@ -9,7 +9,7 @@
 .cream{flex:1 1 0}
 .picker{flex:0 0 auto;height:60svh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:safe flex-end;gap:16px;
   padding:24px max(16px,calc((100% - 528px)/2)) calc(8px + 5.75rem + env(safe-area-inset-bottom));
-  border-radius:32px 32px 0 0;background:var(--color-maroon-900);box-shadow:0 -12px 32px rgba(36,0,1,.16);color:#fbf8f1}
+  border-radius:32px 32px 0 0;background:var(--color-maroon-900);box-shadow:0 -12px 32px color-mix(in srgb,var(--color-maroon-900) 16%,transparent);color:#fbf8f1}
 .list{display:flex;flex-direction:column;gap:8px}
 /* The gold "Or" between Golf Trip and the other choices, on the left. */
 .or{padding:2px 4px;font:600 15px/1 var(--font-spectral),Georgia,serif;font-style:italic;color:var(--color-gold-300)}
