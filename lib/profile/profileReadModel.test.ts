@@ -109,7 +109,7 @@ test("a legacy Maroon player looks like a normal profile: no old name, bio or ph
 });
 
 test("someone else, Private profile: name, username and the headline numbers (rounds played, handicap) — nothing else", async () => {
-  const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => { calls.rounds++; return [round("a", "trip:a:b"), round("b", "trip:a:c")]; } },
+  const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => { calls.rounds++; return [round("trip", "trip:a:b"), round("trip", "trip:a:c")]; } },
     row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio.", avatarUrl: "https://photos.example/sam.jpg" }));
   for (const viewer of [OTHER, null]) {
     const p = (await assembleProfileReadModel(viewer, ME, s, TODAY))!;

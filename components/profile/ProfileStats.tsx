@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
 import { roundStats } from "@/lib/profile/roundStats";
 import { CompareRings } from "./CompareRings";
@@ -30,7 +29,6 @@ export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[
         const p = stats.byPar.find((entry) => entry.par === par);
         return [`Par ${par}s`, p ? p.average.toFixed(2) : "—"];
       })} />
-      <StrokesGained />
     </div>
     {isOwner && <CompareRings mine={stats} />}
     {showsHoleStats && <div className={card}>
@@ -55,29 +53,6 @@ export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[
         </li>)}
       </ol>
     </div>}
-  </section>;
-}
-
-const SG_AREAS = ["SG Approach", "SG Tee", "SG Putting", "SG Short game"] as const;
-
-/**
- * Strokes gained, by area: a selector in the same look as the Golf Trip's Home · Golf · Venue · Itinerary tabs
- * (GolfTripHome.module.css .tripTabs). True strokes gained needs each shot's distance to the hole, which rounds don't
- * record yet, so each area says so instead of showing a made-up number.
- */
-function StrokesGained() {
-  const [area, setArea] = useState<(typeof SG_AREAS)[number]>(SG_AREAS[0]);
-  return <section aria-label="Strokes gained" className="mt-2">
-    <div role="tablist" aria-label="Strokes gained areas"
-      className="relative grid w-full auto-cols-fr grid-flow-col before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-[2px] before:bg-[rgba(251,248,241,.18)]">
-      {SG_AREAS.map((name) => <button key={name} type="button" role="tab" aria-selected={area === name} onClick={() => setArea(name)}
-        className={`relative min-h-11 whitespace-nowrap px-0.5 font-sans text-[13px] font-bold leading-tight tracking-[.01em] transition-[color,text-shadow] duration-150 after:absolute after:inset-x-0 after:bottom-[2px] after:z-[1] after:h-[2px] after:bg-[#dcc495] after:transition-opacity focus-visible:rounded focus-visible:outline-2 focus-visible:outline-[#dcc495] ${area === name ? "text-[#fbf8f1] [text-shadow:0_0_12px_rgba(251,248,241,.55)] after:opacity-100" : "text-white/55 after:opacity-0 hover:text-white/85"}`}>
-        {name}
-      </button>)}
-    </div>
-    <p role="tabpanel" aria-label={area} className="m-0 px-4 py-5 text-center text-sm text-cream-50/70">
-      {area} needs each shot&apos;s distance to the hole. It&apos;s coming once scoring tracks shot distances.
-    </p>
   </section>;
 }
 
