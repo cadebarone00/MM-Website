@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, FileUp, Plus, Share2, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, FileUp, Plus, Share2, Trash2, TriangleAlert } from "lucide-react";
 import { AddRound } from "./CodeTournamentCreate";
 import { CutFields, cutSummary } from "./CodeTournamentCut";
 import { TeeSheetEditor } from "./CodeTournamentTeeSheet";
@@ -22,7 +22,10 @@ const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateStr
  * and Public / Private (whether it shows in the Tourneys search and lists).
  * `act` sends a change (or applies it, for the simulator's sample); the page reloads the tournament after each one.
  */
-export function CodeTournamentSettings({ t, act, upload, onClose }: { t: CodeTournament; act: (change: TournamentChange) => Promise<{ ok: boolean; message?: string }>; upload: Upload; onClose: () => void }) {
+export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { t: CodeTournament; act: (change: TournamentChange) => Promise<{ ok: boolean; message?: string }>; upload: Upload;
+  /** Deletes the tournament for everyone; resolves with a message when it couldn't (on success the page leaves). */
+  onDelete: () => Promise<string | null>; onClose: () => void }) {
+  const [deleting, setDeleting] = useState(false);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -67,6 +70,11 @@ export function CodeTournamentSettings({ t, act, upload, onClose }: { t: CodeTou
             <h2>{title === "Visibility" ? (t.isPublic ? "Public" : "Private") : title}</h2>
             <p className={styles.cardDetail}>{title === "Visibility" ? (t.isPublic ? "In the Tourneys search and live feed" : "Only players with the code") : detail[title]}</p>
           </button>)}
+          {/* Last: Delete Tournament, which asks first. */}
+          <button type="button" className={`${settingsStyles.card} ${settingsStyles.cardButton} ${styles.deleteCard}`} onClick={() => setDeleting(true)}>
+            <h2>Delete Tournament</h2>
+            <p className={styles.cardDetail}>Removes it for everyone</p>
+          </button>
         </div>
       </section>
         : panel === "Info" ? <InfoPanel t={t} onEnd={async () => {
@@ -89,7 +97,27 @@ export function CodeTournamentSettings({ t, act, upload, onClose }: { t: CodeTou
           onChange={async (round, file) => { const result = await upload("pinSheet", file, round); setProblem(result.ok ? null : result.message ?? "Couldn't save that. Try again."); return result.ok; }} />
         : <VisibilityPanel isPublic={Boolean(t.isPublic)} onChange={(isPublic) => send({ action: "public", isPublic }, "Couldn't change it. Try again.")} />}
     </div>
+    {deleting && <DeleteConfirm name={t.name} onCancel={() => setDeleting(false)} onDelete={onDelete} />}
   </main>;
+}
+
+/** "Are you sure?" for Delete Tournament: a card over the settings with Cancel and Delete. */
+function DeleteConfirm({ name, onCancel, onDelete }: { name: string; onCancel: () => void; onDelete: () => Promise<string | null> }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return <div className={styles.confirmBackdrop} onClick={busy ? undefined : onCancel}>
+    <section className={styles.confirmCard} role="alertdialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-note" onClick={(e) => e.stopPropagation()}>
+      <span className={styles.confirmIcon} aria-hidden="true"><TriangleAlert size={22} /></span>
+      <h2 id="delete-title">Are you sure you want to delete {name}?</h2>
+      <p id="delete-note">This removes the tournament for everyone: its rounds, scores, tee sheets and PDFs. Players keep their accounts. This can&apos;t be undone.</p>
+      {error && <p className={styles.confirmError} role="alert">{error}</p>}
+      <div className={styles.confirmActions}>
+        <button type="button" className={styles.organizerButton} disabled={busy} onClick={onCancel}>Cancel</button>
+        <button type="button" className={styles.confirmDelete} disabled={busy} onClick={async () => { setBusy(true); setError(await onDelete()); setBusy(false); }}>
+          <Trash2 size={15} aria-hidden="true" /> {busy ? "Deleting…" : "Delete"}</button>
+      </div>
+    </section>
+  </div>;
 }
 
 /** Info: the join code (copy / share), the tournament at a glance, and End tournament. */

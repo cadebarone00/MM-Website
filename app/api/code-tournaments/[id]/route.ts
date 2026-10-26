@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { addCodeTournamentRound, endCodeTournament, getCodeTournament, setCodeTournamentAttest, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
+import { addCodeTournamentRound, deleteCodeTournament, endCodeTournament, getCodeTournament, setCodeTournamentAttest, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
 import { attestAgrees, attestPairs, type TeeSheet } from "@/lib/platform/codeTournaments";
 import { badRequest, cutFrom, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
@@ -85,4 +85,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     default:
       return badRequest();
   }
+}
+
+/** DELETE: the organizer deletes the tournament for everyone (Tournament Settings → Delete Tournament). */
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
+  if (!user) return signedOut();
+  return reply(await deleteCodeTournament(user.id, id), () => ({}));
 }

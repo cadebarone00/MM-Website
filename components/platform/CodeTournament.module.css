@@ -101,6 +101,20 @@ div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
 div.tourneyTabs[role=tablist]{justify-content:center;margin:0 0 18px}
 div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-basis:0}
 
+/* Tournament Settings → Delete Tournament: a red-edged card, then an "are you sure" card over the page. */
+button.deleteCard{border-color:#e7a3a3;border-top-color:#c62828;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 0 #b44a4a,0 8px 16px rgba(0,0,0,.24)}
+button.deleteCard h2{color:#a1121f}
+.confirmBackdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(10,4,6,.6)}
+.confirmCard{display:grid;justify-items:center;gap:10px;width:min(100%,380px);padding:22px 20px;border:1px solid #dcc495;border-top:3px solid #c62828;border-radius:18px;background:linear-gradient(145deg,#fffdf7,#f2e9d7);color:#240001;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.confirmCard h2{margin:0;font:700 20px/1.25 var(--font-spectral),Georgia,serif}
+.confirmCard p{margin:0;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#4a3a40}
+.confirmIcon{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#fde8e8;color:#c62828}
+.confirmError{color:#a1121f !important;font-weight:600 !important}
+.confirmActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:6px}
+.confirmActions .organizerButton{justify-content:center;border-color:#b99c6b;background:transparent;color:#240001}
+.confirmDelete{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:0;border-radius:999px;background:#c62828;color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.confirmDelete:disabled,.confirmActions .organizerButton:disabled{opacity:.6}
+
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}

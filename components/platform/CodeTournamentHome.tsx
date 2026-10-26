@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ExternalLink, Settings } from "lucide-react";
 import { GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
@@ -40,6 +41,7 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   const [problem, setProblem] = useState<string | null>(null);
   const [shown, setShown] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const router = useRouter();
   const [section, setSection] = useState<Section>("Leaderboard");
 
   const load = useCallback(async () => {
@@ -92,7 +94,18 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
   }
 
   // Tournament Settings: every change goes through the same `act`, then the page reloads the tournament.
-  if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)} upload={upload}
+  // Delete Tournament (Settings): gone for everyone, then back to Tourneys. The sample just leaves.
+  async function deleteTournament(): Promise<string | null> {
+    if (!sample) {
+      const reply = await fetch(`/api/code-tournaments/${encodeURIComponent(t!.id)}`, { method: "DELETE" })
+        .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok })).catch(() => ({ ok: false, message: "No connection. Try again when you're back online." }));
+      if (!reply.ok) return reply.message ?? "Couldn't delete the tournament. Try again.";
+    }
+    router.replace("/tournaments/join");
+    return null;
+  }
+
+  if (settingsOpen && isOrganizer) return <CodeTournamentSettings t={t} onClose={() => setSettingsOpen(false)} upload={upload} onDelete={deleteTournament}
     act={async (change) => { const result = await act(change); if (result.ok) await load(); return result; }} />;
 
   // Info (left of Leaderboard) shows once the organizer uploads it, and Pin Sheet (after Tee Sheet) once any round has
