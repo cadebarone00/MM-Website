@@ -31,7 +31,7 @@ export const BETS: BetDef[] = [
   { id: "birdies", category: "Props", title: "Birdies", blurb: "Most or fewest birdies (or better) on the trip.", teamOnly: false },
   { id: "doubles", category: "Props", title: "Doubles or worse", blurb: "Most or fewest double bogeys or worse on the trip.", teamOnly: false },
   { id: "holeInOne", category: "Props", title: "Hole in one", blurb: "Does anyone make an ace on the trip?", teamOnly: false },
-  { id: "matchMargin", category: "Props", title: "Largest match margin", blurb: "The biggest win in any match: will it reach each margin?", teamOnly: true },
+  { id: "matchMargin", category: "Props", title: "Largest match margin", blurb: "How big the biggest win in any match will be: pick the margin.", teamOnly: true },
   { id: "tripStats", category: "Props", title: "Greens, fairways & putts (trip)", blurb: "Each player's greens hit, fairways hit or putts for the whole trip: over or under their line.", teamOnly: false },
   { id: "todayMatches", category: "Today", title: "Today's matches", blurb: "Odds for each of today's matches, updated hole by hole.", teamOnly: true },
   { id: "roundBirdies", category: "Today", title: "Birdies this round", blurb: "Each player's birdies (or better) this round: over or under their line.", teamOnly: false },
@@ -99,6 +99,21 @@ function shareWins(values: number[], pickLow: boolean, wins: number[]) {
 }
 
 /** Up to `count` evenly spaced whole-number lines where the yes chance is between 5% and 95%. */
+/**
+ * Largest match margin as separate results, each with its chance (they add up to 1), smallest first: "2&1 or smaller",
+ * then one row per margin that can happen (m up with m - 1 to play: "5&4"), until what's left is under 2%, which is one
+ * last row ("X or bigger", or just "X" when nothing bigger can happen: a decided margin is a single exact row).
+ */
+export function marginOutcomes(maxLead: number[]): Outcome[] {
+  const n = maxLead.length || 1, share = (test: (m: number) => boolean) => maxLead.filter(test).length / n;
+  const label = (m: number) => `${m}&${m - 1}`;
+  const rows: Outcome[] = [{ id: "margin:2-", label: "2&1 or smaller", chance: share((m) => m <= 2) }];
+  let m = 3;
+  for (; m < 9 && share((x) => x > m) >= 0.02; m++) if (share((x) => x === m) > 0) rows.push({ id: `margin:${m}`, label: label(m), chance: share((x) => x === m) });
+  rows.push({ id: `margin:${m}+`, label: share((x) => x > m) > 0 ? `${label(m)} or bigger` : label(m), chance: share((x) => x >= m) });
+  return rows.filter((r) => r.chance > 0);
+}
+
 function ladderLines(samples: number[], under: boolean, count = 6): number[] {
   const sorted = [...samples].sort((a, b) => a - b);
   const chance = (line: number) => (under ? sorted.filter((v) => v < line) : sorted.filter((v) => v > line)).length / sorted.length;
@@ -227,8 +242,7 @@ export function priceTrip(setup: TripSetup, sims = 10000, seed = 1): Market[] {
     for (const pts of playerPoints) { shareWins(pts, false, top); shareWins(pts, true, bottom); }
     markets.push({ bet: "topPointEarner", kind: "outcomes", outcomes: outcomes(top) });
     markets.push({ bet: "bottomPointEarner", kind: "outcomes", outcomes: outcomes(bottom) });
-    const big = ladderLines(maxLead, false, 4).filter((l) => l >= 1);
-    markets.push({ bet: "matchMargin", kind: "ladder", lines: big.map((l) => ({ label: `${l + 1}&${l} or bigger`, line: l, chance: maxLead.filter((m) => m > l).length / n })) });
+    markets.push({ bet: "matchMargin", kind: "outcomes", outcomes: marginOutcomes(maxLead) });
   }
 
   // Individual winner (net): course handicap strokes off each round.

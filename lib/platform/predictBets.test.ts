@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ProfileHistoryRound } from "./playerRoundsRows";
-import { ACE_CHANCE_PER_PAR3, BETS, betAllowed, holeInOneChance, priceTrip, type Market, type TripSetup } from "./predictBets";
+import { marginOutcomes, ACE_CHANCE_PER_PAR3, BETS, betAllowed, holeInOneChance, priceTrip, type Market, type TripSetup } from "./predictBets";
 
 const PAR = [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const course = { par: PAR, rating: 72, slope: 113 };
@@ -47,8 +47,11 @@ test("team bets: the stronger team is favoured, chances add up, spreads move wit
   const top = get<"outcomes">(markets, "topPointEarner");
   assert.equal(top.outcomes[0].id, "a");
   assert.ok(Math.abs(sum(top.outcomes) - 1) < 1e-9);
-  const margin = get<"ladder">(markets, "matchMargin");
-  for (let i = 1; i < margin.lines.length; i++) assert.ok(margin.lines[i].chance <= margin.lines[i - 1].chance, "bigger margins are less likely");
+  // Largest match margin: separate results (smallest first) whose chances add up to 1.
+  const margin = get<"outcomes">(markets, "matchMargin");
+  assert.ok(margin.outcomes.every((o) => o.chance > 0), "results that can't happen are left out");
+  assert.ok(margin.outcomes.at(-1)!.label.endsWith("or bigger") || margin.outcomes.length === 1);
+  assert.ok(Math.abs(sum(margin.outcomes) - 1) < 1e-9);
 });
 
 test("scoring ladders, most / least and the net winner", () => {
@@ -140,4 +143,14 @@ test("player score and greens / fairways / putts over / unders: better players g
   const live = priceTrip({ ...teamTrip, live: { holes: { a: [PAR.map((p, h) => h < 9 ? p + 3 : null)] } } }, 2000, 5);
   const a = get<"playerLines">(live, "roundScore").rows[0];
   assert.ok(a.count > 0 && a.line > round.rows[0].line && a.line > a.count);
+});
+
+test("largest match margin: each result once, smallest first, the long tail grouped", () => {
+  const leads = [1, 2, 2, 3, 3, 3, 4, 4, 5, 9];
+  assert.deepEqual(marginOutcomes(leads).map((o) => [o.label, o.chance]),
+    [["2&1 or smaller", 0.3], ["3&2", 0.3], ["4&3", 0.2], ["5&4", 0.1], ["9&8", 0.1]]);
+  // Decided: one exact row.
+  assert.deepEqual(marginOutcomes([6, 6, 6]).map((o) => [o.label, o.chance]), [["6&5", 1]]);
+  // A long tail of unlikely blowouts is grouped.
+  assert.deepEqual(marginOutcomes([...Array(99).fill(3), 8]).map((o) => o.label), ["3&2 or bigger"]);
 });
