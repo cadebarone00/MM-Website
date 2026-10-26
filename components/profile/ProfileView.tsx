@@ -73,7 +73,8 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
             <div className="min-w-0 flex-1">
             {/* One line, centred over the numbers (it sits below the gear, so it never runs under it). */}
             <h2 className="truncate text-center font-serif text-sm font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
-            {!isPrivate && <dl className="mt-2 grid grid-cols-3 text-center" aria-label="Profile numbers">
+            {/* Rounds · Friends · Handicap show on every profile, Private ones too. */}
+            <dl className="mt-2 grid grid-cols-3 text-center" aria-label="Profile numbers">
               {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) => {
                 const stat = <><dt className="font-condensed text-sm text-maroon-900/70">{label}</dt><dd className="m-0 font-serif text-sm font-bold leading-none">{value}</dd></>;
                 // My Friends number opens my friends list.
@@ -81,7 +82,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
                   ? <Link key={label} href="/profile/friends" aria-label={`Friends: ${value}. See your friends`} className="flex flex-col-reverse items-center gap-1 rounded-lg text-maroon-900 hover:text-maroon-700">{stat}</Link>
                   : <div key={label} className="flex flex-col-reverse items-center gap-1">{stat}</div>;
               })}
-            </dl>}
+            </dl>
             </div>
           </div>
           {/* Under the photo: username, then the bio (small). */}
