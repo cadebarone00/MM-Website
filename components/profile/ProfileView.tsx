@@ -42,7 +42,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
   return (
     // Extend the profile background through the bottom-menu padding. Every tab sits on dark maroon, so the top
     // section's curve shows the same way on Overview, Rounds and Stats.
-    <div className="flex min-h-screen min-w-0 flex-col bg-maroon-900 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
+    <div className="profile-root flex min-h-screen min-w-0 flex-col bg-maroon-900 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       <header className="relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-cream-50 text-maroon-900 px-5 pb-3 pt-[70px]">
         {/* Find Golfers (search and friend requests), just left of the gear. */}
         {isOwner && <Link href="/profile/search" aria-label="Find golfers" className="absolute right-16 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">

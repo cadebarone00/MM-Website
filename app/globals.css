@@ -720,3 +720,11 @@ html[data-mode="light"] {
   --lm-ink-fffdf8: #240001;
   --lm-ink-ffffff: #240001;
 }
+
+/* Light mode on Profile (components/profile/ProfileView.tsx, Tailwind): the maroon page goes white, and the cream / gold
+   words on it go dark. Cream cards (the header, the stat rings) keep their own colours; the Compare list goes white. */
+html[data-mode="light"] .profile-root { --color-cream-50: #240001; --color-gold-300: #7a5a26; background: #fff; }
+html[data-mode="light"] .profile-root .bg-maroon-900 { background-color: #fff; }
+html[data-mode="light"] .profile-root .bg-cream-50 { --color-cream-50: #fbf8f1; --color-gold-300: #dcc495; }
+html[data-mode="light"] .profile-root [role="listbox"] { background: #fff; border-color: rgba(36, 0, 1, .15); box-shadow: 0 14px 30px rgba(36, 0, 1, .16); }
+html[data-mode="light"] .profile-root > header { box-shadow: 0 6px 18px rgba(36, 0, 1, .08); }

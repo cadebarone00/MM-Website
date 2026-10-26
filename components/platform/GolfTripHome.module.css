@@ -282,7 +282,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .statusTag[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
 /* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
    section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
-.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--lm-bg-240001);box-shadow:0 25px 0 var(--color-maroon-900)}
+.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--lm-bg-240001);box-shadow:0 25px 0 var(--lm-bg-240001)}
 .accountHead .accountTop{flex:none}
 /* Momentum has a taller, borderless slot below the heading; content remains centered. */
 .momSlot{box-sizing:border-box;flex:none;min-height:89px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;margin-top:10px;text-align:center}
@@ -355,3 +355,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .golfTop:has([data-board-compact]){--golf-board-height:100px}
 /* Predict on, Player Stats off: team scores, the win bar and the Predict button only, so the board is shorter. */
 .golfTop:has([data-board-predict-only]){--golf-board-height:152px}
+
+/* Light mode: the trip's heading band is a soft cream (it runs on behind the first card), so the cards sit on it
+   naturally instead of on white with a maroon edge. */
+:global(html[data-mode="light"]) .accountHead{background:#f3eee6;box-shadow:0 25px 0 #f3eee6}
+:global(html[data-mode="light"]) .account{background:linear-gradient(#f3eee6 120px,#f7f8f7 120px)}
