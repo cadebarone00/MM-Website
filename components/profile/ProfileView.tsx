@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Settings } from "lucide-react";
+import { Pencil, Search, Settings } from "lucide-react";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { ProfileStats } from "@/components/profile/ProfileStats";
@@ -39,6 +39,10 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
     // section's curve shows the same way on Overview, Rounds and Stats.
     <div className="flex min-h-screen min-w-0 flex-col bg-maroon-900 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       <header className="relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-cream-50 text-maroon-900 px-5 pb-3 pt-[70px]">
+        {/* Find Golfers (search and friend requests), just left of the gear. */}
+        {isOwner && <Link href="/profile/search" aria-label="Find golfers" className="absolute right-16 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
+          <Search size={26} aria-hidden="true" />
+        </Link>}
         {isOwner && <Link href={links.settings} aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
         </Link>}
