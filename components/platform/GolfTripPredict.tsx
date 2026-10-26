@@ -178,6 +178,9 @@ function MarketCard({ market, spread, pools, priceOf, onPick }: { market: Market
       </div>
       {topThree(pool.outcomes.map((o, i) => row(pool, i, o, `${side}-${i}`)))}
     </>;
+  } else if (market.kind === "ladder" && !market.lines.length) {
+    // Every line is already (nearly) certain, e.g. the rounds it depends on are played: nothing left to bet on.
+    body = <p className={styles.empty}>No open lines: this one is as good as decided.</p>;
   } else if (market.kind === "ladder") {
     // One line at a time: the slider moves between lines (owner request 2026-10-11); starts at the line nearest 50 / 50.
     const index = Math.min(ladderIndex ?? market.lines.reduce((best, l, i) => Math.abs(l.chance - 0.5) < Math.abs(market.lines[best].chance - 0.5) ? i : best, 0), market.lines.length - 1);
