@@ -1,42 +1,42 @@
-.root{display:grid;gap:16px;padding:0 0 30px;color:#fff;font:500 14px/1.5 var(--font-barlow),sans-serif}
+.root{display:grid;gap:16px;padding:0 0 30px;color:var(--lm-ink-ffffff);font:500 14px/1.5 var(--font-barlow),sans-serif}
 .root h2,.root h3,.root h4,.root p{margin:0}
 .root h2{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif}
 .root h3{font-size:19px}.root h4{font-size:18px}
-.eyebrow{color:#dcc495;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
-.notice{padding:12px;border-radius:12px;background:rgba(220,196,149,.09);color:#dcc495;font-size:12px}
-.progress{display:flex;justify-content:space-between;gap:8px;padding:0;margin:0;list-style:none;color:#c1aeb3;font-size:12px}
-.progress li[aria-current]{color:#dcc495;font-weight:800}
+.eyebrow{color:var(--lm-ink-dcc495);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.notice{padding:12px;border-radius:12px;background:color-mix(in srgb,var(--lm-ink-dcc495) 9%,transparent);color:var(--lm-ink-dcc495);font-size:12px}
+.progress{display:flex;justify-content:space-between;gap:8px;padding:0;margin:0;list-style:none;color:var(--lm-ink-c1aeb3);font-size:12px}
+.progress li[aria-current]{color:var(--lm-ink-dcc495);font-weight:800}
 .gamesHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
-.activeGamesTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;color:#fff}
+.activeGamesTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .newGameWrap{position:relative}
-.newGameButton{min-height:42px;padding:9px 14px;border:1px solid rgba(220,196,149,.55);border-radius:12px;background:transparent;color:#fff;font:700 14px/1 var(--font-barlow),sans-serif;cursor:pointer}
-.scopeMenu{position:absolute;right:0;top:calc(100% + 8px);display:grid;gap:8px;width:220px;padding:10px;border:1px solid rgba(220,196,149,.35);border-radius:12px;background:rgba(26,12,18,.96);box-shadow:0 16px 32px rgba(0,0,0,.3);z-index:4}
-.scopeMenuItem{min-height:40px;padding:10px 12px;border:1px solid rgba(220,196,149,.35);border-radius:10px;background:var(--brand-38151f);color:#fff;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.scopeMenuItem[aria-pressed=true]{background:#dcc495;color:var(--brand-32121b);border-color:#dcc495}
+.newGameButton{min-height:42px;padding:9px 14px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:12px;background:transparent;color:var(--lm-ink-ffffff);font:700 14px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.scopeMenu{position:absolute;right:0;top:calc(100% + 8px);display:grid;gap:8px;width:220px;padding:10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:12px;background:color-mix(in srgb,var(--lm-bg-1a0c12) 96%,transparent);box-shadow:0 16px 32px rgba(0,0,0,.3);z-index:4}
+.scopeMenuItem{min-height:40px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:10px;background:var(--lm-bg-38151f);color:var(--lm-ink-ffffff);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.scopeMenuItem[aria-pressed=true]{background:#dcc495;color:var(--brand-32121b);border-color:var(--lm-ink-dcc495)}
 .scopeMenu .label{display:grid;gap:6px;margin-top:4px}
 .scopeMenu select{width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:var(--brand-38151f);font:inherit}
-.section{display:grid;gap:12px;min-width:0;margin:0;padding:16px;border:1px solid rgba(220,196,149,.25);border-radius:18px;background:rgba(255,255,255,.035)}
+.section{display:grid;gap:12px;min-width:0;margin:0;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-radius:18px;background:color-mix(in srgb,var(--lm-ink-ffffff) 3.5%,transparent)}
 .section legend,.players legend{padding:0 5px;font-weight:700;font-size:16px}
-.choices{display:flex;gap:8px;flex-wrap:wrap}.choices button{flex:1;min-height:44px;border:1px solid #896b72;border-radius:12px;background:var(--brand-38151f);color:#fff;padding:8px 10px;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.choices button[aria-pressed=true]{background:#dcc495;color:var(--brand-32121b);border-color:#dcc495}
+.choices{display:flex;gap:8px;flex-wrap:wrap}.choices button{flex:1;min-height:44px;border:1px solid #896b72;border-radius:12px;background:var(--lm-bg-38151f);color:var(--lm-ink-ffffff);padding:8px 10px;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.choices button[aria-pressed=true]{background:#dcc495;color:var(--brand-32121b);border-color:var(--lm-ink-dcc495)}
 .sizes button{flex:1 0 46px;padding-inline:5px}
 .label{display:grid;gap:6px;font-weight:700}.label select{width:100%;min-width:0;min-height:46px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:var(--brand-38151f);font:inherit}
 .library{display:grid;gap:12px}.gameCard{display:grid;gap:8px;padding:18px;border-radius:15px;background:linear-gradient(135deg,#fff9ed,#eadabd);color:var(--brand-401723);box-shadow:0 4px 0 rgba(183,145,71,.3)}
 .gameCard .eyebrow{color:#805b24}.gameCard small{font-size:12px;color:#674b50}
-.primary{min-height:46px;padding:11px 16px;border:1px solid #dcc495;border-radius:12px;background:#dcc495;color:var(--brand-38151f);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.primary{min-height:46px;padding:11px 16px;border:1px solid var(--lm-ink-dcc495);border-radius:12px;background:#dcc495;color:var(--brand-38151f);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .gameCard .primary{margin-top:4px;background:var(--color-maroon-650);color:#fff;border-color:var(--color-maroon-650)}
-.back{justify-self:start;min-height:44px;padding:5px 0;border:0;background:none;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.summary{color:#dcc495}.players{display:grid;gap:10px;min-width:0;margin:0;padding:12px 0;border:0}
-.player{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.05);cursor:pointer}.player input{width:20px;height:20px;accent-color:#dcc495}.player small{display:block;color:#dcc495;font-size:12px}
-.configuration{display:grid;gap:10px;padding:16px;border-radius:12px;background:rgba(220,196,149,.09)}.configuration ol{margin:0;padding-left:22px}
+.back{justify-self:start;min-height:44px;padding:5px 0;border:0;background:none;color:var(--lm-ink-dcc495);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.summary{color:var(--lm-ink-dcc495)}.players{display:grid;gap:10px;min-width:0;margin:0;padding:12px 0;border:0}
+.player{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);cursor:pointer}.player input{width:20px;height:20px;accent-color:#dcc495}.player small{display:block;color:var(--lm-ink-dcc495);font-size:12px}
+.configuration{display:grid;gap:10px;padding:16px;border-radius:12px;background:color-mix(in srgb,var(--lm-ink-dcc495) 9%,transparent)}.configuration ol{margin:0;padding-left:22px}
 .teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}.teams>div{padding:10px;border:1px solid #896b72;border-radius:10px}.teams p{margin:8px 0}
-.confirmation{padding:12px;border:1px solid #dcc495;border-radius:12px;color:#dcc495}
+.confirmation{padding:12px;border:1px solid var(--lm-ink-dcc495);border-radius:12px;color:var(--lm-ink-dcc495)}
 .scoreRow{display:grid;gap:8px;padding:12px;border:1px solid #896b72;border-radius:10px}
 .label input{width:100%;box-sizing:border-box;min-height:44px;padding:8px;border:1px solid #b99a63;border-radius:10px;background:#fff8ea;color:var(--brand-38151f);font:inherit}
-.root button:disabled{opacity:.45;cursor:default}.root button:focus-visible,.root input:focus-visible,.root select:focus-visible{outline:3px solid #f5d583;outline-offset:3px}
+.root button:disabled{opacity:.45;cursor:default}.root button:focus-visible,.root input:focus-visible,.root select:focus-visible{outline:3px solid var(--lm-ink-f5d583);outline-offset:3px}
 @media(min-width:650px){.library{grid-template-columns:1fr 1fr}}
 /* New game popup: the whole setup (library → settings → players → submit) happens in this sheet. */
-.emptyGames{color:rgba(255,255,255,.7)}
+.emptyGames{color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
 .activeGameHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;transform:translateX(-50%);box-sizing:border-box;overflow-y:auto;padding:20px 16px 16px}
 .sheetBody{display:grid;gap:14px;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#111}
@@ -46,7 +46,7 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .sheetGroupTitle{color:#805b24;font-size:12px !important;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
 .sheetGame{display:grid;gap:2px;width:100%;padding:12px 14px;border:1px solid rgba(17,17,17,.1);border-radius:14px;background:#fbf8f1;color:#111;text-align:left;font:inherit;cursor:pointer}
 .sheetGame strong{font-size:16px}.sheetGame span{color:#555;font-size:13px}
-.sheetGame:hover{border-color:#dcc495}
+.sheetGame:hover{border-color:var(--lm-ink-dcc495)}
 .sheetBack{justify-self:start;padding:0;border:0;background:none;color:var(--color-maroon-650);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .sheetSetting{display:grid;gap:8px}
 .sheetSetting>span{font-weight:700}
@@ -60,15 +60,15 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .sheetPrimary{min-height:48px;border:0;border-radius:12px;background:var(--color-maroon-650);color:#fff;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .sheetPrimary:disabled{opacity:.45;cursor:default}
 /* Trip games with Play's rules (owner request 2026-10-17): the hole's pick and a hole stepper. */
-.holePick{display:grid;gap:8px;margin:8px 0;padding:10px;border-radius:12px;background:rgba(255,255,255,.04)}
+.holePick{display:grid;gap:8px;margin:8px 0;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent)}
 .holeStep{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.holeStep b{font:700 14px var(--font-barlow),sans-serif;color:#dcc495}
-.holeStep button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.holeStep b{font:700 14px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.holeStep button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
 .holeStep button:disabled{opacity:.35;cursor:default}
 .teamRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
-.sheetGame[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.14)}
+.sheetGame[aria-pressed=true]{border-color:var(--lm-ink-dcc495);background:color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent)}
 /* New game: Create stays in view at the bottom of the sheet. Pre-round options sit on the game card. */
-.sheetFooter{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--color-maroon-900,var(--color-maroon-900)) 70%,transparent)}
+.sheetFooter{position:sticky;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--lm-bg-240001) 70%,transparent)}
 .sheetFooter .sheetPrimary{width:100%;margin:0}
 .preRound{display:grid;gap:12px;margin-top:8px}
 /* Compact pass (owner request 2026-10-17): smaller cards, game descriptions behind an "i". */
@@ -87,18 +87,18 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 .gameOption .sheetGame strong{font-size:13px;line-height:1.2}
 .gameInfo{display:inline-grid;place-items:center;width:18px;height:18px;padding:0;border:1px solid rgba(160,123,51,.6);border-radius:50%;background:transparent;color:#a07b33;font:italic 700 11px/1 Georgia,serif;vertical-align:middle;cursor:pointer}
 .gameOption .gameInfo{position:absolute;top:6px;right:6px}
-.section .gameInfo{border-color:rgba(220,196,149,.55);color:#dcc495;margin-left:4px}
+.section .gameInfo{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);color:var(--lm-ink-dcc495);margin-left:4px}
 .gameBlurb{grid-column:1/-1;margin:4px 2px 0;font-size:12px;line-height:1.35;color:#555}
-.gameBlurbDark{font-size:12px;line-height:1.35;color:rgba(255,255,255,.7)}
+.gameBlurbDark{font-size:12px;line-height:1.35;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
 /* On the dark game card, the picked option is gold (not dark on dark). */
-.section .sheetChoices button{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff}
-.section .sheetChoices button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:var(--brand-2a0d16)}
-.section .sheetSetting>span{font-size:12px;color:rgba(255,255,255,.75)}
+.section .sheetChoices button{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);border-color:color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent);color:var(--lm-ink-ffffff)}
+.section .sheetChoices button[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--brand-2a0d16)}
+.section .sheetSetting>span{font-size:12px;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
 .preRound{gap:8px;margin-top:2px}
 .holePick{gap:6px;margin:4px 0;padding:8px}
 .gameOption .sheetGame[aria-pressed=true]{border:2px solid var(--color-maroon-650);background:#f3e6c9}
 /* Game description: a small light grey card over the screen; tap outside to close. */
-.infoLayer{position:fixed;inset:0;z-index:3000;overscroll-behavior:contain;touch-action:none;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.35)}
+.infoLayer{position:fixed;inset:0;z-index:3000;overscroll-behavior:contain;touch-action:none;display:grid;place-items:center;padding:24px;background:color-mix(in srgb,var(--lm-bg-000000) 35%,transparent)}
 .infoCard{display:grid;gap:8px;width:min(320px,100%);padding:16px;border-radius:14px;background:#e9e8e5;color:#1d1d1d;box-shadow:0 12px 32px rgba(0,0,0,.35);font:500 14px/1.45 var(--font-barlow),sans-serif}
 .infoCard h4{margin:0;font:700 16px var(--font-barlow),sans-serif}
 .infoCard p{margin:0;color:#3b3b3b}
@@ -106,14 +106,14 @@ div.gameSheet{position:fixed;left:50%;width:min(92vw,420px);max-height:none;tran
 /* New game sheet: from under the trip header to the bottom of the screen, above the bottom nav. */
 div:has(> .gameSheet){z-index:1100}
 div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;border-radius:24px 24px 0 0;border-bottom:0}
-.sheetFooter{margin:0 -16px;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,#fff 75%,rgba(255,255,255,0))}
+.sheetFooter{margin:0 -16px;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,#fff 75%,color-mix(in srgb,var(--lm-ink-ffffff) 0%,transparent))}
 .createButton{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:58px;padding:8px 10px 8px 18px;border:0;border-radius:16px;background:linear-gradient(135deg,var(--brand-6e1f33),var(--brand-4a1325));color:#fff;text-align:left;box-shadow:0 8px 18px color-mix(in srgb,var(--brand-4a1325) 35%,transparent);cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
 .createButton:active{transform:scale(.98);box-shadow:0 4px 10px color-mix(in srgb,var(--brand-4a1325) 30%,transparent)}
 .createButton span:first-child{display:grid;gap:1px}
 .createButton b{font:700 17px var(--font-barlow),sans-serif}
-.createButton small{font:600 12px var(--font-barlow),sans-serif;color:#e8d3a6}
+.createButton small{font:600 12px var(--font-barlow),sans-serif;color:var(--lm-ink-e8d3a6)}
 .createArrow{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#dcc495;color:var(--brand-4a1325)}
-.createPrompt{display:grid;place-items:center;min-height:58px;margin:0;border:1.5px dashed #d8cdbd;border-radius:16px;background:#faf7f1;color:#8a7c6b;font:600 14px var(--font-barlow),sans-serif}
+.createPrompt{display:grid;place-items:center;min-height:58px;margin:0;border:1.5px dashed var(--lm-ink-d8cdbd);border-radius:16px;background:#faf7f1;color:#8a7c6b;font:600 14px var(--font-barlow),sans-serif}
 @media (prefers-reduced-motion:reduce){.createButton{transition:none}}
 .createOptions{display:grid;gap:10px}
 /* Round picker: three equal columns, so every round button is the same size (a short last row stays the same width). */
@@ -124,25 +124,25 @@ div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;bo
 .createButton:active{box-shadow:none}
 /* Wolf: the Wolf on top with Go Lone Wolf; partners underneath. */
 .wolf{display:grid;gap:8px}
-.wolfTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(220,196,149,.12)}
+.wolfTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent)}
 .wolfTop span{display:grid;gap:0}
-.wolfTop small,.wolfPartners small{font:700 10px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
-.wolfTop b{font:700 17px var(--font-barlow),sans-serif;color:#fff}
-.loneWolf{min-height:34px;padding:4px 14px;border:1px solid #dcc495;border-radius:99px;background:transparent;color:#dcc495;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfTop small,.wolfPartners small{font:700 10px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
+.wolfTop b{font:700 17px var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.loneWolf{min-height:34px;padding:4px 14px;border:1px solid var(--lm-ink-dcc495);border-radius:99px;background:transparent;color:var(--lm-ink-dcc495);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
 .loneWolf[aria-pressed=true]{background:#dcc495;color:var(--brand-2a0d16)}
 .wolfPartners{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .wolfPartners small{flex-basis:100%}
-.wolfPartners button{flex:1 1 0;min-height:34px;padding:4px 8px;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
-.wolfPartners button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:var(--brand-2a0d16)}
+.wolfPartners button{flex:1 1 0;min-height:34px;padding:4px 8px;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 22%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent);color:var(--lm-ink-ffffff);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfPartners button[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--brand-2a0d16)}
 /* Arrow rows: Daytona (← · →) and team pickers (← name →). */
 .daytona{display:grid;gap:4px}
 .arrowRow{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;align-items:center;gap:6px;min-height:36px}
 .arrowRow:has(> button:nth-of-type(3)){grid-template-columns:36px minmax(0,1fr) 36px 36px}
 .arrowRow:not(:has(> button:nth-of-type(3))){grid-template-columns:36px minmax(0,1fr) 36px}
 .arrowRow span{font:600 14px var(--font-barlow),sans-serif;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.arrowRow button{display:grid;place-items:center;width:36px;height:32px;padding:0;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
-.arrowRow button[aria-pressed=true]{background:#dcc495;border-color:#dcc495;color:var(--brand-2a0d16)}
-.daytonaHint{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
+.arrowRow button{display:grid;place-items:center;width:36px;height:32px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 22%,transparent);border-radius:9px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent);color:var(--lm-ink-ffffff);cursor:pointer}
+.arrowRow button[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--brand-2a0d16)}
+.daytonaHint{font:600 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
 .daytona .arrowRow.spotRow.spotRow{grid-template-columns:minmax(0,1fr) 36px 36px 36px}
 /* Team picks (Vegas by hole, and pre-round teams): name, then ← →, like Daytona. */
 .daytona .arrowRow.teamPickRow.teamPickRow{grid-template-columns:minmax(0,1fr) 36px 36px}

@@ -1,9 +1,9 @@
 /* Settings, in the app's maroon / cream / gold look (same family as the Play page and Play a round). */
-.page{min-height:calc(100svh - 72px);padding:12px 18px 140px;background:var(--color-maroon-950);color:#f4efe6}
+.page{min-height:calc(100svh - 72px);padding:12px 18px 140px;background:var(--lm-bg-1d0b11);color:var(--lm-ink-f4efe6)}
 .inner{max-width:560px;margin:0 auto}
 .header{display:flex;align-items:center;gap:12px;margin:4px 0 18px}
-.back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;color:#f4efe6}
-.backLabel{font:600 13px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#d6c5ca}
+.back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;color:var(--lm-ink-f4efe6)}
+.backLabel{font:600 13px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-d6c5ca)}
 .card{margin-top:12px;padding:16px;border:1px solid #b99c6b;border-radius:18px;background:#f4efe6;color:var(--color-maroon-950)}
 .cardTitle{margin:0 0 10px;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-7a1b2e)}
 .text{margin:0;font:500 15px/1.5 var(--font-barlow),sans-serif;color:var(--color-maroon-950)}
@@ -13,7 +13,7 @@
 .avatar img{width:100%;height:100%;object-fit:cover}
 .photoActions{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
 .primary,.secondary,.linkButton{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 16px;border-radius:12px;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.primary{border:0;background:var(--color-maroon-950);color:#f4efe6}
+.primary{border:0;background:var(--lm-bg-1d0b11);color:var(--lm-ink-f4efe6)}
 .secondary,.linkButton{border:1px solid color-mix(in srgb,var(--color-maroon-950) 26.7%,transparent);background:transparent;color:var(--color-maroon-950)}
 .linkButton{width:100%;margin-top:12px}
 .primary:disabled,.secondary:disabled{opacity:.5;cursor:not-allowed}
@@ -48,11 +48,13 @@
 .infoPanel dd{margin:2px 0 0;color:#5d4f47}
 .segmented{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#e6dccb}
 .segmented button{min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--color-maroon-950);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.segmented button[aria-pressed=true]{background:var(--color-maroon-950);color:#f4efe6}
+.segmented button[aria-pressed=true]{background:var(--lm-bg-1d0b11);color:var(--lm-ink-f4efe6)}
 .segmented button:disabled{opacity:.7}
 
-/* App colour: a round swatch per palette, its name under it; the picked one has a gold ring and a check. */
-.palettes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
-.palette{display:grid;justify-items:center;gap:6px;padding:8px 0;border:0;background:none;color:var(--color-maroon-950);font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
-.paletteSwatch{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:#fbf8f1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
-.palette[aria-checked=true] .paletteSwatch{box-shadow:0 0 0 2px #f4efe6,0 0 0 4px #c7a55e}
+/* Appearance: a Dark and a Light card side by side, each showing its look; the picked one has a gold ring and a check. */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.mode{display:grid;gap:8px;padding:0;border:0;background:none;color:var(--color-maroon-950);font:600 14px var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
+.mode small{display:block;color:#5d4f47;font-weight:500;font-size:12px}
+.modeSwatch{position:relative;display:grid;place-items:center;height:72px;border-radius:14px;font:700 22px var(--font-spectral),Georgia,serif;box-shadow:inset 0 0 0 1px rgba(36,0,1,.18)}
+.modeSwatch svg{position:absolute;top:8px;right:8px}
+.mode[aria-checked=true] .modeSwatch{box-shadow:0 0 0 2px #f4efe6,0 0 0 4px #c7a55e}

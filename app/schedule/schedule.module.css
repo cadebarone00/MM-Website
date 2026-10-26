@@ -1,4 +1,4 @@
-.landing { position: relative; isolation: isolate; min-height: max(620px, calc(100svh - 110px)); display: grid; grid-template-rows: auto 1fr auto; color: white; text-align: center; padding: 36px 32px 54px; }
+.landing { position: relative; isolation: isolate; min-height: max(620px, calc(100svh - 110px)); display: grid; grid-template-rows: auto 1fr auto; color: var(--lm-ink-ffffff); text-align: center; padding: 36px 32px 54px; }
 .photo { object-fit: cover; object-position: center; z-index: -2; }
 .shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(0 0 0 / 25%), rgb(0 0 0 / 20%) 40%, rgb(0 0 0 / 58%)); }
 .brand { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -7,9 +7,9 @@
 .title h1 { margin: 0; font-family: var(--font-spectral), Georgia, serif; font-size: clamp(36px, 4.5vw, 72px); font-weight: 300; line-height: 1.2; }
 .title p { margin: 20px 0 0; font-size: 15px; letter-spacing: .2em; text-transform: uppercase; }
 .days { display: flex; justify-content: center; gap: clamp(32px, 6vw, 100px); }
-.days a { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 60px; padding: 8px; color: #fff; font-size: 14px; text-transform: uppercase; letter-spacing: .14em; text-decoration: none; border-bottom: 1px solid transparent; }
-.days a:hover, .days a:focus-visible { border-color: #fff; }
-.days a:focus-visible { outline: 2px solid white; outline-offset: 5px; }
+.days a { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 60px; padding: 8px; color: var(--lm-ink-ffffff); font-size: 14px; text-transform: uppercase; letter-spacing: .14em; text-decoration: none; border-bottom: 1px solid transparent; }
+.days a:hover, .days a:focus-visible { border-color: var(--lm-ink-ffffff); }
+.days a:focus-visible { outline: 2px solid var(--lm-ink-ffffff); outline-offset: 5px; }
 .dayNumber { font-size: 10px; letter-spacing: .22em; opacity: .75; }
 @media (width < 1024px) {
 .landing { min-height: max(560px, calc(100svh - 170px)); padding: 30px 20px 38px; }
@@ -22,7 +22,7 @@
 }
 
 .landing { position: fixed; inset: 0; z-index: 60; height: 100dvh; min-height: 0; box-sizing: border-box; overflow: hidden; padding-top: max(36px, var(--app-safe-top)); padding-bottom: max(38px, env(safe-area-inset-bottom)); }
-.back { position: absolute; top: 20px; left: 20px; color: white; z-index: 1; font-size: 12px; text-decoration: none; }
+.back { position: absolute; top: 20px; left: 20px; color: var(--lm-ink-ffffff); z-index: 1; font-size: 12px; text-decoration: none; }
 @media (max-height: 550px) { .title { padding: 12px 0; } .title h1 { font-size: 30px; } .brand { gap: 4px; } }
 /* Mobile: sit between the top chrome and the bottom tab bar instead of underneath them (see ScheduleChromeFit). */
 @media (width < 1024px) { .landing { top: var(--schedule-top, 0px); bottom: var(--schedule-bottom, 0px); height: auto; padding-top: 36px; padding-bottom: 38px; } .back { top: 12px; } }

@@ -2,13 +2,13 @@
 .page{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;min-height:calc(100svh - 72px);background:var(--app-maroon);color:var(--app-cream);padding:4px 0 140px}
 .header{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;padding:10px 20px}
 .back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;background:transparent;color:var(--app-cream);cursor:pointer}
-.kicker{margin:0;font:500 11px/1.5 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6c5ca}
+.kicker{margin:0;font:500 11px/1.5 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--lm-ink-d6c5ca)}
 .search{max-width:640px;margin:0 auto;padding:0 18px}.search>section{border-radius:20px;overflow:hidden;background:var(--app-cream);min-height:0}
 .panel{max-width:640px;margin:0 auto;padding:6px 20px 0}
 .title{margin:0;font:400 clamp(28px,8vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
-.place{margin:6px 0 18px;font-size:13px;color:#d6c5ca}
-.note{font-size:14px;line-height:1.5;color:#d6c5ca}
-.error{padding:12px 14px;border:1px solid #e0a3a3;border-radius:12px;background:var(--brand-3a1218);font-size:14px;line-height:1.5;color:#ffd9d9}
+.place{margin:6px 0 18px;font-size:13px;color:var(--lm-ink-d6c5ca)}
+.note{font-size:14px;line-height:1.5;color:var(--lm-ink-d6c5ca)}
+.error{padding:12px 14px;border:1px solid var(--lm-ink-e0a3a3);border-radius:12px;background:var(--lm-bg-3a1218);font-size:14px;line-height:1.5;color:var(--lm-ink-ffd9d9)}
 .form{display:grid;gap:14px;padding:16px;border:1px solid #b99c6b;border-radius:16px;background:var(--app-cream);color:var(--app-maroon)}
 .field{display:grid;gap:8px;margin:0;padding:0;border:0;font-size:13px;font-weight:600}
 .field legend{padding:0;margin-bottom:8px}
@@ -22,7 +22,7 @@
 .primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 20px;border:0;border-radius:14px;background:var(--app-maroon);color:var(--app-cream);font:600 16px var(--font-barlow),sans-serif;cursor:pointer}
 .saved .primary{background:var(--app-cream);color:var(--app-maroon)}
 .secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border:1px solid #b99c6b;border-radius:14px;background:transparent;color:var(--app-cream);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
-.discard{display:block;margin-top:24px;padding:10px 0;border:0;background:none;color:#d6c5ca;font-size:13px;text-decoration:underline;cursor:pointer}
+.discard{display:block;margin-top:24px;padding:10px 0;border:0;background:none;color:var(--lm-ink-d6c5ca);font-size:13px;text-decoration:underline;cursor:pointer}
 .saved{display:grid;gap:12px;padding:20px;border:1px solid #b99c6b;border-radius:16px;text-align:center}
 .savedTotal{margin:0;font:400 64px/1 var(--font-spectral),Georgia,serif}
 .page a:focus-visible,.page button:focus-visible,.page input:focus-visible,.page select:focus-visible{outline:3px solid #b99c6b;outline-offset:2px}
@@ -49,7 +49,7 @@
 .pickRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;font-weight:600}
 .pickRow>span{flex-basis:100%;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
 .pickRow button{min-height:36px;padding:0 12px;border:1px solid #b99c6b;border-radius:999px;background:#fffdf8;color:var(--color-maroon-850);font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
-.pickRow button[aria-pressed=true]{background:var(--color-maroon-850);border-color:var(--color-maroon-850);color:#fffdf8}
+.pickRow button[aria-pressed=true]{background:var(--lm-bg-2f0c0e);border-color:var(--color-maroon-850);color:var(--lm-ink-fffdf8)}
 .standings{text-align:left}
 .standings ol{display:grid;gap:2px;margin:6px 0 0;padding:0;list-style:none}
 .standings li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #b99c6b44;font-size:15px}
@@ -68,11 +68,14 @@
 .banner b{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .roster{display:grid;gap:6px;margin:0 0 12px;padding:0;list-style:none}
 .roster li{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border:1px solid #b99c6b55;border-radius:10px;font-size:15px}
-.roster li>span{flex:1;min-width:0}.roster small{margin-left:8px;font-size:11px;color:#d6c5ca}
-.roster b{font-size:12px;font-weight:600;color:#b9e0b0}.roster b[data-status=invited]{color:#f6d68b}
+.roster li>span{flex:1;min-width:0}.roster small{margin-left:8px;font-size:11px;color:var(--lm-ink-d6c5ca)}
+.roster b{font-size:12px;font-weight:600;color:var(--lm-ink-b9e0b0)}.roster b[data-status=invited]{color:var(--lm-ink-f6d68b)}
 .roster .remove{color:var(--app-cream)}
 .hostMenu{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .hostMenu .secondary{min-height:42px;padding:0 14px;font-size:14px}
 .results button{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .results b{font-size:13px}
 .ratingRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ratingRow label{display:grid;gap:6px;font-size:12px;font-weight:600}
+
+/* Light mode: the page goes white; its cream panels and maroon buttons stay as they are. */
+:global(html[data-mode="light"]) .page{background:#fff;color:var(--color-maroon-950)}

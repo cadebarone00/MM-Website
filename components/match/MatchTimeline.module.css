@@ -17,8 +17,8 @@
 .scorecard .compactRow > td { height: 24px; }
 
 /* Fourball best-ball/status block: gaps outside, a gold outline inside. */
-.scorecard .groupStart > * { border-top: 10px solid var(--color-cream-100); box-shadow: inset 0 2px #a78945; }
-.scorecard .groupEnd > * { border-bottom: 10px solid var(--color-cream-100); box-shadow: inset 0 -2px #a78945; }
+.scorecard .groupStart > * { border-top: 10px solid var(--lm-ink-f5efe2); box-shadow: inset 0 2px #a78945; }
+.scorecard .groupEnd > * { border-bottom: 10px solid var(--lm-ink-f5efe2); box-shadow: inset 0 -2px #a78945; }
 .scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :first-child { border-left: 2px solid #a78945; }
 .scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :last-child { border-right: 2px solid #a78945; }
 
@@ -45,7 +45,7 @@
   padding-bottom: 12px;
 }
 .oddsHeader .probabilityTitle { font-size: 28px; font-weight: 700; color: #000; }
-.probabilityCard { margin-top: 12px; padding: 1px 16px 16px; border: 1px solid #e6e4df; border-radius: 10px; background: #fff; box-shadow: 0 2px 5px rgb(0 0 0 / 5%); }
+.probabilityCard { margin-top: 12px; padding: 1px 16px 16px; border: 1px solid var(--lm-ink-e6e4df); border-radius: 10px; background: #fff; box-shadow: 0 2px 5px rgb(0 0 0 / 5%); }
 
 .labels {
   position: relative;
@@ -175,9 +175,9 @@
 }
 .whiteLabel {
   top: calc(100% + 10px);
-  color: #fff;
+  color: var(--lm-ink-ffffff);
   background: #e4dfd5;
-  border-color: #fff;
+  border-color: var(--lm-ink-ffffff);
   text-shadow: 0 1px 2px #514b42, 0 0 1px #514b42;
 }
 .resultArea {
@@ -208,7 +208,7 @@
   color: var(--color-maroon-700);
   font-size: clamp(14px, 2.4cqw, 28px);
   font-weight: 800;
-  text-shadow: 0 0 3px #fff;
+  text-shadow: 0 0 3px var(--lm-ink-ffffff);
 }
 .mobileCard { display: none; }
 @media (width < 1024px) {

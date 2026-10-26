@@ -59,7 +59,7 @@
   transition: transform 0.15s ease;
 }
 .create:active { transform: scale(0.99); }
-.create:focus-visible { outline: 3px solid #c9a86e; outline-offset: 3px; }
+.create:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: 3px; }
 .createLabel { font: 500 13px/1.3 var(--font-barlow), sans-serif; color: color-mix(in srgb,var(--color-maroon-800) 60%,transparent); }
 .createTitle { margin-top: 2px; font: 700 28px/1.15 var(--font-barlow), sans-serif; letter-spacing: -0.02em; }
 .createPhoto {
@@ -111,7 +111,7 @@
   color: var(--color-maroon-800);
   font-size: 16px;
 }
-.joinInput:focus-visible { outline: 3px solid #c9a86e; outline-offset: 1px; }
+.joinInput:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: 1px; }
 .joinButton {
   flex: none;
   min-height: 48px;
@@ -123,8 +123,8 @@
   font: 700 16px/1 var(--font-barlow), sans-serif;
   cursor: pointer;
 }
-.joinButton:hover { background: var(--color-maroon-900); }
-.joinButton:focus-visible { outline: 3px solid #c9a86e; outline-offset: 2px; }
+.joinButton:hover { background: var(--lm-bg-240001); }
+.joinButton:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: 2px; }
 .joinError { margin: 8px 0 0; color: #a3122a; font-size: 14px; line-height: 1.4; }
 
 /* "ACCOUNTS"-style small caps heading over each group. */
@@ -153,7 +153,7 @@
   transition: background 0.15s ease;
 }
 a.row:hover { background: #faf7f2; }
-a.row:focus-visible { outline: 3px solid #c9a86e; outline-offset: -3px; }
+a.row:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: -3px; }
 .rowText { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; }
 .rowName { font: 600 16px/1.3 var(--font-barlow), sans-serif; overflow-wrap: anywhere; }
 .rowMeta { color: color-mix(in srgb,var(--color-maroon-800) 60%,transparent); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }

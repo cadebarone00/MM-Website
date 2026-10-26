@@ -12,12 +12,12 @@
   width: min(370px, calc(100% - 32px));
   padding: 7px 8px;
   border-radius: 999px;
-  background: var(--color-maroon-900);
-  border: 1px solid rgba(201, 168, 110, 0.5);
+  background: var(--lm-bg-240001);
+  border: 1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 50%,transparent);
   box-shadow:
     0 12px 40px color-mix(in srgb,var(--color-maroon-900) 50%,transparent),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  color: #f6eee8;
+  color: var(--lm-ink-f6eee8);
 }
 
 .item {
@@ -42,18 +42,18 @@
 }
 
 .item[aria-current="page"] {
-  color: #f6eee8;
+  color: var(--lm-ink-f6eee8);
 }
 
 .item[aria-current="page"] svg {
-  color: #e3c27f;
+  color: var(--lm-ink-e3c27f);
   opacity: 1;
   filter: drop-shadow(0 0 6px rgba(227, 194, 127, 0.7));
 }
 
 .item:not([aria-current="page"]):hover {
-  color: #bba9a4;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--lm-ink-bba9a4);
+  background: color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent);
 }
 
 .item:not([aria-current="page"]):hover svg {
@@ -61,7 +61,7 @@
 }
 
 .item:focus-visible {
-  outline: 2px solid #c9a86e;
+  outline: 2px solid var(--lm-ink-c9a86e);
   outline-offset: 2px;
 }
 

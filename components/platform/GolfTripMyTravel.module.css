@@ -1,10 +1,10 @@
 /* Info → My Info → My travel. Rows reuse the trip's event-row look (picture tile + text); tapping a row edits it. */
-.empty{margin:0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.7)}
+.empty{margin:0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
 .row{position:relative;display:flex;align-items:flex-start}
 .rowButton{display:flex;gap:14px;align-items:flex-start;flex:1;min-width:0;padding:0 36px 0 0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
-.rowButton:focus-visible,.delete:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:10px}
-.delete{position:absolute;top:2px;right:0;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:rgba(255,255,255,.7);cursor:pointer}
-.delete:hover{background:rgba(255,255,255,.08)}
+.rowButton:focus-visible,.delete:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px;border-radius:10px}
+.delete{position:absolute;top:2px;right:0;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent);cursor:pointer}
+.delete:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 
 /* Add / edit sheet (white). Scrolls when the fields are taller than the sheet. */
 .sheet{overflow-y:auto !important;max-height:min(84vh,640px) !important}
@@ -17,7 +17,7 @@
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .label{font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6d6266}
-.input{box-sizing:border-box;width:100%;min-width:0;height:42px;padding:0 12px;border:1px solid #ddd3d0;border-radius:10px;background:#fbf8f5;color:#1d1416;font:500 15px/1 var(--font-barlow),sans-serif}
+.input{box-sizing:border-box;width:100%;min-width:0;height:42px;padding:0 12px;border:1px solid var(--lm-ink-ddd3d0);border-radius:10px;background:#fbf8f5;color:#1d1416;font:500 15px/1 var(--font-barlow),sans-serif}
 .input:focus{outline:2px solid var(--color-maroon-600);outline-offset:1px;border-color:transparent}
 .input[aria-invalid=true]{border-color:#c62828}
 .problem{font:600 12px/1.3 var(--font-barlow),sans-serif;color:#c62828}
@@ -26,7 +26,7 @@
 .choice button[aria-pressed=true]{background:var(--color-maroon-600);color:#fff}
 .actions{position:sticky;bottom:-10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding:10px 4px 10px;background:#fff}
 .cancel,.save{height:44px;border-radius:12px;font:700 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
-.cancel{border:1px solid #ddd3d0;background:#fff;color:#1d1416}
+.cancel{border:1px solid var(--lm-ink-ddd3d0);background:#fff;color:#1d1416}
 .save{border:0;background:var(--color-maroon-600);color:#fff}
 .cancel:focus-visible,.save:focus-visible,.choice button:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
 .save:disabled{opacity:.45;cursor:default}
@@ -35,12 +35,12 @@
 /* Invite people (after Save & Invite): a row per trip member — initials, name, tick box. */
 .inviteEmpty{margin:0 4px;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#6d6266}
 .inviteList{display:flex;flex-direction:column;gap:6px;padding:0 4px}
-.inviteRow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:1px solid #ddd3d0;border-radius:12px;background:#fbf8f5;color:#1d1416;text-align:left;font:inherit;cursor:pointer}
+.inviteRow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:1px solid var(--lm-ink-ddd3d0);border-radius:12px;background:#fbf8f5;color:#1d1416;text-align:left;font:inherit;cursor:pointer}
 .inviteRow[aria-pressed=true]{border-color:var(--color-maroon-600)}
 .inviteRow:disabled{cursor:default;opacity:.7}
 .inviteRow:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
 .inviteAvatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--color-maroon-600);color:#fff;font:700 13px/1 var(--font-barlow),sans-serif}
 .inviteName{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;font:600 15px/1.2 var(--font-barlow),sans-serif}
 .inviteName small{font:600 12px/1 var(--font-barlow),sans-serif;color:#6d6266}
-.inviteCheck{display:grid;place-items:center;flex:none;width:22px;height:22px;border:1.5px solid #ddd3d0;border-radius:6px;color:#fff}
+.inviteCheck{display:grid;place-items:center;flex:none;width:22px;height:22px;border:1.5px solid var(--lm-ink-ddd3d0);border-radius:6px;color:var(--lm-ink-ffffff)}
 .inviteRow[aria-pressed=true] .inviteCheck{border-color:var(--color-maroon-600);background:var(--color-maroon-600)}

@@ -1,14 +1,14 @@
 /* Notification settings, styled like a round's settings page: white serif title, gold uppercase labels,
    On/Off switches on the right, gold rule above each category. */
-.notifications{display:flex;flex-direction:column;gap:24px;padding:4px 8px 24px;color:#fff;font-family:var(--font-barlow),sans-serif}
-.title{margin:0;text-align:center;font:700 24px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
-.category{display:flex;flex-direction:column;gap:18px;padding-top:22px;border-top:1px solid rgba(220,196,149,.3)}
-.categoryTitle{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:#fff}
+.notifications{display:flex;flex-direction:column;gap:24px;padding:4px 8px 24px;color:var(--lm-ink-ffffff);font-family:var(--font-barlow),sans-serif}
+.title{margin:0;text-align:center;font:700 24px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.category{display:flex;flex-direction:column;gap:18px;padding-top:22px;border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent)}
+.categoryTitle{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:20px}
-.label{color:#dcc495;font-size:14px;font-weight:750;letter-spacing:1.2px;text-transform:uppercase}
+.label{color:var(--lm-ink-dcc495);font-size:14px;font-weight:750;letter-spacing:1.2px;text-transform:uppercase}
 
-.notifications p{margin:0;font-size:14px;line-height:1.5;color:#eadbc4}.action{border:1px solid #dcc495;border-radius:24px;background:transparent;padding:12px 18px;color:#dcc495;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}.action:disabled{opacity:.5;cursor:default}.action:focus-visible{outline:2px solid white;outline-offset:4px}
+.notifications p{margin:0;font-size:14px;line-height:1.5;color:var(--lm-ink-eadbc4)}.action{border:1px solid var(--lm-ink-dcc495);border-radius:24px;background:transparent;padding:12px 18px;color:var(--lm-ink-dcc495);font:700 15px var(--font-barlow),sans-serif;cursor:pointer}.action:disabled{opacity:.5;cursor:default}.action:focus-visible{outline:2px solid var(--lm-ink-ffffff);outline-offset:4px}
 
-.parGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.parGrid label{font-size:11px;color:#dcc495}.parGrid input{width:100%;padding:6px;border:1px solid #dcc495;border-radius:4px;background:var(--brand-34080f);color:white}.notifications select{background:var(--brand-34080f);color:#fff;padding:8px;border:1px solid #dcc495;border-radius:5px}
+.parGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.parGrid label{font-size:11px;color:var(--lm-ink-dcc495)}.parGrid input{width:100%;padding:6px;border:1px solid var(--lm-ink-dcc495);border-radius:4px;background:var(--lm-bg-34080f);color:var(--lm-ink-ffffff)}.notifications select{background:var(--lm-bg-34080f);color:var(--lm-ink-ffffff);padding:8px;border:1px solid var(--lm-ink-dcc495);border-radius:5px}
 /* On / Off sits left of the switch, so the switches line up evenly. */
 .row [role=switch]>[data-on]{order:1}

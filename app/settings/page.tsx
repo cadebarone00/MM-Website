@@ -8,9 +8,9 @@ import { SignOutButton } from "@/components/settings/SignOutButton";
 import { OrganizerOffers } from "@/components/settings/OrganizerOffers";
 import { ChangePasswordSetting } from "@/components/settings/ChangePasswordSetting";
 import { DevicesSetting } from "@/components/settings/DevicesSetting";
-import { PaletteSetting } from "@/components/settings/PaletteSetting";
+import { AppearanceSetting } from "@/components/settings/AppearanceSetting";
 import { cookies } from "next/headers";
-import { appPalette, PALETTE_COOKIE } from "@/lib/theme/appPalette";
+import { appMode, MODE_COOKIE } from "@/lib/theme/appMode";
 import { myOrganizerOffers } from "@/lib/account/accountDeletion";
 import deleteStyles from "@/components/settings/DeleteAccount.module.css";
 import { getMyRoundsVisibility } from "@/lib/platform/playerRoundsServer";
@@ -26,8 +26,8 @@ const initialsOf = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w
 
 /**
  * Settings (the gear on Profile and in the account menu), in the app's look: Profile photo, Account (edit profile,
- * Change password, Devices, Delete account, Sign Out (this device)), Privacy (Rounds public / private) and App colour (this
- * device). Signed-out visitors get Log In.
+ * Change password, Devices, Delete account, Sign Out (this device)), Privacy (Rounds public / private) and Appearance (Dark /
+ * Light, this device). Signed-out visitors get Log In.
  */
 export default async function SettingsPage() {
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
@@ -52,6 +52,6 @@ export default async function SettingsPage() {
     </>}
     offers={offers.length > 0 && <OrganizerOffers initial={offers} />}
     privacy={privacy && <PrivacySetting initial={privacy.visibility} />}
-    palette={<PaletteSetting initial={appPalette((await cookies()).get(PALETTE_COOKIE)?.value)} />}
+    appearance={<AppearanceSetting initial={appMode((await cookies()).get(MODE_COOKIE)?.value)} />}
     signOut={user && <SignOutButton />} />;
 }

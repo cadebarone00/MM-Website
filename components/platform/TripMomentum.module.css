@@ -1,52 +1,52 @@
 /* Momentum: an 80px strip, edge to edge in the maroon head, no box. Always 80px, whatever it shows. */
-.momentum{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;width:100%;height:80px;padding:0 16px;color:#fbf8f1;text-align:left;scroll-margin-top:24px}
+.momentum{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;width:100%;height:80px;padding:0 16px;color:var(--lm-ink-fbf8f1);text-align:left;scroll-margin-top:24px}
 .momentum > *{margin:0}
 
 /* Team Draft: title row, then the countdown with Draft Room. */
 .draft{display:grid;gap:8px}
 .draftTop{display:flex;align-items:center;gap:7px;min-width:0;height:18px}
-.draftTitle{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
-.draftWhen{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:rgba(251,248,241,.7);font:500 12px/1 var(--font-barlow),sans-serif}
-.edit{flex:none;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;text-decoration:none}
-.edit:focus-visible,.room:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+.draftTitle{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.draftWhen{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 70%,transparent);font:500 12px/1 var(--font-barlow),sans-serif}
+.edit{flex:none;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;text-decoration:none}
+.edit:focus-visible,.room:focus-visible{outline:2px solid var(--lm-ink-fbf8f1);outline-offset:2px}
 
 .draftBottom{display:flex;align-items:center;gap:8px;height:42px}
 .countdown{flex:1;display:flex;align-items:flex-start;min-width:0}
 .unitWrap{display:flex;align-items:flex-start}
 .unit{display:grid;justify-items:center;gap:3px;min-width:30px}
-.digits{color:#dcc495;font:700 22px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
-.label{color:rgba(251,248,241,.55);font:600 8px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
-.colon{padding:0 2px;color:rgba(220,196,149,.55);font:700 19px/1 var(--font-barlow),sans-serif}
-.room{flex:none;height:34px;padding:0 18px;border:1.5px solid #dcc495;border-radius:999px;background:rgba(220,196,149,.12);color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.digits{color:var(--lm-ink-dcc495);font:700 22px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
+.label{color:color-mix(in srgb,var(--lm-ink-fbf8f1) 55%,transparent);font:600 8px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.colon{padding:0 2px;color:color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);font:700 19px/1 var(--font-barlow),sans-serif}
+.room{flex:none;height:34px;padding:0 18px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent);color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 
 /* Highlights: headline over its line, one at a time; several rotate every 10 s (fade in, hold, fade out). */
 .highlight{display:grid;gap:5px}
-.highlightTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 20px/1.1 var(--font-spectral),Georgia,serif;color:#fff}
-.highlightDetail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#dcc495;font:600 14px/1.2 var(--font-barlow),sans-serif}
+.highlightTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 20px/1.1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.highlightDetail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--lm-ink-dcc495);font:600 14px/1.2 var(--font-barlow),sans-serif}
 .rotating{animation:momentumTurn 10s linear both}
 @keyframes momentumTurn{0%{opacity:0}5%{opacity:1}95%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.rotating{animation:none}}
 
 @media(max-width:374px){.momentum{padding:0 12px}.unit{min-width:26px}.digits{font-size:19px}.colon{font-size:16px}.room{padding:0 12px}}
 /* Notifications panel: the Team Draft item above the round alerts, with a rule under it. */
-.notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid rgba(220,196,149,.3)}
+.notice{gap:12px;padding-bottom:20px;margin-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent)}
 .momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}
 
 /* Drafts keep the itinerary-card inset with a dramatic maroon and gold surface. */
 .draftWidget{position:relative;isolation:isolate;box-sizing:border-box;width:100%;padding:16px 14px;border:1px solid rgba(220,196,149,.65);border-radius:12px;background:linear-gradient(135deg,var(--color-maroon-900) 0%,var(--brand-651b30) 52%,var(--brand-30030d) 100%);box-shadow:0 8px 22px color-mix(in srgb,var(--color-maroon-900) 24%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
-.draftWidget::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(110deg,transparent 38%,rgba(220,196,149,.07) 44%,rgba(255,224,159,.3) 50%,rgba(220,196,149,.07) 56%,transparent 62%);background-size:350% 100%;background-position:100% 0;animation:draftShimmer 10s ease-in-out infinite}
+.draftWidget::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(110deg,transparent 38%,color-mix(in srgb,var(--lm-ink-dcc495) 7%,transparent) 44%,color-mix(in srgb,var(--lm-ink-ffe09f) 30%,transparent) 50%,color-mix(in srgb,var(--lm-ink-dcc495) 7%,transparent) 56%,transparent 62%);background-size:350% 100%;background-position:100% 0;animation:draftShimmer 10s ease-in-out infinite}
 @keyframes draftShimmer{0%,75%{background-position:100% 0;opacity:0}78%{opacity:1}95%{background-position:0 0;opacity:1}100%{background-position:0 0;opacity:0}}
-.draftWidget .draft + .draft{margin-top:14px;padding-top:14px;border-top:1px solid rgba(220,196,149,.3)}
+.draftWidget .draft + .draft{margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent)}
 .draftWidget .draftTop{height:auto;flex-wrap:wrap;row-gap:5px}
-.draftWidget .draftTitle{color:#fff5df;text-shadow:0 1px 8px rgba(0,0,0,.2)}
-.draftWidget .digits{color:#edcf91;text-shadow:0 0 14px rgba(220,196,149,.18)}
-.draftWidget .draftWhen{flex-basis:100%;order:3;white-space:normal;line-height:1.4;color:#e3d3c7}
-.draftWidget .edit{margin-left:auto;color:#edcf91}
-.draftWidget .label{color:#d4bfa9}
+.draftWidget .draftTitle{color:var(--lm-ink-fff5df);text-shadow:0 1px 8px rgba(0,0,0,.2)}
+.draftWidget .digits{color:var(--lm-ink-edcf91);text-shadow:0 0 14px color-mix(in srgb,var(--lm-ink-dcc495) 18%,transparent)}
+.draftWidget .draftWhen{flex-basis:100%;order:3;white-space:normal;line-height:1.4;color:var(--lm-ink-e3d3c7)}
+.draftWidget .edit{margin-left:auto;color:var(--lm-ink-edcf91)}
+.draftWidget .label{color:var(--lm-ink-d4bfa9)}
 .draftWidget .colon{color:#bba075}
-.draftWidget .room{border-color:#dcc495;color:#f4dba8;background:rgba(220,196,149,.1)}
-.draftWidget .room:hover{background:rgba(220,196,149,.2)}
-.draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
+.draftWidget .room{border-color:var(--lm-ink-dcc495);color:var(--lm-ink-f4dba8);background:color-mix(in srgb,var(--lm-ink-dcc495) 10%,transparent)}
+.draftWidget .room:hover{background:color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent)}
+.draftWidget :is(.edit,.room):focus-visible{outline-color:var(--lm-ink-edcf91)}
 @media(prefers-reduced-motion:reduce){.draftWidget::before{animation:none;opacity:0}}
 
-.matchLabel{margin:0;color:#dcc495;font:500 12px/1.4 var(--font-barlow),sans-serif;overflow-wrap:anywhere}
+.matchLabel{margin:0;color:var(--lm-ink-dcc495);font:500 12px/1.4 var(--font-barlow),sans-serif;overflow-wrap:anywhere}

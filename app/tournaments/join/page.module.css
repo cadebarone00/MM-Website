@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   padding-top: calc(92px + var(--app-top-clearance, 0px));
-  background: var(--color-maroon-950);
+  background: var(--lm-bg-1d0b11);
 }
 
 .pageHeader::before {
@@ -33,7 +33,10 @@
 }
 
 .pageHeader > main {
-  --tj-bg: var(--color-maroon-950);
+  --tj-bg: var(--lm-bg-1d0b11);
   position: relative;
   min-height: 86svh;
 }
+
+/* Light mode: the page title sits on the photo, so it stays light. */
+:global(html[data-mode="light"]) .pageHeader > header { color: #fbf8f1; }

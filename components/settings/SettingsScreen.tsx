@@ -7,7 +7,7 @@ import styles from "./Settings.module.css";
  * The Settings screen's layout: back to Profile, then the Profile photo, Account and Privacy cards and Sign Out at the
  * bottom (plus Organizer requests when there are any). Each card shows only when it's given. Used by /settings and the dev profile preview (/dev/profile/settings).
  */
-export function SettingsScreen({ backHref, photo, account, offers, privacy, palette, signOut }: { backHref: string; photo?: ReactNode; account: ReactNode; offers?: ReactNode; privacy?: ReactNode; palette?: ReactNode; signOut?: ReactNode }) {
+export function SettingsScreen({ backHref, photo, account, offers, privacy, appearance, signOut }: { backHref: string; photo?: ReactNode; account: ReactNode; offers?: ReactNode; privacy?: ReactNode; appearance?: ReactNode; signOut?: ReactNode }) {
   return <main className={styles.page}>
     <div className={styles.inner}>
       <header className={styles.header}>
@@ -34,8 +34,8 @@ export function SettingsScreen({ backHref, photo, account, offers, privacy, pale
         {privacy}
       </section>}
 
-      {palette && <section aria-labelledby="settings-palette" className={styles.card}>
-        {palette}
+      {appearance && <section aria-labelledby="settings-appearance" className={styles.card}>
+        {appearance}
       </section>}
 
       {/* Sign Out sits at the very bottom, on its own. */}

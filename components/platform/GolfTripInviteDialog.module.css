@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: color-mix(in srgb,var(--color-maroon-950) 72%,transparent);
+  background: color-mix(in srgb,var(--lm-bg-1d0b11) 72%,transparent);
 }
 
 .dialog {
@@ -54,7 +54,7 @@
   color: #fbf8f1;
   cursor: pointer;
 }
-.copy:hover { background: var(--color-maroon-900); }
+.copy:hover { background: var(--lm-bg-240001); }
 
 .copyLink {
   margin-top: 12px;
@@ -74,12 +74,12 @@
   min-height: 52px;
   border: 0;
   border-radius: 14px;
-  background: var(--color-maroon-900);
-  color: #fbf8f1;
+  background: var(--lm-bg-240001);
+  color: var(--lm-ink-fbf8f1);
   font: 700 17px/1 var(--font-barlow), sans-serif;
   letter-spacing: 0.02em;
   cursor: pointer;
 }
 .done:hover { background: var(--color-maroon-700); }
 
-.copy:focus-visible, .copyLink:focus-visible, .done:focus-visible { outline: 3px solid #dcc495; outline-offset: 2px; }
+.copy:focus-visible, .copyLink:focus-visible, .done:focus-visible { outline: 3px solid var(--lm-ink-dcc495); outline-offset: 2px; }

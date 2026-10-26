@@ -8,7 +8,7 @@ import "./globals.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
 import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 import { cookies } from "next/headers";
-import { appPalette, PALETTE_COOKIE } from "@/lib/theme/appPalette";
+import { appMode, MODE_COOKIE } from "@/lib/theme/appMode";
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +34,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [nextTournamentOverride, catalog, cookieStore] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog(), cookies()]);
-  // Settings → App colour: the palette this device picked (maroon = none).
-  const palette = appPalette(cookieStore.get(PALETTE_COOKIE)?.value);
+  // Settings → Appearance: Light on this device (dark = none).
   return (
     <html
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
-      data-palette={palette === "maroon" ? undefined : palette}
+      data-mode={appMode(cookieStore.get(MODE_COOKIE)?.value) === "light" ? "light" : undefined}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
         <ModalScrollLock />
