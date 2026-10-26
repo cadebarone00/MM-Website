@@ -10,7 +10,9 @@
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent)}
 .tabs button{min-height:40px;border:0;border-radius:10px;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .tabs button[aria-selected=true]{background:#dcc495;color:var(--brand-2a0d16)}
-.cards{display:grid;gap:12px}
+.cards{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+/* Cards never grow past the screen: their rows shrink and wrap instead. */
+.card,.cardBody,.lineRow>*{min-width:0}
 .card{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:20px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent)}
 .cardTitle{margin:0;font:500 20px/1.2 var(--font-spectral),Georgia,serif}
 .cardBlurb{margin:0;font:500 13px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
