@@ -23,7 +23,7 @@ import { initialsFor, memberSinceLabel, profileDisplayName } from "./myProfile";
  *                  the profile is only what the golfer sets now. The slug is a migration bridge, not identity.
  *
  * V1 privacy (project_specs.md, "Profile V1"): the owner gets everything. Anyone else gets `access: "private"` (name,
- * username, initials, and the headline numbers — rounds played and handicap index, owner request 2026-10-26 — but never
+ * username, initials, profile photo, and the headline numbers — rounds played and handicap index, owner request 2026-10-26 — but never
  * the rounds themselves) unless the subject's profile is Public; then `access: "public"`: identity, bio, rounds by
  * their own rules, public tournaments' published years, the legacy archive years — never golf trips, never the legacy
  * handicap or scorecard.
@@ -192,7 +192,8 @@ export function buildProfileReadModel(viewerId: ProfileId | null, subject: Profi
     const totals = data.rounds ? modernStats(data.rounds) : null;
     return {
       isOwner, access,
-      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: null, bio: null, canEditBio: false, roundsVisibility: "private" },
+      // The profile photo shows whatever the privacy (owner request 2026-10-26), like the name.
+      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: null, canEditBio: false, roundsVisibility: "private" },
       rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], legacy: null,
       // Only the counts: rounds played and handicap index (no averages, bests or anything from a round).
       modernStats: totals && { roundsPlayed: totals.roundsPlayed, eighteenHoleRounds: 0, average18: null, best18: null, handicapIndex: totals.handicapIndex, countingRounds: 0 },
