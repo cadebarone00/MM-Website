@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
+import { useRef } from "react";
 import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
 import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /**
  * Profile → Stats → Compare (owner only): a ring per stat, my arc (outer, maroon) and a friend's (inner, amber) on the
- * same ring, with both numbers written under it. Pick who (people I've played with, or search any Public profile) and
- * which stats. Colours validated for colour-blind separation; numbers are always written, never colour alone.
+ * same ring, with both numbers written under it. Pick who in one search box (tap it for my friends and people I've
+ * played with; type to search every player, friends first), then which stats. Colours validated for colour-blind
+ * separation; numbers are always written, never colour alone.
  */
 
 const ME = "#9e2a44";
@@ -29,7 +31,7 @@ const DEFAULT = ["fairways", "gir", "birdie", "scrambling"];
 /** DEV ONLY: only offered when the app simulator's Profile condition "Sample stats data" is on. */
 const SAMPLE: Person = { username: "__sample__", name: "Sample golfer" };
 /** The Golf Trip's pill look (GolfTripMatch.module.css .profileRoundTabs): gold outline, filled gold when picked. */
-const pill = (on: boolean) => `min-h-[32.3px] flex-none whitespace-nowrap rounded-full border px-[15.3px] font-sans text-[12.75px] font-bold leading-none tracking-[.02em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dcc495] ${on ? "border-[#dcc495] bg-[#dcc495] text-[#240001]" : "border-[rgba(220,196,149,.55)] bg-transparent text-[#dcc495]"}`;
+const pill = (on: boolean) => `min-h-[32.3px] flex-none whitespace-nowrap rounded-full border px-[15.3px] font-sans text-[12.75px] font-bold leading-none tracking-[.02em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dcc495] ${on ? "border-[#dcc495] bg-[#dcc495] text-[var(--color-maroon-900)]" : "border-[rgba(220,196,149,.55)] bg-transparent text-[#dcc495]"}`;
 /** One row of pills that scrolls sideways (runs to the screen edges; no scrollbar). */
 const pillRow = "-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
@@ -74,27 +76,13 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
   const them = loaded.status === "ok" ? loaded : null;
   const shown = METRICS.filter((m) => picked.includes(m.key));
   const toggle = (key: string) => setPicked((all) => all.includes(key) ? all.filter((k) => k !== key) : [...all, key]);
-  const activeName = "person" in loaded ? loaded.person?.username : undefined;
 
   // On the profile's maroon background (no box): gold pills that scroll sideways, light text.
   return <section aria-label="Compare" className="mt-2 min-w-0 text-cream-50">
     <h3 className="m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-gold-300">Compare</h3>
 
-    <div className={`mt-3 ${pillRow}`} role="group" aria-label="Compare with">
-      {(sampleOn ? [...people, SAMPLE] : people).map((p) => <button key={p.username} type="button" aria-pressed={activeName === p.username} onClick={() => compare(p)}
-        className={pill(activeName === p.username)}
-        aria-label={`${p.name}${p.friend ? " (friend)" : ""}`}>{firstName(p.name)}{p.friend && <span aria-hidden="true" className="ml-1 text-[10px] opacity-70">★</span>}</button>)}
-      {them && <button type="button" onClick={() => setLoaded({ status: "idle" })} className="inline-flex min-h-[32.3px] flex-none items-center gap-1 rounded-full px-2 text-sm text-cream-50/70" aria-label="Stop comparing"><X size={14} aria-hidden="true" /> Clear</button>}
-    </div>
-    <label className="mt-2 flex min-h-11 items-center gap-2 rounded-full border border-[rgba(220,196,149,.55)] px-4 text-cream-50">
-      <Search size={16} aria-hidden="true" className="text-[#dcc495]" />
-      <span className="sr-only">Find a player to compare with</span>
-      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={people.length ? "Or search any player" : "Search a player to compare with"} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-cream-50/50" />
-    </label>
-    {text.length >= 2 && found.length > 0 && <ul className="mt-1 grid gap-1">
-      {found.slice(0, 5).map((p) => <li key={p.username}><button type="button" onClick={() => compare(p)} className="flex min-h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm hover:bg-cream-50/10">
-        <span className="font-semibold">{p.name}</span><span className="text-cream-50/55">@{p.username}</span></button></li>)}
-    </ul>}
+    <ComparePicker people={sampleOn ? [...people, SAMPLE] : people} query={query} onQuery={setQuery} found={found} chosen={"person" in loaded ? loaded.person ?? null : null}
+      onPick={(p) => void compare(p)} onClear={() => { setLoaded({ status: "idle" }); setQuery(""); }} />
 
     {loaded.status === "loading" && <p className="mt-3 text-sm text-cream-50/70">Loading their stats…</p>}
     {(loaded.status === "private" || loaded.status === "not_found" || loaded.status === "error") && <p className="mt-3 text-sm text-cream-50/75">
@@ -139,4 +127,50 @@ function Ring({ metric, me, them, theirName }: { metric: Metric; me: number | nu
     {comparing && <span className="mt-0.5 text-xs text-maroon-900/70">You {me ?? "—"}{me !== null && "%"} · {theirName} {them ?? "—"}{them != null && "%"}</span>}
     {better !== null && <span className={`mt-0.5 text-[11px] font-semibold ${better ? "text-maroon-700" : "text-maroon-900/55"}`}>{better ? "You lead" : `${theirName} leads`}</span>}
   </li>;
+}
+
+const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
+
+/**
+ * Who to compare with, in one box. Nobody picked: a search; tap it and my friends / people I've played with drop down,
+ * type and it searches every player (friends first, no repeats). Somebody picked: "You vs <name>" with ✕ to change.
+ */
+function ComparePicker({ people, query, onQuery, found, chosen, onPick, onClear }: { people: Person[]; query: string; onQuery: (q: string) => void; found: Person[];
+  chosen: Person | null; onPick: (p: Person) => void; onClear: () => void }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const text = query.trim().toLowerCase();
+  const matches = (p: Person) => p.name.toLowerCase().includes(text) || p.username.toLowerCase().includes(text.replace(/^@/, ""));
+  const friends = text ? people.filter(matches) : people;
+  const others = text.length >= 2 ? found.filter((p) => !friends.some((f) => f.username === p.username)) : [];
+  const list = [...friends.map((p) => ({ ...p, friend: true })), ...others].slice(0, 8);
+  const pick = (p: Person) => { setOpen(false); onPick(p); };
+
+  if (chosen) return <div className="mt-3 flex min-h-12 items-center gap-3 rounded-2xl border border-[rgba(220,196,149,.55)] px-3">
+    <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-[#dcc495] text-xs font-bold text-[var(--color-maroon-900)]" aria-hidden="true">{initials(chosen.name)}</span>
+    <span className="min-w-0 flex-1 truncate text-sm"><span className="text-cream-50/70">You vs </span><b>{chosen.name}</b></span>
+    <button type="button" onClick={() => { onClear(); window.setTimeout(() => input.current?.focus(), 0); }} className="grid h-9 w-9 flex-none place-items-center rounded-full text-cream-50/80 hover:bg-cream-50/10" aria-label="Compare with someone else"><X size={18} aria-hidden="true" /></button>
+  </div>;
+
+  return <div ref={box} className="relative mt-3" onBlur={(e) => { if (!box.current?.contains(e.relatedTarget as Node)) setOpen(false); }}>
+    <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-[rgba(220,196,149,.55)] px-4 text-cream-50 focus-within:border-[#dcc495]">
+      <Search size={17} aria-hidden="true" className="text-[#dcc495]" />
+      <span className="sr-only">Find a player to compare with</span>
+      <input ref={input} type="search" value={query} onFocus={() => setOpen(true)} onChange={(e) => { onQuery(e.target.value); setOpen(true); }}
+        onKeyDown={(e) => { if (e.key === "Enter" && list[0]) { e.preventDefault(); pick(list[0]); } if (e.key === "Escape") setOpen(false); }}
+        placeholder="Compare with a friend or any player" autoComplete="off" role="combobox" aria-expanded={open} aria-controls="compare-people"
+        className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-cream-50/50" />
+    </label>
+    {open && <div id="compare-people" role="listbox" aria-label="Players" className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-2xl border border-[rgba(220,196,149,.35)] bg-[var(--color-maroon-950)] p-1 shadow-[0_14px_30px_rgba(0,0,0,.45)]">
+      {!text && people.length > 0 && <p className="m-0 px-3 pb-1 pt-2 font-condensed text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-300">Your friends</p>}
+      {list.map((p) => <button key={p.username} type="button" role="option" aria-selected={false} onClick={() => pick(p)}
+        className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-cream-50/10 focus:bg-cream-50/10 focus:outline-none">
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-cream-50/15 text-xs font-bold" aria-hidden="true">{initials(p.name)}</span>
+        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{p.name}</span><span className="block truncate text-xs text-cream-50/55">@{p.username}</span></span>
+        {p.friend && <span className="flex-none rounded-full border border-[rgba(220,196,149,.55)] px-2 py-0.5 text-[10px] font-semibold text-[#dcc495]">Friend</span>}
+      </button>)}
+      {!list.length && <p className="m-0 px-3 py-3 text-sm text-cream-50/70">{text.length < 2 ? (people.length ? "" : "Type a name or @username to find a player.") : `No players match "${query.trim()}".`}</p>}
+    </div>}
+  </div>;
 }

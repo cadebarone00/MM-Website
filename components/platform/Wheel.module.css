@@ -1,0 +1,8 @@
+/* Wheel picker (replaces the bar sliders): snap-scrolling row, middle value picked inside the gold frame, edges fade. */
+.wheelWrap{--wheel-item:64px;position:relative;min-width:0;max-width:100%;border-radius:14px;background:color-mix(in srgb,var(--lm-bg-000000) 22%,transparent);box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
+.wheelWrap::before{content:"";position:absolute;left:50%;top:5px;bottom:5px;width:var(--wheel-item);transform:translateX(-50%);border-radius:10px;border:1.5px solid color-mix(in srgb,var(--lm-ink-dcc495) 70%,transparent);background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent);box-shadow:0 0 14px rgba(220,196,149,.25);pointer-events:none}
+.wheel{display:flex;gap:4px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px calc(50% - var(--wheel-item) / 2);-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);overscroll-behavior-x:contain}
+.wheel::-webkit-scrollbar{display:none}
+.wheelItem{flex:0 0 var(--wheel-item);min-height:38px;scroll-snap-align:center;border:0;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 45%,transparent);font:600 14px var(--font-barlow),sans-serif;white-space:nowrap;cursor:pointer;transition:color .15s,transform .15s}
+.wheelItem[aria-selected=true]{color:var(--lm-ink-fff3d6);font-weight:800;transform:scale(1.15)}
+@media (prefers-reduced-motion:reduce){.wheelItem{transition:none}}

@@ -1,25 +1,150 @@
 /* Tournaments by code. The tournament page sits on the golf trip's dark maroon page (GolfTripHome.module.css .page). */
-.back{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin:0 0 8px -6px;padding:6px;color:#e8d7b2;font:600 14px var(--font-barlow),sans-serif;text-decoration:none}
-.name{margin:0;text-align:center;font:400 28px/1.15 var(--font-display, Georgia),serif;color:#fbf8f1}
-.sub{margin:6px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#c9a86e}
-.status{margin:16px 0;text-align:center;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
+.back{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin:0 0 8px -6px;padding:6px;color:var(--lm-ink-e8d7b2);font:600 14px var(--font-barlow),sans-serif;text-decoration:none}
+.name{margin:0;text-align:center;font:400 28px/1.15 var(--font-display, Georgia),serif;color:var(--lm-ink-fbf8f1)}
+.sub{margin:6px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.status{margin:16px 0;text-align:center;font:500 14px/1.5 var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2)}
 /* Organizer: the join code (tap to copy), + Round, End. */
 .organizer{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 12px}
-.codeChip,.organizerButton{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid rgba(201,168,110,.55);border-radius:999px;background:rgba(255,255,255,.06);color:#fbf8f1;font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
-.codeChip span{color:#c9a86e;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.codeChip,.organizerButton{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent);color:var(--lm-ink-fbf8f1);font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.codeChip span{color:var(--lm-ink-c9a86e);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
 .codeChip b{font-size:15px;letter-spacing:.12em}
+
+/* Tee Sheet editor (organizer): timing, randomize, then each group's time, starting hole and players. */
+.teeEditor{display:grid;gap:12px;margin:8px 0 16px}
+/* Tee times card, one row: First tee and Every (tap for the wheels sheet), then a compact Start on. */
+.teeTimes{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:12px;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);border-radius:16px;background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent)}
+.teeField{display:grid;gap:6px;min-width:0;font:600 10px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.teeStart{margin-left:auto}
+.timeButton{min-height:40px;padding:0 14px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-bg-000000) 22%,transparent);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);color:var(--lm-ink-fff3d6);font:700 15px var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none;white-space:nowrap;cursor:pointer}
+.timeButton:active{border-color:var(--lm-ink-dcc495)}
+.teeStart .dropdownButton{min-width:0;min-height:40px;padding:0 10px;border-radius:10px;font-size:13px}
+/* The tee times sheet: labels over the time and interval wheels; narrow columns so both fit. */
+.sheetLabels{display:flex;justify-content:center;gap:64px;margin:18px 0 -8px;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+div.sheetWheels{gap:4px;align-items:center}
+div.sheetWheels [role=listbox]{width:40px}
+div.sheetWheels [role=listbox]:nth-of-type(2),div.sheetWheels [role=listbox]:nth-of-type(3){width:20px;margin:0 -2px}
+div.sheetWheels [role=listbox]:nth-of-type(4){width:48px;margin-left:4px}
+.sheetColon,.sheetUnit{color:var(--lm-ink-fbf8f1);font:600 24px/1 var(--font-spectral),Georgia,serif}
+.sheetUnit{font:600 13px var(--font-barlow),sans-serif;color:var(--lm-ink-c9a86e)}
+.sheetColon{margin:0 6px 0 -4px}
+.sheetDivider{align-self:stretch;width:1px;margin:40px 12px;background:rgba(220,196,149,.35)}
+/* The page's own dropdown (Start on, each group's starting hole). */
+.dropdown{position:relative}
+.dropdownButton{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:148px;min-height:50px;padding:0 14px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:14px;background:color-mix(in srgb,var(--lm-bg-000000) 22%,transparent);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);color:var(--lm-ink-fff3d6);font:700 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+.dropdownButton svg{color:var(--lm-ink-dcc495);transition:transform .15s}
+.dropdownButton[aria-expanded=true]{border-color:var(--lm-ink-dcc495)}
+.dropdownButton[aria-expanded=true] svg{transform:rotate(180deg)}
+.teeGroupHead .dropdownButton{min-width:116px;min-height:36px;border-radius:10px}
+.dropdownList{position:absolute;z-index:20;top:calc(100% + 6px);left:0;min-width:100%;max-height:260px;overflow-y:auto;margin:0;padding:6px;list-style:none;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:14px;background:var(--lm-bg-2a0a12);box-shadow:0 12px 28px rgba(0,0,0,.5)}
+.dropdownList button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:40px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--lm-ink-fbf8f1);font:600 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;text-align:left;cursor:pointer}
+.dropdownList button:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent)}
+.dropdownList button[aria-selected=true]{background:color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent);color:var(--lm-ink-fff3d6)}
+.dropdownList svg{color:var(--lm-ink-dcc495)}
+.teeEditor input,.teeEditor select{min-height:36px;padding:0 10px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent);color:var(--lm-ink-fbf8f1);font:600 14px var(--font-barlow),sans-serif;color-scheme:dark}
+.teeGroups{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.teeGroup{padding:12px;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);border-radius:14px;background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent)}
+.teeGroupHead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.teeGroupHead b{flex:1;font:700 14px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.teePlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.teePlayers li{display:flex;align-items:center;justify-content:space-between;gap:10px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.teeSave{background:#e8c98a;border-color:var(--lm-ink-e8c98a);color:var(--color-maroon-825)}
+.teeSave:disabled,.organizerButton:disabled{opacity:.6}
+
+/* Organizer's cut panel (dark page): the same questions as Create. */
+.cutEditor{display:grid;gap:12px;margin:0 0 14px;padding:14px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 35%,transparent);border-radius:14px}
+.cutField{display:grid;gap:8px;margin:0;padding:0;border:0;font:600 12px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.cutField legend{margin-bottom:8px}
+.cutField input,.cutField select{min-height:40px;padding:0 12px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent);color:var(--lm-ink-fbf8f1);font:600 15px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color-scheme:dark}
+.cutChoices{display:flex;flex-wrap:wrap;gap:8px}
+.cutChoices button{flex:1;min-height:38px;padding:0 12px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-fbf8f1);font:600 13px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+.cutChoices button[aria-pressed="true"]{background:#e8c98a;border-color:var(--lm-ink-e8c98a);color:var(--color-maroon-825)}
+.cutChoices button:disabled{opacity:.45;cursor:default}
+.cutBlurb{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color:var(--lm-ink-e8d7b2)}
+.cutNote{margin:-4px 0 12px;text-align:center;font:600 12px var(--font-barlow),sans-serif;color:var(--lm-ink-e8a29a)}
+
+/* Top row: back to Tourneys (left), the organizer's settings wheel (right). */
+.topBar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}
+.topBar .back{margin-bottom:0}
+.settingsButton{color:var(--lm-ink-fbf8f1);background:transparent;cursor:pointer}
+/* Tournament Settings (GolfTripSettingsPreview.module.css look): cards, then each card's page. */
+.plainButton{padding:0;border:0;background:transparent;cursor:pointer}
+.settingsCards{margin-top:28px}
+.cardDetail{margin:0;color:#6b4a3e;font:500 13px/1.35 var(--font-barlow),sans-serif}
+.settingsPanel{display:grid;gap:14px}
+.settingsAction{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:var(--lm-ink-e8c98a);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.endButton{border-style:solid;border-color:color-mix(in srgb,var(--lm-ink-e8a29a) 60%,transparent);color:var(--lm-ink-e8a29a)}
+.infoList{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.infoList div{padding:10px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 35%,transparent);border-radius:12px;text-align:center}
+.infoList dt{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.infoList dd{margin:4px 0 0;font:700 16px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.infoPlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.infoPlayers li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.infoPlayers small{font:500 12px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
+.roundStepper{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;text-align:center}
+.roundStepper button{display:grid;place-items:center;width:44px;height:44px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:50%;background:transparent;color:var(--lm-ink-fbf8f1);cursor:pointer}
+.roundStepper button:disabled{opacity:.35;cursor:default}
+.roundStepper b{display:block;font:700 16px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.roundStepper small{font:500 12px var(--font-barlow),sans-serif;color:var(--lm-ink-c9a86e)}
+
+/* Info / Pin Sheet tab: the PDF, then Open PDF. */
+.docView{display:grid;gap:12px;margin:8px 0 16px}
+.docFrame{width:100%;height:min(70svh,640px);border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 35%,transparent);border-radius:14px;background:#fbf8f1}
+.docOpen{justify-self:center;text-decoration:none}
+
+/* The round shown, under the name: ‹ ROUND 2 · TODAY / course › on one line under a thin rule, then the tabs below it. */
+.roundBar{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;margin:14px 0 18px;padding-bottom:14px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);text-align:center}
+.roundBar p{margin:0;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.roundBar h2{margin:4px 0 0;overflow:hidden;font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1);white-space:nowrap;text-overflow:ellipsis}
+.roundBar button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
+.roundBar button:disabled{opacity:.3;cursor:default}
+/* The tabs centered under the round bar (the trip's strip centers by measuring its pills). */
+div.tourneyTabs[role=tablist]{justify-content:center;margin:0 0 18px}
+div.tourneyTabs[role=tablist]::before,div.tourneyTabs[role=tablist]::after{flex-basis:0}
+
+/* Tournament Settings → Delete Tournament: a red-edged card, then an "are you sure" card over the page. */
+button.deleteCard{border-color:#e7a3a3;border-top-color:#c62828;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 0 #b44a4a,0 8px 16px rgba(0,0,0,.24)}
+button.deleteCard h2{color:#a1121f}
+.confirmBackdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(10,4,6,.6)}
+.confirmCard{display:grid;justify-items:center;gap:10px;width:min(100%,380px);padding:22px 20px;border:1px solid #dcc495;border-top:3px solid #c62828;border-radius:18px;background:linear-gradient(145deg,#fffdf7,#f2e9d7);color:#240001;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.confirmCard h2{margin:0;font:700 20px/1.25 var(--font-spectral),Georgia,serif}
+.confirmCard p{margin:0;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#4a3a40}
+.confirmIcon{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#fde8e8;color:#c62828}
+.confirmError{color:#a1121f !important;font-weight:600 !important}
+.confirmActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:6px}
+.confirmActions .organizerButton{justify-content:center;border-color:#b99c6b;background:transparent;color:#240001}
+.confirmDelete{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:0;border-radius:999px;background:#c62828;color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.confirmDelete:disabled,.confirmActions .organizerButton:disabled{opacity:.6}
 
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */
 .roundList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 .roundList li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:#f6f0e6;font:500 14px/1.35 var(--font-barlow),sans-serif;color:#2b211d}
 .roundList small{display:block;color:#6b5a50;font-size:13px}
 .ready{display:grid;gap:14px;text-align:center}
-.bigCode{margin:8px 0;font:700 44px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:#e8c98a}
+.bigCode{margin:8px 0;font:700 44px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:var(--lm-ink-e8c98a)}
 .codeActions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.addRound{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:#591c2e;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
-.readyNote{margin:0;font:500 15px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
-.openButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-top:6px;border-radius:14px;background:#e8c98a;color:#3b0d18;font:700 16px var(--font-barlow),sans-serif;text-decoration:none}
+.addRound{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:46px;border:1.5px dashed #b99c6b;border-radius:12px;background:transparent;color:var(--color-maroon-650);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+/* Created: the code card and the Invite players card. */
+.readyCards{display:grid;gap:14px;max-width:640px;margin:0 auto;padding:0 16px}
+.readyHead{text-align:center}
+.readyHead h1{margin:4px 0 0}
+.readyCard{width:100%;box-sizing:border-box;margin:0;padding:18px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 35%,transparent);border-radius:18px;background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent)}
+.readyCard .primary,.readyCard [class*=primary]{background:#e8c98a;color:var(--color-maroon-825)}
+.readyCardNote{margin:6px 0 12px;font:500 14px/1.5 var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2)}
+.codeSmall{margin:4px 0 12px;font-size:30px}
+.readyCard .codeActions button{gap:6px}
+.dropZone{position:relative;display:grid;place-items:center;gap:8px;min-height:120px;padding:16px;border:1.5px dashed #b99c6b;border-radius:14px;color:var(--lm-ink-e8d7b2);font:600 14px/1.4 var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
+.dropZone svg{color:var(--lm-ink-e8c98a)}
+.dropZoneOn{border-color:var(--lm-ink-e8c98a);background:color-mix(in srgb,var(--lm-ink-e8c98a) 8%,transparent)}
+.dropInput{position:absolute;inset:0;opacity:0;cursor:pointer}
+.templateLink{display:inline-flex;align-items:center;gap:6px;margin:10px 0;padding:0;border:0;background:none;color:var(--lm-ink-e8c98a);font:600 13px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.importProblems{margin:0 0 12px;padding-left:18px;color:var(--lm-ink-e8a29a);font:500 13px/1.5 var(--font-barlow),sans-serif}
+.inviteLinks{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.inviteLinks li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);font:600 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.inviteLinks small{display:block;color:var(--lm-ink-c9a86e);font-weight:500}
+.inviteLinks button{display:grid;place-items:center;width:36px;height:36px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:50%;background:transparent;color:var(--lm-ink-fbf8f1);cursor:pointer}
+.readyNote{margin:0;font:500 15px/1.5 var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2)}
+.openButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;margin-top:6px;border-radius:14px;background:#e8c98a;color:var(--color-maroon-825);font:700 16px var(--font-barlow),sans-serif;text-decoration:none}
 /* A trip's watch code in Trip Settings → Players. */
-.watchRow{margin:0 0 16px;padding:14px;border:1px solid rgba(201,168,110,.35);border-radius:14px;text-align:center}
-.watchRow p{margin:0 0 10px;font:500 13px/1.45 var(--font-barlow),sans-serif;color:#e8d7b2}
+.watchRow{margin:0 0 16px;padding:14px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 35%,transparent);border-radius:14px;text-align:center}
+.watchRow p{margin:0 0 10px;font:500 13px/1.45 var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2)}
 .watchRow .organizer{margin:0}

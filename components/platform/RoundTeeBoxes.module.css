@@ -1,28 +1,28 @@
 /* Golf Schedule → a round: tee box picker, Set per hole, and the scorecard (hole / par left, tee / yards right). */
-.tees{display:grid;gap:14px;margin-top:16px;color:#fbf8f1;font-family:var(--font-barlow),sans-serif}
-.heading{color:rgba(247,240,223,.7);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
-.group{display:flex;align-items:center;justify-content:space-between;gap:12px}.roundSelect{max-width:65%;min-height:40px;padding:8px 10px;border:1px solid #dcc49570;border-radius:8px;background:#2a0a10;color:#fbf8f1;font:600 13px var(--font-barlow),sans-serif}.roundSelect:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.tees{display:grid;gap:14px;margin-top:16px;color:var(--lm-ink-fbf8f1);font-family:var(--font-barlow),sans-serif}
+.heading{color:color-mix(in srgb,var(--lm-ink-f7f0df) 70%,transparent);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.group{display:flex;align-items:center;justify-content:space-between;gap:12px}.roundSelect{max-width:65%;min-height:40px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 43.9%,transparent);border-radius:8px;background:var(--lm-bg-2a0a10);color:var(--lm-ink-fbf8f1);font:600 13px var(--font-barlow),sans-serif}.roundSelect:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;min-height:44px}
-.choice{display:grid;justify-items:center;gap:2px;min-height:44px;padding:6px 8px;border:2px solid rgba(220,196,149,.3);border-radius:14px;background:rgba(255,255,255,.05);color:#fbf8f1;font:700 13px/1.15 var(--font-barlow),sans-serif;cursor:pointer}
-.choice small{color:rgba(251,248,241,.6);font-size:11px;font-weight:600}
-.choice[aria-pressed=true]{border-color:#dcc495;background:rgba(220,196,149,.2)}
-.choice:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.loading{align-self:center;color:rgba(251,248,241,.6);font-size:13px}
+.choice{display:grid;justify-items:center;gap:2px;min-height:44px;padding:6px 8px;border:2px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-radius:14px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);color:var(--lm-ink-fbf8f1);font:700 13px/1.15 var(--font-barlow),sans-serif;cursor:pointer}
+.choice small{color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:11px;font-weight:600}
+.choice[aria-pressed=true]{border-color:var(--lm-ink-dcc495);background:color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent)}
+.choice:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.loading{align-self:center;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:13px}
 .perHole{display:flex;align-items:center;justify-content:space-between;gap:12px}
 
 .card{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.card th,.card td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font:600 14px/1.2 var(--font-barlow),sans-serif}
-.card thead th{color:#dcc495;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-bottom-color:rgba(214,184,121,.35)}
-.card tbody th{width:44px;color:#fbf8f1}
+.card th,.card td{padding:7px 4px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);text-align:left;font:600 14px/1.2 var(--font-barlow),sans-serif}
+.card thead th{color:var(--lm-ink-dcc495);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-bottom-color:color-mix(in srgb,var(--lm-ink-d6b879) 35%,transparent)}
+.card tbody th{width:44px;color:var(--lm-ink-fbf8f1)}
 .card .par{width:40px;text-align:left}
-.card .spacer{width:auto;border-bottom-color:rgba(255,255,255,.08)}
-.card .tee{text-align:right;color:rgba(251,248,241,.8);white-space:nowrap}
+.card .spacer{width:auto;border-bottom-color:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
+.card .tee{text-align:right;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 80%,transparent);white-space:nowrap}
 .card .yards{width:60px;text-align:right}
-.card tr.total th,.card tr.total td{color:#dcc495;font-weight:800;border-bottom-color:rgba(214,184,121,.35)}
-.card select{max-width:150px;padding:3px 6px;border:1.5px solid rgba(220,196,149,.45);border-radius:8px;background:#2a0a10;color:#fbf8f1;font:600 13px/1.2 var(--font-barlow),sans-serif}
-.card select:focus{outline:none;border-color:#dcc495}
+.card tr.total th,.card tr.total td{color:var(--lm-ink-dcc495);font-weight:800;border-bottom-color:color-mix(in srgb,var(--lm-ink-d6b879) 35%,transparent)}
+.card select{max-width:150px;padding:3px 6px;border:1.5px solid color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent);border-radius:8px;background:var(--lm-bg-2a0a10);color:var(--lm-ink-fbf8f1);font:600 13px/1.2 var(--font-barlow),sans-serif}
+.card select:focus{outline:none;border-color:var(--lm-ink-dcc495)}
 
-.note{margin:16px 0 0;color:rgba(251,248,241,.6);font:500 13px/1.35 var(--font-barlow),sans-serif}
-.credit{margin:0;color:rgba(251,248,241,.45);font:500 11px/1.4 var(--font-barlow),sans-serif}
+.note{margin:16px 0 0;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font:500 13px/1.35 var(--font-barlow),sans-serif}
+.credit{margin:0;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 45%,transparent);font:500 11px/1.4 var(--font-barlow),sans-serif}
 
-.save{justify-self:end;min-height:40px;padding:8px 16px;border:1px solid #dcc495;border-radius:8px;background:#dcc495;color:#240001;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}.save:focus-visible{outline:2px solid #dcc495;outline-offset:3px}.save:disabled{opacity:.45;cursor:default}.tees select:disabled{background:#403b3c;border-color:#777;color:#aaa;opacity:.7;cursor:default}.perHole button:disabled{filter:grayscale(1);opacity:.5;cursor:default}
+.save{justify-self:end;min-height:40px;padding:8px 16px;border:1px solid var(--lm-ink-dcc495);border-radius:8px;background:#dcc495;color:var(--color-maroon-900);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}.save:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}.save:disabled{opacity:.45;cursor:default}.tees select:disabled{background:#403b3c;border-color:#777;color:#aaa;opacity:.7;cursor:default}.perHole button:disabled{filter:grayscale(1);opacity:.5;cursor:default}

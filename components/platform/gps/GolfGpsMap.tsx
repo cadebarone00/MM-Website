@@ -80,7 +80,7 @@ export function GolfGpsMap({ apiKey, hole, player, target, onTap, recenterToken,
         gestureHandling: "greedy",
         keyboardShortcuts: false,
         tilt: 0,
-        backgroundColor: "#240001",
+        backgroundColor: "var(--color-maroon-900)",
       });
       map.addListener("click", (event: google.maps.MapMouseEvent) => {
         if (event.latLng) onTapRef.current({ lat: event.latLng.lat(), lng: event.latLng.lng() });

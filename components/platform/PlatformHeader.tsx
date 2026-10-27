@@ -3,7 +3,8 @@ import { Menu, UserRound } from "lucide-react";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./PlatformEntry.module.css";
 
-/** Page titles share the navigation row, immediately beside the menu. */
+/** Page titles share the navigation row, immediately beside the menu. Phones show only the title: their bottom menu
+ *  replaces the menu and account buttons (PlatformEntry.module.css). */
 export function PlatformHeader({ home = false, wordmark = true, title }: { home?: boolean; wordmark?: boolean; title?: string }) {
   return <header className={`${styles.header} ${home ? styles.homeHeader : ""}`}>
     <div className={styles.headerInner}>
@@ -13,7 +14,7 @@ export function PlatformHeader({ home = false, wordmark = true, title }: { home?
           <Link href="/">Home</Link>
           <Link href="/golf-trips">Golf Trips</Link>
           <Link href="/tournaments/mine">My Tournaments</Link>
-          <SignInRequiredLink href="/tournaments/create" message="Sign in to create a tournament">Create Tournament</SignInRequiredLink>
+          <SignInRequiredLink href="/tournaments/code/new" message="Sign in to create a tournament">Create Tournament</SignInRequiredLink>
           <Link href="/">Explore The Maroon</Link>
           <Link href="/contact">Contact Us</Link>
         </nav>

@@ -23,18 +23,19 @@ function timeLabel(time: string): string {
   return `${HOURS[hour]}:${MINUTES[minute]} ${PERIODS[period]}`;
 }
 
-/** One scroll wheel: the row that settles in the middle band is the chosen value. */
-function Wheel({ label, values, index, onIndex }: { label: string; values: string[]; index: number; onIndex: (index: number) => void }) {
+/** One scroll wheel: the row that settles in the middle band is the chosen value (also the tee sheet's first tee time).
+ *  `row`: each row's height in px (44 here; smaller where the wheel sits in a row of fields). */
+export function Wheel({ label, values, index, onIndex, row = ROW }: { label: string; values: string[]; index: number; onIndex: (index: number) => void; row?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const startIndex = useRef(index);
-  useEffect(() => { ref.current?.scrollTo({ top: startIndex.current * ROW }); }, []);
-  const scrollTo = (next: number) => ref.current?.scrollTo({ top: Math.max(0, Math.min(values.length - 1, next)) * ROW, behavior: "smooth" });
+  useEffect(() => { ref.current?.scrollTo({ top: startIndex.current * row }); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
+  const scrollTo = (next: number) => ref.current?.scrollTo({ top: Math.max(0, Math.min(values.length - 1, next)) * row, behavior: "smooth" });
   return <div ref={ref} className={styles.wheel} role="listbox" aria-label={label} tabIndex={0}
     onScroll={() => {
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
-        const next = Math.max(0, Math.min(values.length - 1, Math.round((ref.current?.scrollTop ?? 0) / ROW)));
+        const next = Math.max(0, Math.min(values.length - 1, Math.round((ref.current?.scrollTop ?? 0) / row)));
         if (next !== index) onIndex(next);
       }, 80);
     }}
@@ -42,7 +43,7 @@ function Wheel({ label, values, index, onIndex }: { label: string; values: strin
       if (event.key === "ArrowDown") { event.preventDefault(); scrollTo(index + 1); }
       if (event.key === "ArrowUp") { event.preventDefault(); scrollTo(index - 1); }
     }}>
-    {values.map((value, at) => <div key={value} role="option" aria-selected={at === index} className={styles.item} data-selected={at === index} onClick={() => scrollTo(at)}>{value}</div>)}
+    {values.map((value, at) => <div key={value} role="option" aria-selected={at === index} className={styles.item} style={row === ROW ? undefined : { height: row }} data-selected={at === index} onClick={() => scrollTo(at)}>{value}</div>)}
   </div>;
 }
 

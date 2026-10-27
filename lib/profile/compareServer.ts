@@ -2,7 +2,7 @@ import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getMyPlayerRounds, getProfileRounds } from "@/lib/platform/playerRoundsServer";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
-import { areFriends, tripFriendIds } from "./friendsServer";
+import { areFriends, friendIds } from "./friendsServer";
 import { roundStats, type RoundStats } from "./roundStats";
 import type { ProfileId } from "./profileIdentity";
 
@@ -18,7 +18,7 @@ export type CompareResult = { status: "ok"; person: ComparePerson; stats: RoundS
 /** Friends first (golf trips), then others I've joined a round with (shared rounds), alphabetical within each. */
 export async function playedWith(me: ProfileId): Promise<ComparePerson[]> {
   const db = createSupabaseServiceRoleClient();
-  const friends = await tripFriendIds(me);
+  const friends = await friendIds(me);
   const others = new Set<string>();
   const mineShared = await db.from("shared_round_players").select("round_id").eq("profile_id", me).eq("status", "joined");
   const sharedIds = (mineShared.data ?? []).map((row) => row.round_id as string);

@@ -108,16 +108,20 @@ test("a legacy Maroon player looks like a normal profile: no old name, bio or ph
   assert.deepEqual([q.legacy, q.identity.displayName], [null, "Sam Fresh"]);
 });
 
-test("someone else, Private profile: name and username only — and nothing else is even looked up", async () => {
-  const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; } }, row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio." }));
+test("someone else, Private profile: name, username and the headline numbers (rounds played, handicap) — nothing else", async () => {
+  const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => { calls.rounds++; return [round("trip", "trip:a:b"), round("trip", "trip:a:c")]; } },
+    row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio.", avatarUrl: "https://photos.example/sam.jpg" }));
   for (const viewer of [OTHER, null]) {
     const p = (await assembleProfileReadModel(viewer, ME, s, TODAY))!;
     assert.deepEqual([p.isOwner, p.access], [false, "private"]);
-    assert.deepEqual(p.identity, { displayName: "Sam Fresh", username: "samfresh", initials: "SF", memberSince: null, avatarSrc: null, bio: null, canEditBio: false, roundsVisibility: "private" });
+    assert.deepEqual(p.identity, { displayName: "Sam Fresh", username: "samfresh", initials: "SF", memberSince: null, avatarSrc: "https://photos.example/sam.jpg", bio: null, canEditBio: false, roundsVisibility: "private" }, "the photo shows, the bio doesn't");
     assert.deepEqual([p.rounds, p.trips, p.tournaments], [{ status: "hidden" }, { status: "hidden" }, { status: "hidden" }]);
-    assert.deepEqual([p.teamHistory, p.modernStats, p.legacy], [[], null, null]);
+    assert.deepEqual([p.teamHistory, p.legacy], [[], null]);
+    // Only the counts: no averages, bests or anything from a round.
+    assert.deepEqual(p.modernStats && [p.modernStats.roundsPlayed, p.modernStats.average18, p.modernStats.best18, p.modernStats.eighteenHoleRounds, p.modernStats.countingRounds], [2, null, null, 0, 0]);
   }
-  assert.deepEqual([calls.history, calls.rounds, calls.legacy], [0, 0, []]);
+  // The rounds are read (to count them) but the history and legacy never are.
+  assert.deepEqual([calls.history, calls.rounds, calls.legacy], [0, 2, []]);
   assert.equal(await assembleProfileReadModel(ME, OTHER, s, TODAY), null, "no such profile");
 });
 

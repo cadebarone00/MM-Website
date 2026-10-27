@@ -1,18 +1,18 @@
 /* Trip Settings → a round → Course Yardage → Round pars. Same dark maroon / cream as RoundTeeBoxes. */
-.panel{display:flex;flex-direction:column;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #dcc49559;color:#fbf8f1;font:500 13px/1.35 var(--font-barlow),sans-serif}
-.panel h4{margin:0;color:#dcc495;font:700 14px/1.2 var(--font-barlow),sans-serif;letter-spacing:.02em;text-transform:uppercase}
-.status{margin:0;min-height:36px;color:rgba(251,248,241,.75)}
+.panel{display:flex;flex-direction:column;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 34.9%,transparent);color:var(--lm-ink-fbf8f1);font:500 13px/1.35 var(--font-barlow),sans-serif}
+.panel h4{margin:0;color:var(--lm-ink-dcc495);font:700 14px/1.2 var(--font-barlow),sans-serif;letter-spacing:.02em;text-transform:uppercase}
+.status{margin:0;min-height:36px;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 75%,transparent)}
 .grid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
-.grid label{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:#dcc495}
-.grid input{width:100%;min-width:0;padding:6px 0;border:1px solid #dcc49580;border-radius:4px;background:#34080f;color:#fff;text-align:center;font:600 14px var(--font-barlow),sans-serif}
+.grid label{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--lm-ink-dcc495)}
+.grid input{width:100%;min-width:0;padding:6px 0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50.2%,transparent);border-radius:4px;background:var(--lm-bg-34080f);color:var(--lm-ink-ffffff);text-align:center;font:600 14px var(--font-barlow),sans-serif}
 .grid input:disabled{opacity:.6}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
-.actions button{min-height:40px;padding:0 14px;border:1px solid #dcc495;border-radius:8px;background:transparent;color:#dcc495;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
-.actions button.primary{background:#dcc495;color:#240001}
+.actions button{min-height:40px;padding:0 14px;border:1px solid var(--lm-ink-dcc495);border-radius:8px;background:transparent;color:var(--lm-ink-dcc495);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.actions button.primary{background:#dcc495;color:var(--color-maroon-900)}
 .actions button:disabled{opacity:.45;cursor:default}
-.actions button:focus-visible,.grid input:focus-visible,.groups select:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.message{margin:0;min-height:18px;color:#dcc495}
+.actions button:focus-visible,.grid input:focus-visible,.groups select:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.message{margin:0;min-height:18px;color:var(--lm-ink-dcc495)}
 .groups{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .groups li{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .groups span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.groups select{padding:6px;border:1px solid #dcc495;border-radius:5px;background:#34080f;color:#fff}
+.groups select{padding:6px;border:1px solid var(--lm-ink-dcc495);border-radius:5px;background:var(--lm-bg-34080f);color:var(--lm-ink-ffffff)}

@@ -1,7 +1,7 @@
 /* Tournament Home (/play/...): the logged-in league app. Deep maroon environment,
    layered dark surfaces, the tournament's accent (--play-accent) for highlights. */
-.app{--bg:#12040a;--surface:#1d0910;--surface-2:#270d15;--line:#3a1620;--text:#f6eee8;--muted:#bba9a4;--dim:#8d7874;
-  min-height:100dvh;background:radial-gradient(120% 60% at 50% -10%,color-mix(in srgb,var(--play-brand) 55%,#3a0010) 0%,var(--bg) 62%) var(--bg) no-repeat;
+.app{--bg:var(--lm-bg-12040a);--surface:var(--lm-bg-1d0910);--surface-2:var(--lm-bg-270d15);--line:var(--lm-bg-3a1620);--text:var(--lm-ink-f6eee8);--muted:var(--lm-ink-bba9a4);--dim:#8d7874;
+  min-height:100dvh;background:radial-gradient(120% 60% at 50% -10%,color-mix(in srgb,var(--play-brand) 55%,var(--lm-bg-3a0010)) 0%,var(--bg) 62%) var(--bg) no-repeat;
   color:var(--text);font-family:var(--font-barlow),system-ui,sans-serif;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 .app *{box-sizing:border-box}
 .app a{color:inherit}
@@ -19,7 +19,7 @@
 /* Identity header */
 .identity{padding:14px 0 22px}
 .identityTop{display:flex;align-items:center;gap:14px}
-.crest{flex:none;display:grid;place-items:center;width:60px;height:60px;border-radius:16px;overflow:hidden;background:var(--play-brand);border:2px solid var(--play-accent);font:700 22px var(--font-barlow-condensed),sans-serif;color:#fff}
+.crest{flex:none;display:grid;place-items:center;width:60px;height:60px;border-radius:16px;overflow:hidden;background:var(--play-brand);border:2px solid var(--play-accent);font:700 22px var(--font-barlow-condensed),sans-serif;color:var(--lm-ink-ffffff)}
 .crest img{width:100%;height:100%;object-fit:cover}
 .identity h1{margin:0;font:700 30px/1.05 var(--font-barlow-condensed),sans-serif;letter-spacing:-.01em;overflow-wrap:anywhere}
 .identity p{margin:4px 0 0;color:var(--muted);font-size:14px}
@@ -42,11 +42,11 @@
 .matchup{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:18px 0 6px}
 .side{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .side p{flex-basis:100%;margin:6px 0 0;text-align:center;font-size:12px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
-.slot{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:1.5px dashed #ffffff40;color:#ffffff55;font-weight:700;background:#00000026}
+.slot{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:1.5px dashed color-mix(in srgb,var(--lm-ink-ffffff) 25.1%,transparent);color:color-mix(in srgb,var(--lm-ink-ffffff) 33.3%,transparent);font-weight:700;background:color-mix(in srgb,var(--lm-bg-000000) 14.9%,transparent)}
 .versus{font:700 15px var(--font-barlow-condensed),sans-serif;color:var(--dim);text-transform:uppercase}
 .matchHolding{margin:10px 0 0;text-align:center;font-size:14px;color:var(--text)}
 .matchFacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:16px 0 0;background:var(--line);border-radius:12px;overflow:hidden}
-.matchFacts div{padding:10px;background:#00000033}
+.matchFacts div{padding:10px;background:color-mix(in srgb,var(--lm-bg-000000) 20%,transparent)}
 .matchFacts dt{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .matchFacts dd{margin:3px 0 0;font-weight:600;font-size:14px;overflow-wrap:anywhere}
 
@@ -122,12 +122,12 @@
 .footnote{margin:0;font-size:12px;color:var(--dim)}
 
 /* Bottom navigation */
-.bottomNav{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:min(608px,calc(100% - 24px));padding:7px 8px;border-radius:999px;background:color-mix(in srgb,#1b0710 90%,transparent);border:1px solid color-mix(in srgb,var(--play-accent) 28%,var(--line));backdrop-filter:blur(18px);box-shadow:0 12px 40px #00000075,0 0 0 1px #ffffff08 inset}
+.bottomNav{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:min(608px,calc(100% - 24px));padding:7px 8px;border-radius:999px;background:color-mix(in srgb,var(--lm-bg-1b0710) 90%,transparent);border:1px solid color-mix(in srgb,var(--play-accent) 28%,var(--line));backdrop-filter:blur(18px);box-shadow:0 12px 40px #00000075,0 0 0 1px #ffffff08 inset}
 .navItem{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;padding:2px 0;border-radius:999px;color:var(--dim);font:600 10px/1.2 var(--font-barlow-condensed),system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
 .navItem svg{opacity:.75;transition:opacity .2s ease,color .2s ease}
-.navItem[aria-current="page"]{color:var(--text);background:color-mix(in srgb,var(--play-accent) 14%,#ffffff0a);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--play-accent) 35%,transparent)}
+.navItem[aria-current="page"]{color:var(--text);background:color-mix(in srgb,var(--play-accent) 14%,color-mix(in srgb,var(--lm-ink-ffffff) 3.9%,transparent));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--play-accent) 35%,transparent)}
 .navItem[aria-current="page"] svg{color:var(--play-accent);opacity:1}
-.navItem:not([aria-current="page"]):hover{color:var(--muted);background:#ffffff06}
+.navItem:not([aria-current="page"]):hover{color:var(--muted);background:color-mix(in srgb,var(--lm-ink-ffffff) 2.4%,transparent)}
 .navItem:not([aria-current="page"]):hover svg{opacity:.95}
 
 @media(max-width:380px){.screen{padding:0 12px}.identity h1{font-size:26px}.matchFacts{grid-template-columns:1fr}.navItem{font-size:10px}.areas{grid-template-columns:1fr}}
@@ -157,7 +157,7 @@
 .teamBar{flex:none;width:4px;align-self:stretch;min-height:30px;border-radius:2px}
 .matchNames{display:grid;font-weight:600;font-size:15px}
 .matchNames small{font-weight:400;font-size:12px;color:var(--dim)}
-.matchCardResult{margin:0;padding:8px 14px;text-align:center;font:700 16px var(--font-barlow-condensed),sans-serif;letter-spacing:.04em;background:#00000030;color:var(--play-accent)}
+.matchCardResult{margin:0;padding:8px 14px;text-align:center;font:700 16px var(--font-barlow-condensed),sans-serif;letter-spacing:.04em;background:color-mix(in srgb,var(--lm-bg-000000) 18.8%,transparent);color:var(--play-accent)}
 
 /* Leaderboard */
 .bigScore{flex:none;font:700 28px/1 var(--font-barlow-condensed),sans-serif}

@@ -20,7 +20,7 @@ export function Avatar({ src = null, name = "", size = "md", team = null, classN
 
   const ring =
     team === "maroon"
-      ? "shadow-[0_0_0_4px_#500001,0_0_0_6px_#b8945a]"
+      ? "shadow-[0_0_0_4px_var(--color-maroon-700),0_0_0_6px_#b8945a]"
       : team === "white"
         ? "shadow-[0_0_0_4px_#ffffff,0_0_0_6px_#b8945a]"
         : "";

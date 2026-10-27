@@ -1,11 +1,11 @@
 /* Match slide: Sleeper's Match layout on the trip maroon, all in Spectral (the trip-name font). Gold is "our" side, rose the other side. */
-.match{display:flex;flex-direction:column;gap:16px;font-family:var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.match{display:flex;flex-direction:column;gap:16px;font-family:var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
 .left{text-align:left}
 .right{text-align:right}
 
 /* Match box (above the Golf tabs) */
 /* Top boxes (Match box, course weather): one flat color, barely rounded, with a faint gold outline. */
-.versus{border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(220,196,149,.28);overflow:hidden}
+.versus{border-radius:10px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent);overflow:hidden}
 .teams{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:8px;align-items:stretch;padding:14px 14px 14px}
 /* Each half: initials + standing on top, then name and record. The leader's half fills with their team color from the
    box's edge (pulled out over the 14px padding), rounding off before the status box: the Match rows' fill, but taller. */
@@ -15,12 +15,12 @@
 .side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:var(--team-right,#e89a9a)}
 .avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--team-left,#dcc495);color:var(--team-left-text,var(--color-maroon-900));font:800 15px/1 var(--font-spectral),Georgia,serif}
 .avatarRight{background:var(--team-right,#e89a9a);color:var(--team-right-text,var(--color-maroon-900))}
-.sideLeading .avatar{background:var(--color-maroon-900);color:var(--team-left-on-dark,#dcc495)}
+.sideLeading .avatar{background:var(--lm-bg-240001);color:var(--team-left-on-dark,#dcc495)}
 .right.sideLeading .avatar{color:var(--team-right-on-dark,#e89a9a)}
 /* Standing in the half's top outer corner; keeps its line even when blank so both halves line up. */
-.boxStanding{min-height:18px;font:700 18px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
-.teamName{margin:4px 0 0;font:700 17px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:normal}
-.teamMeta{margin:-4px 0 0;font:700 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
+.boxStanding{min-height:18px;font:700 18px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);white-space:nowrap}
+.teamName{margin:4px 0 0;font:700 17px/1.15 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow-wrap:normal}
+.teamMeta{margin:-4px 0 0;font:700 13px/1.3 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
 .left.sideLeading .boxStanding,.left.sideLeading .teamName,.left.sideLeading .teamMeta{color:var(--team-left-text,var(--color-maroon-900))}
 .right.sideLeading .boxStanding,.right.sideLeading .teamName,.right.sideLeading .teamMeta{color:var(--team-right-text,var(--color-maroon-900))}
 .sideLeading .teamMeta{opacity:.75}
@@ -32,13 +32,13 @@
 /* Win probability: one bar across the card, split at the center; each team's fill grows out from the middle. */
 .win{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:14px}
 /* The % sits centered over the bar's middle; the arrow hangs off its side so it never pushes the number off center. */
-.winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .winPct_left{color:var(--team-left-on-dark,#dcc495)}
 .winPct_right{color:var(--team-right-on-dark,#e89a9a)}
 .winArrow{position:absolute;top:0;font-size:15px;line-height:.85}
 .winPct_left .winArrow{right:calc(100% + 3px)}
 .winPct_right .winArrow{left:calc(100% + 3px)}
-.winBar{width:100%;display:grid;grid-template-columns:1fr 1fr;height:5px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
+.winBar{width:100%;display:grid;grid-template-columns:1fr 1fr;height:5px;border-radius:5px;background:color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent);overflow:hidden}
 .winHalf{display:flex}
 .winHalf:first-child{justify-content:flex-end}
 .winFillLeft,.winFillRight{display:block;height:100%}
@@ -46,28 +46,28 @@
 .winFillRight{background:var(--team-right-on-dark,#e89a9a);border-radius:0 5px 5px 0}
 /* Each side's line stops at its SCORE column, short of the gold center line. */
 .roundStats{position:relative}
-.roundStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);border-top:1px solid rgba(220,196,149,.28)}
+.roundStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent)}
 .roundStats.left::after{left:0;right:10px}
 .roundStats.right::after{left:10px;right:0}
 .roundStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0}
-.roundStats.left{padding-right:10px;border-right:1px solid rgba(220,196,149,.55)}
+.roundStats.left{padding-right:10px;border-right:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent)}
 .roundStats.right{padding-left:10px}
 .roundStat{display:flex;flex-direction:column;align-items:center;gap:15px;min-width:0}
-.roundStat dt{font:700 var(--label)/1 var(--font-spectral),Georgia,serif;letter-spacing:.05em;color:rgba(255,255,255,.6)}
-.roundStat dd{margin:0;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.roundStat dt{font:700 var(--label)/1 var(--font-spectral),Georgia,serif;letter-spacing:.05em;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
+.roundStat dd{margin:0;font:700 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 
 /* Overview's course weather card (placeholder): same shell as the team card. */
 .weather{display:flex;flex-direction:column;gap:14px;height:100%;box-sizing:border-box;padding:16px 16px 14px;border-radius:10px;
-  background:rgba(255,255,255,.05);border:1px solid rgba(220,196,149,.28)}
+  background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent)}
 .weatherTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.weatherTemp{font:500 40px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.weatherTemp{font:500 40px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .weatherStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.weatherStat{display:flex;flex-direction:column;gap:4px;margin:0;font:600 16px/1 var(--font-spectral),Georgia,serif;color:#fff}
-.weatherStat span{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.weatherStat{display:flex;flex-direction:column;gap:4px;margin:0;font:600 16px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.weatherStat span{font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
 .weatherHours{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding-top:4px}
-.weatherHour{display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff}
-.weatherHour span{font:600 11px/1 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6);white-space:nowrap}
-.weatherNote{margin:auto 0 0;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(220,196,149,.8)}
+.weatherHour{display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;font:600 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.weatherHour span{font:600 11px/1 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);white-space:nowrap}
+.weatherNote{margin:auto 0 0;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent)}
 
 /* Team card + match ovals. The ovals hang just under the card (absolute, so nothing below moves). */
 .matchup{position:relative}
@@ -79,15 +79,15 @@
 .lineupHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
 /* Header text: the course in a larger version of the golfer-name style, the detail line in the tee-line style. */
 .headerText{display:flex;flex-direction:column;gap:3px;min-width:0}
-.headerTitle{margin:0;font:700 22px/1.15 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+.headerTitle{margin:0;font:700 22px/1.15 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow-wrap:anywhere;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
 .headerTitle[data-length=long]{font-size:19px}
 .headerTitle[data-length=longer]{font-size:17px}
-.headerDetail{margin:0;font:500 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(220,196,149,.8)}
+.headerDetail{margin:0;font:500 13px/1.3 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent)}
 /* Leaderboard CARD button: gold outline next to the position box; filled gold while that golfer's card is open. */
-.cardButton{display:grid;place-items:center;width:40px;height:30px;padding:0;border:1.5px solid #dcc495;border-radius:8px;background:transparent;
-  color:#dcc495;font:700 10px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;cursor:pointer;transition:background .15s ease,color .15s ease}
-.cardButton:hover{background:rgba(220,196,149,.12)}
-.cardButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.cardButton{display:grid;place-items:center;width:40px;height:30px;padding:0;border:1.5px solid var(--lm-ink-dcc495);border-radius:8px;background:transparent;
+  color:var(--lm-ink-dcc495);font:700 10px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;cursor:pointer;transition:background .15s ease,color .15s ease}
+.cardButton:hover{background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent)}
+.cardButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .cardButton.cardButtonOpen{background:#dcc495;color:var(--color-maroon-900);font-weight:800}
 /* Open row: the boxes, name and numbers move to the top, and the card fills the row underneath. */
 .singleOpen{align-items:start;row-gap:10px}
@@ -95,15 +95,15 @@
 /* The card: no lines, boxes or shading; flush left, so HOLE / PAR / SCORE sit in the position box's column. Scrolls sideways. */
 .scorecard{grid-column:1/-1;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
 .scorecard::-webkit-scrollbar{display:none}
-.scorecard:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.scorecardTable{border-collapse:collapse;font:600 13px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center;white-space:nowrap}
-.scorecardTable th{position:sticky;left:0;z-index:1;padding:5px 10px 5px 0;background:var(--color-maroon-900);text-align:left;
-  font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.scorecard:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.scorecardTable{border-collapse:collapse;font:600 13px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);text-align:center;white-space:nowrap}
+.scorecardTable th{position:sticky;left:0;z-index:1;padding:5px 10px 5px 0;background:var(--lm-bg-240001);text-align:left;
+  font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
 .scorecardTable td{min-width:28px;padding:6px 3px}
-.scorecardTable tr:first-child td{color:#dcc495;font-size:12px}
-.scorecardTable tr:nth-child(2) td{color:rgba(255,255,255,.6)}
+.scorecardTable tr:first-child td{color:var(--lm-ink-dcc495);font-size:12px}
+.scorecardTable tr:nth-child(2) td{color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
 /* SCORE row: a thin line above it (under PAR), and extra height so the marks and their outer rings fit around the numbers. */
-.scorecardTable tr:nth-child(3) th,.scorecardTable tr:nth-child(3) td{padding-top:10px;padding-bottom:6px;border-top:1px solid rgba(255,255,255,.2)}
+.scorecardTable tr:nth-child(3) th,.scorecardTable tr:nth-child(3) td{padding-top:10px;padding-bottom:6px;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent)}
 .scorecardTable .totalCell{min-width:34px;font-weight:800}
 /* Hole score marks: birdie circle, eagle-or-better double circle, bogey box, double-bogey-or-worse double box.
    Hairline rings drawn with box-shadow (borders can't go under 1px): the inner line, then for doubles a page-colored
@@ -117,40 +117,40 @@
 .circle,.box{box-shadow:inset 0 0 0 .5px currentColor}
 .circle.double,.box.double{box-shadow:inset 0 0 0 .5px currentColor,0 0 0 2px var(--color-maroon-900),0 0 0 2.5px currentColor}
 .lineup{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
-.pairing{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
+.pairing{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);align-items:center;gap:8px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 /* Leaderboard row: small cream position box (maroon number), CARD button, golfer, then TOT / THRU / TDY. The header row uses the
    same grid so each label sits over its column, with a line under it. */
 .rank{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#fbf8f1;color:var(--color-maroon-900);font:800 13px/1 var(--font-spectral),Georgia,serif}
-.single{display:grid;grid-template-columns:30px minmax(0,1fr) 34px 34px 34px;align-items:center;gap:8px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
+.single{display:grid;grid-template-columns:30px minmax(0,1fr) 34px 34px 34px;align-items:center;gap:8px;padding:14px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .pairing:first-child,.single:first-child{border-top:0}
 .singleNet{grid-template-columns:30px minmax(0,1fr) 28px 34px 34px 34px}
-.columns{padding:0;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;color:rgba(255,255,255,.6);text-align:center}
+.columns{padding:0;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);text-align:center}
 .columnPlayer{grid-column:2;text-align:left;text-transform:uppercase}
 /* Only the score columns (TOT / THRU / TDY) get an underline. */
-.columnLabel{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.3)}
-.scoring{display:flex;padding:3px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
-.scoring button{min-height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;
+.columnLabel{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent)}
+.scoring{display:flex;padding:3px;border-radius:999px;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent)}
+.scoring button{min-height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent);cursor:pointer;
   font:700 12px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;transition:background .15s ease,color .15s ease}
-.scoring button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.scoring button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .scoring .scoringActive{background:#fbf8f1;color:var(--color-maroon-900)}
 /* Match status box: the position box, a little bigger, with a small label line (THRU / AM) and the main value. */
 .status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:44px;height:40px;font-size:14px;line-height:1}
 .status small{font:700 8px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em}
 /* Match box version: no box, just cream text at the top center. */
-.statusPlain{width:auto;height:auto;background:none;color:#fbf8f1;font:800 18px/1 var(--font-spectral),Georgia,serif}
+.statusPlain{width:auto;height:auto;background:none;color:var(--lm-ink-fbf8f1);font:800 18px/1 var(--font-spectral),Georgia,serif}
 .statusPlain small{font-size:9px;white-space:nowrap}
 .statusValue,.statusTime{font:700 15px/1 var(--font-spectral),Georgia,serif;letter-spacing:normal}
 .matchupCompact .statusValue,.matchupCompact .statusTime{font-size:16.2px}
 @media(max-width:359px){.pairing .statusValue,.pairing .statusTime{font-size:13px}}
 /* Before a match: the tee time under TEE TIME, smaller so "10:30 AM" fits the middle column. */
 .statusTime{white-space:nowrap}
-.number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:#fff;text-align:center}
+.number{font:600 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);text-align:center}
 .golfer{display:flex;flex-direction:column;gap:3px;min-width:0}
-.golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:#fff;overflow-wrap:anywhere}
-.golferMeta{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.7)}
-.hcp{color:#dcc495}
-.tee{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:rgba(255,255,255,.6)}
-.course{color:rgba(220,196,149,.8)}
+.golferName{font:700 16px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow-wrap:anywhere}
+.golferMeta{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
+.hcp{color:var(--lm-ink-dcc495)}
+.tee{font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
+.course{color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent)}
 /* Match row halves: names on the outside, the match score toward the middle. The leader's half fills with their team
    color (gold left, rose right) from their edge of the screen (--bleed reaches past the page gutter on phones, where
    the Golf slides run edge to edge) and rounds off just past the name. */
@@ -166,25 +166,25 @@
 .pairSide.right.leading{margin-left:0}
 .left.leading .golferName,.left.leading .standing{color:var(--team-left-text,var(--color-maroon-900))}
 .right.leading .golferName,.right.leading .standing{color:var(--team-right-text,var(--color-maroon-900))}
-.leading .tee,.leading .course{color:rgba(36,0,1,.7)}
-.standing{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:#fff;white-space:nowrap}
+.leading .tee,.leading .course{color:color-mix(in srgb,var(--color-maroon-900) 70%,transparent)}
+.standing{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);white-space:nowrap}
 /* Match names wrap between words only (never mid-name); the smallest phones get a little more room for them. */
 .pairing .golferName{overflow-wrap:normal}
 @media(max-width:592px){.pairing{--bleed:16px}}
 @media(max-width:359px){.pairing{column-gap:6px}.pairSide{gap:6px;padding-inline:8px}.pairing .golferName{font-size:14px}.standing{font-size:13px}}
 @media(max-width:359px){.stats{margin:0 10px}.roundStats{gap:2px}.roundStats.left{padding-right:5px}.roundStats.right{padding-left:5px}.roundStats.left::after{right:5px}.roundStats.right::after{left:5px}.stats{--label:7.5px}.roundStat dt{letter-spacing:0}.roundStat dd{font-size:13px}}
 .number[data-par="under"]{color:#ef4444}
-.number[data-par="even"]{color:var(--color-gold-300,#dcc495)} /* E in our gold */
-.number[data-par="over"]{color:#fff}
+.number[data-par="even"]{color:var(--lm-ink-dcc495)} /* E in our gold */
+.number[data-par="over"]{color:var(--lm-ink-ffffff)}
 /* Golf tab summary boxes (Overview: tournament; Games: placeholder), in the matchup card's box. */
-.summaryLabel{margin:0;padding:12px 14px 0;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
+.summaryLabel{margin:0;padding:12px 14px 0;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
 .summaryTeams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;padding:10px 14px 12px}
 .summaryRight{grid-column:3;text-align:right}
 .summaryToWin{grid-column:2;grid-row:1;align-self:start}
-.summaryScore{margin:6px 0 0;font:700 30px/1 var(--font-spectral),Georgia,serif;color:#fff}
+.summaryScore{margin:6px 0 0;font:700 30px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .summaryPlaceholder{padding-bottom:16px}
 .summaryPlaceholder .teamName{padding:8px 14px 0}
-.summaryNote{margin:6px 0 0;padding:0 14px;font:500 13px/1.4 var(--font-barlow),sans-serif;color:rgba(251,248,241,.7)}
+.summaryNote{margin:6px 0 0;padding:0 14px;font:500 13px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 70%,transparent)}
 /* Compact matchup (Golf tab top box): fits the tournament summary's height — smaller initials, two-line names, less padding. */
 /* A little cushion between the top of the board and the lead fill (the leader's team-color block). */
 .matchupCompact .teams{gap:6px;padding:8px 14px 0}
@@ -209,13 +209,13 @@
 .matchupCompact .roundStat{gap:12px}
 /* Board boxes (Leaderboard's tournament box and the Matches box): the win bar and stats always sit in the same spot,
    a fixed-height block at the bottom; the teams above get the rest. */
-.boardBox{display:flex;flex-direction:column;border-color:#dcc495}
+.boardBox{display:flex;flex-direction:column;border-color:var(--lm-ink-dcc495)}
 .boardBox>:not(.stats){flex:1 1 auto;min-height:0}
 .boardBox>.stats{flex:none;box-sizing:border-box;height:84px;margin-top:auto;padding:2px 0 0;align-content:start}
 /* Net-only rounds: a plain label where the GROSS / NET switch would be. */
-.scoringLabel{display:inline-flex;align-items:center;min-height:34px;padding:0 4px;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.scoringLabel{display:inline-flex;align-items:center;min-height:34px;padding:0 4px;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 /* Two-team matches: the team names once, above the match rows, one at each side. */
-.teamNames{display:flex;justify-content:space-between;gap:12px;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.3);color:#dcc495;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.teamNames{display:flex;justify-content:space-between;gap:12px;padding:0 2px 8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent);color:var(--lm-ink-dcc495);font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .teamNames span:last-child{text-align:right}
 /* Match rows: each side's names against its own edge of the screen (left team left, right team right); the standing
    ("2 UP" / "AS") sits toward the middle. */
@@ -223,7 +223,7 @@
 .pairSide.right.right{flex-direction:row}
 /* Match row middle: "MATCH n" in small gold over the status. */
 .matchCenter{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
-.matchNumber{color:#dcc495;font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.matchNumber{color:var(--lm-ink-dcc495);font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 /* A little more room (1% of the screen) between each match row and the line above it. */
 .pairing.pairing{padding-top:calc(8px + 1vh)}
 /* "MATCH n" about 30% larger (9px → 12px); the middle column widens to fit "MATCH 10". */
@@ -242,10 +242,10 @@
 .pairing.pairing{position:relative}
 .matchNumber.matchNumber{position:absolute;top:6px;left:50%;transform:translateX(-50%)}
 /* Matches: < Current Round > over the left team's name; the round picker, team names and matches sit a bit lower. */
-.roundNav{display:flex;align-items:center;gap:6px;margin-top:14px;color:#fbf8f1;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
-.roundNav button{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
+.roundNav{display:flex;align-items:center;gap:6px;margin-top:14px;color:var(--lm-ink-fbf8f1);font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.roundNav button{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
 .roundNav button:disabled{opacity:.3;cursor:default}
-.roundNav button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.roundNav button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .roundNav button:first-child{margin-left:-8px}
 /* The round picker under the big match box: centered, in the old match-ovals spot. */
 .matchup .roundNav{position:absolute;top:100%;left:0;right:0;z-index:2;justify-content:center;height:20px;margin:0;font-size:12px}
@@ -263,15 +263,15 @@
 .teamNames > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* No competition: the Overview box is the day's round — course, then tee times with who's playing (scrolls if long). */
 .roundInfo{padding-bottom:12px;display:flex;flex-direction:column}
-.roundInfoCourse{margin:6px 0 0;padding:0 14px;font:700 20px/1.15 var(--font-spectral),Georgia,serif;color:#fff}
+.roundInfoCourse{margin:6px 0 0;padding:0 14px;font:700 20px/1.15 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .roundInfoTimes{list-style:none;margin:10px 0 0;padding:0 14px;display:grid;align-content:start;gap:6px;flex:1 1 0;min-height:0;overflow-y:auto}
 .roundInfoTimes li{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:baseline}
-.roundInfoTime{font:700 13px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
-.roundInfoPlayers{font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.9)}
+.roundInfoTime{font:700 13px/1.3 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.roundInfoPlayers{font:500 14px/1.3 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 90%,transparent)}
 /* Individual only: the round box splits in half — the round (condensed) left, the top 5 right, a line down the middle. */
 .roundInfoSplit{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr)}
 .roundInfoHalf{min-width:0;min-height:0;display:flex;flex-direction:column}
-.roundInfoHalf+.roundInfoHalf{border-left:1px solid rgba(220,196,149,.28)}
+.roundInfoHalf+.roundInfoHalf{border-left:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent)}
 .roundInfoSplit{padding-bottom:6px}
 .roundInfoSplit .roundInfoCourse{margin-top:4px;font-size:16px}
 .roundInfoSplit .roundInfoTimes{margin-top:6px;gap:5px}
@@ -280,16 +280,20 @@
 .roundInfoSplit .roundInfoPlayers{font-size:12.5px}
 .topFive{list-style:none;margin:6px 0 0;padding:0 12px;display:grid;align-content:start;gap:2px;flex:1 1 0;min-height:0;overflow-y:auto}
 .topFive li{display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:baseline}
-.topFivePlace{font:700 12px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
-.topFiveName{font:600 13px/1.3 var(--font-barlow),sans-serif;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topFivePlace{font:700 12px/1.3 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.topFiveName{font:600 13px/1.3 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .roundInfoSplit .summaryLabel{padding-top:8px;line-height:1.4}
 .roundInfoSplit .topFivePlace,.roundInfoSplit .topFiveName,.roundInfoSplit .topFive .number{font-size:12.5px;line-height:1.2}
 /* Team only, under Overview: the tee sheet — tee time on the left, its players stacked on the right. */
-.teeSheetRow{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
-.teeSheetTime{font:700 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
+/* Tournaments by code: the cut line across the leaderboard. */
+.cutLine{display:flex;align-items:center;gap:10px;padding:8px 0;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-e8a29a)}
+.cutLine::before,.cutLine::after{content:"";flex:1;border-top:1.5px dashed color-mix(in srgb,var(--lm-ink-e8a29a) 60%,transparent)}
+.teeSheetRow{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:14px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
+.teeSheetTime{font:700 14px/1.4 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.teeSheetHole{display:block;font:500 12px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
 .teeSheetPlayers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.teeSheetPlayers li{display:flex;justify-content:space-between;gap:10px;font:600 16px/1.3 var(--font-spectral),Georgia,serif;color:#fff}
-.teeSheetHcp{font:500 12px/1.3 var(--font-barlow),sans-serif;color:rgba(251,248,241,.6);align-self:center}
+.teeSheetPlayers li{display:flex;justify-content:space-between;gap:10px;font:600 16px/1.3 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.teeSheetHcp{font:500 12px/1.3 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);align-self:center}
 /* Leaderboard: with a GROSS / NET switch (or the Net Scoring label) the course name gets the left 60% of the screen, and
    the switch sits right over the TOT · THRU · TDY columns (three 34px columns, 8px apart = 118px). */
 .leaderboard .lineupHeader .headerText,.matchesList .lineupHeader .headerText{flex:0 1 60%;max-width:60%}
@@ -300,10 +304,10 @@
 /* Tournament box: the win bar sits right over the Predict pill, with PPG · FWY · GIR on each side of it. */
 /* A gold line right under the win bar; the stats + Predict row drop to the board's bottom, each side's three stats boxed. */
 .win:has(+ .predictRow){margin-bottom:0}
-.win:has(+ .predictRow)::after{content:"";align-self:stretch;border-top:1px solid #dcc495}
+.win:has(+ .predictRow)::after{content:"";align-self:stretch;border-top:1px solid var(--lm-ink-dcc495)}
 .stats:has(> .predictRow){grid-template-rows:auto 1fr}
 .boardBox>.stats:has(> .predictRow){padding-top:0}
-.boardBox:has(.predictRow){border-color:#dcc495}
+.boardBox:has(.predictRow){border-color:var(--lm-ink-dcc495)}
 /* Tournament box: each team in its own color, filled from the board's edge (pulled out over the 14px padding) in
    toward TO WIN, rounding off there — the lead fill's look, on both teams all the time. */
 /* The fills match the Matches box's lead fill: 8px under the box's top, 72px tall, 5px past the column gap. */
@@ -323,12 +327,12 @@
 .predictRow{grid-column:1/-1;align-self:end;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px}
 /* Predict: a rectangle the same height as the stat boxes beside it. */
 .predictRow .predictPill{align-self:stretch;padding:0 16px;border-radius:8px}
-.summaryStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:5px 2px;border:1px solid rgba(220,196,149,.28);border-radius:8px}
+.summaryStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:5px 2px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent);border-radius:8px}
 .summaryStats .roundStat{gap:6px}
-.predictPill{justify-self:center;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.predictPill:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.predictPill{justify-self:center;padding:9px 28px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.predictPill:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
 .leaderboard{padding-bottom:5px}
-.matchDraftStatus{display:grid;gap:8px;padding:24px 0;text-align:center;border-top:1px solid #dcc49555;color:#dcc495;font:14px var(--font-barlow),sans-serif;list-style:none}.matchDraftStatus strong{color:#fbf8f1;font:700 18px var(--font-spectral),Georgia,serif}
+.matchDraftStatus{display:grid;gap:8px;padding:24px 0;text-align:center;border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 33.3%,transparent);color:var(--lm-ink-dcc495);font:14px var(--font-barlow),sans-serif;list-style:none}.matchDraftStatus strong{color:var(--lm-ink-fbf8f1);font:700 18px var(--font-spectral),Georgia,serif}
 
 .golfRoundHeader{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) 22px;align-items:center;gap:6px;text-align:center;padding:11px 0 13px;margin:0 -10px}
 .golfRoundHeader .headerTitle{font-size:16.4px;min-width:0;max-width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;text-align:center}
@@ -336,9 +340,9 @@
 .golfCourseText{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
 
 .golfCourseRow{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;width:100%}
-.golfCourseArrow{display:grid;place-items:center;min-height:40px;padding:0;border:0;background:transparent;color:#dcc495;cursor:pointer}
+.golfCourseArrow{display:grid;place-items:center;min-height:40px;padding:0;border:0;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
 .golfCourseArrow:disabled{opacity:.3;cursor:default}
-.golfCourseArrow:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:6px}
+.golfCourseArrow:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:6px}
 
 .matchScoringControl{display:flex;justify-content:flex-end;align-items:center}
 
@@ -347,7 +351,7 @@
 .matchup .roundNav[aria-label="Match"] svg{width:12.264px;height:12.264px}
 
 /* The header spans the space between matching navigation dividers. */
-.golfRoundHeader::after{content:"";position:absolute;left:-6px;right:-6px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
+.golfRoundHeader::after{content:"";position:absolute;left:-6px;right:-6px;bottom:0;height:2px;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);pointer-events:none}
 
 .courseNameMeasure{display:inline-block;white-space:nowrap}
 
@@ -355,51 +359,51 @@
 .golfRoundHeader > .golfCourseArrow:last-child{justify-items:end}
 
 .playerCardTrigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.playerCardTrigger:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
-.leaderboardScoreSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:0;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:auto;animation:scoreSheetUp .25s ease-out}
-.leaderboardScoreSheet::backdrop{background:rgba(0,0,0,.45)}
+.playerCardTrigger:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:4px;border-radius:4px}
+.leaderboardScoreSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:auto;animation:scoreSheetUp .25s ease-out}
+.leaderboardScoreSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
 .scoreSheetHandle{width:40px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(251,248,241,.4)}
 @keyframes scoreSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.leaderboardScoreSheet{animation:none}}
 
-.playerTripProfileHeader{position:relative;display:flex;align-items:center;box-sizing:border-box;height:16dvh;padding:0 16px 0 calc(16dvh + 20px);overflow:hidden;border-bottom:2px solid rgba(251,248,241,.18);touch-action:none;user-select:none;cursor:grab}
+.playerTripProfileHeader{position:relative;display:flex;align-items:center;box-sizing:border-box;height:16dvh;padding:0 16px 0 calc(16dvh + 20px);overflow:hidden;border-bottom:2px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);touch-action:none;user-select:none;cursor:grab}
 .playerTripProfileIdentity{flex:1;min-width:0;margin-top:2px}
 /* Each stat only as wide as its label, close together: Handicap starts right under the name's first letter. */
 .playerTripProfileStats{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;column-gap:22px;margin:8px 0 0;text-align:center}
 .playerTripProfileStats div{display:flex;flex-direction:column-reverse;align-items:center;gap:3px;min-width:0}
-.playerTripProfileStats dt{font:600 11px/1.2 var(--font-barlow),sans-serif;color:#dcc495;white-space:nowrap}
-.playerTripProfileStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.playerTripProfileStats dt{font:600 11px/1.2 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495);white-space:nowrap}
+.playerTripProfileStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
 .playerTripProfileHeader h2{min-width:0;margin:0;padding-right:28px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 18px var(--font-spectral),Georgia,serif}
 /* The line at the top: a bigger invisible tap area around it (tap = close). */
 .playerTripProfileHandle{position:absolute;top:0;left:50%;translate:-50% 0;padding:12px 20px;cursor:pointer}
 .playerTripProfileHandle .scoreSheetHandle{display:block;margin:0}
 /* The photo pokes 4px past the top, the left edge and the line (clipped): 16dvh header - 2px line + 8px. */
-.playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:#240001;font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
+.playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:var(--color-maroon-900);font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
 .playerTripProfileAvatar img{width:100%;height:100%;object-fit:cover}
-.playerTripProfileClose{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#fff;cursor:pointer}
-.playerTripProfileClose:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.playerTripProfileScorecard{padding:16px 0;margin:0 16px 6px;border-top:2px solid rgba(251,248,241,.18);border-bottom:2px solid rgba(251,248,241,.18)}
+.playerTripProfileClose{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-ffffff);cursor:pointer}
+.playerTripProfileClose:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.playerTripProfileScorecard{padding:16px 0;margin:0 16px 6px;border-top:2px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);border-bottom:2px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent)}
 
 .profileRoundTabs{display:flex;position:relative;gap:10px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
 .profileRoundTabs::-webkit-scrollbar{display:none}
-.profileRoundTabs button{flex:none;min-height:32.3px;padding:0 15.3px;border:1px solid rgba(220,196,149,.55);border-radius:999px;background:transparent;color:#dcc495;font:700 12.75px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;white-space:nowrap;cursor:pointer}
-.profileRoundTabs button[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:#240001}
-.profileRoundTabs button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.profileRoundEmpty{margin:12px 0 0;color:rgba(251,248,241,.65);font:13px var(--font-barlow),sans-serif}
+.profileRoundTabs button{flex:none;min-height:32.3px;padding:0 15.3px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 12.75px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;white-space:nowrap;cursor:pointer}
+.profileRoundTabs button[aria-selected=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--color-maroon-900)}
+.profileRoundTabs button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.profileRoundEmpty{margin:12px 0 0;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent);font:13px var(--font-barlow),sans-serif}
 
-.profileRoundSnapshot{margin:0 16px 24px;color:#fbf8f1}
+.profileRoundSnapshot{margin:0 16px 24px;color:var(--lm-ink-fbf8f1)}
 .profileRoundSnapshot dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;text-align:center}
-.profileRoundSnapshot dt{font:600 11px/1.3 var(--font-barlow),sans-serif;color:#dcc495}
+.profileRoundSnapshot dt{font:600 11px/1.3 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 .profileRoundSnapshot dd{margin:6px 0 0;font:700 22px/1.2 var(--font-spectral),Georgia,serif}
 
 .snapshotSections{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);align-items:stretch;gap:10px}
-.snapshotPill{min-width:0;padding:12px 8px;border:1px solid rgba(220,196,149,.55);border-radius:24px;text-align:center}
+.snapshotPill{min-width:0;padding:12px 8px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:24px;text-align:center}
 .snapshotColumn{min-width:0}
-.snapshotColumn h4{margin:0 0 6px;color:#dcc495;font:700 12px/1.2 var(--font-barlow),sans-serif;text-align:left}
-.snapshotDivider{background:rgba(251,248,241,.18);margin:28.4px 0 8px}
+.snapshotColumn h4{margin:0 0 6px;color:var(--lm-ink-dcc495);font:700 12px/1.2 var(--font-barlow),sans-serif;text-align:left}
+.snapshotDivider{background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);margin:28.4px 0 8px}
 /* Tournament box: tap the teams to drop down each player's points. */
 .summaryTap{cursor:pointer}
-.summaryTap:focus-visible{outline:2px solid #dcc495;outline-offset:-2px}
+.summaryTap:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:-2px}
 /* Open: each team box grows down with its players. */
 [data-points-open] .summaryFill{height:auto;min-height:72px;padding-bottom:10px}
 .teamPoints{display:grid;gap:4px;margin:10px 0 0;padding:8px 0 0;list-style:none;border-top:1px solid currentColor;border-top-color:color-mix(in srgb,currentColor 25%,transparent)}
@@ -411,73 +415,73 @@
 .summaryFillRight .teamPoints{color:var(--team-right-text,var(--color-maroon-900))}
 /* Matches tab → a match: the match center sheet. */
 .pairingTap{cursor:pointer;border-radius:10px}
-.pairingTap:hover,.pairingTap:focus-visible{background:rgba(255,255,255,.04);outline:none}
+.pairingTap:hover,.pairingTap:focus-visible{background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent);outline:none}
 .matchSheet{inset:6dvh 0 0;height:94dvh;padding:0 16px 28px}
-.matchSheetTop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -16px;padding:12px 16px 8px;background:#240001}
-.matchSheetTop p{margin:0;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#dcc495}
-.matchSheetBack{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:rgba(255,255,255,.05);color:#dcc495;cursor:pointer}
-.matchSheetHead{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid rgba(255,255,255,.12)}
-.matchSheetHead>div{display:grid;gap:2px;min-width:0;font:600 13px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
+.matchSheetTop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -16px;padding:12px 16px 8px;background:var(--lm-bg-240001)}
+.matchSheetTop p{margin:0;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
+.matchSheetBack{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:50%;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);color:var(--lm-ink-dcc495);cursor:pointer}
+.matchSheetHead{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:10px 0 14px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent)}
+.matchSheetHead>div{display:grid;gap:2px;min-width:0;font:600 13px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
 .matchSheetHead>div[data-side=right]{text-align:right}
-.matchSheetHead b{font:600 18px var(--font-spectral),Georgia,serif;color:#fff}
+.matchSheetHead b{font:600 18px var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .matchSheetHead span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.matchSheetStatus{max-width:120px;margin:0;padding:6px 10px;border-radius:12px;background:rgba(255,255,255,.08);font:700 13px/1.25 var(--font-barlow),sans-serif;text-align:center;color:#fff}
-.matchSheetStatus[data-lead=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
-.matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
-.matchSheetTitle{margin:18px 0 8px;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#dcc495}
-.matchSheetNote{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.matchSheetStatus{max-width:120px;margin:0;padding:6px 10px;border-radius:12px;background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);font:700 13px/1.25 var(--font-barlow),sans-serif;text-align:center;color:var(--lm-ink-ffffff)}
+.matchSheetStatus[data-lead=left]{background:var(--team-left,var(--brand-7a1f2b));color:var(--team-left-text,#fff)}
+.matchSheetStatus[data-lead=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,var(--brand-2a0d16))}
+.matchSheetTitle{margin:18px 0 8px;font:700 12px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
+.matchSheetNote{margin:6px 0 0;font:500 12px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
 .matchTable{min-width:100%;margin-bottom:8px}
-.matchTable th{background:#240001}
+.matchTable th{background:var(--lm-bg-240001)}
 .matchTable td{position:relative;min-width:26px}
 .matchTable tr[data-side] th{font:600 13px var(--font-barlow),sans-serif}
 .strokeDot{position:absolute;top:3px;right:2px;width:4px;height:4px;border-radius:50%;background:#dcc495}
-.matchResultRow th,.matchResultRow td{border-top:1px solid rgba(255,255,255,.2);padding-top:8px}
-.leadChip{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:6px;background:rgba(255,255,255,.1);font:800 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.8)}
-.leadChip[data-side=left]{background:var(--team-left,#7a1f2b);color:var(--team-left-text,#fff)}
-.leadChip[data-side=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,#2a0d16)}
+.matchResultRow th,.matchResultRow td{border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent);padding-top:8px}
+.leadChip{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:6px;background:color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);font:800 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 80%,transparent)}
+.leadChip[data-side=left]{background:var(--team-left,var(--brand-7a1f2b));color:var(--team-left-text,#fff)}
+.leadChip[data-side=right]{background:var(--team-right,#f3ece0);color:var(--team-right-text,var(--brand-2a0d16))}
 .winChart{display:block;width:100%;height:auto;overflow:visible}
-.winGrid{stroke:rgba(255,255,255,.08);stroke-width:1}
-.winMid{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:4 4}
-.winAreaLeft{fill:var(--team-left,#7a1f2b);opacity:.55}
+.winGrid{stroke:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);stroke-width:1}
+.winMid{stroke:color-mix(in srgb,var(--lm-ink-ffffff) 35%,transparent);stroke-width:1;stroke-dasharray:4 4}
+.winAreaLeft{fill:var(--team-left,var(--brand-7a1f2b));opacity:.55}
 .winAreaRight{fill:var(--team-right,#f3ece0);opacity:.35}
-.winLine{fill:none;stroke:#dcc495;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.winDot{fill:#dcc495;stroke:#240001;stroke-width:2}
-.winLabel{font:600 9px var(--font-barlow),sans-serif;fill:rgba(255,255,255,.5)}
+.winLine{fill:none;stroke:var(--lm-ink-dcc495);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.winDot{fill:var(--lm-ink-dcc495);stroke:var(--color-maroon-900);stroke-width:2}
+.winLabel{font:600 9px var(--font-barlow),sans-serif;fill:color-mix(in srgb,var(--lm-ink-ffffff) 50%,transparent)}
 .matchChances{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin:10px 0 0}
-.matchChances div{display:grid;gap:2px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);text-align:center}
-.matchChances dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.matchChances dd{margin:0;font:800 18px var(--font-barlow),sans-serif;color:#fff}
-.matchChances div[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b)}
+.matchChances div{display:grid;gap:2px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);text-align:center}
+.matchChances dt{font:600 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.matchChances dd{margin:0;font:800 18px var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.matchChances div[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,var(--brand-7a1f2b))}
 .matchChances div[data-side=right]{box-shadow:inset -3px 0 0 var(--team-right,#f3ece0)}
 .matchStatsGrid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;row-gap:8px;column-gap:12px}
 .matchStatsGrid b{font:600 15px var(--font-spectral),Georgia,serif}
 .matchStatsGrid b[data-side=right],.matchStatsGrid>span:nth-child(3n){text-align:right}
-.matchStatsGrid>span{font:800 18px var(--font-barlow),sans-serif;color:#fff}
-.matchStatsGrid small{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center}
-.matchResultRow th,.matchResultRow td{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2)}
+.matchStatsGrid>span{font:800 18px var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.matchStatsGrid small{font:600 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent);text-align:center}
+.matchResultRow th,.matchResultRow td{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent)}
 .matchResultRow + tr th,.matchResultRow + tr td{padding-top:8px}
 /* Win graph: press and hold for the odds after a hole. */
 .winChartWrap{position:relative}
 .winChart{touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
-.winCursor{stroke:#dcc495;stroke-width:1;stroke-dasharray:2 3}
-.winTip{position:absolute;top:-8px;transform:translate(-50%,-100%);display:grid;gap:2px;min-width:130px;padding:8px 10px;border:1px solid rgba(220,196,149,.5);border-radius:10px;background:#3a0a12;box-shadow:0 8px 20px rgba(0,0,0,.5);font:600 12px var(--font-barlow),sans-serif;color:rgba(255,255,255,.75);pointer-events:none;z-index:3}
-.winTip b{color:#dcc495;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.winCursor{stroke:var(--lm-ink-dcc495);stroke-width:1;stroke-dasharray:2 3}
+.winTip{position:absolute;top:-8px;transform:translate(-50%,-100%);display:grid;gap:2px;min-width:130px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50%,transparent);border-radius:10px;background:var(--lm-bg-3a0a12);box-shadow:0 8px 20px rgba(0,0,0,.5);font:600 12px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent);pointer-events:none;z-index:3}
+.winTip b{color:var(--lm-ink-dcc495);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .winTip span{display:flex;justify-content:space-between;gap:12px}
-.winTip strong{color:#fff}
-.winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,#7a1f2b);padding-left:6px}
+.winTip strong{color:var(--lm-ink-ffffff)}
+.winTip span[data-side=left]{box-shadow:inset 3px 0 0 var(--team-left,var(--brand-7a1f2b));padding-left:6px}
 .winTip span[data-side=right]{box-shadow:inset 3px 0 0 var(--team-right,#f3ece0);padding-left:6px}
 .winTip span:not([data-side]){padding-left:6px}
 
 .summaryStatsTrigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
-.summaryStatsTrigger:focus-visible{outline:2px solid #dcc495;outline-offset:3px;border-radius:8px}
-.teamStatsSheet{position:fixed;inset:40dvh 0 0;height:60dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:hidden;display:flex;flex-direction:column;animation:scoreSheetUp .25s ease-out}
-.teamStatsSheet::backdrop{background:rgba(0,0,0,.45)}
-.teamStatsHeader{display:flex;align-items:center;justify-content:space-between;color:#dcc495;font-weight:700}
+.summaryStatsTrigger:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px;border-radius:8px}
+.teamStatsSheet{position:fixed;inset:40dvh 0 0;height:60dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:hidden;display:flex;flex-direction:column;animation:scoreSheetUp .25s ease-out}
+.teamStatsSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
+.teamStatsHeader{display:flex;align-items:center;justify-content:space-between;color:var(--lm-ink-dcc495);font-weight:700}
 .teamStatsHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
 .teamStatsBody{min-height:0;overflow:auto;margin-top:12px}
 .teamStatsTable{width:100%;border-collapse:collapse;font:14px var(--font-barlow),sans-serif}
-.teamStatsTable caption{text-align:left;color:#dcc495;font-size:12px;padding-bottom:10px}
-.teamStatsTable th,.teamStatsTable td{padding:10px 5px;border-bottom:1px solid #dcc49533;text-align:right}
+.teamStatsTable caption{text-align:left;color:var(--lm-ink-dcc495);font-size:12px;padding-bottom:10px}
+.teamStatsTable th,.teamStatsTable td{padding:10px 5px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent);text-align:right}
 .teamStatsTable th:first-child{text-align:left}
 @media(prefers-reduced-motion:reduce){.teamStatsSheet{animation:none}}
 
@@ -496,7 +500,7 @@
 
 /* Same compact scoring control beneath the board, aligned left on its own row. */
 .matchListHeading,.leaderboardListHeading{position:relative;min-height:28px;display:grid;align-items:center;row-gap:8px}
-.matchListHeading{padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.3)}
+.matchListHeading{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent)}
 .matchListHeading .teamNames{padding:0 2px;border:0}
 .matchListHeading .matchScoringControl,.leaderboardListHeading .matchScoringControl{position:static;order:-1;justify-self:start;justify-content:flex-start;align-items:center;height:auto}
 .leaderboardListHeading .columns{min-height:28px;border-top:0}
@@ -512,33 +516,33 @@
 .scorecardStacked .scorecardTable td{min-width:0;padding:6px 0}
 .scorecardStacked .scorecardTable .totalCell{min-width:0}
 .profileTripStats{margin:6px 16px 24px}
-.profileTripStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
+.profileTripStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 .profileTripStatsTop{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0}
-.profileTripStatsTop div{display:grid;gap:4px;padding:10px 2px;border:1px solid rgba(251,248,241,.18);border-radius:14px;text-align:center}
-.profileTripStatsTop dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
-.profileTripStatsTop dd{margin:0;font:700 18px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1;white-space:nowrap}
+.profileTripStatsTop div{display:grid;gap:4px;padding:10px 2px;border:1px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);border-radius:14px;text-align:center}
+.profileTripStatsTop dt{font:600 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
+.profileTripStatsTop dd{margin:0;font:700 18px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1);white-space:nowrap}
 .profileTripStatsList{margin:10px 0 0;padding:0;list-style:none}
-.profileTripStatsList li{display:grid;grid-template-columns:minmax(0,1fr) 64px 64px;align-items:baseline;gap:8px;padding:9px 2px;border-bottom:1px solid rgba(251,248,241,.12)}
-.profileTripStatsList span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 13px var(--font-barlow),sans-serif;color:#fbf8f1}
-.profileTripStatsList b{text-align:right;font:700 16px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
-.profileTripStatsList small{text-align:right;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.6)}
-.profileTripStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
+.profileTripStatsList li{display:grid;grid-template-columns:minmax(0,1fr) 64px 64px;align-items:baseline;gap:8px;padding:9px 2px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 12%,transparent)}
+.profileTripStatsList span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 13px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.profileTripStatsList b{text-align:right;font:700 16px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.profileTripStatsList small{text-align:right;font:500 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
+.profileTripStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 50%,transparent)}
 .profileGameStats{margin:6px 16px 24px}
-.profileGameStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
+.profileGameStats h4{margin:0 0 8px;font:700 13px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 .profileGameStats dl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0}
-.profileGameStats dl div{display:grid;gap:4px;padding:10px 4px;border:1px solid rgba(251,248,241,.18);border-radius:14px;text-align:center}
-.profileGameStats dt{font:600 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
-.profileGameStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
-.profileGameStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.5)}
+.profileGameStats dl div{display:grid;gap:4px;padding:10px 4px;border:1px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);border-radius:14px;text-align:center}
+.profileGameStats dt{font:600 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
+.profileGameStats dd{margin:0;font:700 20px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.profileGameStats p{margin:8px 0 0;font:500 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 50%,transparent)}
 
 /* Compact score columns on narrow phones. */
 @media(max-width:374px){.leaderboard .single{grid-template-columns:30px minmax(0,1fr) repeat(3,28px);gap:4px}.leaderboard .singleNet{grid-template-columns:30px minmax(0,1fr) 28px repeat(3,28px)}.leaderboardListHeading .columnLabel:nth-last-child(3){grid-column:-4}.leaderboardListHeading .columnLabel:nth-last-child(2){grid-column:-3}.leaderboardListHeading .columnLabel:last-child{grid-column:-2}}
 
 .playerTripProfileScorecard .scorecardStacked,.nonIndividualCard{min-height:184px;box-sizing:border-box}
-.nonIndividualCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:#fbf8f1;font:600 14px/1.25 var(--font-spectral),Georgia,serif}
-.nonIndividualCard p{margin:0;color:#dcc495}
+.nonIndividualCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:var(--lm-ink-fbf8f1);font:600 14px/1.25 var(--font-spectral),Georgia,serif}
+.nonIndividualCard p{margin:0;color:var(--lm-ink-dcc495)}
 .nonIndividualCard dl{display:grid;gap:10px;margin:0}
-.nonIndividualCard dt{font:500 11px var(--font-barlow),sans-serif;color:rgba(251,248,241,.65)}
+.nonIndividualCard dt{font:500 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
 .nonIndividualCard dd{margin:3px 0 0}
 .nonIndividualCard strong{font-weight:700}
 
@@ -548,11 +552,11 @@
 @media(max-width:374px){.leaderboard .single.singleSkins{grid-template-columns:30px minmax(0,1fr) repeat(4,28px)}.leaderboard .single.singleNet.singleSkins{grid-template-columns:30px minmax(0,1fr) 28px repeat(4,28px)}}
 /* Matches list: a thin win-chance line under each match, filled from the favorite's side (Predict on). */
 .pairing{position:relative}
-.winLine{grid-column:1/-1;position:relative;display:block;height:3px;margin:2px 0 -4px;border-radius:99px;background:rgba(255,255,255,.1)}
+.winLine{grid-column:1/-1;position:relative;display:block;height:3px;margin:2px 0 -4px;border-radius:99px;background:color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent)}
 .winLineFill{position:absolute;top:0;bottom:0;border-radius:99px;background:#dcc495}
 .winLine[data-side=left] .winLineFill{left:0}
 .winLine[data-side=right] .winLineFill{right:0}
-.winLine small{position:absolute;top:5px;font:700 10px/1 var(--font-barlow),sans-serif;color:rgba(220,196,149,.9)}
+.winLine small{position:absolute;top:5px;font:700 10px/1 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 90%,transparent)}
 .winLine[data-side=left] small{left:0}
 .winLine[data-side=right] small{right:0}
 /* Predict on, stats off: the Predict button stands alone under the win bar, at a natural height. */

@@ -7,6 +7,8 @@ import "@/lib/fonts/fallbacks.css";
 import "./globals.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
 import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
+import { cookies } from "next/headers";
+import { appMode, MODE_COOKIE } from "@/lib/theme/appMode";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +33,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [nextTournamentOverride, catalog] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog()]);
+  const [nextTournamentOverride, catalog, cookieStore] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog(), cookies()]);
+  // Settings → Appearance: Light on this device (dark = none).
   return (
     <html
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
+      data-mode={appMode(cookieStore.get(MODE_COOKIE)?.value) === "light" ? "light" : undefined}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
         <ModalScrollLock />

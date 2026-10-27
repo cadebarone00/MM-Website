@@ -1,6 +1,6 @@
 /* Golf Trip Home: all dark maroon, no top nav. Trip name up top, the 4-tab selector under it, then the cards.
    The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
-.page{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--color-maroon-900);color:#fbf8f1;
+.page{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);
   padding:48px max(16px,calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
 /* Room at the bottom for the Scoring sheet's handle, which sits just above the bottom menu (desktop: at the bottom). */
 .pageWithScoring{padding-bottom:calc(24px + 64px + 5.75rem + env(safe-area-inset-bottom))}
@@ -9,44 +9,44 @@
 /* Chat, notifications and settings share the right side of the trip title row. */
 .headerActions{grid-column:2;grid-row:1;display:flex;justify-self:end;margin-right:-8px}
 .iconButton{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
-  background:transparent;color:#fbf8f1;cursor:pointer;transition:background .15s ease}
-.iconButton:hover{background:rgba(255,255,255,.08)}
-.iconButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+  background:transparent;color:var(--lm-ink-fbf8f1);cursor:pointer;transition:background .15s ease}
+.iconButton:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
+.iconButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* "← Golf Trips": desktop only (1024px+, where the bottom tabs are hidden), so phones keep using the Golf Trips tab. */
 .desktopBack{display:none}
 @media (min-width:1024px){
-  .desktopBack{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:rgba(220,196,149,.85);text-decoration:none;
+  .desktopBack{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:color-mix(in srgb,var(--lm-ink-dcc495) 85%,transparent);text-decoration:none;
     font:600 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em}
-  .desktopBack:hover{color:#fbf8f1}
-  .desktopBack:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
+  .desktopBack:hover{color:var(--lm-ink-fbf8f1)}
+  .desktopBack:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:4px;border-radius:4px}
 }
-.title{grid-column:1;grid-row:1;min-width:0;min-height:28px;margin:0;padding:0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:#fff;overflow-wrap:anywhere}
+.title{grid-column:1;grid-row:1;min-width:0;min-height:28px;margin:0;padding:0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:var(--lm-ink-ffffff);overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;margin-top:8px}
-.tab{position:relative;min-height:44px;padding:0 4px;border:0;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;
+.tab{position:relative;min-height:44px;padding:0 4px;border:0;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent);cursor:pointer;
   font:700 15px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:color .15s ease,text-shadow .15s ease}
 .tab::after{content:"";position:absolute;left:20%;right:20%;bottom:0;height:2px;border-radius:2px;background:#dcc495;opacity:0;transition:opacity .15s ease}
-.tab:hover{color:rgba(255,255,255,.85)}
-.tab:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:4px}
-.tabActive,.tabActive:hover{color:#fbf8f1;text-shadow:0 0 12px rgba(251,248,241,.55)}
+.tab:hover{color:color-mix(in srgb,var(--lm-ink-ffffff) 85%,transparent)}
+.tab:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:4px}
+.tabActive,.tabActive:hover{color:var(--lm-ink-fbf8f1);text-shadow:0 0 12px color-mix(in srgb,var(--lm-ink-fbf8f1) 55%,transparent)}
 .tabActive::after{opacity:1}
 .body{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:24px}
 /* Golf tab: allow 12px from the trip tabs to the standard course title. */
 .golfBody{margin-top:0}
-.card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
-.cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
-.text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:#fff}
-.empty{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(220,196,149,.8)}
+.card{display:flex;flex-direction:column;gap:10px;padding:18px 18px 16px;border-radius:20px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent)}
+.cardTitle{margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:var(--lm-ink-ffffff)}
+.text{margin:0;font:600 16px/1.4 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.empty{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent)}
 /* Weather card (saved trips): place, big temperature, then short lines. */
 .weather{display:flex;flex-direction:column;gap:4px}
-.weatherPlace{margin:0;font:600 14px/1.3 var(--font-barlow),sans-serif;letter-spacing:.02em;color:#dcc495}
-.weatherTemp{margin:2px 0;font:500 44px/1 var(--font-spectral),Georgia,serif;color:#fff}
-.weatherLine{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
+.weatherPlace{margin:0;font:600 14px/1.3 var(--font-barlow),sans-serif;letter-spacing:.02em;color:var(--lm-ink-dcc495)}
+.weatherTemp{margin:2px 0;font:500 44px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
+.weatherLine{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
 .rows{display:flex;flex-direction:column;margin:0}
-.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font:600 15px/1.3 var(--font-barlow),sans-serif}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);font:600 15px/1.3 var(--font-barlow),sans-serif}
 .row:first-child{border-top:0;padding-top:0}
-.row dt{color:#dcc495}
-.row dd{margin:0;color:#fff;text-align:right;overflow-wrap:anywhere}
+.row dt{color:var(--lm-ink-dcc495)}
+.row dd{margin:0;color:var(--lm-ink-ffffff);text-align:right;overflow-wrap:anywhere}
 /* Golf tab (Sleeper-style): the Leaderboard / Match / Overview tabs reuse .tabs/.tab above; the slides are a
    swipeable strip that snaps one slide at a time. */
 .slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
@@ -70,14 +70,14 @@
 @media(max-width:592px){.slides{margin-inline:-16px}.slide{box-sizing:border-box;padding-inline:16px}}
 /* Venue tab (event-list style): bold section headings with a chevron, then rows of square picture + host, title, time, place. */
 .events{display:flex;flex-direction:column;gap:18px}
-.eventsHeading{display:flex;align-items:center;gap:2px;margin:6px 0 0;font:700 20px/1.2 var(--font-barlow),sans-serif;color:#fff}
-.eventsHeading svg{color:rgba(255,255,255,.45)}
+.eventsHeading{display:flex;align-items:center;gap:2px;margin:6px 0 0;font:700 20px/1.2 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.eventsHeading svg{color:color-mix(in srgb,var(--lm-ink-ffffff) 45%,transparent)}
 .eventsPicker{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin-top:-12px;padding:0;border:0;background:transparent;cursor:pointer;
-  font:600 16px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
-.eventsDay{margin:0 0 -6px;font:600 15px/1.2 var(--font-barlow),sans-serif;color:#fff}
-.eventsDay span{color:rgba(255,255,255,.45)}
+  font:600 16px/1.2 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
+.eventsDay{margin:0 0 -6px;font:600 15px/1.2 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.eventsDay span{color:color-mix(in srgb,var(--lm-ink-ffffff) 45%,transparent)}
 .eventRow{display:flex;gap:14px;align-items:flex-start}
-.eventArt{position:relative;display:grid;place-items:center;color:rgba(255,255,255,.9);flex:0 0 76px;height:76px;border-radius:10px}
+.eventArt{position:relative;display:grid;place-items:center;color:color-mix(in srgb,var(--lm-ink-ffffff) 90%,transparent);flex:0 0 76px;height:76px;border-radius:10px}
 .eventBadge{position:absolute;left:4px;bottom:-8px;padding:3px 7px;border-radius:6px;font:700 11px/1 var(--font-barlow),sans-serif}
 .badgeWaitlisted{background:#fde7cf;color:#c06a12}
 .badgeGoing{background:#d7f2dc;color:#1f8a3a}
@@ -85,96 +85,96 @@
 .badgeSet{background:#d7f2dc;color:#1f8a3a}
 .badgeTodo{background:#fde7cf;color:#c06a12}
 .eventInfo{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-.eventHost{display:flex;align-items:center;gap:6px;margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.eventHost{display:flex;align-items:center;gap:6px;margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
 .eventHost span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eventAvatar{flex:0 0 16px;height:16px;border-radius:50%;background:rgba(220,196,149,.6)}
 .eventPrice{color:#5fd07a;font-weight:700}
-.eventTitle{margin:0;font:700 16px/1.25 var(--font-barlow),sans-serif;color:#fff}
-.eventMeta{display:flex;align-items:center;gap:6px;margin:0;font:500 14px/1.3 var(--font-barlow),sans-serif;color:rgba(255,255,255,.55)}
+.eventTitle{margin:0;font:700 16px/1.25 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.eventMeta{display:flex;align-items:center;gap:6px;margin:0;font:500 14px/1.3 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
 .eventMeta svg{flex:0 0 auto}
 .infoSection{display:flex;flex-direction:column;gap:12px}
 .infoHeaderRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
-.infoEntry{position:relative;display:flex;align-items:flex-start;gap:12px;padding:8px 32px 0 0;border-top:1px solid rgba(255,255,255,.08)}
+.infoEntry{position:relative;display:flex;align-items:flex-start;gap:12px;padding:8px 32px 0 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .infoEntry:first-of-type{border-top:0;padding-top:0}
-.entryDelete{position:absolute;top:8px;right:0;display:grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:rgba(255,255,255,.7);cursor:pointer}
-.entryDelete:hover{background:rgba(255,255,255,.08)}
-.entryDelete:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.entryDelete{position:absolute;top:8px;right:0;display:grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent);cursor:pointer}
+.entryDelete:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
+.entryDelete:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .infoEntry .eventArt{flex:0 0 52px;height:52px;border-radius:10px}
 .infoEntry .eventInfo{gap:4px}
 .infoEntry .eventHost{font-size:12px}
 .infoEntry .eventTitle{font-size:15px}
-.infoEntry .eventMeta{font-size:12px;color:rgba(255,255,255,.7)}
-.addItemButton{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:0;border:0;background:transparent;color:#cfe7d0;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
-.addItemButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:4px}
-.addSheetOverlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(25,20,18,.28);z-index:30}
+.infoEntry .eventMeta{font-size:12px;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
+.addItemButton{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:0;border:0;background:transparent;color:var(--lm-ink-cfe7d0);font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.addItemButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:4px}
+.addSheetOverlay{position:fixed;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--lm-bg-191412) 28%,transparent);z-index:30}
 .addSheet{position:relative;width:min(92vw,380px);padding:16px 14px 10px;border-radius:28px;background:#fff;color:#111;box-shadow:0 20px 40px rgba(0,0,0,.2);border:1px solid rgba(17,17,17,.06);max-height:72vh;overflow:hidden}
 .sheetClose{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#111;cursor:pointer}
-.sheetClose:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.sheetClose:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .sheetActionList{display:flex;flex-direction:column;padding-top:18px}
 .sheetActionRow{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:10px 8px;border:0;background:transparent;color:#111;text-align:left;cursor:pointer}
-.sheetActionRow:hover{background:rgba(17,17,17,.02)}
+.sheetActionRow:hover{background:color-mix(in srgb,var(--lm-bg-111111) 2%,transparent)}
 .sheetActionIcon{display:grid;place-items:center;width:20px;height:20px;color:#111;opacity:.9}
 .sheetActionText{font:600 16px/1.3 var(--font-barlow),sans-serif;letter-spacing:-.01em;color:#111}
 .notificationsAnchor{position:relative}
 /* Bell (and chat, GolfTripChat.module.css): one slide-up sheet, 85% of the screen tall, over the bottom menu (z 100),
    with a grab handle and a dimmed backdrop (owner 2026-10-19). */
-.sheetBackdrop{position:fixed;inset:0;z-index:110;background:#211c1bb3;backdrop-filter:blur(4px);animation:sheetFade .25s ease both}
+.sheetBackdrop{position:fixed;inset:0;z-index:110;background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);backdrop-filter:blur(4px);animation:sheetFade .25s ease both}
 .notificationsDropdown{box-sizing:border-box;position:fixed;top:auto;bottom:0;left:0;right:0;margin:0 auto;width:min(100vw,560px);padding-top:26px;padding-bottom:calc(16px + env(safe-area-inset-bottom));border-bottom:0;border-radius:28px 28px 0 0;height:85vh;height:85dvh;max-height:none;overflow-y:auto;z-index:111;text-align:left;animation:sheetUp .38s cubic-bezier(.22,1,.36,1) both}
 .notificationsDropdown::before{content:"";position:absolute;top:9px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:rgba(220,196,149,.45)}
-.notificationsDropdown .sheetClose{top:14px;color:#fff}
-.notificationsDropdown.notificationsDropdown{background:var(--color-maroon-900,#240001);border-color:rgba(220,196,149,.25);color:#fff}
+.notificationsDropdown .sheetClose{top:14px;color:var(--lm-ink-ffffff)}
+.notificationsDropdown.notificationsDropdown{background:var(--lm-bg-240001);border-color:color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);color:var(--lm-ink-ffffff)}
 .notificationsEmpty{margin:0;padding:10px 8px 16px;font:400 14px/1.4 var(--font-barlow),sans-serif;color:#666}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes sheetFade{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.notificationsDropdown,.sheetBackdrop{animation:none}}
-.deleteOverlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,4,6,.55);z-index:30}
-.deleteDialog{display:flex;flex-direction:column;gap:12px;width:min(300px,calc(100vw - 32px));padding:18px 16px;border-radius:14px;background:var(--color-maroon-900);border:1px solid rgba(220,196,149,.4);box-shadow:0 18px 40px rgba(0,0,0,.35)}
-.deletePrompt{margin:0;color:#fff;font:700 20px/1.2 var(--font-spectral),Georgia,serif;text-align:center}
+.deleteOverlay{position:fixed;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--lm-bg-050406) 55%,transparent);z-index:30}
+.deleteDialog{display:flex;flex-direction:column;gap:12px;width:min(300px,calc(100vw - 32px));padding:18px 16px;border-radius:14px;background:var(--lm-bg-240001);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 40%,transparent);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.deletePrompt{margin:0;color:var(--lm-ink-ffffff);font:700 20px/1.2 var(--font-spectral),Georgia,serif;text-align:center}
 .deleteDialog .cancelButton,.deleteDialog .deleteButton{min-height:42px;padding:0 18px;border-radius:10px;cursor:pointer;font:700 14px/1 var(--font-barlow),sans-serif}
-.deleteDialog .cancelButton{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fbf8f1}
+.deleteDialog .cancelButton{background:transparent;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent);color:var(--lm-ink-fbf8f1)}
 .deleteDialog .deleteButton{background:#c62828;border:1px solid #c62828;color:#fff}
-.toast{position:fixed;top:calc(16px + var(--app-top-clearance));left:50%;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:min(320px,calc(100vw - 24px));padding:12px 14px;border-radius:12px;background:rgba(22,18,17,.96);box-shadow:0 10px 24px rgba(0,0,0,.28);transform:translateX(-50%) translateY(0);opacity:1;transition:transform .35s ease,opacity .35s ease;z-index:40}
-.toast div{display:flex;flex-direction:column;gap:2px;color:#fff}
+.toast{position:fixed;top:calc(16px + var(--app-top-clearance));left:50%;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:min(320px,calc(100vw - 24px));padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--lm-bg-161211) 96%,transparent);box-shadow:0 10px 24px rgba(0,0,0,.28);transform:translateX(-50%) translateY(0);opacity:1;transition:transform .35s ease,opacity .35s ease;z-index:40}
+.toast div{display:flex;flex-direction:column;gap:2px;color:var(--lm-ink-ffffff)}
 .toast strong{font:700 14px/1 var(--font-barlow),sans-serif}
-.toast span{font:500 12px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75)}
+.toast span{font:500 12px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
 .toastClosing{opacity:0;transform:translateX(-50%) translateY(-8px)}
-.toastUndo{padding:0;border:0;background:transparent;color:#a7d6a6;font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.toastUndo{padding:0;border:0;background:transparent;color:var(--lm-ink-a7d6a6);font:700 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
 /* Trip Settings: a back arrow, then the smaller "Trip Settings" title on the left; organizers get General / Organizer
    in the same words-and-underline style as the trip selector. */
 .settingsHeader{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .backButton{position:static;margin:-8px 0 0 -10px}
-.settingsTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:#fff}
+.settingsTitle{margin:0;font:500 28px/1.15 var(--font-spectral),Georgia,serif;letter-spacing:-.01em;color:var(--lm-ink-ffffff)}
 /* Delete Trip (Organizer settings): a red outline button, then a simple Cancel / Delete confirm. */
-.settingsNote{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.7)}
+.settingsNote{margin:0;font:500 15px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent)}
 .dangerButton,.cancelButton,.deleteButton{min-height:44px;padding:0 18px;border-radius:12px;cursor:pointer;
   font:700 15px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;transition:background .15s ease,opacity .15s ease}
-.dangerButton{align-self:flex-start;background:transparent;border:1px solid rgba(255,138,128,.6);color:#ffb4ab}
+.dangerButton{align-self:flex-start;background:transparent;border:1px solid rgba(255,138,128,.6);color:var(--lm-ink-ffb4ab)}
 .dangerButton:hover{background:rgba(255,138,128,.1)}
 .confirm{display:flex;flex-direction:column;gap:12px}
 .confirmActions{display:flex;gap:10px}
-.cancelButton{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fbf8f1}
-.cancelButton:hover{background:rgba(255,255,255,.08)}
+.cancelButton{background:transparent;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent);color:var(--lm-ink-fbf8f1)}
+.cancelButton:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .deleteButton{background:#c62828;border:1px solid #c62828;color:#fff}
 .deleteButton:hover{background:#b71c1c}
 .cancelButton:disabled,.deleteButton:disabled{opacity:.6;cursor:default}
-.dangerButton:focus-visible,.cancelButton:focus-visible,.deleteButton:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
-.settingsMessage{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif;color:#dcc495}
+.dangerButton:focus-visible,.cancelButton:focus-visible,.deleteButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.settingsMessage{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 /* Info tab (banking-app style): runs to the screen edges and down under the bottom menu. Maroon top with "Your trip to …",
    then a light page; the account cards sit across the line between the two. */
 .account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
   padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
-  background:linear-gradient(var(--color-maroon-900) 120px,#f7f8f7 120px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+  background:linear-gradient(var(--lm-bg-240001) 120px,#f7f8f7 120px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
-.accountTop{position:relative;display:flex;align-items:flex-end;padding:12px 16px 0;color:#fff}
+.accountTop{position:relative;display:flex;align-items:flex-end;padding:12px 16px 0;color:var(--lm-ink-ffffff)}
 /* Left 65%: the trip heading; right 35%: quick weather. */
 .accountTitleBlock{position:relative;top:-5px;flex:0 0 65%;min-width:0}
 /* Sized so "Your trip to" and a typical "City, ST" fit in the left 65% (long names wrap). */
 .accountLabel{font-size:clamp(20px,6.6vw,30px);font-weight:700;line-height:1.1}
 .accountDestination{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Trip dates ("Jan 7 – Jan 10, 2026") in gold under the location. */
-.accountTop .accountDates{margin:8px 0 0;font:600 15px/1.2 var(--font-barlow),sans-serif;color:#dcc495}
+.accountTop .accountDates{margin:8px 0 0;font:600 15px/1.2 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 .accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .accountCards::-webkit-scrollbar,.accountCard{flex:0 0 82%;box-sizing:border-box;min-height:96px;padding:16px 14px;border-radius:12px;background:#fff;
   box-shadow:0 1px 4px rgba(0,0,0,.12);scroll-snap-align:start}
@@ -205,7 +205,7 @@
 .sheetRows .eventsHeading svg,.sheetRows .eventsDay span,.sheetRows .eventHost,.sheetRows .eventMeta{color:#6a6a6a}
 .sheetClosed{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:58px;padding:0 20px;border:0;border-radius:16px;
    background:#fbf8f1;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer;font-family:var(--font-barlow),sans-serif;text-align:left}
-.sheetClosed:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.sheetClosed:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .sheetName{font-size:14px;font-weight:500;color:#6a6a6a}
 .sheetSummary{font-size:14px;font-weight:600;color:#222;text-align:right}
 
@@ -214,51 +214,51 @@
 
 /* Quick weather (right 35% of the trip heading): degrees + icon, condition, low / high, chance of precipitation. */
 .quickWeather{flex:0 0 35%;min-width:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
-.quickTemp{display:flex;align-items:center;gap:6px;font-size:clamp(20px,6.6vw,30px);font-weight:700;line-height:1.1;color:#fff}
-.quickTemp svg{color:#dcc495}
-.quickCondition{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:600 13px/1.25 var(--font-barlow),sans-serif;color:#fff}
-.quickDetail{display:flex;align-items:center;gap:4px;font:600 13px/1.2 var(--font-barlow),sans-serif;color:rgba(255,255,255,.75);white-space:pre}
-.quickDetail svg{color:#dcc495}
+.quickTemp{display:flex;align-items:center;gap:6px;font-size:clamp(20px,6.6vw,30px);font-weight:700;line-height:1.1;color:var(--lm-ink-ffffff)}
+.quickTemp svg{color:var(--lm-ink-dcc495)}
+.quickCondition{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:600 13px/1.25 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
+.quickDetail{display:flex;align-items:center;gap:4px;font:600 13px/1.2 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent);white-space:pre}
+.quickDetail svg{color:var(--lm-ink-dcc495)}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* Home "what's next" cards are buttons (they open Info → Itinerary) that look like the other white cards. */
 .itineraryCard{display:block;text-align:left;font:inherit;color:inherit;border:0;cursor:pointer}
-.itineraryCard:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.itineraryCard:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .itineraryCard .accountCardName{display:flex;align-items:center;gap:6px}
 /* Info → Itinerary: a trip day with nothing on it. */
-.itineraryEmptyDay{margin:0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:rgba(255,255,255,.6)}
+.itineraryEmptyDay{margin:0;font:500 14px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
 
 @media(max-width:1023px){.page{padding-top:var(--app-top-clearance)}}
 /* Info → Itinerary day selector: < and > either side of the weekday (over the date), with a line under it. */
-.itineraryDayHeading{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;padding-bottom:10px;border-bottom:1px solid rgba(214,184,121,.35)}
+.itineraryDayHeading{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-d6b879) 35%,transparent)}
 .itineraryDayTitle{display:grid;justify-items:center;gap:3px;margin:0;text-align:center}
-.itineraryDayTitle span{color:#fbf8f1;font:700 20px/1.15 var(--font-spectral),Georgia,serif}
-.itineraryDayTitle small{color:#dcc495;font:600 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
-.itineraryDayStep{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:#dcc495;cursor:pointer}
-.itineraryDayStep:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.itineraryDayTitle span{color:var(--lm-ink-fbf8f1);font:700 20px/1.15 var(--font-spectral),Georgia,serif}
+.itineraryDayTitle small{color:var(--lm-ink-dcc495);font:600 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.itineraryDayStep{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
+.itineraryDayStep:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Info → Itinerary: each plan is a raised cream box (same look as Competition → Format round boxes). */
-.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(214,184,121,.55);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:#591c2e;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(89,28,46,.12),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
+.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--lm-ink-d6b879) 55%,transparent);border-radius:16px;background:linear-gradient(180deg,#fffdf8 0%,#fbf8f1 55%,#efe7d6 100%);color:var(--color-maroon-650);box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 color-mix(in srgb,var(--color-maroon-650) 12%,transparent),0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25)}
 .itineraryBoxTime{overflow-wrap:anywhere;color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
 .itineraryBoxKind{color:#805b24;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
-.itineraryBoxTitle{color:#591c2e;font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.itineraryBoxTitle{color:var(--color-maroon-650);font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
 .itineraryBoxTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .itineraryBoxTop .itineraryBoxKind{flex:none;text-align:right}
 /* Itinerary box: a header (time left, type right) in bigger maroon text over a line, the details under it; slimmer padding. */
 .itineraryBox.itineraryBox{gap:4px;padding:10px 14px}
-.itineraryBoxTop.itineraryBoxTop{align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid rgba(89,28,46,.2)}
-.itineraryBoxTop .itineraryBoxTime{color:#591c2e;font:700 16px/1.2 var(--font-spectral),Georgia,serif}
-.itineraryBoxTop .itineraryBoxKind{color:#591c2e;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
+.itineraryBoxTop.itineraryBoxTop{align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid color-mix(in srgb,var(--color-maroon-650) 20%,transparent)}
+.itineraryBoxTop .itineraryBoxTime{color:var(--color-maroon-650);font:700 16px/1.2 var(--font-spectral),Georgia,serif}
+.itineraryBoxTop .itineraryBoxKind{color:var(--color-maroon-650);font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
 /* Itinerary boxes are buttons that open the plan's sheet. */
 button.itineraryBox{box-sizing:border-box;min-width:0;width:100%;text-align:left;font:inherit;cursor:pointer}
-button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
 /* Itinerary: each plan's type sits outside, above its box — cream, left-aligned, bold, with a line under it. */
 .itineraryEntry{display:grid;gap:8px}
-.itineraryType{margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid rgba(251,248,241,.35);color:#fbf8f1;font:700 18px/1.15 var(--font-spectral),Georgia,serif;text-align:left}
+.itineraryType{margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 35%,transparent);color:var(--lm-ink-fbf8f1);font:700 18px/1.15 var(--font-spectral),Georgia,serif;text-align:left}
 /* Info: My Info / Itinerary selector sits higher, closer to the trip header (32px gap → 8px). */
 .tabs.infoTabs{margin-top:-16px}
 /* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the selected gold indicator sits directly above the continuous grey line. */
 .tabs.tripTabs{position:relative;grid-column:1 / -1;margin-top:-4px}
-.tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:rgba(251,248,241,.18);pointer-events:none}
+.tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);pointer-events:none}
 .tripTabs .tab::after{left:0;right:0;bottom:2px;border-radius:0;z-index:1}
 /* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
 .itineraryDayBody{display:grid;gap:12px;min-width:0}
@@ -282,7 +282,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .statusTag[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
 /* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
    section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
-.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--color-maroon-900);box-shadow:0 25px 0 var(--color-maroon-900)}
+.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--lm-bg-240001);box-shadow:0 25px 0 var(--lm-bg-240001)}
 .accountHead .accountTop{flex:none}
 /* Momentum has a taller, borderless slot below the heading; content remains centered. */
 .momSlot{box-sizing:border-box;flex:none;min-height:89px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;margin-top:10px;text-align:center}
@@ -293,8 +293,8 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
 /* Itinerary tab: "+ Add" pill centered right under the Itinerary tab (the 4th of the main tabs). */
 .itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-14px;margin-bottom:-14px}
-.itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
-.itineraryAddPill:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}
+.itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.itineraryAddPill:focus-visible{outline:2px solid var(--lm-ink-fbf8f1);outline-offset:2px}
 /* Itinerary golf rounds: Sit out then Play (green) side by side in the header row, level with the tee time and inside
    the box above its line; the chosen one is filled. */
 .itineraryBoxWrap{position:relative}
@@ -305,7 +305,7 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .rsvpPlay[aria-pressed=true]{background:#2e7d32;color:#fff}
 .rsvpSit{border:1.5px solid #c62828;background:transparent;color:#c62828}
 .rsvpSit[aria-pressed=true]{border-color:#c62828;background:#c62828;color:#fff}
-.rsvpPlay:focus-visible,.rsvpSit:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.rsvpPlay:focus-visible,.rsvpSit:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Playing: a green tag bottom right. Sitting out: the box shows only its top row (no line, course or round). */
 .itineraryBox[data-rsvp=in]{position:relative;padding-bottom:28px}
 .itineraryPlaying{position:absolute;right:14px;bottom:10px;color:#2e7d32;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
@@ -320,34 +320,34 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .sectionTabs::-webkit-scrollbar{display:none}
 .sectionTabs::before{content:"";flex:0 0 max(0px,calc(50% - var(--first-pill-half,0px) - 10px))}
 .sectionTabs::after{content:"";flex:0 0 max(0px,calc(50% - var(--last-pill-half,0px) - 10px))}
-.sectionTabs .tab{flex:none;min-height:32.3px;padding:0 15.3px;font-size:12.75px;border:1px solid rgba(220,196,149,.55);border-radius:999px;color:#dcc495;white-space:nowrap;text-shadow:none;transition:background .18s,color .18s,border-color .18s}
+.sectionTabs .tab{flex:none;min-height:32.3px;padding:0 15.3px;font-size:12.75px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:999px;color:var(--lm-ink-dcc495);white-space:nowrap;text-shadow:none;transition:background .18s,color .18s,border-color .18s}
 .sectionTabs .tab::after{display:none}
-.sectionTabs .tab[aria-selected=true]{background:#dcc495;border-color:#dcc495;color:#240001;text-shadow:none}
+.sectionTabs .tab[aria-selected=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--color-maroon-900);text-shadow:none}
 
 .titleLine{display:block;white-space:nowrap}
-.predictEntry{display:block;margin:12px auto;padding:9px 28px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.predictEntry{display:block;margin:12px auto;padding:9px 28px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 
 
 .homeFeed{flex:1;min-height:160px}
-.predictBack{display:grid;place-items:center;width:36px;height:36px;margin:0 0 8px;padding:0;border:1px solid rgba(220,196,149,.35);border-radius:50%;background:rgba(255,255,255,.05);color:#dcc495;cursor:pointer}
+.predictBack{display:grid;place-items:center;width:36px;height:36px;margin:0 0 8px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:50%;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);color:var(--lm-ink-dcc495);cursor:pointer}
 /* Team points open on the tournament box: the board grows to fit it and pushes the leaderboard down. */
 .golfTop:has([data-points-open]){height:auto;min-height:var(--golf-board-height)}
 .golfTop:has([data-points-open]) .golfTopSize{position:relative;inset:auto}
 .golfTopSize:has([data-points-open])>*{flex:none}
 .golfTopSize:has([data-points-open]) section{height:auto}
 
-.predictSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid rgba(220,196,149,.25);border-bottom:0;border-radius:20px 20px 0 0;background:#240001;color:#fbf8f1;overflow:auto;animation:predictSheetUp .25s ease-out}
-.predictSheet::backdrop{background:rgba(0,0,0,.45)}
-.predictSheetHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#dcc495;font-weight:700}
+.predictSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:auto;animation:predictSheetUp .25s ease-out}
+.predictSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
+.predictSheetHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:var(--lm-ink-dcc495);font-weight:700}
 .predictSheetHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
 @keyframes predictSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.predictSheet{animation:none}}
 
-.standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px -16px;padding:8px 16px;border-block:1px solid #dcc49566;color:#dcc495;font:500 13px/1.35 var(--font-barlow),sans-serif}
+.standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px -16px;padding:8px 16px;border-block:1px solid #dcc49566;color:var(--lm-ink-dcc495);font:500 13px/1.35 var(--font-barlow),sans-serif}
 .standingsNotice strong{font-weight:700}
 .standingsNotice > div{min-width:0}
 .standingsNotice p{margin:1px 0 0;font-size:11px;line-height:13px}
-.standingsNotice button{flex:none;padding:6px 10px;border:1px solid #dcc495;border-radius:999px;background:transparent;color:inherit;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
+.standingsNotice button{flex:none;padding:6px 10px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:inherit;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
 
 /* The active round replaces its green participation label with red Live. */
 .itineraryPlaying[data-live=true]{color:#c62828}
@@ -355,3 +355,8 @@ button.itineraryBox:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
 .golfTop:has([data-board-compact]){--golf-board-height:100px}
 /* Predict on, Player Stats off: team scores, the win bar and the Predict button only, so the board is shorter. */
 .golfTop:has([data-board-predict-only]){--golf-board-height:152px}
+
+/* Light mode: the trip's heading band is a soft cream (it runs on behind the first card), so the cards sit on it
+   naturally instead of on white with a maroon edge. */
+:global(html[data-mode="light"]) .accountHead{background:#f3eee6;box-shadow:0 25px 0 #f3eee6}
+:global(html[data-mode="light"]) .account{background:linear-gradient(#f3eee6 120px,#f7f8f7 120px)}

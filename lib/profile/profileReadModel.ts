@@ -23,7 +23,8 @@ import { initialsFor, memberSinceLabel, profileDisplayName } from "./myProfile";
  *                  the profile is only what the golfer sets now. The slug is a migration bridge, not identity.
  *
  * V1 privacy (project_specs.md, "Profile V1"): the owner gets everything. Anyone else gets `access: "private"` (name,
- * username, initials only) unless the subject's profile is Public; then `access: "public"`: identity, bio, rounds by
+ * username, initials, profile photo, and the headline numbers — rounds played and handicap index, owner request 2026-10-26 — but never
+ * the rounds themselves) unless the subject's profile is Public; then `access: "public"`: identity, bio, rounds by
  * their own rules, public tournaments' published years, the legacy archive years — never golf trips, never the legacy
  * handicap or scorecard.
  *
@@ -163,8 +164,12 @@ const accessFor = (viewerId: ProfileId | null, subject: ProfileSubjectRow): Prof
 export async function assembleProfileReadModel(viewerId: ProfileId | null, subjectId: ProfileId, sources: ProfileSources, today: string): Promise<ProfileReadModel | null> {
   const subject = await sources.subject(subjectId);
   if (!subject) return null;
-  // Someone else, Private profile: no lookups beyond the profile row.
-  if (accessFor(viewerId, subject) === "private") return buildProfileReadModel(viewerId, subject, { history: null, rounds: null, legacy: null }, sources.isLegacyTournament, today);
+  // Someone else, Private profile: the profile row, plus their rounds read as theirs only to count them (rounds played
+  // and handicap index show; the rounds themselves never leave this function).
+  if (accessFor(viewerId, subject) === "private") {
+    const all = await sources.rounds(subject.id, subject.id).catch(() => null);
+    return buildProfileReadModel(viewerId, subject, { history: null, rounds: all, legacy: null }, sources.isLegacyTournament, today);
+  }
   const slug = subject.legacyMaroonPlayerSlug;
   const [history, rounds, legacy] = await Promise.all([
     sources.history(viewerId, subject.id).catch(() => null),
@@ -182,12 +187,16 @@ export function buildProfileReadModel(viewerId: ProfileId | null, subject: Profi
   const isOwner = viewerId === subject.id;
   const access = accessFor(viewerId, subject);
   if (access === "private") {
-    // Someone else, Private profile: who it is, and nothing else. No lookups beyond the profile row.
+    // Someone else, Private profile: who it is and their headline numbers (from `data.rounds`, counted only), nothing else.
     const name = profileDisplayName({ displayName: subject.displayName, username: subject.username });
+    const totals = data.rounds ? modernStats(data.rounds) : null;
     return {
       isOwner, access,
-      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: null, bio: null, canEditBio: false, roundsVisibility: "private" },
-      rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], modernStats: null, legacy: null,
+      // The profile photo shows whatever the privacy (owner request 2026-10-26), like the name.
+      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: null, canEditBio: false, roundsVisibility: "private" },
+      rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], legacy: null,
+      // Only the counts: rounds played and handicap index (no averages, bests or anything from a round).
+      modernStats: totals && { roundsPlayed: totals.roundsPlayed, eighteenHoleRounds: 0, average18: null, best18: null, handicapIndex: totals.handicapIndex, countingRounds: 0 },
     };
   }
   const { history, rounds, legacy } = data;

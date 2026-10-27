@@ -1,7 +1,6 @@
 /**
- * Tournament Setup, page 1 (/tournaments/create): "What are you creating?"
- * Tournament opens its own setup (/tournaments/code/new: a tournament players join with a code); Golf Trip starts the
- * trip questionnaire; the rest route to a placeholder next step at /tournaments/create/<key>.
+ * Setup types for /tournaments/create/<key>. The "What are you creating?" page that listed them is gone (Create a
+ * Tournament goes straight to /tournaments/code/new); Golf Trips still starts at /tournaments/create/golf-trip.
  */
 export interface SetupType {
   key: "golf-trip" | "tournament" | "team" | "league" | "group";

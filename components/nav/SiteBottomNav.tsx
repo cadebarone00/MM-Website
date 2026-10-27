@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LandPlot, Plane, UserRound } from "lucide-react";
+import { Flag, Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
 import { PickemsIcon } from "./ImageIcons";
+import { FriendRequestBadge } from "@/components/profile/FriendRequestBadge";
 import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
 
 const ICON_SIZE = 26;
 
 const TABS = [
-  { href: "/", label: "Play", icon: LandPlot },
+  { href: "/", label: "Play", icon: Flag },
   { href: "/golf-trips", label: "Golf Trips", icon: Plane },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
@@ -35,7 +36,8 @@ export function SiteBottomNav() {
             aria-current={active ? "page" : undefined}
           >
             {/* Oversized icons overlap their margin so every label stays on one line. */}
-            <Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />
+            {/* Profile: a red count while friend requests are waiting. */}
+            <span className={styles.iconWrap}><Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />{tab.href === "/profile" && <FriendRequestBadge />}</span>
             <span>{tab.label}</span>
           </Link>
         );

@@ -3,7 +3,7 @@ import { summaryPct, type ScoringSummary } from "@/lib/data/stats/tournamentStat
 
 const SEGMENTS: { key: keyof Omit<ScoringSummary, "holesPlayed">; label: string; color: string }[] = [
   { key: "eagle", label: "Eagles", color: "#9a7b3f" }, // gold-600 — kept distinct from birdie's maroon rather than a second red shade
-  { key: "birdie", label: "Birdies", color: "#6b161a" }, // maroon-600
+  { key: "birdie", label: "Birdies", color: "var(--color-maroon-600)" }, // maroon-600
   { key: "par", label: "Par", color: "#dfd9d0" }, // ink-200
   { key: "bogey", label: "Bogeys", color: "#93897e" }, // ink-400
   { key: "doubleOrWorse", label: "Double Bogeys +", color: "#554c44" }, // ink-600

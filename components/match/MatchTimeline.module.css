@@ -17,8 +17,8 @@
 .scorecard .compactRow > td { height: 24px; }
 
 /* Fourball best-ball/status block: gaps outside, a gold outline inside. */
-.scorecard .groupStart > * { border-top: 10px solid var(--color-cream-100); box-shadow: inset 0 2px #a78945; }
-.scorecard .groupEnd > * { border-bottom: 10px solid var(--color-cream-100); box-shadow: inset 0 -2px #a78945; }
+.scorecard .groupStart > * { border-top: 10px solid var(--lm-ink-f5efe2); box-shadow: inset 0 2px #a78945; }
+.scorecard .groupEnd > * { border-bottom: 10px solid var(--lm-ink-f5efe2); box-shadow: inset 0 -2px #a78945; }
 .scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :first-child { border-left: 2px solid #a78945; }
 .scorecard :is(.groupStart, .groupMiddle, .groupEnd) > :last-child { border-right: 2px solid #a78945; }
 
@@ -45,7 +45,7 @@
   padding-bottom: 12px;
 }
 .oddsHeader .probabilityTitle { font-size: 28px; font-weight: 700; color: #000; }
-.probabilityCard { margin-top: 12px; padding: 1px 16px 16px; border: 1px solid #e6e4df; border-radius: 10px; background: #fff; box-shadow: 0 2px 5px rgb(0 0 0 / 5%); }
+.probabilityCard { margin-top: 12px; padding: 1px 16px 16px; border: 1px solid var(--lm-ink-e6e4df); border-radius: 10px; background: #fff; box-shadow: 0 2px 5px rgb(0 0 0 / 5%); }
 
 .labels {
   position: relative;
@@ -112,8 +112,8 @@
 }
 .explore::-webkit-slider-runnable-track { height: 4px; background: #c9b98f; border-radius: 2px; }
 .explore::-moz-range-track { height: 4px; background: #c9b98f; border-radius: 2px; }
-.explore::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: #500001; }
-.explore::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #500001; }
+.explore::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--color-maroon-700); }
+.explore::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--color-maroon-700); }
 
 /* Keep the original readable, horizontally scrolling scorecard below desktop. */
 @media (width < 1024px) {
@@ -166,18 +166,18 @@
   text-align: center;
   border: 1px solid;
   border-radius: 2px;
-  color: #500001;
-  background: rgb(80 0 1 / 12%);
-  border-color: rgb(80 0 1 / 30%);
+  color: var(--color-maroon-700);
+  background: color-mix(in srgb,var(--color-maroon-700) 12%,transparent);
+  border-color: color-mix(in srgb,var(--color-maroon-700) 30%,transparent);
 }
 .maroonLabel {
   bottom: calc(100% + 10px);
 }
 .whiteLabel {
   top: calc(100% + 10px);
-  color: #fff;
+  color: var(--lm-ink-ffffff);
   background: #e4dfd5;
-  border-color: #fff;
+  border-color: var(--lm-ink-ffffff);
   text-shadow: 0 1px 2px #514b42, 0 0 1px #514b42;
 }
 .resultArea {
@@ -197,18 +197,18 @@
   font-size: clamp(14px, 2.4cqw, 28px);
   font-weight: 800;
 }
-.maroonResult { background: #500001; color: #e2c88e; }
-.whiteResult { background: #fff; color: #500001; }
+.maroonResult { background: var(--color-maroon-700); color: #e2c88e; }
+.whiteResult { background: #fff; color: var(--color-maroon-700); }
 .endResult {
   position: absolute;
   right: 4px;
   height: 50%;
   display: flex;
   align-items: center;
-  color: #500001;
+  color: var(--color-maroon-700);
   font-size: clamp(14px, 2.4cqw, 28px);
   font-weight: 800;
-  text-shadow: 0 0 3px #fff;
+  text-shadow: 0 0 3px var(--lm-ink-ffffff);
 }
 .mobileCard { display: none; }
 @media (width < 1024px) {

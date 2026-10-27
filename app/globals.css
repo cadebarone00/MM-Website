@@ -7,7 +7,7 @@
 
 /* ============================================================
    THE MAROON TOURNAMENT — DESIGN TOKENS
-   Ported from the Claude Design project. Maroon `#500001` anchors
+   Ported from the Claude Design project. Maroon `var(--color-maroon-700)` anchors
    everything; cream paper is the default surface; champagne gold
    signals prestige. Low corner radii, hairline rules, warm shadows.
    ============================================================ */
@@ -49,6 +49,14 @@
   --color-maroon-200: #e3c0c2;
   --color-maroon-100: #f1ddde;
   --color-maroon-50: #f9eeef;
+  /* In-between shades the app uses (named so every palette has them). */
+  --color-maroon-950: #1d0b11;
+  --color-maroon-925: #2a0a12;
+  --color-maroon-850: #2f0c0e;
+  --color-maroon-825: #3b0d18;
+  --color-maroon-725: #68000b;
+  --color-maroon-675: #63151e;
+  --color-maroon-650: #591c2e;
 
   /* ---- Cream / paper ---- */
   --color-cream-50: #fbf8f1;
@@ -97,11 +105,11 @@
   --radius-pill: 999px;
 
   /* ---- Shadows (warm-tinted, restrained) ---- */
-  --shadow-xs: 0 1px 2px rgba(36, 0, 1, 0.06);
-  --shadow-sm: 0 1px 3px rgba(36, 0, 1, 0.08), 0 1px 2px rgba(36, 0, 1, 0.06);
-  --shadow-md: 0 4px 12px rgba(36, 0, 1, 0.1), 0 1px 3px rgba(36, 0, 1, 0.06);
-  --shadow-lg: 0 12px 28px rgba(36, 0, 1, 0.14), 0 4px 8px rgba(36, 0, 1, 0.06);
-  --shadow-xl: 0 24px 56px rgba(36, 0, 1, 0.2), 0 8px 16px rgba(36, 0, 1, 0.08);
+  --shadow-xs: 0 1px 2px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-sm: 0 1px 3px color-mix(in srgb,var(--color-maroon-900) 8%,transparent), 0 1px 2px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb,var(--color-maroon-900) 10%,transparent), 0 1px 3px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-lg: 0 12px 28px color-mix(in srgb,var(--color-maroon-900) 14%,transparent), 0 4px 8px color-mix(in srgb,var(--color-maroon-900) 6%,transparent);
+  --shadow-xl: 0 24px 56px color-mix(in srgb,var(--color-maroon-900) 20%,transparent), 0 8px 16px color-mix(in srgb,var(--color-maroon-900) 8%,transparent);
 
   /* ---- Type scale ---- */
   --text-3xs: 11px;
@@ -143,7 +151,7 @@
   --app-safe-top: var(--app-top-clearance);
   --gradient-maroon: linear-gradient(160deg, var(--color-maroon-700) 0%, var(--color-maroon-900) 100%);
   --gradient-trophy: linear-gradient(135deg, var(--color-gold-300) 0%, var(--color-gold-600) 100%);
-  --scrim-bottom: linear-gradient(to top, rgba(36, 0, 1, 0.85) 0%, rgba(36, 0, 1, 0) 70%);
+  --scrim-bottom: linear-gradient(to top, color-mix(in srgb,var(--color-maroon-900) 85%,transparent) 0%, color-mix(in srgb,var(--color-maroon-900) 0%,transparent) 70%);
   --ease-standard: cubic-bezier(0.2, 0, 0.1, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -330,3 +338,393 @@ h1, h2 {
   .app-camera-content > :first-child > header:first-child { padding-top: var(--app-top-clearance); }
   .fixed.inset-0 { padding-top: var(--app-top-clearance); }
 }
+
+/* Other maroon shades the screens use, named by their maroon value; each palette shifts them like the ramp. */
+:root {
+  --brand-100001: #100001;
+  --brand-270d15: #270d15;
+  --brand-280001: #280001;
+  --brand-2a0a0c: #2a0a0c;
+  --brand-2a0a10: #2a0a10;
+  --brand-2a0d16: #2a0d16;
+  --brand-2b0a14: #2b0a14;
+  --brand-2b1219: #2b1219;
+  --brand-30030d: #30030d;
+  --brand-32121b: #32121b;
+  --brand-34080f: #34080f;
+  --brand-350001: #350001;
+  --brand-35121f: #35121f;
+  --brand-360708: #360708;
+  --brand-38151f: #38151f;
+  --brand-3a0010: #3a0010;
+  --brand-3a0a12: #3a0a12;
+  --brand-3a0f1c: #3a0f1c;
+  --brand-3a1218: #3a1218;
+  --brand-3a1620: #3a1620;
+  --brand-401723: #401723;
+  --brand-420001: #420001;
+  --brand-4a0508: #4a0508;
+  --brand-4a1325: #4a1325;
+  --brand-4a1525: #4a1525;
+  --brand-4a1726: #4a1726;
+  --brand-500f23: #500f23;
+  --brand-560b18: #560b18;
+  --brand-630d1a: #630d1a;
+  --brand-651b30: #651b30;
+  --brand-670f24: #670f24;
+  --brand-6b1114: #6b1114;
+  --brand-6e1f33: #6e1f33;
+  --brand-751830: #751830;
+  --brand-7a1b2e: #7a1b2e;
+  --brand-7a1f2b: #7a1f2b;
+  --brand-7a2a3e: #7a2a3e;
+  --brand-7b1e2e: #7b1e2e;
+  --brand-8b3940: #8b3940;
+}
+
+/* Light mode (Settings → Appearance): every --lm-* is its own colour in dark mode (so nothing changes); light
+   mode turns the dark page maroons white and light text dark. Generated rule by rule from each stylesheet:
+   text on a maroon button or photo keeps its light colour. Set on <html data-mode="light"> from the "mode" cookie. */
+:root {
+  --lm-bg-000000: #000000;
+  --lm-bg-050101: #050101;
+  --lm-bg-050406: #050406;
+  --lm-bg-0a0406: #0a0406;
+  --lm-bg-0b0b0d: #0b0b0d;
+  --lm-bg-111111: #111111;
+  --lm-bg-111827: #111827;
+  --lm-bg-111d16: #111d16;
+  --lm-bg-120203: #120203;
+  --lm-bg-12040a: #12040a;
+  --lm-bg-140608: #140608;
+  --lm-bg-140d0b: #140d0b;
+  --lm-bg-14221a: #14221a;
+  --lm-bg-15152a: #15152a;
+  --lm-bg-161211: #161211;
+  --lm-bg-171b14: #171b14;
+  --lm-bg-191412: #191412;
+  --lm-bg-1a0809: #1a0809;
+  --lm-bg-1a0c12: #1a0c12;
+  --lm-bg-1b0710: #1b0710;
+  --lm-bg-1c1b1a: #1c1b1a;
+  --lm-bg-1d0910: #1d0910;
+  --lm-bg-1d0b11: #1d0b11;
+  --lm-bg-1d2128: #1d2128;
+  --lm-bg-1f1f23: #1f1f23;
+  --lm-bg-202022: #202022;
+  --lm-bg-211c1b: #211c1b;
+  --lm-bg-240001: #240001;
+  --lm-bg-270d15: #270d15;
+  --lm-bg-2a0a0c: #2a0a0c;
+  --lm-bg-2a0a10: #2a0a10;
+  --lm-bg-2a0a12: #2a0a12;
+  --lm-bg-2a0d16: #2a0d16;
+  --lm-bg-2b1219: #2b1219;
+  --lm-bg-2f0c0e: #2f0c0e;
+  --lm-bg-34080f: #34080f;
+  --lm-bg-350001: #350001;
+  --lm-bg-380001: #380001;
+  --lm-bg-38151f: #38151f;
+  --lm-bg-3a0010: #3a0010;
+  --lm-bg-3a0a12: #3a0a12;
+  --lm-bg-3a1218: #3a1218;
+  --lm-bg-3a1620: #3a1620;
+  --lm-bg-420001: #420001;
+  --lm-ink-a7d6a6: #a7d6a6;
+  --lm-ink-b0b0b5: #b0b0b5;
+  --lm-ink-b6bac2: #b6bac2;
+  --lm-ink-b8c0b2: #b8c0b2;
+  --lm-ink-b9b9bd: #b9b9bd;
+  --lm-ink-b9e0b0: #b9e0b0;
+  --lm-ink-bac2b2: #bac2b2;
+  --lm-ink-bba9a4: #bba9a4;
+  --lm-ink-bbbbbb: #bbbbbb;
+  --lm-ink-bcb3aa: #bcb3aa;
+  --lm-ink-bff0cd: #bff0cd;
+  --lm-ink-c1aeb3: #c1aeb3;
+  --lm-ink-c4c0b8: #c4c0b8;
+  --lm-ink-c6b797: #c6b797;
+  --lm-ink-c9a86e: #c9a86e;
+  --lm-ink-c9bea8: #c9bea8;
+  --lm-ink-cabc9f: #cabc9f;
+  --lm-ink-cbbd9e: #cbbd9e;
+  --lm-ink-cbbfac: #cbbfac;
+  --lm-ink-cfc0a5: #cfc0a5;
+  --lm-ink-cfd3da: #cfd3da;
+  --lm-ink-cfe7d0: #cfe7d0;
+  --lm-ink-d1b176: #d1b176;
+  --lm-ink-d4bfa9: #d4bfa9;
+  --lm-ink-d5c3a1: #d5c3a1;
+  --lm-ink-d6b85c: #d6b85c;
+  --lm-ink-d6b879: #d6b879;
+  --lm-ink-d6bd89: #d6bd89;
+  --lm-ink-d6c5ca: #d6c5ca;
+  --lm-ink-d7a39a: #d7a39a;
+  --lm-ink-d7b77b: #d7b77b;
+  --lm-ink-d7cab6: #d7cab6;
+  --lm-ink-d8caaf: #d8caaf;
+  --lm-ink-d8cdbd: #d8cdbd;
+  --lm-ink-d8cfc1: #d8cfc1;
+  --lm-ink-d9b4c0: #d9b4c0;
+  --lm-ink-d9cdb8: #d9cdb8;
+  --lm-ink-dcc495: #dcc495;
+  --lm-ink-dcd2bf: #dcd2bf;
+  --lm-ink-dcded7: #dcded7;
+  --lm-ink-dcded8: #dcded8;
+  --lm-ink-dcdfd9: #dcdfd9;
+  --lm-ink-ddd0b8: #ddd0b8;
+  --lm-ink-ddd3d0: #ddd3d0;
+  --lm-ink-dddddd: #dddddd;
+  --lm-ink-dedede: #dedede;
+  --lm-ink-dfd3ba: #dfd3ba;
+  --lm-ink-dfd4c4: #dfd4c4;
+  --lm-ink-dfe2e8: #dfe2e8;
+  --lm-ink-e0a3a3: #e0a3a3;
+  --lm-ink-e0d5c1: #e0d5c1;
+  --lm-ink-e0d5c6: #e0d5c6;
+  --lm-ink-e0e6df: #e0e6df;
+  --lm-ink-e1cec4: #e1cec4;
+  --lm-ink-e1e5db: #e1e5db;
+  --lm-ink-e2d3bd: #e2d3bd;
+  --lm-ink-e3c0c2: #e3c0c2;
+  --lm-ink-e3c27f: #e3c27f;
+  --lm-ink-e3d3c7: #e3d3c7;
+  --lm-ink-e3d5c4: #e3d5c4;
+  --lm-ink-e3d7c5: #e3d7c5;
+  --lm-ink-e3d8c4: #e3d8c4;
+  --lm-ink-e3d9ca: #e3d9ca;
+  --lm-ink-e4c98f: #e4c98f;
+  --lm-ink-e4c990: #e4c990;
+  --lm-ink-e4e6eb: #e4e6eb;
+  --lm-ink-e4e7df: #e4e7df;
+  --lm-ink-e5e7ec: #e5e7ec;
+  --lm-ink-e6d7b9: #e6d7b9;
+  --lm-ink-e6dccb: #e6dccb;
+  --lm-ink-e6ddcb: #e6ddcb;
+  --lm-ink-e6e4df: #e6e4df;
+  --lm-ink-e7ddcc: #e7ddcc;
+  --lm-ink-e7dece: #e7dece;
+  --lm-ink-e8a29a: #e8a29a;
+  --lm-ink-e8c98a: #e8c98a;
+  --lm-ink-e8d3a6: #e8d3a6;
+  --lm-ink-e8d7b2: #e8d7b2;
+  --lm-ink-e8dfd3: #e8dfd3;
+  --lm-ink-e8e8ea: #e8e8ea;
+  --lm-ink-ead8b8: #ead8b8;
+  --lm-ink-eadbc4: #eadbc4;
+  --lm-ink-ebe2cf: #ebe2cf;
+  --lm-ink-edcf91: #edcf91;
+  --lm-ink-edf0e9: #edf0e9;
+  --lm-ink-eeeeee: #eeeeee;
+  --lm-ink-eef0f3: #eef0f3;
+  --lm-ink-efe6d8: #efe6d8;
+  --lm-ink-f0e7da: #f0e7da;
+  --lm-ink-f1d69f: #f1d69f;
+  --lm-ink-f1f2f4: #f1f2f4;
+  --lm-ink-f3b4b4: #f3b4b4;
+  --lm-ink-f3e3c0: #f3e3c0;
+  --lm-ink-f4dba8: #f4dba8;
+  --lm-ink-f4efe6: #f4efe6;
+  --lm-ink-f59e0b: #f59e0b;
+  --lm-ink-f5d583: #f5d583;
+  --lm-ink-f5e9d4: #f5e9d4;
+  --lm-ink-f5ead7: #f5ead7;
+  --lm-ink-f5ebdb: #f5ebdb;
+  --lm-ink-f5efe2: #f5efe2;
+  --lm-ink-f5f2e9: #f5f2e9;
+  --lm-ink-f6d68b: #f6d68b;
+  --lm-ink-f6eee8: #f6eee8;
+  --lm-ink-f6efe3: #f6efe3;
+  --lm-ink-f6f1e8: #f6f1e8;
+  --lm-ink-f7f0df: #f7f0df;
+  --lm-ink-f8f3ea: #f8f3ea;
+  --lm-ink-f9f4ec: #f9f4ec;
+  --lm-ink-faf7ef: #faf7ef;
+  --lm-ink-fbf8f1: #fbf8f1;
+  --lm-ink-ffb4a8: #ffb4a8;
+  --lm-ink-ffb4ab: #ffb4ab;
+  --lm-ink-ffb4b4: #ffb4b4;
+  --lm-ink-ffd0d0: #ffd0d0;
+  --lm-ink-ffd9d9: #ffd9d9;
+  --lm-ink-ffe09f: #ffe09f;
+  --lm-ink-fff3d6: #fff3d6;
+  --lm-ink-fff5df: #fff5df;
+  --lm-ink-fffdf8: #fffdf8;
+  --lm-ink-ffffff: #ffffff;
+}
+html[data-mode="light"] {
+  color-scheme: light;
+  --lm-bg-000000: #ffffff;
+  --lm-bg-050101: #ffffff;
+  --lm-bg-050406: #ffffff;
+  --lm-bg-0a0406: #ffffff;
+  --lm-bg-0b0b0d: #ffffff;
+  --lm-bg-111111: #ffffff;
+  --lm-bg-111827: #f8f5f0;
+  --lm-bg-111d16: #f8f5f0;
+  --lm-bg-120203: #ffffff;
+  --lm-bg-12040a: #ffffff;
+  --lm-bg-140608: #ffffff;
+  --lm-bg-140d0b: #ffffff;
+  --lm-bg-14221a: #f3eee6;
+  --lm-bg-15152a: #f8f5f0;
+  --lm-bg-161211: #ffffff;
+  --lm-bg-171b14: #f8f5f0;
+  --lm-bg-191412: #f8f5f0;
+  --lm-bg-1a0809: #ffffff;
+  --lm-bg-1a0c12: #ffffff;
+  --lm-bg-1b0710: #ffffff;
+  --lm-bg-1c1b1a: #f3eee6;
+  --lm-bg-1d0910: #ffffff;
+  --lm-bg-1d0b11: #ffffff;
+  --lm-bg-1d2128: #f3eee6;
+  --lm-bg-1f1f23: #f3eee6;
+  --lm-bg-202022: #f3eee6;
+  --lm-bg-211c1b: #f3eee6;
+  --lm-bg-240001: #ffffff;
+  --lm-bg-270d15: #f8f5f0;
+  --lm-bg-2a0a0c: #f8f5f0;
+  --lm-bg-2a0a10: #f8f5f0;
+  --lm-bg-2a0a12: #f8f5f0;
+  --lm-bg-2a0d16: #f8f5f0;
+  --lm-bg-2b1219: #f3eee6;
+  --lm-bg-2f0c0e: #f8f5f0;
+  --lm-bg-34080f: #f8f5f0;
+  --lm-bg-350001: #f8f5f0;
+  --lm-bg-380001: #f8f5f0;
+  --lm-bg-38151f: #ece5da;
+  --lm-bg-3a0010: #f3eee6;
+  --lm-bg-3a0a12: #f3eee6;
+  --lm-bg-3a1218: #f3eee6;
+  --lm-bg-3a1620: #ece5da;
+  --lm-bg-420001: #f3eee6;
+  --lm-ink-a7d6a6: #4a3a40;
+  --lm-ink-b0b0b5: #4a3a40;
+  --lm-ink-b6bac2: #4a3a40;
+  --lm-ink-b8c0b2: #4a3a40;
+  --lm-ink-b9b9bd: #4a3a40;
+  --lm-ink-b9e0b0: #4a3a40;
+  --lm-ink-bac2b2: #4a3a40;
+  --lm-ink-bba9a4: #4a3a40;
+  --lm-ink-bbbbbb: #4a3a40;
+  --lm-ink-bcb3aa: #4a3a40;
+  --lm-ink-bff0cd: #240001;
+  --lm-ink-c1aeb3: #4a3a40;
+  --lm-ink-c4c0b8: #4a3a40;
+  --lm-ink-c6b797: #7a5a26;
+  --lm-ink-c9a86e: #7a5a26;
+  --lm-ink-c9bea8: #4a3a40;
+  --lm-ink-cabc9f: #7a5a26;
+  --lm-ink-cbbd9e: #7a5a26;
+  --lm-ink-cbbfac: #4a3a40;
+  --lm-ink-cfc0a5: #7a5a26;
+  --lm-ink-cfd3da: #4a3a40;
+  --lm-ink-cfe7d0: #240001;
+  --lm-ink-d1b176: #7a5a26;
+  --lm-ink-d4bfa9: #4a3a40;
+  --lm-ink-d5c3a1: #7a5a26;
+  --lm-ink-d6b85c: #7a5a26;
+  --lm-ink-d6b879: #7a5a26;
+  --lm-ink-d6bd89: #7a5a26;
+  --lm-ink-d6c5ca: #4a3a40;
+  --lm-ink-d7a39a: #4a3a40;
+  --lm-ink-d7b77b: #7a5a26;
+  --lm-ink-d7cab6: #4a3a40;
+  --lm-ink-d8caaf: #4a3a40;
+  --lm-ink-d8cdbd: #4a3a40;
+  --lm-ink-d8cfc1: #4a3a40;
+  --lm-ink-d9b4c0: #4a3a40;
+  --lm-ink-d9cdb8: #4a3a40;
+  --lm-ink-dcc495: #7a5a26;
+  --lm-ink-dcd2bf: #4a3a40;
+  --lm-ink-dcded7: #4a3a40;
+  --lm-ink-dcded8: #4a3a40;
+  --lm-ink-dcdfd9: #4a3a40;
+  --lm-ink-ddd0b8: #4a3a40;
+  --lm-ink-ddd3d0: #4a3a40;
+  --lm-ink-dddddd: #4a3a40;
+  --lm-ink-dedede: #240001;
+  --lm-ink-dfd3ba: #4a3a40;
+  --lm-ink-dfd4c4: #4a3a40;
+  --lm-ink-dfe2e8: #240001;
+  --lm-ink-e0a3a3: #4a3a40;
+  --lm-ink-e0d5c1: #4a3a40;
+  --lm-ink-e0d5c6: #4a3a40;
+  --lm-ink-e0e6df: #240001;
+  --lm-ink-e1cec4: #4a3a40;
+  --lm-ink-e1e5db: #240001;
+  --lm-ink-e2d3bd: #4a3a40;
+  --lm-ink-e3c0c2: #4a3a40;
+  --lm-ink-e3c27f: #7a5a26;
+  --lm-ink-e3d3c7: #4a3a40;
+  --lm-ink-e3d5c4: #4a3a40;
+  --lm-ink-e3d7c5: #4a3a40;
+  --lm-ink-e3d8c4: #4a3a40;
+  --lm-ink-e3d9ca: #4a3a40;
+  --lm-ink-e4c98f: #7a5a26;
+  --lm-ink-e4c990: #7a5a26;
+  --lm-ink-e4e6eb: #240001;
+  --lm-ink-e4e7df: #240001;
+  --lm-ink-e5e7ec: #240001;
+  --lm-ink-e6d7b9: #7a5a26;
+  --lm-ink-e6dccb: #4a3a40;
+  --lm-ink-e6ddcb: #4a3a40;
+  --lm-ink-e6e4df: #240001;
+  --lm-ink-e7ddcc: #240001;
+  --lm-ink-e7dece: #240001;
+  --lm-ink-e8a29a: #4a3a40;
+  --lm-ink-e8c98a: #7a5a26;
+  --lm-ink-e8d3a6: #7a5a26;
+  --lm-ink-e8d7b2: #7a5a26;
+  --lm-ink-e8dfd3: #240001;
+  --lm-ink-e8e8ea: #240001;
+  --lm-ink-ead8b8: #7a5a26;
+  --lm-ink-eadbc4: #4a3a40;
+  --lm-ink-ebe2cf: #240001;
+  --lm-ink-edcf91: #7a5a26;
+  --lm-ink-edf0e9: #240001;
+  --lm-ink-eeeeee: #240001;
+  --lm-ink-eef0f3: #240001;
+  --lm-ink-efe6d8: #240001;
+  --lm-ink-f0e7da: #240001;
+  --lm-ink-f1d69f: #7a5a26;
+  --lm-ink-f1f2f4: #240001;
+  --lm-ink-f3b4b4: #4a3a40;
+  --lm-ink-f3e3c0: #7a5a26;
+  --lm-ink-f4dba8: #7a5a26;
+  --lm-ink-f4efe6: #240001;
+  --lm-ink-f59e0b: #7a5a26;
+  --lm-ink-f5d583: #7a5a26;
+  --lm-ink-f5e9d4: #240001;
+  --lm-ink-f5ead7: #240001;
+  --lm-ink-f5ebdb: #240001;
+  --lm-ink-f5efe2: #240001;
+  --lm-ink-f5f2e9: #240001;
+  --lm-ink-f6d68b: #7a5a26;
+  --lm-ink-f6eee8: #240001;
+  --lm-ink-f6efe3: #240001;
+  --lm-ink-f6f1e8: #240001;
+  --lm-ink-f7f0df: #240001;
+  --lm-ink-f8f3ea: #240001;
+  --lm-ink-f9f4ec: #240001;
+  --lm-ink-faf7ef: #240001;
+  --lm-ink-fbf8f1: #240001;
+  --lm-ink-ffb4a8: #4a3a40;
+  --lm-ink-ffb4ab: #4a3a40;
+  --lm-ink-ffb4b4: #4a3a40;
+  --lm-ink-ffd0d0: #4a3a40;
+  --lm-ink-ffd9d9: #240001;
+  --lm-ink-ffe09f: #7a5a26;
+  --lm-ink-fff3d6: #7a5a26;
+  --lm-ink-fff5df: #240001;
+  --lm-ink-fffdf8: #240001;
+  --lm-ink-ffffff: #240001;
+}
+
+/* Light mode on Profile (components/profile/ProfileView.tsx, Tailwind): the maroon page goes white, and the cream / gold
+   words on it go dark. Cream cards (the header, the stat rings) keep their own colours; the Compare list goes white. */
+html[data-mode="light"] .profile-root { --color-cream-50: #240001; --color-gold-300: #7a5a26; background: #fff; }
+html[data-mode="light"] .profile-root .bg-maroon-900 { background-color: #fff; }
+html[data-mode="light"] .profile-root .bg-cream-50 { --color-cream-50: #fbf8f1; --color-gold-300: #dcc495; }
+html[data-mode="light"] .profile-root [role="listbox"] { background: #fff; border-color: rgba(36, 0, 1, .15); box-shadow: 0 14px 30px rgba(36, 0, 1, .16); }
+html[data-mode="light"] .profile-root > header { box-shadow: 0 6px 18px rgba(36, 0, 1, .08); }

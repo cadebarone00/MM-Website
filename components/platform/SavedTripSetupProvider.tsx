@@ -46,7 +46,7 @@ export function SavedTripSetupProvider({ tripId, snapshot, editable, children }:
     return () => window.removeEventListener("beforeunload", leave);
   }, []);
   return <SavedSetupContext.Provider value={{ values, write, available: snapshot.available, readOnly: !editable || blocked.current }}>
-    {editable && status && <div role={blocked.current ? "alert" : "status"} style={{ padding: "8px 16px", background: "#240001", color: "#dcc495" }}>{status}{blocked.current && <button type="button" onClick={() => location.reload()}>Reload settings</button>}</div>}
+    {editable && status && <div role={blocked.current ? "alert" : "status"} style={{ padding: "8px 16px", background: "var(--color-maroon-900)", color: "#dcc495" }}>{status}{blocked.current && <button type="button" onClick={() => location.reload()}>Reload settings</button>}</div>}
     {children}
   </SavedSetupContext.Provider>;
 }

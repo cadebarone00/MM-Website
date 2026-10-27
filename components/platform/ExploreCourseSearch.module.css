@@ -1,65 +1,65 @@
 /* Explore → Courses. Sits where the Explore feature photo sits, on the same warm card background as the filters. */
-.panel{min-height:460px;padding:22px 20px 32px;color:#1d0b11}
-.kicker{margin:0;font:500 10px/1.5 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#7a1b2e}
+.panel{min-height:460px;padding:22px 20px 32px;color:var(--color-maroon-950)}
+.kicker{margin:0;font:500 10px/1.5 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-7a1b2e)}
 .title{margin:10px 0 18px;font:400 clamp(32px,8.5vw,48px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em}
-.searchBox{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 16px;border:1px solid #b99c6b;border-radius:14px;background:#fffdf8;color:#7a1b2e;box-shadow:0 2px 8px #1d0b1110}
-.searchBox:focus-within{border-color:#7a1b2e;box-shadow:0 0 0 3px #7a1b2e22}
-.searchBox input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#1d0b11;font:500 16px var(--font-barlow),sans-serif}
+.searchBox{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 16px;border:1px solid #b99c6b;border-radius:14px;background:#fffdf8;color:var(--brand-7a1b2e);box-shadow:0 2px 8px color-mix(in srgb,var(--color-maroon-950) 6.3%,transparent)}
+.searchBox:focus-within{border-color:var(--brand-7a1b2e);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-7a1b2e) 13.3%,transparent)}
+.searchBox input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--color-maroon-950);font:500 16px var(--font-barlow),sans-serif}
 .searchBox input::placeholder{color:#8c7d72}
 .spinner{animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .hint{margin:16px 2px 0;font:400 14px/1.5 var(--font-barlow),sans-serif;color:#5d4f47}
 .results{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-.results button{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:12px 14px 12px 12px;border:1px solid #e3d8c4;border-radius:16px;background:#fffdf8;color:#1d0b11;text-align:left;cursor:pointer;box-shadow:0 1px 2px #1d0b110d;transition:border-color .15s,box-shadow .15s,transform .15s}
-.results button:hover,.results button:focus-visible{border-color:#b99c6b;background:#fff;box-shadow:0 4px 14px #1d0b1114}
+.results button{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:12px 14px 12px 12px;border:1px solid var(--lm-ink-e3d8c4);border-radius:16px;background:#fffdf8;color:var(--color-maroon-950);text-align:left;cursor:pointer;box-shadow:0 1px 2px color-mix(in srgb,var(--color-maroon-950) 5.1%,transparent);transition:border-color .15s,box-shadow .15s,transform .15s}
+.results button:hover,.results button:focus-visible{border-color:#b99c6b;background:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--color-maroon-950) 7.8%,transparent)}
 .results button:active{transform:scale(.99)}
-.chevron{flex:none;margin-left:auto;color:#7a1b2e}
+.chevron{flex:none;margin-left:auto;color:var(--brand-7a1b2e)}
 .resultText{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
 .resultText strong{font:400 18px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .resultText small{font:500 12px/1.4 var(--font-barlow),sans-serif;color:#6b5a50;letter-spacing:.02em}
 .credit{margin:14px 2px 0;font:400 11px/1.4 var(--font-barlow),sans-serif;color:#8c7d72}
-.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:transparent;color:#7a1b2e;font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0;border:0;background:transparent;color:var(--brand-7a1b2e);font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
 .course{margin-top:10px;padding:22px 20px;border:1px solid #b99c6b;border-radius:16px;background:#fffdf8}
 .course h2{margin:10px 0 8px;font:400 clamp(28px,7.5vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em}
 .place{display:flex;align-items:center;gap:6px;margin:0;font:500 14px var(--font-barlow),sans-serif;color:#5d4f47}
 .facts{display:flex;gap:8px;margin:14px 0 0}
-.facts span{padding:5px 10px;border-radius:999px;background:#efe7da;font:600 12px var(--font-barlow),sans-serif;color:#1d0b11}
-.soon{margin:18px 0 0;padding-top:16px;border-top:1px solid #e6dccb;font:400 14px/1.55 var(--font-barlow),sans-serif;color:#5d4f47}
+.facts span{padding:5px 10px;border-radius:999px;background:#efe7da;font:600 12px var(--font-barlow),sans-serif;color:var(--color-maroon-950)}
+.soon{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--lm-ink-e6dccb);font:400 14px/1.55 var(--font-barlow),sans-serif;color:#5d4f47}
 /* Picked course: what's available, tees, actions, and the full-screen GPS layer. */
 .status{display:flex;align-items:center;gap:7px;margin:14px 0 0;font:600 13px var(--font-barlow),sans-serif;color:#6b5a50}
 .status[data-tone=good]{color:#1f6b3d}
 .tees{margin-top:16px}
-.teeNames{margin:6px 0 0;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#1d0b11}
+.teeNames{margin:6px 0 0;font:500 14px/1.5 var(--font-barlow),sans-serif;color:var(--color-maroon-950)}
 .teeList{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
 .teeList li{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;border-radius:10px;background:#f6f0e6;font:500 14px var(--font-barlow),sans-serif}
 .teeList li span:last-child{color:#6b5a50}
 .actions{display:grid;gap:8px;margin-top:20px}
 .primary,.secondary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:12px;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
-.primary{border:0;background:#1d0b11;color:#fffdf8}
-.secondary{border:1px solid #1d0b11;background:transparent;color:#1d0b11}
+.primary{border:0;background:var(--lm-bg-1d0b11);color:var(--lm-ink-fffdf8)}
+.secondary{border:1px solid var(--color-maroon-950);background:transparent;color:var(--color-maroon-950)}
 .primary:disabled,.secondary:disabled{opacity:.6;cursor:default}
-.gpsLayer{position:fixed;inset:0;z-index:1000;background:#240001}
+.gpsLayer{position:fixed;inset:0;z-index:1000;background:var(--lm-bg-240001)}
 /* Course lookup refresh: flag tile, distance pill, Near you section, loading placeholders. */
-.flag{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#f3ebdd;color:#7a1b2e}
-.miles{flex:none;margin-left:auto;padding:5px 9px;border-radius:999px;background:#1d0b11;color:#fffdf8;font:600 12px/1 var(--font-barlow),sans-serif;white-space:nowrap}
+.flag{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#f3ebdd;color:var(--brand-7a1b2e)}
+.miles{flex:none;margin-left:auto;padding:5px 9px;border-radius:999px;background:var(--lm-bg-1d0b11);color:var(--lm-ink-fffdf8);font:600 12px/1 var(--font-barlow),sans-serif;white-space:nowrap}
 .near{margin-top:20px}
 .sectionHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sectionHead h3{display:flex;align-items:center;gap:6px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7a1b2e}
-.refresh{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border:1px solid #e3d8c4;border-radius:999px;background:transparent;color:#5d4f47;font:600 12px var(--font-barlow),sans-serif;cursor:pointer}
-.locate{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;margin-top:12px;border:1px dashed #b99c6b;border-radius:16px;background:#fffdf8;color:#1d0b11;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.sectionHead h3{display:flex;align-items:center;gap:6px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-7a1b2e)}
+.refresh{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border:1px solid var(--lm-ink-e3d8c4);border-radius:999px;background:transparent;color:#5d4f47;font:600 12px var(--font-barlow),sans-serif;cursor:pointer}
+.locate{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;margin-top:12px;border:1px dashed #b99c6b;border-radius:16px;background:#fffdf8;color:var(--color-maroon-950);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
 .locate:hover{border-style:solid}
 .skeleton{height:68px;border-radius:16px;background:linear-gradient(90deg,#efe7da 0%,#f8f2e8 50%,#efe7da 100%);background-size:200% 100%;animation:shimmer 1.2s ease-in-out infinite}
 @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
 @media(prefers-reduced-motion:reduce){.skeleton,.spinner{animation:none}.results button{transition:none}}
 /* Course profile: the scorecard, nine holes per table (swipes sideways if it doesn't fit). */
 .scorecard{margin-top:16px;display:grid;gap:10px}
-.scorecardScroll{overflow-x:auto;border-radius:10px;border:1px solid #e6dccb}
+.scorecardScroll{overflow-x:auto;border-radius:10px;border:1px solid var(--lm-ink-e6dccb)}
 .scorecardTable{width:100%;border-collapse:collapse;font:500 11px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;color:#2b211d;text-align:center}
-.scorecardTable th,.scorecardTable td{padding:7px 1px;min-width:0;border-top:1px solid #efe6d8}
-.scorecardTable thead th{border-top:0;background:#591c2e;color:#f3e6c9;font-weight:700}
+.scorecardTable th,.scorecardTable td{padding:7px 1px;min-width:0;border-top:1px solid var(--lm-ink-efe6d8)}
+.scorecardTable thead th{border-top:0;background:var(--color-maroon-650);color:#f3e6c9;font-weight:700}
 .scorecardTable th[scope=row]{position:sticky;left:0;min-width:0;padding:7px 4px 7px 6px;text-align:left;background:#f6f0e6;font-weight:700;white-space:nowrap}
-.scorecardTable thead th[scope=row]{background:#591c2e}
+.scorecardTable thead th[scope=row]{background:var(--color-maroon-650)}
 .scorecardTable td:last-child,.scorecardTable thead th:last-child{font-weight:700;background:#f6f0e6}
-.scorecardTable thead th:last-child{background:#4a1726}
+.scorecardTable thead th:last-child{background:var(--brand-4a1726)}
 .scorecardPar td{font-weight:700}
 .scorecardTotal{margin:0;font:600 13px var(--font-barlow),sans-serif;color:#5d4f47}

@@ -3,7 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Settings } from "lucide-react";
+import { Pencil, Search, Settings } from "lucide-react";
+import { FriendRequestBadge } from "./FriendRequestBadge";
+import { FriendToggle } from "./FriendToggle";
+import type { Relation } from "@/lib/profile/friendRequestsServer";
 import { HandicapHome } from "@/components/portal/handicap/HandicapHome";
 import { PlayerRoundsList } from "@/components/profile/PlayerRoundsList";
 import { ProfileStats } from "@/components/profile/ProfileStats";
@@ -27,7 +30,9 @@ const empty = "px-4 py-5 text-center text-cream-50/70";
  */
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
 /** `links`: where the gear and the photo's pencil go (the dev profile preview points them at its sample screens). */
-export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" } }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string } }) {
+/** `friendship` (someone else's profile, signed in): the friend button in the corner, switched on when we're friends. */
+export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string };
+  friendship?: { profileId: string; relation: Relation; tripMate: boolean } }) {
   const [tab, setTab] = useState<Tab>("overview");
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
@@ -37,8 +42,14 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
   return (
     // Extend the profile background through the bottom-menu padding. Every tab sits on dark maroon, so the top
     // section's curve shows the same way on Overview, Rounds and Stats.
-    <div className="flex min-h-screen min-w-0 flex-col bg-maroon-900 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
+    <div className="profile-root flex min-h-screen min-w-0 flex-col bg-maroon-900 text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       <header className="relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-cream-50 text-maroon-900 px-5 pb-3 pt-[70px]">
+        {/* Find Golfers (search and friend requests), just left of the gear. */}
+        {isOwner && <Link href="/profile/search" aria-label="Find golfers" className="absolute right-16 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
+          <Search size={26} aria-hidden="true" />
+          <FriendRequestBadge />
+        </Link>}
+        {!isOwner && friendship && <FriendToggle profileId={friendship.profileId} name={identity.displayName} initial={friendship.relation} tripMate={friendship.tripMate} />}
         {isOwner && <Link href={links.settings} aria-label="Settings" className="absolute right-4 top-6 flex h-11 w-11 items-center justify-center rounded-full text-maroon-900 hover:text-maroon-700">
           <Settings size={28} aria-hidden="true" />
         </Link>}
@@ -47,7 +58,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
               profile, friends from golf trips, and the handicap index from all counting rounds). */}
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <span className="flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-[26px] font-bold text-maroon-900 shadow-[0_0_0_3px_#380001]">
+              <span className="flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-[26px] font-bold text-maroon-900 shadow-[0_0_0_3px_var(--color-maroon-800)]">
                 {identity.avatarSrc
                   ? <Image src={identity.avatarSrc} alt="" width={82} height={82} unoptimized className="h-full w-full object-cover" />
                   : identity.initials}
@@ -62,13 +73,16 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
             <div className="min-w-0 flex-1">
             {/* One line, centred over the numbers (it sits below the gear, so it never runs under it). */}
             <h2 className="truncate text-center font-serif text-sm font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
-            {!isPrivate && <dl className="mt-2 grid grid-cols-3 text-center" aria-label="Profile numbers">
-              {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) =>
-                <div key={label} className="flex flex-col-reverse items-center gap-1">
-                  <dt className="font-condensed text-sm text-maroon-900/70">{label}</dt>
-                  <dd className="m-0 font-serif text-sm font-bold leading-none">{value}</dd>
-                </div>)}
-            </dl>}
+            {/* Rounds · Friends · Handicap show on every profile, Private ones too. */}
+            <dl className="mt-2 grid grid-cols-3 text-center" aria-label="Profile numbers">
+              {([["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) => {
+                const stat = <><dt className="font-condensed text-sm text-maroon-900/70">{label}</dt><dd className="m-0 font-serif text-sm font-bold leading-none">{value}</dd></>;
+                // My Friends number opens my friends list.
+                return label === "Friends" && isOwner
+                  ? <Link key={label} href="/profile/friends" aria-label={`Friends: ${value}. See your friends`} className="flex flex-col-reverse items-center gap-1 rounded-lg text-maroon-900 hover:text-maroon-700">{stat}</Link>
+                  : <div key={label} className="flex flex-col-reverse items-center gap-1">{stat}</div>;
+              })}
+            </dl>
             </div>
           </div>
           {/* Under the photo: username, then the bio (small). */}

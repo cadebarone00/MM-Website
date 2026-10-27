@@ -1,6 +1,6 @@
 /* Tourneys + My Tournaments: maroon top to bottom. The negative bottom margin runs the
    maroon through the site's bottom-menu padding (SITE_BOTTOM_NAV_CONTENT_CLASS) on phones. */
-.page{--tj-bg:var(--color-maroon-900);--tj-box:var(--color-maroon-700);--tj-text:#fbf8f1;--tj-muted:#d6c5ca;--tj-gold:#dcc495;--tj-line:#c9a86e40;
+.page{--tj-bg:var(--lm-bg-240001);--tj-box:var(--color-maroon-700);--tj-text:var(--lm-ink-fbf8f1);--tj-muted:var(--lm-ink-d6c5ca);--tj-gold:var(--lm-ink-dcc495);--tj-line:color-mix(in srgb,var(--lm-ink-c9a86e) 25.1%,transparent);
   min-height:calc(100svh - 64px);margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));padding:32px max(20px,calc((100% - 680px)/2)) calc(48px + 5.75rem + env(safe-area-inset-bottom));
   background:var(--tj-bg);color:var(--tj-text)}
 .title{font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;margin:0 0 24px;color:var(--tj-text);letter-spacing:-.02em}
@@ -16,8 +16,8 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .linkRow input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;color:#2a2420;padding:12px 0;outline:none}
 .linkRow input::placeholder{color:#8a7f74}
 .linkRow button{min-height:42px;min-width:56px;padding:0 16px;border-radius:10px;background:var(--tj-box);color:var(--tj-text);font-weight:600;font-size:15px;border:0;cursor:pointer}
-.linkRow button:hover{background:var(--color-maroon-800)}
-.error{margin:8px 2px 0;font-size:14px;color:#f3b4b4}
+.linkRow button:hover{background:var(--lm-bg-380001)}
+.error{margin:8px 2px 0;font-size:14px;color:var(--lm-ink-f3b4b4)}
 .past{margin-top:40px}
 .past h2,.heading{font:500 28px var(--font-spectral),Georgia,serif;margin:0;padding-bottom:12px;border-bottom:1px solid var(--tj-line)}
 .note{font-size:14px;line-height:1.6;color:var(--tj-muted);margin:16px 0}
@@ -25,7 +25,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .list{list-style:none;margin:0;padding:0}
 .list li{border-bottom:1px solid var(--tj-line)}
 .row{display:flex;align-items:center;gap:16px;padding:18px 4px;min-height:72px;color:var(--tj-gold)}
-.row:hover{background:#ffffff0a}
+.row:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 3.9%,transparent)}
 .badge{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--tj-box);color:var(--tj-gold)}
 .rowText{flex:1;min-width:0;display:grid;gap:3px}
 .rowText strong{font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--tj-text);overflow-wrap:anywhere}
@@ -41,21 +41,20 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 
 /* Selector-only presentation; the shared My Tournaments screen keeps its styles. */
 .tourneys {
-  --tj-bg: #1d0b11;
+  --tj-bg: var(--lm-bg-1d0b11);
   --tj-gold: #806331;
   padding: 0 0 calc(48px + 5.75rem + env(safe-area-inset-bottom));
   background: transparent;
-  color: #fbf8f1;
+  color: var(--lm-ink-fbf8f1);
 }
 .photoPanel {
   width: calc(100% - 64px);
   max-width: 520px;
-  height: calc(45svh - max(100px, 14svh));
   margin: 0 auto 24px;
   padding: 22px 16px;
   border-radius: 30px;
   background: #fbf8f1;
-  box-shadow: 0 -8px 32px #1d0b1120;
+  box-shadow: 0 -8px 32px color-mix(in srgb,var(--color-maroon-950) 12.5%,transparent);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -65,24 +64,24 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   width: 100%;
   margin: 0 auto;
   padding: 1px max(20px, calc((100% - 680px)/2)) 32px;
-  background: #1d0b11;
+  background: var(--lm-bg-1d0b11);
 }
-.lowerContent > .tournamentSection > .descriptor { color: #ead8b8; }
+.lowerContent > .tournamentSection > .descriptor { color: var(--lm-ink-ead8b8); }
 .descriptor {
   margin: 0 0 12px;
-  color: #380001;
+  color: var(--color-maroon-800);
   font: 600 14px/1.4 var(--font-barlow), sans-serif;
   letter-spacing: .04em;
 }
-.tourneys .actions { grid-template-columns: 1fr; grid-template-rows: 1fr auto; gap: 16px; flex: 1; min-height: 0; }
+.tourneys .actions { grid-template-columns: 1fr 1fr; gap: 12px; }
 .joinEntry { min-width: 0; }
 .joinEntry > .descriptor { margin: 0; }
-.joinInput { display: block; width: 100%; min-width: 0; min-height: 44px; border: 0; border-bottom: 1px solid #80633180; border-radius: 0; background: transparent; color: #380001; font-size: 16px; padding: 8px 0; }
+.joinInput { display: block; width: 100%; min-width: 0; min-height: 44px; border: 0; border-bottom: 1px solid #80633180; border-radius: 0; background: transparent; color: var(--color-maroon-800); font-size: 16px; padding: 8px 0; }
 .joinInput::placeholder { color: #79675f; }
 .joinInput:focus-visible { outline: 2px solid #806331; outline-offset: 3px; }
 .joinMethod { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; }
-.joinMethod label { display: flex; align-items: center; gap: 6px; min-height: 44px; color: #380001; font: 600 13px/1.3 var(--font-barlow), sans-serif; cursor: pointer; }
-.joinMethod input { width: 14px; height: 14px; margin: 0; flex-shrink: 0; accent-color: #500001; }
+.joinMethod label { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--color-maroon-800); font: 600 13px/1.3 var(--font-barlow), sans-serif; cursor: pointer; }
+.joinMethod input { width: 14px; height: 14px; margin: 0; flex-shrink: 0; accent-color: var(--color-maroon-700); }
 .joinMethod input:focus-visible { outline: 2px solid #806331; outline-offset: 3px; }
 .joinMethod input:not(:checked) + span { color: #79675f; }
 .tourneys .actionBox {
@@ -90,66 +89,70 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   align-items: flex-start;
   justify-content: flex-end;
   text-align: left;
-  min-height: 44px;
-  gap: 18px;
-  padding: 12px 16px;
+  min-height: 104px;
+  gap: 10px;
+  padding: 14px 16px;
+  color: #fbf8f1;
+  font-family: var(--font-barlow), sans-serif;
+  font-weight: 600;
+  cursor: pointer;
   border: 1px solid #c9a86e45;
   border-radius: 20px;
-  background: radial-gradient(ellipse at 15% 0, #8b3940 0, transparent 75%), linear-gradient(145deg, #63151e, #380001);
-  box-shadow: 0 10px 24px #10000145, inset 0 1px 0 #fbf8f118;
+  background: radial-gradient(ellipse at 15% 0, var(--brand-8b3940) 0, transparent 75%), linear-gradient(145deg, var(--color-maroon-675), var(--color-maroon-800));
+  box-shadow: 0 10px 24px color-mix(in srgb,var(--brand-100001) 27.1%,transparent), inset 0 1px 0 #fbf8f118;
   font-size: 16px;
   line-height: 1.3;
 }
-.tourneys a.actionBox:hover { border-color: #c9a86e90; background-color: #63151e; }
+.tourneys a.actionBox:hover { border-color: #c9a86e90; background-color: var(--color-maroon-675); }
 .tourneys .actionBox span { max-width: 100%; }
 .tourneys .linkForm { margin: 24px 0 28px; }
 .tourneys .linkRow {
   min-height: 52px;
-  border-color: #c9a86e65;
+  border-color: color-mix(in srgb,var(--lm-ink-c9a86e) 39.6%,transparent);
   border-radius: 14px;
   background: #fbf8f1;
-  box-shadow: 0 4px 16px #10000120;
+  box-shadow: 0 4px 16px color-mix(in srgb,var(--brand-100001) 12.5%,transparent);
 }
-.tourneys .linkRow button { background: #500001; }
-.tourneys .error { color: #68000b; }
+.tourneys .linkRow button { background: var(--color-maroon-700); }
+.tourneys .error { color: var(--color-maroon-725); }
 .tournamentSection { margin-top: 28px; }
 .tourneys .past {
   margin-top: 0;
   overflow: hidden;
   border-radius: 20px;
   background: #fbf8f1;
-  color: #380001;
+  color: var(--color-maroon-800);
 }
 .tourneys .past h2 {
   padding: 20px 20px 0;
   border: 0;
-  color: #380001;
+  color: var(--color-maroon-800);
   font: 700 16px/1.4 var(--font-barlow), sans-serif;
   letter-spacing: .01em;
 }
 .tourneys .pastLabel {
   margin: 0;
   padding: 18px 20px 12px;
-  color: #380001;
+  color: var(--color-maroon-800);
   font: 600 13px/1.5 var(--font-barlow), sans-serif;
   letter-spacing: .02em;
 }
 .tourneys .note {
   margin: 0;
   padding: 8px 20px 24px;
-  color: #380001aa;
+  color: color-mix(in srgb,var(--color-maroon-800) 66.7%,transparent);
   font-size: 14px;
 }
-.tourneys .note a { color: #68000b; }
+.tourneys .note a { color: var(--color-maroon-725); }
 .tourneys .list li { border: 0; }
-.tourneys .list li + li { border-top: 1px solid #38000118; }
-.tourneys .row { min-height: 96px; padding: 20px; gap: 16px; color: #38000166; }
-.tourneys .row:hover { background: #38000106; }
+.tourneys .list li + li { border-top: 1px solid color-mix(in srgb,var(--color-maroon-800) 9.4%,transparent); }
+.tourneys .row { min-height: 96px; padding: 20px; gap: 16px; color: color-mix(in srgb,var(--color-maroon-800) 40%,transparent); }
+.tourneys .row:hover { background: color-mix(in srgb,var(--lm-bg-380001) 2.4%,transparent); }
 .tourneys .badge { display: none; }
 .tourneys .rowText { gap: 5px; }
-.tourneys .rowText strong { color: #380001; font: 700 18px/1.3 var(--font-barlow), sans-serif; }
-.tourneys .rowText span { color: #380001aa; overflow-wrap: anywhere; }
-.tourneys .rowText .dates { color: #38000180; font-size: 12px; }
+.tourneys .rowText strong { color: var(--color-maroon-800); font: 700 18px/1.3 var(--font-barlow), sans-serif; }
+.tourneys .rowText span { color: color-mix(in srgb,var(--color-maroon-800) 66.7%,transparent); overflow-wrap: anywhere; }
+.tourneys .rowText .dates { color: color-mix(in srgb,var(--color-maroon-800) 50.2%,transparent); font-size: 12px; }
 .tourneys .row > svg { flex-shrink: 0; }
 .tourneys .past a:focus-visible { outline-color: #806331; outline-offset: -3px; }
 @media (max-width: 400px) {
@@ -165,5 +168,42 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 /* Join a Tournament: the code box and its Join button side by side. */
 .codeRow{display:flex;gap:8px;align-items:stretch}
 .codeRow .joinInput{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.1em}
-.codeGo{flex:0 0 auto;min-width:68px;padding:0 16px;border:0;border-radius:10px;background:var(--tj-gold,#c9a86e);color:#3b0d18;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.codeGo{flex:0 0 auto;min-width:68px;padding:0 16px;border:0;border-radius:10px;background:var(--tj-gold,#c9a86e);color:var(--color-maroon-825);font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .codeGo:disabled{opacity:.5;cursor:default}
+
+/* Tourneys: search public tournaments (the Live Tournaments feed shows under it). */
+.searchRow{display:flex;align-items:center;gap:10px;min-height:46px;margin:0 0 4px;padding:0 14px;border-radius:12px;background:var(--tj-box);color:var(--tj-muted)}
+.searchRow:focus-within{outline:3px solid var(--tj-gold);outline-offset:2px}
+.searchInput{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:var(--tj-text);font:500 16px var(--font-barlow),sans-serif;outline:none}
+.searchInput::placeholder{color:var(--tj-muted)}
+
+/* Join a Tournament opens the code box under the two boxes. */
+.tourneys .actions + .joinEntry { margin-top: 16px; }
+.tourneys button.actionBox[aria-expanded=true] { border-color: var(--lm-ink-c9a86e); }
+.tourneys .actionBox svg { color: var(--lm-ink-e8c98a); }
+/* Find a Tournament: name / location search and a date, then Live / Upcoming / Past. */
+.searchPanel { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 8px; }
+.searchDate { position: relative; display: flex; align-items: center; min-height: 46px; padding: 0 10px; border-radius: 12px; background: var(--tj-box); }
+.searchDate .searchInput { width: 100%; font-size: 14px; color-scheme: dark; }
+.clearDate { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--tj-muted); cursor: pointer; }
+.sectionTabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 14px 0 6px; padding: 4px; border-radius: 12px; background: color-mix(in srgb,var(--lm-ink-ffffff) 5.1%,transparent); }
+.sectionTab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--tj-muted); font: 600 14px var(--font-barlow), sans-serif; cursor: pointer; }
+.sectionTab[aria-selected=true] { background: #fbf8f1; color: var(--color-maroon-800); }
+.sectionTab small { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb,var(--lm-ink-ffffff) 9.4%,transparent); font-size: 11px; }
+.sectionTab[aria-selected=true] small { background: color-mix(in srgb,var(--lm-bg-380001) 9.4%,transparent); }
+.searchNote { margin: 14px 0; font-size: 14px; line-height: 1.6; color: var(--tj-muted); }
+@media (max-width: 340px) { .searchPanel { grid-template-columns: 1fr; } }
+/* Phones: the page's own top padding is reset (globals.css gives clearance to the header), so the card starts below the
+   header here: its 68px row, the safe area, and a gap. */
+@media (max-width: 1023px) { .tourneys.page { padding-top: calc(max(190px, 30svh) + var(--app-top-clearance, 0px)); } }
+/* Live / Upcoming / Past Tournaments, one under the other. */
+.publicList { margin-top: 22px; }
+.publicListHeading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--tj-line); color: var(--lm-ink-ead8b8); font: 600 15px/1.3 var(--font-barlow), sans-serif; letter-spacing: .02em; }
+.publicListHeading small { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb,var(--lm-ink-ffffff) 9.4%,transparent); color: var(--tj-muted); font-size: 11px; text-align: center; }
+
+/* Light mode: the search boxes go light (dark text on them), and the icons on the maroon Create / Join boxes stay light gold. */
+:global(html[data-mode="light"]) .searchRow,
+:global(html[data-mode="light"]) .searchDate { background: #f3eee6; box-shadow: inset 0 0 0 1px rgba(36,0,1,.12); }
+:global(html[data-mode="light"]) .tourneys .actionBox svg,
+:global(html[data-mode="light"]) .tourneys .actionBox { color: #fbf8f1; }
+:global(html[data-mode="light"]) .tourneys .actionBox svg { color: #e8c98a; }

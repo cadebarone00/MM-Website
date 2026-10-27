@@ -83,7 +83,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   }
   // Main platform pages share a compact title beside the menu icon.
   if (pathname === "/") return <><PlatformHeader home title="The Maroon" />{children}</>;
-  if (pathname === "/pickems" || pathname === "/profile" || pathname === "/settings") return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : pathname === "/settings" ? "Settings" : "Profile"} />{children}</>;
+  // Every Profile page (mine, another golfer's, Find Golfers, Friends, Edit) is an app screen: no website header or nav.
+  if (pathname === "/pickems" || pathname === "/settings" || pathname === "/profile" || pathname.startsWith("/profile/")) return <><PlatformHeader title={pathname === "/pickems" ? "Pick'ems" : pathname === "/settings" ? "Settings" : pathname === "/profile/search" ? "Find Golfers" : pathname === "/profile/friends" ? "Friends" : "Profile"} />{children}</>;
   // Golf Trips on phones has no top bar: its photo panel and title run to the top of the screen. Wide screens have no
   // bottom menu, so they keep the menu and account buttons, floating transparent over the photo (owner request 2026-10-02).
   if (pathname === "/golf-trips") return <>
@@ -96,6 +97,8 @@ function AreaChrome({ children, nextTournamentOverride }: { children: ReactNode;
   if (pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/")) return <>{children}</>;
   // Play a round is app-only too: no website top nav.
   if (pathname.startsWith("/rounds/")) return <>{children}</>;
+  // The dev tournament preview is app-only too.
+  if (pathname === "/dev/tourney") return <>{children}</>;
 
   if (inPortal) {
     return (
