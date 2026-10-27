@@ -16,7 +16,7 @@ The existing sibling C:/Users/Owner/Documents/GitHub/maroon-a6-poc remains the C
 
 runtime.cjs verifies Docker project labels, the database's published 55322 port and local CLI Auth URL before obtaining local keys in memory. It sets only child-process Supabase configuration; no environment file or hosted configuration is modified. Main's normal Next.js server runs its real Route Handlers/middleware, without next/headers stubs. Fetch destinations are restricted to explicit loopback service ports and redirects fail closed; HTTP/HTTPS transport guards also block nonlocal hosts. Main is exposed only through selected read/sign-out routes plus a secret-free /__local_identity diagnostic. No public application identity route is added.
 
-The proxy independently verifies main's environment/project identity. It contains no Supabase keys, business loaders or authorization rules. Only approved requests are forwarded; no wildcard CORS or origin rewriting. A6 verifies /__local_identity before password sign-in or trip reads. Requests use the existing bearer transport and Phase 2A JSON. Packaged assets are checked against the isolated anon key and for absence of the service-role key. Existing emulator-only cleartext permission is unchanged; no mixed-content/WSS downgrade is enabled.
+The proxy independently verifies main's environment/project identity. It contains no Supabase keys, business loaders or authorization rules. Only approved requests are forwarded, preserving Authorization, Cookie and Origin so main can reject conflicting identities; no wildcard CORS or origin rewriting. A6 verifies /__local_identity before password sign-in or trip reads. Requests use the existing bearer transport and Phase 2A JSON. Packaged assets are checked against the isolated anon key and for absence of the service-role key. Existing emulator-only cleartext permission is unchanged; no mixed-content/WSS downgrade is enabled.
 
 ## Client behavior
 
@@ -25,6 +25,7 @@ The proxy independently verifies main's environment/project identity. It contain
 - Native encrypted session storage and startup restoration are retained. Account IDs key screen instances so changing accounts remounts the view. In-flight trip results are discarded if the account changes.
 - Phase 2B stores no new persistent trip copies. Old trip-list/detail caches across accounts are cleared on auth events and before reads; sign-out clears the signed-in account's saved screens. This deliberately replaces the earlier offline saved-trip list with an explicit network error; session restoration still works.
 - 401 clears the invalid local session; 403 requests profile setup; 404 shows not found; 503 shows temporary unavailability; network loss and account changes have explicit errors. No authorization error falls back to saved trip data.
+- Native read, identity-probe and explicit sign-out HTTP waits are bounded at 10 seconds. A pending read becomes an offline error; late data is not displayed or cached. This covers native HTTP promises that do not reject promptly during airplane-mode transitions.
 - Explicit sign-out calls main's existing strict revocation route first. A backend failure is surfaced rather than reported as success. A concurrent account switch cannot clear a different account's local session.
 
 ## Repeatable local commands
@@ -37,6 +38,7 @@ node scripts/mobile-local/start-main.cjs
 node main-read-adapter.mjs
 # From MM-Website; creates only synthetic local accounts/trip and exercises real HTTP:
 node node_modules/tsx/dist/cli.mjs scripts/mobile-local/http-proof.mjs
+node scripts/mobile-local/proxy-proof.mjs
 # Existing A6 bundle and native sync, from maroon-a6-poc / android-app:
 node build.mjs --android
 node build.mjs
@@ -53,13 +55,18 @@ The helper requires a built main .next/BUILD_ID. Do not build over an active mai
 ## Results and limits
 
 - Real HTTP: 12 checks passed, including verified main identity, password sign-in, member list/detail, omission of private fields, outsider denial, account isolation, invalid-token denial, missing-profile 403, main sign-out and old access/refresh token rejection. No A1 imports or header stubs were used.
-- Client transport automation: 8 tests passed for DTO delivery, all expected error statuses, absent sessions, environment verification, offline behavior, account-switch races, malformed responses and legacy trip-cache clearing.
+- Real HTTP proxy security: 3 checks passed for bearer-only access, fresh-cookie-only access and rejection of a conflicting cookie/bearer pair. Temporary synthetic test sessions were revoked afterward; no tokens were persisted or printed.
+- Client transport automation: 9 tests passed for DTO delivery, all expected error statuses, absent sessions, environment verification, offline behavior, account-switch races, malformed responses, legacy trip-cache clearing and bounded pending native requests.
 - Main regression selection: 58 tests passed, preserving Phase 1/2A coverage.
 - Packaged browser smoke: sign-in/list/member detail and sign-out passed. An initial root-path containment bug in the new static host was corrected before the passing run; API authorization was unchanged.
-- Android bundle/Capacitor sync passed. Offline Gradle assembleDebug passed in 2m18s (27 tasks executed, 96 up-to-date); adb install -r returned Success. APK SHA-256: 1c0fc6eaf04110eeb4850fe7c0e4eb47c46c211de92d7bbb45e2dd756dfc39c5. Android 16/API36 emulator; no store upload or physical-device test.
-- Installed-app final outcome: see the dated completion record below. Early attempts demonstrated sign-in, list/detail, secure storage, process-death restoration and offline errors; test harness fixes added a network-recovery wait after airplane mode and waited for actual list rendering instead of a stale readiness marker.
+- Final Android bundle/Capacitor sync passed. Offline Gradle assembleDebug passed in 1m46s (27 tasks executed, 96 up-to-date); adb install -r returned Success. Final APK SHA-256: 66734778a7c24abb3238003f9fc2826eb622dd2ad4b97897c152d745052a0148. Android 16/API36 emulator; no store upload or physical-device test. An earlier APK preceded the bounded-wait fix and is superseded by this hash.
+- Installed-app final outcome (2026-10-23): 16 checks passed, process exit 0, zero page errors. Verified sign-in/list, native secure storage without a localStorage session copy, member detail, absence of the prior Realtime crash, process-death restoration, sign-out/local clearing, old access/refresh token rejection, outsider list/detail denial, switching to a member and back without changing URL, bounded offline read errors and network recovery via cold launch. The final run left the installed app signed out and restored emulator Wi-Fi/data/airplane settings to online. Earlier failures prompted a static-root proxy fix, rendered-list readiness checks, network-recovery handling and the client timeout fix; their partial results are superseded by this final run, not treated as passes.
 
-Evidence: ignored out/phase2b/http-results.json, device-results.json, browser-results.json, gradle.log and screenshots. The APK and generated native assets remain in the existing sibling A6 project. No raw token is persisted in evidence. Hosted staging/production, iOS, physical-device behavior and scoring remain unverified.
+Evidence: ignored out/phase2b/http-results.json, proxy-results.json, device-results.json, browser-results.json, gradle.log and screenshots. The APK and generated native assets remain in the existing sibling A6 project. No raw token is persisted in evidence. Hosted staging/production, iOS, physical-device behavior and scoring remain unverified.
+
+Additional final checks: main standard typecheck (node node_modules/typescript/bin/tsc --noEmit --incremental false) and targeted ESLint on scripts/mobile-local, featureRegistry.ts and render-workflow.cjs exited 0. Compliance metadata tests passed 14/14; compliance structure check passed for 35 features/9 documentation files. Workflow Markdown/HTML generation and consistency passed, and browser QA checked the change panel, navigation, search and A6 workflow mapping. Main's existing Phase 2A production build was reused for real HTTP; no concurrent next build overwrote the running isolated server. Registry success is structural only, not legal approval.
+
+Phase 2B files in the sibling project: build.mjs, main-read-adapter.mjs, src/main.tsx, src/platform.ts, src/tripReads.ts, src/tripReads.test.ts and src/screens/TripReadScreen.tsx, plus generated bundle/native assets and APK. Original edited source copies were retained under that project's out/phase2b-originals. These sibling sources are not part of MM-Website's Git index. Main files added for the run are scripts/mobile-local/runtime.cjs, start-main.cjs, http-proof.mjs, proxy-proof.mjs and device-proof.mjs; workflow, API handoff and compliance documentation were updated. Application identity/read-API source hashes remained unchanged during Phase 2B. Main commit e73b73e9 appeared while verification was paused; this task did not create a commit.
 
 ## Compliance review and follow-up
 

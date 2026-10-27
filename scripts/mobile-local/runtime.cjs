@@ -3,6 +3,7 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 function localConfig() {
+  try {
   const inspected = JSON.parse(execFileSync('docker', ['inspect', 'supabase_db_maroon-auth-test'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }))[0];
   if (inspected.Config.Labels['com.supabase.cli.project'] !== 'maroon-auth-test'
     || !inspected.NetworkSettings.Ports['5432/tcp'].some(binding => binding.HostPort === '55322')) throw new Error('Wrong local database identity');
@@ -12,6 +13,10 @@ function localConfig() {
   const config = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
   if (config.API_URL !== 'http://127.0.0.1:55321' || !config.SERVICE_ROLE_KEY || !config.ANON_KEY) throw new Error('Wrong isolated Auth endpoint');
   return config;
+  } catch {
+    // Never include captured CLI/container output (which can contain local secrets).
+    throw new Error('Unable to verify the isolated maroon-auth-test configuration.');
+  }
 }
 function isolate(config) {
   for (const key of Object.keys(process.env)) if (/SUPABASE/i.test(key)) delete process.env[key];

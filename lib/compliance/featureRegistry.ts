@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "native-a6-main-reads", name: "Phase 2B existing A6 main-backed reads",
+    scope: "Existing sibling A6 trip list/detail consume main Phase 2A JSON through identity-verified local-only proxy/runtime, preserving native secure session storage/restoration. Minimal read-only detail avoids scoring/Realtime initialization. No new persistent trip cache; account-keyed screens and old trip-cache clearing. Real isolated HTTP and packaged/native verification are distinguished in docs/mobile-phase2b-main-a6.md. No production/staging, schema, dependency, release or iOS change; distribution/privacy/provider review remains review_required.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "intellectual-property", "open-source", "ugc", "third-party-golf-content", "platform-rules", "legal-review"],
+  },
+  {
     id: "mobile-golf-trip-reads", name: "Phase 2A mobile Golf Trip JSON reads",
     scope: "Authenticated GET list/detail on existing golf-trips routes, explicit verified profile context, existing membership RPCs and browser behavior retained. Minimal trip/accepted-roster/round DTOs plus optional setup availability; no emails, profile IDs, invite/watch secrets, database structures, native changes or deployment. Review and A6 handoff: docs/mobile-golf-trip-read-api.md. Hosted runtime and distribution remain review_required.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "third-party-golf-content", "organizer-responsibility", "platform-rules", "legal-review"],
@@ -271,6 +276,7 @@ export const featureRegistry = {
   createdOn: "2026-09-29",
   purpose: "Internal issue tracking; not legal advice, certification, or a runtime/deployment gate.",
   documentation: [
+    "docs/mobile-phase2b-main-a6.md",
     "docs/mobile-golf-trip-read-api.md",
     "docs/native-bearer-foundation-review.md",
     "LEGAL_COMPLIANCE_SPEC.md", "FEATURE_COMPLIANCE_CHECKLIST.md",

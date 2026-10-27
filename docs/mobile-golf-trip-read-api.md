@@ -1,5 +1,7 @@
 # Phase 2A: Golf Trip JSON reads
 
+Subsequent integration: docs/mobile-phase2b-main-a6.md records the existing A6 client's local main-backed list/detail adapter, real HTTP verification and separate native outcomes. The Phase 2A contract below is unchanged.
+
 2026-10-23. Implemented locally; not deployed. Hosted staging/production and native end-to-end behavior remain unverified. The existing A6 Android project is unchanged.
 
 ## Contract
