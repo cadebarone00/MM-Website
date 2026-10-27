@@ -40,6 +40,9 @@ function IntroPlayback({ gold, duration, still }: { gold: boolean; duration: num
     return () => cancelAnimationFrame(frame);
   }, [still, total]);
   return <main aria-label="The Maroon app entrance" style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#500F23" }}>
-    <MaroonMark variant="intro" color="white" progress={still ? 1 : Math.min(1, elapsed / duration)} shimmer={gold && !still ? elapsed / total : undefined} />
+    {/* Fills the whole screen so the app's top-clearance padding can't push the M off centre. */}
+    <div style={{ position: "absolute", inset: 0 }}>
+      <MaroonMark variant="intro" color="white" progress={still ? 1 : Math.min(1, elapsed / duration)} shimmer={gold && !still ? elapsed / total : undefined} />
+    </div>
   </main>;
 }

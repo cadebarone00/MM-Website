@@ -16,8 +16,9 @@ type Props = {
 export function MaroonMark({ variant = "standalone", progress = 1, shimmer, color = "currentColor", className }: Props) {
   const id = useId().replace(/:/g, "");
   const amount = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 1;
-  const viewBox = variant === "intro" ? "0 0 393 852" : variant === "icon" ? "0 0 320 320" : "60 -20 290 240";
-  const transform = variant === "intro" ? "translate(-.5 341.5)" : variant === "icon" ? "translate(-135.513 -99.5) scale(1.5012723 1.5)" : undefined;
+  // Intro: left tail (x 0) on the screen's left edge, M centre (middle loop x 187.5, letter mid-height y 87.5) on the screen's centre.
+  const viewBox = variant === "intro" ? "0 -662.5 375 1500" : variant === "icon" ? "0 0 320 320" : "60 -20 290 240";
+  const transform = variant === "icon" ? "translate(-135.513 -99.5) scale(1.5012723 1.5)" : undefined;
   const gold = shimmer !== undefined && Number.isFinite(shimmer) && shimmer > 0 && shimmer < 1;
   const sweep = -100 + 650 * (shimmer ?? 0);
   const gradient = `url(#${id}-gold)`;
@@ -26,7 +27,7 @@ export function MaroonMark({ variant = "standalone", progress = 1, shimmer, colo
     {gold && <path d={path} fill={gradient} stroke={gradient} />}
   </g>;
   return (
-    <svg viewBox={viewBox} className={className} role="img" aria-label="The Maroon" style={{ display: "block", width: "100%", height: "100%" }}>
+    <svg viewBox={viewBox} preserveAspectRatio={variant === "intro" ? "xMidYMid slice" : undefined} className={className} role="img" aria-label="The Maroon" style={{ display: "block", width: "100%", height: "100%" }}>
       <defs>
         {gold && <linearGradient id={`${id}-gold`} gradientUnits="userSpaceOnUse" x1={sweep - 60} y1="0" x2={sweep + 60} y2="0">
           <stop offset="0" stopColor="#C7A45D" stopOpacity="0" />

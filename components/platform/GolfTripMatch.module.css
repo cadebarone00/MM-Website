@@ -180,7 +180,7 @@
 .summaryLabel{margin:0;padding:12px 14px 0;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
 .summaryTeams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;padding:10px 14px 12px}
 .summaryRight{grid-column:3;text-align:right}
-.summaryToWin{grid-column:2;grid-row:1;align-self:start}
+.summaryToWin{grid-column:2;grid-row:1;align-self:start;font-size:16px}
 .summaryScore{margin:6px 0 0;font:700 30px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .summaryPlaceholder{padding-bottom:16px}
 .summaryPlaceholder .teamName{padding:8px 14px 0}

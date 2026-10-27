@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-10-27 - Smaller leaderboard points target (presentation implemented locally; deployment not verified).** The active Golf Trip leaderboard number under TO WIN is now 16px, down from 18px. The label and points calculation are unchanged. Updated section 22 and the Mermaid annotation; workflow paths and overview mappings are unchanged.
+
 **2026-10-23 - Phase 2B existing A6 client reads current main (isolated local implementation/testing; no deployment).** Before, the Android POC obtained trip screen props through A1 loader/header stubs and crashed while starting insecure Realtime. After, the same A6 client uses main's real GET trip list/detail on isolated loopback 3997 through a thin 4100 proxy. Trip detail shows only the Phase 2A read fields and starts no scoring/Realtime subscription. Native session storage/restoration and other screen implementations remain; other legacy loaders are unavailable through this read-only proxy. Trip reads no longer persist copies: offline requests fail explicitly, old trip caches are cleared, and account changes remount views. Real HTTP passed 12 checks; the final installed APK passed 16 checks including restoration, member/nonmember isolation, sign-out/revocation and bounded offline/recovery behavior. Evidence and limits: docs/mobile-phase2b-main-a6.md; do not infer scoring or full native feature parity. Sections 22/23, Mermaid and renderer path updated. No hosted environment, schema or iOS change; compliance remains review_required.
 
 **2026-10-23 - Phase 2A main-backed Golf Trip JSON reads (implemented locally; deployment not verified).** Before, the trip collection/detail routes exposed create/delete operations but no minimal GET contract for packaged clients. After, GET /api/golf-trips and GET /api/golf-trips/{tripId} use explicit Auth-verified request profiles and the existing server membership loaders. Responses allowlist trip summaries, accepted-member names/roles, basic rounds and setup availability; no contacts, pending invitations, secrets or full database objects. Missing/invalid identities receive 401, missing profiles 403, nonmember/missing trips identical 404 and data failures sanitized 503. Browser loader signatures and mutation routes are unchanged; optional setup-table absence uses the existing fallback. Sections 1, 22 and 23, Mermaid and renderer workflow mapping updated. A6 adaptation is documented, not implemented; hosted/native runtime unverified. Review: docs/mobile-golf-trip-read-api.md.
@@ -485,6 +487,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 ```mermaid
   %% Maroon U fictional preview uses its own settings and return links.
 flowchart TD
+  %% Active Golf Trip leaderboard: TO WIN points number is 16px (previously 18px); calculation unchanged.
   A6MainRead[Existing A6 trip read client: verified local main proxy] --> TripReadRequest
   TripReadRequest[GET Golf Trip list or detail] --> TripReadIdentity[Explicit verified cookie or bearer profile]
   TripReadIdentity --> TripReadMembership[Existing service-only membership RPCs]
@@ -1260,6 +1263,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+The active Golf Trip leaderboard displays the points number under TO WIN at 16px; the label and points calculation are unchanged.
 
 **Phase 2B A6 integration.** The existing sibling POC's list/detail adapter now calls main's Phase 2A GET routes through an identity-checked local proxy. Its list UI remains reused; a minimal trip detail displays only the returned fields. Full SavedGolfTripHome/scoring props are not synthesized and no Realtime is mounted for these reads. Other Profile/GPS/navigation implementations remain in place; the main-read proxy returns unavailable for old A1-only loader paths. Native secure sessions still restore; trip reads have explicit network/error states and no persistent trip cache. See docs/mobile-phase2b-main-a6.md for outcomes and remaining feature gaps.
 
