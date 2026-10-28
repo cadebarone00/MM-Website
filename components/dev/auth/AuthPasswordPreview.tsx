@@ -4,10 +4,13 @@ import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { PASSWORD_MIN_CHARS, checkNewPassword } from "@/lib/auth/passwordPolicy";
 import frame from "./AuthNamePreview.module.css";
+import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthPasswordPreview.module.css";
 
-/** DEV ONLY: Authentication screen "Create password". Same rules as signup (lib/auth/passwordPolicy.ts); nothing is saved. */
-export function AuthPasswordPreview() {
+/** DEV ONLY: Authentication screen "Create password" (signup step, with the progress bar) and, with other props,
+ * "Reset password" (after the forgot-password code). Same rules as signup (lib/auth/passwordPolicy.ts); nothing is saved. */
+export function AuthPasswordPreview({ title = "Create a password", nextHref = "/dev/auth/name-username", buttonLabel = "Continue", progress = true }:
+  { title?: string; nextHref?: string; buttonLabel?: string; progress?: boolean }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -19,28 +22,27 @@ export function AuthPasswordPreview() {
   const ready = check.ok && confirm === password;
 
   return <main className={frame.page}>
-    <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
-    <div className={`${frame.progress} ${styles.progress}`} aria-hidden="true"><span /></div>
-    <h1 className={frame.title}>Create a password</h1>
-    <form className={frame.fields} onSubmit={(e) => { e.preventDefault(); if (ready) router.push("/dev/auth/name-username"); }}>
+    <div className={`${frame.logo} ${progress ? "" : styles.noProgressLogo}`}><MaroonMark color="#fbf8f1" /></div>
+    {progress && <div className={frame.progress} aria-hidden="true"><span style={{ width: signUpProgress("password") }} /></div>}
+    <h1 className={frame.title}>{title}</h1>
+    <form className={frame.fields} onSubmit={(e) => { e.preventDefault(); if (ready) router.push(nextHref); }}>
       <PasswordField label="Password" value={password} onChange={setPassword} autoFocus />
       <PasswordField label="Confirm Password" value={confirm} onChange={setConfirm} />
       {/* Always rendered so the button below never moves when a message appears. */}
       <p className={frame.error} role="alert">{problem}</p>
-      <button type="submit" className={frame.continue} disabled={!ready}>Continue</button>
+      <button type="submit" className={frame.continue} disabled={!ready}>{buttonLabel}</button>
     </form>
   </main>;
 }
 
-function PasswordField({ label, value, onChange, autoFocus }: { label: string; value: string; onChange: (value: string) => void; autoFocus?: boolean }) {
+/** A password box with a show/hide eye (Create password and Reset password). */
+export function PasswordField({ label, value, onChange, autoFocus, autoComplete = "new-password" }: { label: string; value: string; onChange: (value: string) => void; autoFocus?: boolean; autoComplete?: string }) {
   const [shown, setShown] = useState(false);
-  return <label className={frame.field}><span>{label}</span>
-    <div className={styles.row}>
-      <input type={shown ? "text" : "password"} autoComplete="new-password" autoCapitalize="none" spellCheck={false} autoFocus={autoFocus}
-        value={value} onChange={(e) => onChange(e.target.value)} />
-      <button type="button" className={styles.eye} aria-label={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} aria-pressed={shown}
-        onClick={() => setShown(!shown)}>{shown ? <EyeOffIcon /> : <EyeIcon />}</button>
-    </div>
+  return <label className={`${frame.field} ${styles.passwordField}`}><span>{label}</span>
+    <input type={shown ? "text" : "password"} autoComplete={autoComplete} autoCapitalize="none" spellCheck={false} autoFocus={autoFocus}
+      value={value} onChange={(e) => onChange(e.target.value)} />
+    <button type="button" className={styles.eye} aria-label={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} aria-pressed={shown}
+      onClick={() => setShown(!shown)}>{shown ? <EyeOffIcon /> : <EyeIcon />}</button>
   </label>;
 }
 

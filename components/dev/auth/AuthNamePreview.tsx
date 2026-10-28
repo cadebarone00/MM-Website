@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { NAME_MAX, usernameProblem } from "@/lib/profile/profileEdit";
+import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthNamePreview.module.css";
 
 /** "Alex" + "Smith" → "alexsmith": letters and numbers only, 30 max (the username rules in profileEdit.ts). */
@@ -23,9 +24,9 @@ export function AuthNamePreview() {
 
   return <main className={styles.page}>
     <div className={styles.logo}><MaroonMark color="#fbf8f1" /></div>
-    <div className={styles.progress} aria-hidden="true"><span /></div>
+    <div className={styles.progress} aria-hidden="true"><span style={{ width: signUpProgress("name-username") }} /></div>
     <h1 className={styles.title}>What&apos;s your name?</h1>
-    <form className={styles.fields} onSubmit={(e) => { e.preventDefault(); if (ready) router.push("/dev/auth/photo"); }}>
+    <form className={styles.fields} onSubmit={(e) => { e.preventDefault(); if (ready) router.push("/dev/auth/age-check"); }}>
       <label className={styles.field}><span>First Name</span>
         <input autoComplete="given-name" autoFocus maxLength={NAME_MAX} value={first} onChange={(e) => setFirst(e.target.value)} /></label>
       <label className={styles.field}><span>Last Name</span>

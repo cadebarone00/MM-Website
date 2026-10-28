@@ -1,5 +1,4 @@
 /* Frame (logo, progress, Finish) comes from AuthNamePreview.module.css; this is the two setting cards with switches. */
-div.progress span{width:85%}
 .title{margin-bottom:8px}
 .subtitle{margin:0 0 20px;font-size:14px;color:#e1cec4}
 .cards{display:flex;flex-direction:column;gap:12px}

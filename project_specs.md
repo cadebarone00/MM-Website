@@ -3306,3 +3306,64 @@ The bell (notifications) and the chat bubble both open one sheet that **slides u
 **Not in this step.** Turning watching off or making a new watch code (always on was chosen; can add later), seeing who's watching, spectator chat or reactions, Predict for spectators.
 
 **Done when.** A signed-out browser can open a tournament's and a trip's watch link and see the live leaderboard (and trip matches / stats) update; nothing private shows; a join code still joins; a watch code can't score or join; a deleted event's watch code says it's unavailable; database tests cover the lookups and that spectator replies leave out private fields.
+
+## Feature: Sign in with Google and Sign in with Apple (spec 2026-10-28, approved 2026-10-28; Step 1 web sign-in built 2026-10-28, uncommitted)
+
+**Owner decisions 2026-10-28.**
+- **D1 approved:** Supabase's automatic linking for the same *verified* email is allowed. The existing Supabase user id and permanent profile id stay. Never merge users or profiles by name or by an unverified email.
+- **D2 approved if compatible:** `@capgo/capacitor-social-login`, only if it works with our Capacitor 8.5.2; native Google/Apple token + nonce handling and the Supabase hand-off are verified before the native steps are built.
+- **D3 build now:** Google-only / Apple-only users can delete their account without a password they don't have, keeping the existing deletion design (profile tombstones, trip hand-off rule, history kept) plus Apple token revocation.
+- **D4:** a borrowed Mac with Xcode and the iOS simulator is available for the iOS step; Windows stays the main machine.
+- Safeguards: no production auth settings changed or providers enabled; development/test environments only; no credentials in code or chat; the uncommitted `/dev/auth` preview work is left untouched. Provider buttons only appear when Supabase reports that provider as turned on, so the live site looks the same until the owner enables one.
+- Automated tests required for: linking, repeat sign-ins, conflicting identities, social-only deletion, onboarding routing.
+
+**Step 1 status (2026-10-28, local only, not committed).** `lib/auth/oauth.ts` (+ tests), `lib/auth/oauthServer.ts` (reads which providers Supabase has on), `POST /api/auth/oauth` (same-origin form only; PKCE), `/auth/callback?flow=oauth` branch (email-link flows unchanged), `components/auth/SocialSignIn.tsx` on `/login` and `/signup` step 1 (hidden with a player code). Tests: unit 6/6; `scripts/auth-local/oauth-regression.mts` 28/28 on the isolated stack (real PKCE codes via reset links; Google/Apple themselves need dev credentials). Older suites `regression.mts` / `password-regression.mts` / `session-regression.mts` currently stop at setup on the shared isolated stack (leftover `v1_player` from 2026-10-21 and changed signup email links), not caused by this step; rebuilding that stack is the owner's call because the mobile work uses it.
+
+**What it does / who uses it.** Anyone signing up or logging in to The Maroon V2 (website, iPhone app, Android app) can tap **Continue with Google** or **Continue with Apple** instead of typing an email and password. Signed-in golfers can also add Google / Apple to the account they already have from **Settings → Sign-in methods**, so they can use either one next time. Email + password, email verification and profile onboarding keep working exactly as now.
+
+**What already exists (inspected 2026-10-28).**
+- Web: Supabase Auth with cookie sessions (`@supabase/ssr`). Password login is `POST /api/auth/login`; email links land on `app/auth/callback/route.ts`, which today always sends a code exchange to the password-reset or website-complete page. After any sign-in, `initializeAfterSignIn()` (`lib/profile/profileInitialization.ts`) calls `initialize_my_profile`, which makes a profile only if the account has none (safe to repeat). `getCurrentProfile()` returns signed-out / no-profile / incomplete / ok; incomplete profiles finish setup.
+- Native: the Capacitor client is the sibling repo `../maroon-a6-poc` (Android only so far, app id `site.themaroon.app.poc`, no iOS project yet). It keeps its own Supabase session in encrypted storage and calls our server with `Authorization: Bearer` (`POST /api/account/initialize` and `/api/account/me` already accept that).
+- `lib/account/reauth.ts` already treats `oauth` as a real sign-in. `POST /api/account/delete` always requires a password, so a Google/Apple-only account cannot delete itself today (App Store blocker; see Step 5).
+- Uncommitted dev previews (`/dev/auth/*`, `AuthWelcomePreview`) already sketch "Continue with Google / Apple" buttons. They belong to another work-in-progress and are not touched by this plan; the real screens reuse that look once it's committed.
+
+**Identity rules (unchanged + new).**
+- One Supabase account = one permanent profile (`profiles.id = auth.uid()`). Google/Apple are extra *identities* on that same account, never a second profile.
+- Profile creation still only happens through `initialize_my_profile` (it already refuses to make a second one).
+- **No automatic merging by us.** We never look up another account by email and join them. Supabase itself attaches a new Google/Apple identity to an existing account only when both emails are the same and verified (its built-in rule; see Decision D1). An Apple "Hide My Email" address (`…@privaterelay.appleid.com`) never matches, so it becomes a separate new account; the screen tells the person "Already have an account? Log in with email, then add Apple in Settings."
+- Linking from Settings uses Supabase's manual linking (`linkIdentity`), always to the account that is signed in right now. If that Google/Apple login already belongs to a different account, linking is refused with a clear message; nothing is moved or merged.
+- No golf rounds, trip memberships, stats or profile rows are created, moved or deleted by this feature.
+
+**Flows.**
+1. **Web sign-in (Google + Apple):** button → Supabase OAuth with PKCE (the browser keeps a one-time secret in a cookie) → Google/Apple → `/auth/callback?flow=oauth&returnTo=…` → server exchanges the code, runs `initializeAfterSignIn`, then sends: profile complete → `returnTo` (same allow-list as today) or `/profile`; profile missing/incomplete → the existing onboarding/finish-setup screen.
+2. **iPhone:** Apple = native Apple sheet (Face ID). Google = native Google sign-in. The app makes a random nonce, sends its SHA-256 to Apple/Google, receives an ID token, and calls `supabase.auth.signInWithIdToken({ provider, token, nonce })`. Session goes into the existing encrypted storage, then `POST /api/account/initialize` with the bearer token, then the same complete/incomplete routing.
+3. **Android:** Google = native Credential Manager (ID token + nonce, same as above). Apple has no native Android sheet, so Apple opens a secure in-app browser with the PKCE OAuth flow and returns to the app through a verified App Link; the app finishes the code exchange itself.
+4. **Settings → Sign-in methods (new card on `/settings` and the app's Settings):** shows Email/password, Google, Apple with Linked / Add. Add = sign in with that provider again while signed in → linked to *this* account. Shows the Apple relay address when that's what Apple shared. (Unlinking is not included unless the owner asks.)
+5. **Errors (all shown in plain words, nobody left half signed-in):** cancelled ("Sign-in cancelled", no error tone), access denied, expired/invalid token or nonce mismatch, network/timeout, provider not enabled yet, "This Google/Apple login is already used by another Maroon account", Supabase manual linking turned off, closed (deleted) account.
+
+**Where things live.**
+- Web: new `lib/auth/oauth.ts` (flow names, safe redirect building, error → message mapping, pure + unit tested); `authCallbackPath` gains `oauth` / `link` flows; buttons on `/login` and the sign-up screen; Sign-in methods card in `app/settings`.
+- Native (`../maroon-a6-poc`): one plugin for Google + Apple (proposed `@capgo/capacitor-social-login`, handles nonce on both platforms) plus `@capacitor/browser` / `@capacitor/app` for Apple-on-Android; deep-link handler; iOS project added when the Mac step is ready.
+- Server: `public/.well-known/apple-app-site-association` and `assetlinks.json` for verified return links. No new database tables. No SQL.
+
+**Secrets.** Google client secret and Apple's `.p8` key / client-secret JWT go **only** in the Supabase dashboard (and, for Step 5, Vercel server-only env vars such as `APPLE_PRIVATE_KEY`). Never `NEXT_PUBLIC_`, never in the app bundle, never committed. Client IDs are public and are fine in app config.
+
+**Build steps (one commit each, each tested before the next).**
+1. Web sign-in + callback routing + error handling, against the isolated local Supabase stack (`maroon-auth-test`) with dev-only Google/Apple test apps.
+2. Settings → Sign-in methods (web linking + duplicate-identity handling).
+3. Native Android: Google native, Apple via browser + App Link, linking from app Settings.
+4. Native iOS: Apple native, Google native (needs a Mac / Xcode, see D4).
+5. (If approved, D3) Re-confirm-it's-you with Google/Apple for delete account + device sign-out, and revoke the Apple token on account deletion (Apple requirement).
+6. Physical-device checklist on a real iPhone and a real Android phone (owner runs, I provide the steps).
+
+**Tests.** Unit tests for flow/redirect/error mapping and complete-vs-incomplete routing; local-stack regression: new Google user → onboarding; existing complete user signs in with Google (same verified email) → normal app, no onboarding, same profile id, same round/trip counts; Apple relay → separate new account, nothing merged; link Google in Settings → same profile id; link a Google already used elsewhere → refused, both accounts unchanged; cancel/deny/bad nonce leave no session; existing password + email-verification regression suites still pass. Device: each provider on each platform, cold start, app killed mid-flow, airplane mode, denied permission.
+
+**Decisions for the owner.**
+- **D1 Supabase same-email linking:** Supabase automatically attaches Google/Apple to an existing account when both emails match and are verified. Accept that (recommended; it's how "existing users don't redo onboarding" works), or require everyone to link manually from Settings?
+- **D2 Native plugin:** `@capgo/capacitor-social-login` (one plugin for both, recommended) vs separate Apple + Google plugins.
+- **D3 Step 5 now or later:** without it, a Google/Apple-only user can't delete their account, which the App Store rejects.
+- **D4 iOS build machine:** this PC is Windows; iOS builds and physical iPhone testing need a Mac (own or cloud Mac). Android can be done here.
+
+**Not in this step.** Unlinking providers, other providers (Facebook etc.), changing email/password flows, any production dashboard change, any SQL.
+
+**Done when.** On the local stack and dev provider apps: Google and Apple sign-in work on web, Android and iPhone; existing complete profiles go straight in; new accounts get onboarding; no second profile is ever made; linking in Settings adds to the current account and refuses duplicates; every error case shows a clear message and leaves no half session; no secret is in client code or git; all existing auth regressions pass; owner confirms the physical-device checklist on one iPhone and one Android phone. Production providers stay off until the owner approves.

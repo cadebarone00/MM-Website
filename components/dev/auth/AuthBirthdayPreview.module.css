@@ -1,0 +1,12 @@
+/* Frame (logo, progress, title, Continue) comes from AuthNamePreview.module.css; this is the Month / Day / Year row. */
+/* One button holding all three boxes: tapping anywhere on them opens the date picker. */
+.boxes{display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+/* Month / Day / Year sit above the boxes; the numbers match the verification code boxes (600 22px). */
+.column{display:flex;flex-direction:column;gap:6px;min-width:0}
+.label{font-size:12px;color:#e1cec4}
+.box{display:flex;align-items:center;box-sizing:border-box;height:48px;padding:0 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);font:600 22px var(--font-barlow),sans-serif;color:#fbf8f1}
+.box.empty{color:rgba(225,206,196,.4)}
+.boxes:hover .box,.boxes:focus-visible .box{border-color:#c9a86e}
+.boxes:focus-visible{outline:2px solid #fbf8f1;outline-offset:4px;border-radius:12px}
+.note{margin:16px 0 20px;color:#e1cec4;font-size:14px;line-height:1.45}
+.continue{width:100%}

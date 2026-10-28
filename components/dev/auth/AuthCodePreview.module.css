@@ -1,8 +1,10 @@
 /* All-maroon version of the "We just texted you" code screen: small logo, progress bar, left-aligned title, 6 boxes. */
 .page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:0 20px calc(20px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
 .logo{width:44px;height:36px;margin:12px auto 16px}
+/* Reset Password has no progress bar; the logo keeps the gap the bar used to fill (same as Log in). */
+.logo.noProgressLogo{margin-bottom:48px}
 .progress{height:4px;border-radius:2px;background:rgba(251,248,241,.12);margin-bottom:28px}
-.progress span{display:block;width:16%;height:100%;border-radius:2px;background:#c9a86e}
+.progress span{display:block;height:100%;border-radius:2px;background:#c9a86e}
 .title{margin:0 0 20px;font-size:30px;line-height:1.15}
 .boxes{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;cursor:text}
 .hiddenInput{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;font-size:16px;color:transparent;caret-color:transparent}

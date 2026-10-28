@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import frame from "./AuthNamePreview.module.css";
+import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthSettingsPreview.module.css";
 
 /** DEV ONLY: Authentication "Last step" settings. Public / Private profile (Private by default) and notifications.
@@ -15,7 +16,7 @@ export function AuthSettingsPreview() {
 
   return <main className={frame.page}>
     <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
-    <div className={`${frame.progress} ${styles.progress}`} aria-hidden="true"><span /></div>
+    <div className={frame.progress} aria-hidden="true"><span style={{ width: signUpProgress("settings") }} /></div>
     <h1 className={`${frame.title} ${styles.title}`}>Last step!</h1>
     <p className={styles.subtitle}>Choose who can see your profile and how we keep you in the loop. You can change both later in Settings.</p>
     <div className={styles.cards}>
@@ -29,7 +30,7 @@ export function AuthSettingsPreview() {
       </Setting>
     </div>
     <p className={styles.privacy}>We take your privacy seriously.<br /><Link href="/dev/auth/privacy">Learn more</Link></p>
-    <button type="button" className={frame.continue} onClick={() => router.push("/dev/auth/all-set")}>Finish</button>
+    <button type="button" className={frame.continue} onClick={() => router.push("/dev/auth/profile-created")}>Finish</button>
   </main>;
 }
 

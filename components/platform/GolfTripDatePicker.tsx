@@ -16,10 +16,12 @@ const format = (iso: string, options: Intl.DateTimeFormatOptions) => new Intl.Da
  * Cream month calendar in a popup for a trip's dates (YYYY-MM-DD). Tap the arrival day, the title switches to
  * Departure, tap the departure day (up to `maxDays` long); circles mark endpoints with a translucent range between.
  * Once complete, picking any date starts a new arrival/departure range. Single-day mode submits just one date.
+ * `pickYear` adds a year dropdown beside the month (for dates far back, like a birthday); `openMonth` (YYYY-MM) is
+ * where the calendar opens when nothing is picked yet.
  */
-export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onClose, singleDay = false, label = "Date", min, max }: {
+export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onClose, singleDay = false, label = "Date", min, max, pickYear = false, openMonth }: {
   arrival: string; departure: string; maxDays: number; onSubmit: (arrival: string, departure: string) => void; onClose: () => void;
-  singleDay?: boolean; label?: string; min?: string; max?: string;
+  singleDay?: boolean; label?: string; min?: string; max?: string; pickYear?: boolean; openMonth?: string;
 }) {
   const sheet = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -31,7 +33,7 @@ export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onCl
   const [start, setStart] = useState(arrival);
   const [end, setEnd] = useState<string | null>(departure || null);
   const [phase, setPhase] = useState<"Arrival" | "Departure">("Arrival");
-  const [month, setMonth] = useState(() => (arrival || min || new Date().toLocaleDateString("en-CA")).slice(0, 7));
+  const [month, setMonth] = useState(() => (arrival || openMonth || min || new Date().toLocaleDateString("en-CA")).slice(0, 7));
   const first = toDate(`${month}-01`);
   const daysInMonth = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
   const leading = (first.getUTCDay() + 6) % 7; // Monday-first week
@@ -56,7 +58,13 @@ export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onCl
       </div>
       <div className={styles.monthBar}>
         <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)}><Arrow left /></button>
-        <span>{format(`${month}-01`, { month: "long", year: "numeric" })}</span>
+        {pickYear
+          ? <span>{format(`${month}-01`, { month: "long" })}{" "}
+            <select className={styles.yearSelect} aria-label="Year" value={month.slice(0, 4)} onChange={event => setMonth(`${event.target.value}-${month.slice(5)}`)}>
+              {Array.from({ length: Number((max || toIso(new Date())).slice(0, 4)) - Number((min || "1900").slice(0, 4)) + 1 }, (_, index) => String(Number((max || toIso(new Date())).slice(0, 4)) - index))
+                .map(year => <option key={year} value={year}>{year}</option>)}
+            </select></span>
+          : <span>{format(`${month}-01`, { month: "long", year: "numeric" })}</span>}
         <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)}><Arrow /></button>
       </div>
       <div className={styles.grid}>

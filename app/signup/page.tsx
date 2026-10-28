@@ -1,5 +1,6 @@
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { authReturnPath } from "@/lib/auth/returnTo";
+import { enabledOAuthProviders } from "@/lib/auth/oauthServer";
 
 export default async function SignUpPage({
   searchParams,
@@ -8,5 +9,5 @@ export default async function SignUpPage({
 }) {
   const { code, next } = await searchParams;
   // Website dashboard and existing invite returns are validated before reaching the signup form.
-  return <SignUpForm initialCode={code} returnTo={authReturnPath(next)} />;
+  return <SignUpForm initialCode={code} returnTo={authReturnPath(next)} providers={await enabledOAuthProviders()} />;
 }

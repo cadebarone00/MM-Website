@@ -1,15 +1,29 @@
-/* All-maroon like the old Log In page, laid out like a "Log in or sign up" sheet: logo, title, email, providers. */
+/* All-maroon entry screens: the Welcome fork (logo + Sign up / Log in), then the Sign up and Log in pages. */
 .page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:0 24px calc(32px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
-/* The app already pads the page by the safe area + 1svh (globals.css), so the logo lands ~11.5% down the screen. */
+/* Welcome: the M fills the middle of the screen, the two buttons sit near the bottom. */
+.fork{justify-content:space-between}
+.forkLogo{flex:1;display:grid;place-items:center;width:140px;max-height:60svh}
+.forkLogo svg{height:auto!important}
+.forkButtons{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+/* Sign up / Log in: the app already pads the page by the safe area + 1svh (globals.css), so the logo lands ~11.5% down. */
 .logo{width:96px;height:80px;margin:calc(9.2svh - env(safe-area-inset-top,0px)) 0 22px}
 .title{margin:0 0 18px;font-size:28px;line-height:1.2;text-align:center}
-.form,.providers{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
+.form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
 .input{box-sizing:border-box;width:100%;height:48px;padding:0 16px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 17px var(--font-barlow),sans-serif}
 .input::placeholder{color:#e1cec4;font-weight:400}
-.primary{height:48px;border:0;border-radius:12px;background:#c9a86e;color:#240001;font:600 17px var(--font-barlow),sans-serif;cursor:pointer}
-.primary:hover{background:#d6b984}
+.primary,.secondary{display:flex;align-items:center;justify-content:center;height:48px;box-sizing:border-box;border-radius:12px;font:600 17px var(--font-barlow),sans-serif;text-decoration:none;cursor:pointer}
+.primary{border:0;background:#c9a86e;color:#240001}
+.primary:hover:not(:disabled){background:#d6b984}
+.primary:disabled{background:rgba(251,248,241,.1);color:rgba(251,248,241,.35);cursor:not-allowed}
+.secondary{border:1px solid #c9a86e;background:transparent;color:#c9a86e}
+.secondary:hover{background:rgba(201,168,110,.1)}
 .or{margin:10px 0;color:#e1cec4;font-size:15px}
 .provider{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:transparent;color:#fbf8f1;font:600 17px var(--font-barlow),sans-serif;text-decoration:none}
 .provider:hover{background:rgba(201,168,110,.1)}
 .icon{width:20px;height:20px;flex:none}
-.input:focus-visible,.primary:focus-visible,.provider:focus-visible{outline:2px solid #fbf8f1;outline-offset:4px}
+.passwordBox{position:relative}
+.passwordBox .input{padding-right:52px}
+.eye{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;background:none;color:#e1cec4;cursor:pointer}
+.eye svg{width:22px;height:22px}
+.forgot{display:grid;place-items:center;min-height:40px;margin-top:8px;color:#e1cec4;font-size:14px;text-decoration:underline}
+.input:focus-visible,.primary:focus-visible,.secondary:focus-visible,.provider:focus-visible,.eye:focus-visible,.forgot:focus-visible{outline:2px solid #fbf8f1;outline-offset:4px}

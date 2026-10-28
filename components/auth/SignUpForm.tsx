@@ -3,10 +3,12 @@ import { PASSWORD_HINT, PASSWORD_MIN_CHARS } from "@/lib/auth/passwordPolicy";
 import { useState } from "react";
 import Link from "next/link";
 import { AuthMethods } from "./AuthMethods";
+import { SocialSignIn } from "./SocialSignIn";
+import type { OAuthProvider } from "@/lib/auth/oauth";
 import { authReturnPath, withReturnTo } from "@/lib/auth/returnTo";
 import styles from "./SignUpForm.module.css";
 
-export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: string; returnTo?: string | null }) {
+export function SignUpForm({ initialCode, returnTo = null, providers = [] }: { initialCode?: string; returnTo?: string | null; providers?: OAuthProvider[] }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState(1);
@@ -38,6 +40,8 @@ export function SignUpForm({ initialCode, returnTo = null }: { initialCode?: str
         {step === 2 && <button type="button" disabled={submitting} onClick={() => { setStep(1); setError(null); }}>Back</button>}
         <Link href={returnTo ? withReturnTo("/login/email", returnTo) : "/login"}>Sign in</Link>
       </form>}
+      {/* Google / Apple make the account too. Not offered with a player code: that claim needs the email signup. */}
+      {!done && step === 1 && !initialCode && providers.length > 0 && <div className={styles.social}><SocialSignIn providers={providers} returnTo={returnTo} /></div>}
     </section>
   </main>;
 }

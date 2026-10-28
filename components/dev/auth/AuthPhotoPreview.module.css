@@ -1,5 +1,4 @@
 /* Frame (logo, progress, note, Continue) comes from AuthNamePreview.module.css; this is the centered photo tile. */
-div.progress span{width:55%}
 .title{margin-bottom:8px;text-align:center}
 .subtitle{margin:0 auto 20px;max-width:280px;text-align:center;font-size:14px;color:#e1cec4}
 .tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:240px;max-width:100%;aspect-ratio:1;margin:8px auto 16px;border:1px solid rgba(201,168,110,.35);border-radius:50%;background:rgba(251,248,241,.08);overflow:hidden;cursor:pointer}

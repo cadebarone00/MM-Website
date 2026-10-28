@@ -266,8 +266,8 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
 </Fragment>) : <p>No conditional states</p>}</div>
         {/* Notifications → Phone / In-app: preview the Highlights Engine's real output (rules, quips, decisions) on these same screens. */}
         {(currentPath === "/dev/notifications/phone" || currentPath === "/dev/notifications/in-app") && <HighlightScenarioControls value={state.highlightSim} onChange={next => setState(current => ({ ...current, highlightSim: next }))} />}
-        {/* Authentication → Email confirmed: replay the gold M drawing + pill burst (same counter as the logo entrance). */}
-        {currentPath === "/dev/auth/link-result" && <section className={styles.controlSection} aria-label="Email confirmed animation controls">
+        {/* Authentication → Email confirmed / Profile created: replay the gold M animation (same counter as the logo entrance). */}
+        {(currentPath === "/dev/auth/link-result" || currentPath === "/dev/auth/profile-created") && <section className={styles.controlSection} aria-label="Email confirmed animation controls">
           <button type="button" onClick={() => setState(current => ({ ...current, brandReplay: (current.brandReplay ?? 0) + 1 }))}><RotateCcw size={13} /> Replay animation</button>
         </section>}
         {isBrandIntro && <section className={styles.controlSection} aria-label="Logo animation controls">
