@@ -6,7 +6,7 @@
 // setup, the iOS-style bearer pathway, admin player invitations, trip invites for unfinished profiles, the scoring
 // gate, the legacy password trigger, and V1 data staying untouched.
 import { randomUUID } from "node:crypto";
-import { addr, admin, anon, authVersion, browser, call, confirmByEmail, latestLink, openLink, pastThrottle, profile, q, account,
+import { addr, admin, anon, authVersion, runId, browser, call, confirmByEmail, latestLink, openLink, pastThrottle, profile, q, account,
   requestCount, slot, sql, unclaimedCode, type Jar } from "./harness.mts";
 import { golfTripPayloadFromBody, type CreateGolfTripPayload } from "../../lib/platform/golfTripCreate.ts";
 
@@ -48,7 +48,7 @@ const [v1Slug] = unclaimedCode();
 const v1Email = addr("v1-pending-player");
 const v1Invite = await admin.auth.admin.createUser({ email: v1Email, password: "v1-password-1", email_confirm: false });
 const v1Id = v1Invite.data.user!.id;
-sql(`insert into public.profiles (id, email, display_name, username, player_slug) values (${q(v1Id)}, ${q(v1Email)}, 'V1 Player', 'v1player', ${q(v1Slug)});
+sql(`insert into public.profiles (id, email, display_name, username, player_slug) values (${q(v1Id)}, ${q(v1Email)}, 'V1 Player', ${q(`v1player_${runId}`)}, ${q(v1Slug)});
      update public.player_slots set claimed_by = ${q(v1Id)} where player_slug = ${q(v1Slug)};`);
 const v1Before = sql(`select username || display_name || player_slug from public.profiles where id = ${q(v1Id)}`);
 

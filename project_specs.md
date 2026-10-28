@@ -3367,3 +3367,248 @@ The bell (notifications) and the chat bubble both open one sheet that **slides u
 **Not in this step.** Unlinking providers, other providers (Facebook etc.), changing email/password flows, any production dashboard change, any SQL.
 
 **Done when.** On the local stack and dev provider apps: Google and Apple sign-in work on web, Android and iPhone; existing complete profiles go straight in; new accounts get onboarding; no second profile is ever made; linking in Settings adds to the current account and refuses duplicates; every error case shows a clear message and leaves no half session; no secret is in client code or git; all existing auth regressions pass; owner confirms the physical-device checklist on one iPhone and one Android phone. Production providers stay off until the owner approves.
+
+## Feature: Pending accounts, onboarding activation & 13+ eligibility — Phase 0 architecture (approved 2026-10-28; SPEC ONLY — nothing built, no SQL)
+
+**Status.** Phase 0 = this specification. No application code, SQL migration, Supabase setting or deployment is part of
+it. Every later phase needs its own approval, tests and review. `accounts-a1` (`../MM-Website-a1`) stays unmerged and
+untouched. The Apple/Google work in progress in this working directory (section above, "Sign in with Google and Sign in
+with Apple") is not overwritten; Phase 7 integrates with it.
+
+**What it does / who uses it.** Everyone who creates a Maroon V2 account (website, iPhone, Android), by email + password
+or by Apple / Google. An account is only a usable golfer once onboarding is finished and the server has activated it.
+The Maroon is strictly for people **13 and older**.
+
+### 1. Approved flows (existing designs and screen order kept; dev previews at `/dev` → Authentication)
+
+**Email registration**
+1. Welcome — Sign Up or Log In.
+2. Sign Up — email + password, with Terms of Service and Privacy Policy links.
+3. Verification Code — proves the person owns the email.
+4. Email Confirmed — confirmation screen (also the landing page when the emailed link is used instead of the code).
+5. Name + Username — saves the golfer's identity details.
+6. Birthday — decides whether the person is at least 13.
+7. Profile Photo — optional.
+8. Settings — privacy preference (Public / Private) and notification settings.
+9. **Finish** — the button on Settings; validates everything on the server and activates the profile.
+10. Profile Created — shown **only** after the server confirms activation.
+11. Let's Go — goes straight to Play.
+
+**Apple / Google registration.** Same Sign Up screen → provider sign-in → **skips** Verification Code, Email Confirmed
+and password → Name + Username (prefilled where the provider gives a name) → Birthday → Profile Photo → Settings →
+Finish → Profile Created → Play. Only Finish activates.
+
+**Login.** Active → Play. Pending → resume at the first unfinished required step. Ineligible → access denied with an
+eligibility message (no usable session is kept).
+
+**Password recovery (screens kept: Forgot Password → recovery verification → Reset Password).**
+| Piece | Real today (this working directory) | Designed only (simulator) |
+|---|---|---|
+| Forgot Password | **Email link**: `POST /api/auth/forgot-password` → `resetPasswordForEmail` → `/auth/callback` → `/reset-password` | Email + "Send code" screen |
+| Recovery verification | none — the link itself is the proof | 6-digit "Enter Code To Reset" screen (`/dev/auth/reset-code`) |
+| Reset Password | `/reset-password` + `POST /api/auth/reset-password`: only a session from the recovery link, used within 1 hour; signs out every session afterwards | same screen, reached after the code |
+| Sign-up verification | **Email link** only (`signUp` → link). The 6-digit code check exists only in `accounts-a1` (not here) | 6-digit Verification Code screen |
+
+The code-based recovery and code-based sign-up verification are **not operational** until a later phase builds them
+(Supabase OTP `verifyOtp`, email template with the code). Both links and codes may be supported; the phone app needs
+codes (email links don't return into the app without deep-link setup).
+
+### 2. Account lifecycle
+
+| State | Definition | Allowed | Blocked |
+|---|---|---|---|
+| **Pending** | A Supabase Auth identity exists; Finish has not succeeded | resume onboarding; save name/username, birthday, photo, settings; sign out; delete the account | Play, every golf feature, being found or viewed by anyone else (search, friends, public profile, history) |
+| **Active** | authentication satisfied (email verified, or Apple/Google); required golfer details validated; birthday eligibility confirmed; current Terms accepted; Finish succeeded and `activated_at` is set | normal app | — |
+| **Ineligible** | determined to be under 13 (or otherwise age-ineligible) | the eligibility message; request a birthday correction; delete the account | every authenticated service; sessions revoked |
+
+- Transitions: Pending → Active **only** by Finish. Pending → Ineligible when an under-13 birthday is submitted.
+  Active → Ineligible only through an approved birthday correction (§5). Ineligible → Pending only through an approved
+  correction. Nothing else.
+- Permanent identity is unchanged: one Supabase account = one permanent profile (`profiles.id = auth.uid()`), made only by
+  `initialize_my_profile` (`on conflict (id) do nothing`). Apple / Google are extra identities on the same account, never
+  a second profile.
+- `activated_at` is set once and never cleared; ineligibility is recorded separately, so history is kept.
+
+### 3. Database and security architecture (proposed; built in Phase 1+)
+- `profiles.activated_at timestamptz` — set only by the activation function.
+- Private, server-only tables (RLS on, `revoke all` from `public`/`anon`/`authenticated`, `service_role` only):
+  - `account_birthdates` (account → `auth.users` on delete cascade, birth date, recorded at, source);
+  - `account_eligibility` (account, status `ineligible` / `review`, reason, decided at);
+  - `terms_acceptances` (account, document, version, accepted at, method; Privacy Policy acknowledgement recorded the same
+    way) — rebuilt here, not merged from `accounts-a1`;
+  - `pending_invitations` (account, kind, invitation reference, created at) — invitation *intent* only (§7);
+  - `birthdate_corrections` (audit log of requests and decisions).
+- Server-only `security definer` functions (pinned `search_path`; the account always comes from the verified session,
+  never a request body): `profile_is_active`, `set_my_birthdate` (write-once), `activate_my_profile`,
+  `record_terms_acceptance`, `close_ineligible_registration`, `admin_correct_birthdate`.
+- **Active-only enforcement, every layer:**
+  - Pages: Play (`app/page.tsx`), `app/play/*`, golf trip, tournament, rounds and profile pages send Pending to resume
+    onboarding and Ineligible to the eligibility message.
+  - APIs: every authenticated golf / social API requires Active through `getCurrentProfile` /
+    `getCurrentProfileForRequest` (cookie **or** `Authorization: Bearer`, already supported by `lib/supabase/server.ts`).
+    Includes the routes that today only call `auth.getUser()` (inspected 2026-10-28: `code-tournaments` 6, `rounds` 4,
+    `wagers` 3, `platform` 3, `fantasy` 2, `courses`, `portal`, `account`).
+  - Database: `profile_is_active()` replaces "complete" in the `require_complete_profile` trigger (today only
+    `scoring_group_players`, `player_rounds`, `shared_round_players`) and in the account-deletion hand-off checks, and is
+    added to golf-table write policies.
+  - Visibility: search, friends, public profile and `get_profile_history` only ever return Active profiles. (Today a
+    profile counts as finished as soon as name + username exist, which under this flow would be before Finish.)
+- Sessions: ineligible lockout reuses the `account_deletion.sql` revocation (`session_is_revoked`, restrictive
+  `active_account_only` policies) so not-yet-expired JWTs stop working.
+
+### 4. Age and privacy requirements
+- **13+ only.** Age is computed on the server from the stored date (not trusted from the client). 29 February counts as
+  1 March in non-leap years. Eligibility is checked when the birthday is submitted **and again by Finish**, on every
+  registration path (email, Apple, Google, future native sign-in).
+- **Birthday is private:** stored only in `account_birthdates`; never in `profiles`, never returned to the client after
+  entry (only "eligible: yes/no"), never logged, never shown on any profile.
+- **Under 13 submitted:** in one server operation — onboarding stops, account marked Ineligible, all sessions revoked,
+  protected functionality blocked, safe cleanup started (§6). It is never activated and never appears in search or
+  social features.
+- **Not used:** no email fingerprint / HMAC retention of ineligible registrations (owner decision); no device-only lock
+  as a security boundary (a device hint may exist for UX only).
+
+### 5. Birthday: write-once and correction process
+- `set_my_birthdate` saves once. A second submission is refused: "Contact support to correct your birthday." There is no
+  self-service edit, so an under-13 result can't be retried with a different date.
+- **Correction:** Settings → Account (or the eligibility message) → *Request a birthday correction* → a support request to
+  the support address with a reason (no new date typed into the app). Support verifies (evidence when eligibility would
+  change). An admin applies it with `admin_correct_birthdate` (admin-only, reason required, audit entry). Eligibility is
+  re-evaluated at once: Active corrected to under 13 → Ineligible (restricted, records kept, review); Ineligible corrected
+  to 13+ → Pending (finish onboarding again). One open request per account.
+- Accounts in manual review stay restricted until resolved. No fixed review deadline (owner decision).
+
+### 6. Ineligible cleanup (safe, data-minimizing)
+- **Full removal only when all are true:** never activated; no player claim; no golf trip / tournament membership; no
+  rounds, scores or invitation acceptances; the account is the verified session's own. Then: delete the Supabase Auth user
+  through the server admin API (SQL can't safely delete `auth.users`), and remove the profile row, birthday, Terms rows and
+  pending invitations. Reuses `lib/account/accountDeletion.ts` and the deletion retry job.
+- **Otherwise:** lock (Ineligible, sessions revoked, hidden) and flag for review. Never delete another person's account,
+  shared records or existing golf records.
+- Abandoned unverified Pending accounts: covered by the already-planned 30-day cleanup (Step 3 deletion decision D4).
+
+### 7. Golf Trip and tournament invitations during onboarding
+- Invitation links (`/golf-trips/invite/[token]`, `/tournaments/invite/[token]`, `/tournaments/code/invite/[token]`) keep
+  working for Pending accounts: they can view the invitation; "accept" stores **intent** in `pending_invitations`. A
+  Pending account never gets an active membership (`golf_trip_members.invitation_status` stays `pending`) or golf access.
+  This replaces today's rule where `tripProfileId()` lets unfinished profiles accept.
+- At Finish, after activation succeeds: each valid invitation is accepted with the existing accept rules — repeat-safe,
+  never overwriting an existing member or organizer row, skipping revoked / expired / declined invitations.
+  **Invitation processing is optional:** a failed or skipped invitation never undoes or blocks an otherwise valid
+  activation; the result is reported on Profile Created.
+
+### 8. Finish (the definitive activation operation)
+`POST /api/account/finish` (cookie or bearer; no account id in the body), in order:
+1. Authenticate the caller; refuse closed (deletion) or Ineligible accounts.
+2. Verification: email confirmed, or an Apple/Google identity.
+3. Eligibility: birthday on file and 13+ today.
+4. Name and username valid (database rules, unique).
+5. Required onboarding information present (profile initialized; Terms).
+6. Current Terms version accepted (Privacy Policy acknowledged).
+7. Privacy preference valid (Public / Private).
+8. Activate atomically: one transaction with the profile row locked (`for update`) sets `activated_at`. **Idempotent:** a
+   repeat or concurrent Finish returns the same success and changes nothing.
+9. Process pending invitation intent (§7) without affecting the activation result.
+10. Return `{ activated: true }` (+ invitation results).
+
+Only then does the UI show Profile Created; its route checks Active on the server and otherwise sends the person back to
+resume. Let's Go → Play. **If Finish fails**, nothing saved is lost; the person stays on Settings with a recoverable
+message naming the step to fix.
+
+**Resuming onboarding** is derived from saved data (verified? name + username? birthday? Terms? activated?), so it works
+on any device and after the app is closed. Photo and Settings are optional and never block resuming.
+
+### 9. Terms of Service and Privacy Policy
+- Terms of Service linked from Sign Up; Privacy Policy linked from Sign Up and Settings.
+- Acceptance of the Terms (with version) and acknowledgement of the Privacy Policy are recorded on the server: in the
+  email sign-up request, or on return from Apple/Google. Finish requires the **current** version; if it changed, a short
+  "accept updated Terms" step appears before Finish.
+- Final legal documents are required before launch. No legal text is invented here, and draft pages are not legally
+  approved documents.
+
+### 10. Existing accounts (migration rules)
+- Preserved without change: permanent profile id, rounds and statistics, tournament history, Golf Trip memberships,
+  friend relationships, every other record. No duplicate profiles.
+- Backfill: existing **complete** profiles get `activated_at`, **only after** excluding deleted / deletion-pending,
+  restricted or otherwise exceptional accounts (closed accounts, tombstones, accounts under review). Exclusions are listed
+  and reviewed before the backfill runs. Incomplete existing profiles become Pending and use normal onboarding.
+- **Missing birthday:** at the next login, before any golf feature, the account must complete the Birthday step (same
+  screen). No grace period. 13+ → saved, normal access resumes with the same profile. Under 13 → restricted and sent to
+  review / cleanup (§6); historical and shared data are never blindly deleted.
+- The migration must be repeat-safe and run only after its prerequisite SQL.
+
+### 11. Security and mobile requirements (kept or planned)
+Email/password verification and recovery; Apple/Google sign-in; one permanent identity per account; secure linking of
+extra login methods (Settings → Sign-in methods, manual `linkIdentity` to the signed-in account); protection against
+duplicate profiles; passwordless re-authentication for Apple/Google-only accounts (they have no password; needed for
+deletion and device sign-out — App Store requirement); account deletion; session management; private birthday storage;
+server-side validation; API **and** database Pending/Ineligible restrictions; native iOS/Android compatibility (bearer
+tokens, OTP codes rather than links); safe resume; no public exposure of incomplete profiles.
+- **Identity linking caution:** a matching email address alone is not proof that two logins are the same person. Only
+  Supabase's own same-*verified*-email linking (approved in the Google/Apple section, D1) and explicit signed-in manual
+  linking are allowed; we never merge accounts or profiles by email or name. Apple "Hide My Email" produces a separate
+  account by design.
+
+### 12. Phased roadmap (each phase: separate approval, tests, review)
+1. **Phase 1 — Database activation foundation:** `supabase/account_activation.sql` (tables, functions,
+   `profile_is_active`, trigger/policy changes, reviewed legacy backfill) with isolated database tests. Not run in production.
+2. **Phase 2 — Server account states and eligibility rules:** `lib/account/age.ts`; `pending` / `ineligible` / Active in
+   `lib/profile/currentProfile.ts`; `tripProfileId` change.
+3. **Phase 3 — Account APIs, Finish, resume:** `api/account/birthday`, `api/account/finish`, `api/account/onboarding`,
+   `api/account/birthday-correction`, Terms recording in `api/auth/signup`.
+4. **Phase 4 — Ineligible restriction and cleanup.**
+5. **Phase 5 — Active-only access across pages, APIs and database policies.**
+6. **Phase 6 — Connect the existing onboarding UI** (the approved `/dev/auth` designs) to the real APIs, including code
+   verification and code-based recovery.
+7. **Phase 7 — Apple/Google integration:** new provider accounts become Pending and go through onboarding (coordinated
+   with the in-progress work above).
+8. **Phase 8 — Legal documents, provider configuration, production migrations, end-to-end testing.**
+
+### 13. Implementation dependencies
+- Owner: legal review (§15); final Terms / Privacy text and versions; Supabase dashboard (custom SMTP — the built-in sender
+  allows only a few emails an hour — OTP email templates containing the code, OTP expiry, Apple/Google providers).
+- Database order in production (backup first): `profile_initialization.sql` → `account_deletion.sql` →
+  `account_activation.sql`, then deploy. (Per project notes the first two were not in production as of 2026-10-17;
+  re-check before Phase 8.)
+- Code: the in-progress Apple/Google web work committed before Phase 7; the isolated auth test stack
+  (`scripts/auth-local`) rebuilt (its older suites stop at setup, per the section above) before Phase 1 tests.
+- `accounts-a1` stays separate; any idea reused from it is rebuilt here, not merged.
+
+### 14. Test and acceptance criteria
+- **Database (Phase 1):** birthday write-once; 13th birthday today, day before, 29 Feb; under 13 → Ineligible; Finish
+  refuses each missing requirement; Finish repeat and concurrent → one activation; backfill activates only eligible
+  complete profiles and skips exclusions; legacy records unchanged (row counts and ids before/after); Pending blocked by
+  triggers and policies; Pending/Ineligible invisible in search, friends and history; cleanup deletes only qualifying
+  accounts and never another account's rows.
+- **Server/API (Phases 2–5):** each state on each guarded route (cookie and bearer); caller can't act for another account;
+  Finish failures keep progress; invitation intent processed once, never overwrites members/organizers, skips expired /
+  revoked ones, never blocks activation; Ineligible sessions revoked.
+- **UI (Phase 6):** full email flow and Apple/Google flow end to end; resume after closing at every step; Profile Created
+  never shown without activation; Let's Go → Play; legacy account forced to Birthday before golf features.
+- **Regression:** existing auth, password, session, deletion and Apple/Google suites still pass; TypeScript and the full
+  test suite pass.
+- **Done (whole feature) when:** no Pending or Ineligible account can reach Play, a golf API or a golf-table write; Finish
+  is proven idempotent and concurrency-safe; legacy profiles and golf records survive the migration unchanged; legal
+  launch blockers are resolved.
+
+### 15. Launch blockers and unresolved legal requirements
+- **RELEASE-BLOCKING legal/privacy review — age-screen order.** Approved product direction keeps Birthday **after**
+  Verification and Name + Username. Its legal compliance is **not** approved. Review must cover: collecting personal
+  information (email, password, name, username, and Apple/Google profile data) before an under-13 user is identified;
+  Supabase creating an Auth record (and sending a verification email) before the birthday step; data-minimization and
+  retention requirements; COPPA and other applicable child-privacy laws; whether age screening must move before
+  registration. If review finds the order impermissible, this architecture is revised before release. Pending status and
+  later deletion are **not** evidence of legal compliance.
+- Final Terms of Service and Privacy Policy (none exist on this branch; drafts elsewhere are not approved text).
+- Passwordless re-authentication for Apple/Google-only accounts (deletion and device sign-out) — App Store requirement.
+- Code-based verification and recovery built and tested (today: links only on this branch).
+- Supabase custom SMTP and OTP templates configured; production migrations run in order.
+
+### Relationship to earlier sections (reconciled 2026-10-28)
+- *Accounts Step 2 — Profile states:* "complete = username + display name → everything" and "complete is derived, nothing
+  to backfill" are superseded for access purposes: access now requires **Active** (`activated_at`). Name + username
+  remain required inputs to Finish.
+- *Accounts Step 2 — open decision on incomplete profiles accepting trip invites:* resolved by §7 (intent held, accepted at
+  Finish).
+- *Sign in with Google and Sign in with Apple — Flow 1 routing* ("complete → returnTo or `/profile`; incomplete →
+  finish setup") becomes "Active → Play / return page; Pending → resume onboarding; Ineligible → message" in Phase 7.

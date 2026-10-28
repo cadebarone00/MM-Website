@@ -3,7 +3,7 @@
 //   npx tsx --import ./scripts/auth-local/register.mjs scripts/auth-local/password-regression.mts
 // Real routes: signup, login, change password, forgot / reset, invite "set your password", delete (re-auth check).
 import { createClient } from "@supabase/supabase-js";
-import { addr, admin, anon, API, browser, call, confirmByEmail, latestLink, openLink, q, account, requestCount, sql, status, type Jar } from "./harness.mts";
+import { addr, admin, anon, API, browser, runId, call, confirmByEmail, latestLink, openLink, q, account, requestCount, sql, status, type Jar } from "./harness.mts";
 
 const { POST: signupPOST } = await import("../../app/api/auth/signup/route.ts");
 const { POST: loginPOST } = await import("../../app/api/auth/login/route.ts");
@@ -61,7 +61,7 @@ section("Existing (V1) accounts with short passwords can still sign in");
   const email = addr("v1-short");
   const created = await admin.auth.admin.createUser({ email, password: "placeholder-password-123", email_confirm: true });
   sql(`update auth.users set encrypted_password = extensions.crypt('short1', extensions.gen_salt('bf')) where id = ${q(created.data.user!.id)}`);
-  sql(`insert into public.profiles (id, email, display_name, username) values (${q(created.data.user!.id)}, ${q(email)}, 'V1 Short', 'v1_short_pw')`);
+  sql(`insert into public.profiles (id, email, display_name, username) values (${q(created.data.user!.id)}, ${q(email)}, 'V1 Short', ${q(`v1_short_pw_${runId}`)})`);
   const r = await login(browser(), email, "short1");
   check("6-character V1 password still signs in (rules apply only when setting one)", r.status === 200, JSON.stringify(r.json));
 }

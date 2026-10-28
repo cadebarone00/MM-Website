@@ -3,12 +3,16 @@
 //   node scripts/auth-local/setup.mjs stop     stop it and delete its data
 // It runs in Docker under its own project id ("maroon-auth-test") on ports 55xxx, so it never touches the main
 // local stack (54xxx) or any hosted project. Nothing here reads .env files or production keys.
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+//   AUTH_LOCAL_STACK=main node scripts/auth-local/setup.mjs   a SECOND isolated stack ("maroon-auth-main", ports 56xxx),
+//     so this checkout can be tested without wiping the shared 55xxx stack another checkout / terminal may be using.
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
+import { authLocalStack } from "./stack.mjs";
 
 const root = process.cwd();
-const work = join(root, "out", "auth-local");
+const stack = authLocalStack();
+const work = join(root, stack.workdir);
 const supabase = (...args) => execFileSync("npx", ["--no-install", "supabase", ...args, "--workdir", work], { stdio: "inherit", shell: true });
 
 if (process.argv[2] === "stop") {
@@ -39,7 +43,7 @@ const FILES = [
 try { supabase("stop", "--no-backup"); } catch { /* nothing was running */ }
 rmSync(work, { recursive: true, force: true });
 mkdirSync(join(work, "supabase", "migrations"), { recursive: true });
-cpSync(join(root, "scripts", "auth-local", "config.toml"), join(work, "supabase", "config.toml"));
+writeFileSync(join(work, "supabase", "config.toml"), stack.config(readFileSync(join(root, "scripts", "auth-local", "config.toml"), "utf8")));
 FILES.forEach((file, i) => {
   const name = `20260101${String(i + 1).padStart(6, "0")}_${file}`;
   writeFileSync(join(work, "supabase", "migrations", name), readFileSync(join(root, "supabase", file), "utf8"));
@@ -48,4 +52,12 @@ FILES.forEach((file, i) => {
 // Only the services account tests need: database, auth, REST API, gateway, storage (schema.sql makes a bucket) and
 // the Mailpit inbox.
 supabase("start", "-x", "realtime,imgproxy,studio,edge-runtime,logflare,vector,supavisor,postgres-meta");
+
+// Stamp which checkout and which SQL files built this stack. harness.mts refuses to run against a stack built from
+// another checkout (2026-10-28: the shared stack had been rebuilt from accounts-a1, so this checkout's suites failed on
+// a1-only database rules such as guard_profile_username).
+const stamp = JSON.stringify({ checkout: root, files: FILES }).replace(/'/g, "''");
+execFileSync("docker", ["exec", stack.dbContainer, "psql", "-U", "postgres", "-q", "-c",
+  `create table if not exists public.auth_local_build (built jsonb not null); revoke all on public.auth_local_build from anon, authenticated;
+   truncate public.auth_local_build; insert into public.auth_local_build values ('${stamp}'::jsonb);`]);
 supabase("status");

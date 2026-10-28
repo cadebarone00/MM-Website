@@ -7,7 +7,7 @@
 // step, concurrent runs, orphan and incomplete accounts, re-signup, and V1 rows untouched.
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { addr, admin, anon, API, authVersion, browser, call, confirmByEmail, openLink, profile, q, account, requestCount, sql, status, type Jar } from "./harness.mts";
+import { addr, admin, anon, API, authVersion, runId, browser, call, confirmByEmail, openLink, profile, q, account, requestCount, sql, status, type Jar } from "./harness.mts";
 import { golfTripPayloadFromBody, type CreateGolfTripPayload } from "../../lib/platform/golfTripCreate.ts";
 
 const { POST: signupPOST } = await import("../../app/api/auth/signup/route.ts");
@@ -63,8 +63,8 @@ console.log(`Supabase Auth ${await authVersion()} (isolated, ${API}). Step 3 ins
 
 // V1-style data that nothing here may touch.
 const v1 = await admin.auth.admin.createUser({ email: addr("v1"), password: "v1-password-1", email_confirm: false });
-const v1Slug = sql("select player_slug from public.player_slots where claimed_by is null order by player_slug limit 1");
-sql(`insert into public.profiles (id, email, display_name, username, player_slug) values (${q(v1.data.user!.id)}, ${q(addr("v1"))}, 'V1 Player', 'v1_player', ${q(v1Slug)});
+const v1Slug = sql("select player_slug from public.player_slots where claimed_by is null and claim_locked_at is null order by player_slug limit 1");
+sql(`insert into public.profiles (id, email, display_name, username, player_slug) values (${q(v1.data.user!.id)}, ${q(addr("v1"))}, 'V1 Player', ${q(`v1_player_${runId}`)}, ${q(v1Slug)});
      update public.player_slots set claimed_by = ${q(v1.data.user!.id)} where player_slug = ${q(v1Slug)};`);
 const v1Before = sql(`select row_to_json(p)::text from public.profiles p where id = ${q(v1.data.user!.id)}`) + sql(`select claimed_by from public.player_slots where player_slug = ${q(v1Slug)}`);
 
@@ -75,7 +75,7 @@ for (const t of [tTransfer, tActive, tPast]) { await join(A.id, t, B.id); await 
 await admin.rpc("offer_golf_trip_organizer", { p_profile: A.id, p_trip: tTransfer, p_to_profile: B.id });
 await admin.rpc("accept_golf_trip_organizer", { p_profile: B.id, p_trip: tTransfer });
 await admin.rpc("offer_golf_trip_organizer", { p_profile: A.id, p_trip: tActive, p_to_profile: C.id }); // never accepted
-const aSlug = sql("select player_slug from public.player_slots where claimed_by is null order by player_slug limit 1");
+const aSlug = sql("select player_slug from public.player_slots where claimed_by is null and claim_locked_at is null order by player_slug limit 1");
 sql(`update public.player_slots set claimed_by = ${q(A.id)} where player_slug = ${q(aSlug)}; update public.profiles set player_slug = ${q(aSlug)} where id = ${q(A.id)};`);
 const group = sql(`insert into public.scoring_groups (source, golf_trip_id, golf_trip_round_id, group_number, created_by)
   select 'trip', ${q(tActive)}, id, 1, ${q(A.id)} from public.golf_trip_rounds where golf_trip_id = ${q(tActive)} limit 1 returning id`).split("\n")[0];

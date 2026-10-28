@@ -4,13 +4,16 @@
 // network request fail unless it goes to 127.0.0.1 / localhost.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { authLocalStack } from "./stack.mjs";
 
-const statusText = execFileSync("npx", ["--no-install", "supabase", "status", "-o", "json", "--workdir", "out/auth-local"], { shell: true, stdio: ["ignore", "pipe", "ignore"] }).toString();
+const stack = authLocalStack();
+const statusText = execFileSync("npx", ["--no-install", "supabase", "status", "-o", "json", "--workdir", stack.workdir], { shell: true, stdio: ["ignore", "pipe", "ignore"] }).toString();
 export const status = JSON.parse(statusText.slice(statusText.indexOf("{"), statusText.lastIndexOf("}") + 1)) as Record<string, string>;
 export const API = status.API_URL;
 export const MAIL = status.MAILPIT_URL ?? status.INBUCKET_URL;
-if (API !== "http://127.0.0.1:55321" || !MAIL?.startsWith("http://127.0.0.1:55324")) throw new Error(`Refusing to run: not the isolated local stack (${API}, ${MAIL})`);
+if (API !== stack.api || !MAIL?.startsWith(stack.mail)) throw new Error(`Refusing to run: not the isolated local stack "${stack.name}" (${API}, ${MAIL})`);
 for (const key of Object.keys(process.env)) if (/SUPABASE/i.test(key)) delete process.env[key];
 Object.assign(process.env, { SUPABASE_URL: API, SUPABASE_ANON_KEY: status.ANON_KEY, SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
   NEXT_PUBLIC_SUPABASE_URL: API, NEXT_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY });
@@ -25,7 +28,19 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch;
 export const requestCount = () => requests;
 
-export const sql = (query: string) => execFileSync("docker", ["exec", "supabase_db_maroon-auth-test", "psql", "-U", "postgres", "-t", "-A", "-F", "|", "-c", query]).toString().trim();
+export const sql = (query: string) => execFileSync("docker", ["exec", stack.dbContainer, "psql", "-U", "postgres", "-t", "-A", "-F", "|", "-c", query]).toString().trim();
+
+// The stack must have been built by THIS checkout's setup.mjs (its SQL files), not another worktree's. Stacks built
+// before this stamp existed only get a warning, so runs already relying on them keep working.
+{
+  const built = sql("select case when to_regclass('public.auth_local_build') is null then '' else (select built->>'checkout' from public.auth_local_build limit 1) end");
+  const here = realpathSync(process.cwd()).toLowerCase();
+  if (!built) console.warn(`WARNING: stack "${stack.name}" has no build stamp; it may have been built from another checkout, so database rules may differ from this one.`);
+  else if (realpathSync(built).toLowerCase() !== here) {
+    throw new Error(`Refusing to run: stack "${stack.name}" was built from ${built || "an unknown checkout"}, not ${process.cwd()}. `
+      + `Rebuild it from here (node scripts/auth-local/setup.mjs), or use your own stack (AUTH_LOCAL_STACK=main).`);
+  }
+}
 export const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
 export const admin = createClient(API, status.SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 export const anon = () => createClient(API, status.ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -66,11 +81,14 @@ export const slot = (slug: string) => {
   const [claimedBy, passwordCreated] = sql(`select coalesce(claimed_by::text,''), password_created from public.player_slots where player_slug = ${q(slug)}`).split("|");
   return { claimedBy: claimedBy || null, passwordCreated: passwordCreated === "t" };
 };
-/** [slug, code] of a player nobody has claimed (and, on V2, nobody has a pending invitation for). */
+/** [slug, code] of a player nobody has claimed (and, on V2, nobody has a pending invitation for, and not locked by an
+ *  earlier suite's account deletion — suites share one database, so a deletion run before leaves its slot locked). */
 export const unclaimedCode = () => {
   const v2 = sql("select to_regclass('public.player_claim_invitations') is not null") === "t";
+  const lockable = sql("select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'player_slots' and column_name = 'claim_locked_at')") === "t";
   return sql(`select player_slug || '|' || username from public.player_slots where claimed_by is null and username is not null
-    ${v2 ? "and player_slug not in (select player_slug from public.player_claim_invitations)" : ""} order by player_slug limit 1`).split("|");
+    ${v2 ? "and player_slug not in (select player_slug from public.player_claim_invitations)" : ""}
+    ${lockable ? "and claim_locked_at is null" : ""} order by player_slug limit 1`).split("|");
 };
 
 export async function latestLink(email: string, kind: "signup" | "recovery" | "invite"): Promise<string> {
@@ -78,7 +96,7 @@ export async function latestLink(email: string, kind: "signup" | "recovery" | "i
     const list = await (await fetch(`${MAIL}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json() as { messages: { ID: string }[] };
     for (const message of list.messages ?? []) {
       const full = await (await fetch(`${MAIL}/api/v1/message/${message.ID}`)).json() as { Text?: string; HTML?: string };
-      const link = `${full.Text ?? ""} ${full.HTML ?? ""}`.match(new RegExp(`http://127\\.0\\.0\\.1:55321/auth/v1/verify\\?[^"'\\s<>]*type=${kind}[^"'\\s<>]*`));
+      const link = `${full.Text ?? ""} ${full.HTML ?? ""}`.match(new RegExp(`${API.replace(/[.:/]/g, "\\$&")}/auth/v1/verify\\?[^"'\\s<>]*type=${kind}[^"'\\s<>]*`));
       if (link) return link[0].replace(/&amp;/g, "&");
     }
     await new Promise((r) => setTimeout(r, 250));
