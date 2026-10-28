@@ -4,6 +4,7 @@ import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { skipSignInWall } from "@/lib/dev/signInWall";
 import styles from "./SignInRequiredLink.module.css";
 
 const TOAST_MS = 6000;
@@ -33,7 +34,7 @@ export function SignInRequiredLink({ href, className, message, children }: { hre
   }, [toastKey]);
 
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (signedIn !== false) return;
+    if (signedIn !== false || skipSignInWall()) return;
     event.preventDefault();
     setToastKey((key) => key + 1); // A new key restarts the timer (and the drop-down) on each tap.
   };

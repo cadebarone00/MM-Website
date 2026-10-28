@@ -1,0 +1,15 @@
+/* All-maroon like the old Log In page, laid out like a "Log in or sign up" sheet: logo, title, email, providers. */
+.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:0 24px calc(32px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
+/* The app already pads the page by the safe area + 1svh (globals.css), so the logo lands ~11.5% down the screen. */
+.logo{width:96px;height:80px;margin:calc(9.2svh - env(safe-area-inset-top,0px)) 0 22px}
+.title{margin:0 0 18px;font-size:28px;line-height:1.2;text-align:center}
+.form,.providers{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
+.input{box-sizing:border-box;width:100%;height:48px;padding:0 16px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 17px var(--font-barlow),sans-serif}
+.input::placeholder{color:#e1cec4;font-weight:400}
+.primary{height:48px;border:0;border-radius:12px;background:#c9a86e;color:#240001;font:600 17px var(--font-barlow),sans-serif;cursor:pointer}
+.primary:hover{background:#d6b984}
+.or{margin:10px 0;color:#e1cec4;font-size:15px}
+.provider{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:transparent;color:#fbf8f1;font:600 17px var(--font-barlow),sans-serif;text-decoration:none}
+.provider:hover{background:rgba(201,168,110,.1)}
+.icon{width:20px;height:20px;flex:none}
+.input:focus-visible,.primary:focus-visible,.provider:focus-visible{outline:2px solid #fbf8f1;outline-offset:4px}

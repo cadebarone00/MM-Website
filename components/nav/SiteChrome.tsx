@@ -51,7 +51,8 @@ export function SiteChrome({ children, nextTournamentOverride }: { children: Rea
 function SiteChromeBody({ children, nextTournamentOverride }: { children: ReactNode; nextTournamentOverride: NextTournamentOverride }) {
   const pathname = usePathname();
   // The /dev/gps prototype is a full-screen map, so no header or bottom menu over it.
-  if (pathname === "/dev" || pathname === "/new-user" || pathname === "/signup" || pathname === "/login" || pathname === "/dev/gps" || pathname.startsWith("/dev/notifications/") || (pathname === "/dev/brand" || pathname.startsWith("/dev/brand/"))) return <>{children}</>;
+  // Authentication screens come before you're in the app, so they have no app menu either.
+  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || pathname === "/new-user" || pathname === "/signup" || pathname === "/login" || pathname === "/dev/gps" || pathname.startsWith("/dev/notifications/") || (pathname === "/dev/brand" || pathname.startsWith("/dev/brand/"))) return <>{children}</>;
   const hideBottomNav = isSiteBottomNavHidden(pathname);
   return (
     <>

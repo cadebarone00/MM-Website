@@ -1,0 +1,18 @@
+/* Same frame as the code screen (logo, progress bar, left title); fields are cards with the label inside. */
+.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:0 20px calc(20px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
+.logo{width:44px;height:36px;margin:12px auto 16px}
+.progress{height:4px;border-radius:2px;background:rgba(251,248,241,.12);margin-bottom:28px}
+.progress span{display:block;width:40%;height:100%;border-radius:2px;background:#c9a86e}
+.title{margin:0 0 20px;font-size:30px;line-height:1.15}
+.fields{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);cursor:text}
+.field:focus-within{border-color:#c9a86e}
+.field>span{font-size:12px;color:#e1cec4}
+.field input{width:100%;min-width:0;padding:0;border:0;outline:0;background:transparent;color:#fbf8f1;font:500 17px/1.4 var(--font-barlow),sans-serif}
+.handle{display:flex;align-items:center;gap:1px;color:#e1cec4;font:500 17px/1.4 var(--font-barlow),sans-serif}
+.note,.error{display:flex;align-items:flex-start;gap:6px;min-height:36px;margin:2px 0 0;font-size:12px;color:#e1cec4}
+.error{color:#ffb4b4}
+.lock{flex:none;width:13px;height:13px;margin-top:1px}
+.continue{height:48px;margin-top:6px;border:0;border-radius:12px;background:#c9a86e;color:#240001;font:600 17px var(--font-barlow),sans-serif;cursor:pointer}
+.continue:disabled{background:rgba(251,248,241,.1);color:rgba(251,248,241,.35);cursor:not-allowed}
+.continue:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}

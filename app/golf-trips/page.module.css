@@ -10,10 +10,10 @@
   color: var(--color-maroon-800);
 }
 
-/* Maroon instead of the reference's pink. The Join card overlaps its bottom by 110px. */
+/* The app's maroon (same as the top bar). The title rests just under the phone's camera pill (~22px gap). The Join card overlaps its bottom by 110px. */
 .band {
-  padding: calc(28px + 0px) max(16px, calc((100% - 560px) / 2)) 138px;
-  background: radial-gradient(120% 120% at 50% 0%, var(--color-maroon-600) 0%, var(--brand-4a0508) 45%, var(--color-maroon-800) 100%);
+  padding: var(--app-top-clearance) max(16px, calc((100% - 560px) / 2)) 138px;
+  background: var(--color-maroon-900);
   color: #fbf8f1;
 }
 .title {

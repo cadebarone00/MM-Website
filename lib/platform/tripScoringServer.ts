@@ -1,4 +1,4 @@
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import type { SavedGolfTrip } from "./golfTripCreate.ts";
 import { submitResultFromJson } from "./tripSubmission.ts";
@@ -65,6 +65,31 @@ export function scoringFailure(error: { code?: string; message?: string }): { st
   if (error.code === "P0002") return { status: 404, error: "Round not found." };
   if (error.code === "22023") return { status: 400, error: error.message ?? "Check the hole scores." };
   return { status: 500, error: "Couldn't save the score. Try again." };
+}
+
+/**
+ * Preflight URL scope using the verified user's RLS client, never service-role visibility.
+ * Both the group's trip and its referenced round must match. The write RPC still
+ * enforces group-player/attester authority under its existing lock.
+ */
+export async function checkTripScoringWriteScope(request: Request, tripId: string, groupId: string): Promise<"ok" | "not-found" | "failed"> {
+  try {
+    const client = await createSupabaseServerClient(request);
+    const group = await client.from("scoring_groups").select("id,golf_trip_id,golf_trip_round_id")
+      .eq("id", groupId).eq("source", "trip").eq("golf_trip_id", tripId).maybeSingle();
+    if (group.error) return "failed";
+    if (!group.data) return "not-found";
+    const sameId = (value: unknown, expected: string) => typeof value === "string" && value.toLowerCase() === expected.toLowerCase();
+    if (!sameId(group.data.id, groupId) || !sameId(group.data.golf_trip_id, tripId)
+      || typeof group.data.golf_trip_round_id !== "string") return "failed";
+    const round = await client.from("golf_trip_rounds").select("id,golf_trip_id")
+      .eq("id", group.data.golf_trip_round_id).eq("golf_trip_id", tripId).maybeSingle();
+    if (round.error) return "failed";
+    if (!round.data) return "not-found";
+    return sameId(round.data.id, group.data.golf_trip_round_id) && sameId(round.data.golf_trip_id, tripId) ? "ok" : "failed";
+  } catch {
+    return "failed";
+  }
 }
 
 /** Save hole entries typed by the signed-in golfer for `scoredProfileId` (themselves or the golfer they attest). */

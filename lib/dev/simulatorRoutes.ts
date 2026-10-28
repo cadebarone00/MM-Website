@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
 import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
+import { AUTH_SCREENS } from "./authScreens";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
 
@@ -48,6 +49,8 @@ export function simulatorPages(): SimulatorPage[] {
       ...GOLF_TRIP_SECTIONS.filter(section => section !== "Overview").map(section => ({ ...home, id: `trip-${section}`, label: `Golf Trip · ${section}`, navigation: { tab: "Golf" as const, golfSection: section } })),
     );
   }
+  // Authentication: every account screen, numbered in signup order (placeholders until each is designed).
+  AUTH_SCREENS.forEach(([slug, label], index) => pages.push({ id: "auth-" + slug, path: "/dev/auth/" + slug, label: `${index + 1}. ${label}`, group: "Authentication", fixtures: false, conditions: [] }));
   for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
