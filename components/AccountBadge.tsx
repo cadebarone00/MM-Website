@@ -52,7 +52,6 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
   }
 
   const label = session.kind === "host" ? session.username : session.displayName;
-  const portalLabel = session.kind === "host" ? "Admin Center" : session.kind === "player" ? "Player Portal" : null;
 
   return (
     <div ref={containerRef} className="relative">
@@ -79,16 +78,14 @@ export function AccountBadge({ position }: { position: "header" | "footer" }) {
           ].join(" ")}
         >
           <div className="px-4 py-3 font-sans text-sm font-semibold text-ink-900 border-b border-ink-100">Hi, {label}</div>
-          {portalLabel && (
-            <Link
-              href="/portal"
+          <Link
+              href="/profile"
               onClick={() => setOpen(false)}
               className="flex items-center justify-between px-4 py-3 font-sans text-sm text-ink-700 hover:bg-cream-50"
             >
-              {portalLabel}
+              Profile
               <ChevronRight size={14} />
             </Link>
-          )}
           <button
             type="button"
             onClick={() => {

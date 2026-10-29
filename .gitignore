@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Local hype video; external hosting will be configured separately.
 /public/videos/mm-edit-silver-springs.mp4
+
+# Isolated V1 retirement browser regression build
+/.next-v1-retirement/

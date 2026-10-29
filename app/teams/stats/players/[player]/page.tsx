@@ -1,5 +1,6 @@
-import PlayerCareerPage from "@/components/stats/PlayerCareerPage";
-export { generateStaticParams } from "@/components/stats/PlayerCareerPage";
-export default function PlayerStatsPage({ params }: { params: Promise<{ player: string }> }) {
-  return <PlayerCareerPage params={params} />;
+import { redirect } from "next/navigation";
+
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
 }

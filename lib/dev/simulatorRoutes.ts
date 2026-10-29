@@ -25,7 +25,6 @@ export function simulatorPages(): SimulatorPage[] {
   }
   walk(join(process.cwd(), "app/dev"), "/dev");
   pages.push(
-    { id: "v1-review", path: "/dev-v1", label: "V1 screens", group: "V1", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
     { id: "website-desktop", path: "/dev-website", label: "Landing page", group: "Website desktop", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
     { id: "website-mobile", path: "/dev-website", label: "Landing page", group: "Website mobile", fixtures: false, viewport: "mobile", standalone: true, conditions: [] },
   );
@@ -179,7 +178,7 @@ export function simulatorPages(): SimulatorPage[] {
   // Keep the sample profile first in its group, then the live account, then link requests.
   for (const page of [realProfile, requests]) if (page) pages.push(...pages.splice(pages.indexOf(page), 1));
   const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
-  const reviewGroups = ["V1", "Website desktop", "Website mobile"];
+  const reviewGroups = ["Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);
   groupOrder.splice(groupOrder.indexOf("Golf Trip Active") + 1, 0, "Golf Trip Onboarding");

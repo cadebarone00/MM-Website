@@ -1,7 +1,5 @@
-import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
-import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
+import type { ReactNode } from "react";
 
-export default async function SectionLayout({ children }: { children: React.ReactNode }) {
-  const catalog = await getSeasonCatalog("leaderboard");
-  return <SeasonCatalogProvider key={catalog.nextTournament.year} initial={catalog} section="leaderboard">{children}</SeasonCatalogProvider>;
+export default function RetiredLayout({ children }: { children: ReactNode }) {
+  return children;
 }

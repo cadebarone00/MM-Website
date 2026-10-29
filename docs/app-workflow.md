@@ -1,10 +1,12 @@
 # Maroon Tournament: complete application workflow
 
-Reviewed September 18, 2026 against release `ce85a83`. This describes the current implementation, including older data paths and unfinished features. It is not a promise that everything in earlier design plans is implemented.
+Baseline reviewed September 18, 2026 against release `ce85a83`; updated locally October 28, 2026 for V1 UI retirement. Deployment has not been verified. Current entry points are described below; retained legacy engines and historical implementation notes are explicitly distinguished from available screens.
 
 Open **app-workflow.html** for the interactive version. Select a workflow box to expand its description, or search for a feature or database table.
 
 ## What changed
+
+**2026-10-28 - V1 interface retirement and signed-in Tap In (implemented locally; not deployed).** Before, V1 website, results/archive pages, portal, fantasy/wagers, journal and Admin Center had separate screens and navigation. After, their URLs redirect to V2 destinations; /website renders the shared marketing site with an adapted footer, and the V1 simulator group and browser-install prompt are removed. Legacy season polling remains around app screens only; standalone marketing, dashboard and Tap In/TV do not mount it. V2 profiles/player details, trip settings, scoring, Predict, Play, shared rules, historical records and APIs are preserved. Tap In gates a silent fullscreen-capable TV leaderboard/match display behind the existing account system; it reuses founding Maroon tournament readers and graphics with refresh/scroll controls, without music, video, producer controls, comments or highlights. Arbitrary saved-trip TV integration and native parity are not claimed. Updated sections 1-6, 16-22, Mermaid and rendered workflow mapping. Dependency inventory: docs/v1-retirement-dependencies.json. Review/remaining parity, rights and release work: docs/v1-retirement-review.md; review_required.
 
 **2026-10-28 - Disabled organizer override database foundation (SQL authored/tested locally; not applied or deployed).** Before, no dedicated organizer override receipt/delegation/lifecycle foundation existed. Added an additive SQL file defining sealed append-only audit/receipt and delegation-intent tables, participant-scoped history reads and disabled gross-stroke lifecycle metadata. No score-changing or permission-changing RPC, application behavior, official snapshot, legacy correction or reader changes. Installation refuses unresolved approved/reopened legacy work without changing records; live inventory remains unknown and has a read-only operator handoff. Updated section 22 and Mermaid annotation; overview paths/boxes and renderer mappings are unchanged. Review/remaining activation and retention/security dependencies: docs/golf-trip-score-overrides-foundation-review.md; review_required.
 
@@ -495,343 +497,41 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 ## Whole-app flowchart
 
 ```mermaid
-  %% Maroon U fictional preview uses its own settings and return links.
 flowchart TD
-  %% Organizer override foundation: additive SQL authored/tested in memory only, not applied; new audit/delegation writes sealed, flag CHECK false; no live scoring/reopen change. Legacy reopened/approved inventory gates future installation; atomic RPC/readers/activation remain future work.
-  %% Submit POST: verified cookie/bearer complete profile -> expected account + own card -> existing RLS group/round URL preflight + own group-player seat -> unchanged submit_trip_scorecard domain checks/lock/history. Corrections remain separate; preflight is not atomic with RPC.
-  %% Scoring POST binding: verified caller's RLS group lookup -> group trip and referenced round trip match URL -> unchanged write RPC. Missing/invisible/mismatched = sanitized 404; lookup failure = sanitized 500/no mutation. Submit/correction binding remains follow-up.
-  %% Scoring POST: explicit verified cookie/bearer complete profile -> unchanged ops/direct-entry parsers -> existing service-role scoring RPC authorization; 401/409 identity/account denial, existing 400/403/404/500 mappings and per-op results. URL trip/group binding remains required follow-up; GET unchanged.
-  %% Scoring GET: explicit verified cookie/bearer complete profile -> existing member-scoped get_trip_round_scoring -> unchanged JSON/no-store; 401 identity/profile, 404 missing/nonmember, sanitized 500 lookup failure. Writes/native clients unchanged.
-  %% Active Golf Trip leaderboard: TO WIN points number is 16px (previously 18px); calculation unchanged.
-  A6MainRead[Existing A6 trip read client: verified local main proxy] --> TripReadRequest
-  TripReadRequest[GET Golf Trip list or detail] --> TripReadIdentity[Explicit verified cookie or bearer profile]
-  TripReadIdentity --> TripReadMembership[Existing service-only membership RPCs]
-  TripReadMembership --> TripReadJSON[Allowlisted JSON with private no-store]
-  TripReadMembership --> TripReadDenied[Nonmember or missing trip: same 404]
-  %% Bearer foundation: explicit Request -> Auth verification -> mandatory session_is_revoked=false -> cookie conflict check -> user-token RLS. Phase 2A extends opt-in to Golf Trip GETs; browser wrappers unchanged; hosted runtime unverified.
-  %% A6 Phase 2: Android APK installed -> isolated local API/Auth; trip rendering blocked by mixed-content Realtime, scoring/sync unverified; staging/iOS planned, no production route change.
-  %% Shared presentation fonts are locally hosted; account/data/navigation paths unchanged.
-  WebsiteAccountEntry[Marketing Sign In with exact dashboard return] --> ExistingEmailLogin[Existing /login/email]
-  ExistingEmailLogin --> WebsiteDashboard[Session-guarded /dashboard: own identity only]
-  WebsiteDashboard --> WebsiteSignOut[Existing local-session Sign Out]
-  WebsiteDashboard --> WebsiteUnconnected[Golf sections not connected: no sample scores]
-  AppEmailLogin[V2 default login without website return] --> ExistingOwnProfile[Existing /profile after login]
-  WebsiteFixtureEntry[Direct development design reference] --> WebsiteFixtureView[Development-only /dev-website?view=dashboard: fixed mock data]
-  %% Multi-device showcase: Features -> static iPhone capture plus desktop/watch concepts -> How It Works; no companion runtime or availability claim.
-  %% Marketing hero: responsive copy and static V2 Golf Trip Home mock-data capture; reduced-motion aware; no app runtime import.
-  %% Shared marketing navigation: Features, How It Works, Our Story, Support and Download share one responsive renderer in both website previews.
-  %% Unified dev groups: V1 review plus Website desktop/mobile reuse existing renderers; group URL selects entry and viewport, same underlying data/permissions.
-  %% V1 review: /dev-v1 is development-only; grouped original-route frames, desktop/mobile, existing auth and APIs; no snapshot or retired code.
-  %% Website/mobile boundary: marketing owns UI/CSS/media; V1 visuals adapted after consumer audit, no legacy data/auth imports; shared root inheritance remains.
-  %% Independent marketing canvas: /dev-website is development-only, responsive and static; coming-soon destinations, no persistence; existing homepage and /dev unchanged.
-  %% Active itinerary golf displays red Live instead of green Playing; scheduled participation and explicit Sit out remain unchanged.
-  %% Assigned itinerary golf defaults to Play; explicit Sit out responses take precedence.
-  %% Itinerary golf and travel share reservation-style cards: natural height, time/divider/title/details; RSVP behavior retained.
-  %% Gross/Net sits on its own left-aligned row beneath the Matches/Leaderboard box; team labels follow below.
-  %% Mock/Busy travel: grouped flights -> capacity-limited rentals -> golf and lodging -> final golf -> car return -> flight home.
-  %% Mock/Busy prior rounds share complete scorecard snapshots, cumulative standings, card-derived results and submitted-round stats.
-  %% Scenario changes restore the reported trip tab, Golf subsection or settings view instead of replaying Home.
-  DSC[Mock or Busy source] --> DSN[Trip scenario column: competition, players, duration, day and draft progress]
-  DSN --> DSV[Normalize prerequisites and seed isolated browser setup]
-  DSV --> DSH[Shared roster, schedule, trip clock and round scores across trip pages]
-  %% Matches and Leaderboard use the same centered compact Gross/Net switch, aligned to their label rows.
-  %% Home Feed actions open a local text/photo composer; posts stay in page memory, without shared uploads.
-  %% Golf Trip Home: destination heading up 5px; borderless MOM slot is at least 89px tall.
-  %% Browser and installed icons share the white signature M on solid maroon; device masks round the square.
-  %% Player snapshot Round number and Overall labels sit outside and above their pills, aligned left.
-  %% Player profile scorecard lower line -> 6px gap -> round and overall pills, without visible snapshot heading.
-  %% Player snapshot: selected-round plus/minus and Thru pill | divider | overall position and plus/minus pill.
-  %% Player profile scorecard lower divider -> Round snapshot: overall position, leaderboard total and selected-round Thru.
-  %% Player public trip profile -> Round pills -> grey-framed scorecard; unloaded rounds show unavailable scores.
-  %% Leaderboard player -> Player public trip profile panel -> divider 20 percent down -> existing round scorecard; access unchanged.
-  %% Leaderboard scorecard sheet dismisses with app-style X button, Escape or outside click.
-  %% Golf leaderboard player name -> bottom-aligned modal scorecard slide-up filling 80 percent of viewport; no CARD button or inline expansion.
-  %% Home lower trip summary/round list replaced by Feed heading and blank space; dedicated Itinerary remains.
-  %% Golf section pills: 15 percent smaller height, padding and font; centered selection and elastic dragging retained.
-  %% Shared Golf course text area extends to 6px from each previous/next arrow icon.
-  %% Home maroon background extends 25px below header, behind first white card without moving content.
-  %% Golf course title fixed at 14.4px; previous/next icon edges 6px from phone sides.
-  %% Home trip date and weather -> grey-framed MOM highlights/reminders -> maroon/gold draft widget with 10-second shimmer at crease -> itinerary cards.
-  %% Shared Golf course name measures its text and shrinks from 20.8px to fit between arrows without truncating normal long names.
-  %% Selected Home-through-Itinerary gold underline sits above continuous grey divider without covering it.
-  %% Centered Golf header: course 20.8px, exactly twice 10.4px date/day-format text; single-line ellipsis.
-  %% Grey dividers surround centered date/course/day-format stack and centered independent previous/next arrows.
-  %% Golf day/round/format -> 8px space -> matching 2px grey divider -> 8px space -> section pills.
-  %% Shared Golf header text: course 12.672px with 11.7px fitting floor; date and day/round/format 10.4px.
-  %% Featured Match selector: 14.4px text, 19.2px chevrons, 8px visible label clearance below large board.
-  %% Golf course -> date and day/round details: half previous spacing.
-  %% Trip Home-through-Itinerary navigation -> 12px to standard Golf course title.
-  %% Golf section pill borders -> 9px clearance -> large summary board.
-  %% Shared Golf header detail line -> 18px clearance -> Leaderboard through Stats section pills.
-  %% Matches below large box: no repeated course/round/format heading; retain applicable scoring control and match content.
-  %% Shared Golf course title: one line, shrink to 125 percent of details then ellipsis; header another 5px higher.
-  %% Golf shared header presentation: course row 5px higher; tighter date and day/round detail spacing.
-  %% Shared Golf header: previous/next course arrows step loaded rounds; bottom row competitive Round and format; no Day number.
-  %% Golf shared day/round selection -> centered course/date header across sections; competitive round/format underneath; Matches follows shared selection.
-  %% Organizer History group -> Delete Trip box -> existing warning/confirmation UI; dev confirmation disabled without a saved trip ID; saved deletion remains organizer-authorized Supabase RPC.
-  %% Empty Matches round -> configured draft schedule/countdown, otherwise No Match Draft has been set / Ask Your Organizer.
-  %% Lower leaderboard supports touch elastic overscroll and 5px extra clearance below the final player.
-  %% Players capacity changes only through minus/count/plus; joined roster is the lower bound until a player is removed.
-  %% Golf pills support resisted elastic touch/mouse overscroll and spring back to centered scroll endpoints on release.
-  %% Golf pill scroll boundaries stop at the centered first and last available sections.
-  %% Golf section navigation uses outlined pills, gold selected fill, and automatic horizontal centering on selection/resize.
-  %% Home dev conditional Upcoming Team Draft + Match Draft previews stacked countdowns, skipping the past Round 1 match draft; organizer integration remains future work.
-  %% Itinerary details -> Delete Plan -> Confirm removes an owned travel booking using existing logic; shared plans/golf rounds remain protected.
-  %% Golf round presentation: fixed 90px settings/itinerary golf boxes, left text limited to 60%, two-line course names, compact location; Scorecards state at top right.
-  %% Both scoring -> compact centered Gross/Net below Match selector -> team names/divider/match rows shift down 4px.
-  %% Match selector text/arrows use 12.264px (20% larger than 10.22px); lower team-name section and rows have 8px extra top buffer; equal Match # divider gaps.
-  %% Lower match-row values align with lead-fill scores; top board restores top-aligned status stack (2px margin).
-  %% THRU/TEE TIME labels retain original size; F/holes/time values match lead-fill status size (16.2px board, 15px list, 13px narrow list).
-  %% Match status: empty scorecards preserve supplied result/progress; pre-round tee time -> THRU holes -> THRU F when finished.
-  %% Any visible pull-up/dialog -> lock background scrolling -> scroll active panel only -> unlock after final panel closes.
-  %% Standings notice keeps a fixed 50px height between horizontal lines; shared-ball format text fits inside without shifting the list.
-  %% Shared-ball selection -> last preceding own-ball leaderboard and scorecards -> notice between full-width lines: standings round + Format being played in Round N.
-  %% Individual leaderboard -> latest source round by default -> selected round snapshot -> past-round notice between board/list -> View current; shared-ball format note and carried standings.
-  %% Games pill -> Active Games and + New game directly below section pills; no Games summary board; New game reuses Itinerary + Add styling.
-  %% Competition-wide Match numbering counts supplied earlier-round matches; selector/list/detail agree and round navigation stays local.
-  %% Matches -> featured matchup board -> Match selector or swipe -> selected round match players/status/stats; leaderboard keeps tournament summary.
-  %% Shared Golf header uses 16.4px course and 12.4px date/round/format text, with 3px gaps around course.
-  %% Golf Leaderboard/Overview, Matches, Games and Stats share the same course header and top spacing.
-  %% Team PPG/FWY/GIR box -> 60dvh player stats sheet -> tapped team selected -> two team-name tabs; PPG decimal, FWY/GIR percentages.
-  %% Competitive Golf summary -> Predict pill -> 80dvh play-only Predict modal -> X/Escape/backdrop closes to leaderboard; no separate Predict tab or master off switch.
-  %% /dev Home and Match Selector Conditionals -> Response / Ranks / Randomized sample rounds; no setup writes.
-  TDS[Team Draft Home card] --> TDR[Team draft time reached and teams assigned]
-  TDR --> MS[Match draft scheduled at least 10 minutes after team draft]
-  MS --> MDH[Home Match Draft card replaces Team Draft]
-  MS --> MDR[Match Draft room: round selector and team rosters]
-  MDH --> MDR
-  DPR[Dev Players: Player / Organizer / Captain labels] --> DPC[Organizer assigns or replaces a captain]
-  DPC --> DPH[Current captain can also hand role to eligible teammate]
-  DPH --> DPL[Named team Captain label; organizer role stays fixed]
-  MDR --> MDE[Organizer duration settings: ranks / opening / response]
-  MDE --> MRW[Shared ranks window: explicit singles or pairs at each rank]
-  MRW --> MRL[Deadline locks corresponding ranked groups]
-  MDE --> MRO[Timed opening group then timed opposing response]
-  MRO --> MRN[Responding team opens next match with a fresh timer]
-  MRN --> MRO
-  MRO --> MRT[Expired turn: preserve pending player and auto-fill remaining team spots]
-  MRL --> MDG[Per-round room-local match groups; no official writes]
-  MRT --> MDG
-  %% Team settings If Tie: Retain only for 2 Teams; Teams Tie/Playoff for all team formats; Summary displays choice, no resolution engine added.
-  %% Team Summary: side-by-side Competition/Team selection; Format table shows round types, matches, effective points per match and summed available points.
-  %% Shared date calendars: one circle for single dates; arrival/departure circles linked by translucent maroon; new click after completed range resets arrival and requires departure.
-  %% Shared time picker: tee-time wheel sheet reused for drafts, course/admin schedules, handicap, countdown and flight/travel times; existing value formats retained.
-  %% Organizer Games settings contain presets/configuration only; the embedded scoring test panel and test-start lock are removed.
-  %% Golf Schedule round details: Edit and Delete Round above course; Confirm deletes local slot/settings, Keep editing cancels; locked after play.
-  %% Golf Schedule hides Course TBD cards; Add Round fills an empty slot or adds a round, up to two daily.
-  %% Golf Schedule: changing the first golf date reindexes selections to preserve calendar dates; hidden arrival selections are retained.
-  %% Team Competition Format: saved None displays all courses off and disables competition controls, preserving prior round formats.
-  %% Player Scoring: Player Stats Off means optional stats with disabled grey stat controls; On means required stats with selectable controls.
-  PS[Saved trip score entries] --> PA[Matching golfer and designated attester]
-  PA --> PM[Attested ace or 2/3/4 birdie run using actual pars]
-  OR[Published official win before hole 16] --> MF
-  OR --> PO
-  PM --> MF[Member-only Home momentum feed: approved headline and cause]
-  PM --> PO[Transactional push outbox for opted-in devices]
-  PO --> PW[Scheduled leased delivery: membership and preference checks]
-  PW --> PN[Closed-app notification: approved headline and cause]
-  PN --> MF
-  PB[Trip bell: permission and per-device preferences] --> PO
-  %% Bottom scrolling canvas follows the broad lower page surface, excluding floating navigation and overlays.
-  %% Shared mobile presentation: top surfaces fill to the screen edge; lettering clears the device top safe area by 1svh; overlays share that clearance.
-  %% Profile header: cream matching Overview with maroon text/icons; Rounds fills the profile backdrop maroon through bottom padding.
-  %% Profile Rounds uses Golf leaderboard styling: maroon, Spectral, cream score boxes, white values and gold details.
-  %% Account Profile selections: Overview (default, existing bio), Rounds (read-only overall handicap score history), Stats (leaderboard scorecard, Statistics, Player Bio).
-  %% Golf Trip leaderboard TOT/TDY: gross/net stroke scores use red -#, green E, white +#; Stableford remains points.
-  %% Golf-trip PEN between FWY/GIR: per-hole FWY/GRN circles mark penalties only in memory.
-  %% Golf-trip fairway direction selector uses the FWY label, matching its scorecard column.
-  %% Golf-trip par remains a displayed default until explicit Submit Score confirmation; untouched scorecard cells remain empty; stats and opponent agreement remain required.
-  %% Compact golf-trip score labels have a 10px gap above minus/score/plus controls.
-  %% Golf-trip score controls use a separate row with flexible spacing below the hole selector.
-  %% Restored grabber and top-right Exit above lowered matching GPS/Scoring/Card pills; hole summary grouped 6px above selector. Slide mode supports 200ms press then page-wide vertical touch drag.
-  %% Open scoring header controls and following content sit 8px lower, including GPS yardage offsets.
-  %% Card stays white filled with maroon text; GPS stays red filled with white text; center Scoring heading is a maroon pill with white text.
-  %% Golf-trip Card (formerly Scorecard) and GPS pills: 118.8px wide and 40.6px tall in sheet and full-screen views; full-height divider 30% from right, labels centered in left 70%, mutually exclusive default-view lock buttons centered in right 30%; reopening scoring restores the locked page.
-  %% Trip Home shows Upcoming, Add Round and planned rounds below its account/promo area; Venue retains the map and summary.
-  %% Draft Room: lower title, 4px timer gap and centered date/time; read-only draft type/order before team board, configured in Team Competition Overview.
-  %% Draft Room opens a two-team leaderboard board and slide-up Available/Team A/Team B rosters; picks are room-local only.
-  %% Active trip header retains its popup; saved trips connect Round alerts and Home Momentum, while draft/dev trips cannot subscribe.
-  DS[Development real/mock/busy source] --> SS[Source-scoped browser-local trip setup]
-  SS --> SH[Shared Home/Golf/Venue/Itinerary and Settings]
-  DS --> SC[Source-scoped dev scoring cards/groups/round state]
-  TC[Active trip chat control] --> TI[Dark maroon chat screens with Spectral font: Trip Chat always pinned]
-  TI --> TS[Search supplied group participants]
-  TS --> TD[Open a direct conversation]
-  TI --> TG[Open Trip Chat]
-  TD --> TM[Patterned conversation and local text composer]
-  TG --> TM
-  TM --> TL[Component memory only: no delivery or receiving]
-  %% Signature M: dedicated narrow loop trace before the next upstroke; subtle outline weight across variants.
-  %% App Launch > Logo entrance > gold/clean and drawing/finished/reduced conditionals; replay/duration outside phone.
-  %% /dev/brand: isolated handwriting studio, static reduced-motion fallback; existing app startup unchanged.
-  %% /dev storyboard: Groups > Pages > selected branch columns > exact-page Conditionals > phone; registry maps route and tab reports in both directions.
-  %% Maroon U Active mirrors Golf Trip Active using fictional teams at development-only home/settings routes; no database writes.
-  %% Two-line trip names balance bottom character count to at least 67% of top when a fitting split exists.
-  %% Trip title wraps with 20px clearance before the chat control, retaining its two-line limit.
-  %% Trip name and icons share a vertically centered row; main tabs follow with an 8px gap.
-  %% Active trip header: left-aligned 26.6px title; right-side chat > notifications > settings. Chat remains memory-only; saved-trip notifications now use opt-in Web Push.
-  %% /dev Public / Marketing includes Explore / Home, Golf Trips, Profile, Tourneys and Pick?ems; existing route access checks remain authoritative.
-  %% /dev storyboard: Groups > Pages > supported Conditionals > phone; registry maps route and tab reports in both directions.
-  %% Saved and draft Golf Trip General settings show six category boxes; Organizer retains permission-gated Delete Trip. Category boxes are placeholders.
-  %% Dev Settings wheel opens a maroon Trip Settings layout with the fixture trip name at top right beside a back chevron, General/Organizer text-and-underline selector, short cream category boxes with gold accents and shadows and no phone status icons; General/Organizer selection is local; General retains its six-card grid; Organizer groups existing cards under Overview, Competition and History, and site bottom navigation is hidden.
-  %% Explicit starts lock round course setup and started groups; tee times remain editable. Reason-required local corrections flag saved cards for review.
-  %% Competition round schedules show a format summary, editable tee times and a Matchup Selection instruction instead of inline assignment.
-  %% Mixed per-hole tees show Mixed with the summed selected-hole yardage in the round dropdown.
-  %% Course Yardage has shared Save Yardages/Undo & Change controls above and below its optional scorecard; saved tee controls are disabled/grey.
-  %% Golf Schedule round has Tee times and Course Yardage views; yardage includes the right-aligned tee dropdown and optional per-hole scorecard.
-  %% Settings category cards are rounded cream 2:1 rectangles without shadows, with top-left names; Organizer headings have full-width gold rules.
-  %% Competition boxes display Individual Comp and Team Comp; destination titles retain Competition.
-  %% Organizer settings group existing cards into Overview, Competition and History sections in that order.
-  %% Organizer Players shares Overview leaderboard styling; Add player adds a local open slot; joined-player trash buttons remove local entries and leave open slots, without account, membership or score deletion.
-  %% Golf Overview real-tournament leaderboard resolves player identifiers to full first and last names.
-  %% Golf Trip dev preview: settings wheel > Organizer > Competition opens a round-selection sheet with an Overview of formats, handicap/Nassau flags and schedule/status (competition type and point rules remain unconfigured), and a separate Rounds selector view with Info-style day sections and compact round/course/date/format icon rows, then selected-round maroon Spectral settings with gold switches and circular formats retaining all round data; Save returns to the round-selection sheet with memory-only edits; shared layout state supplies organizer settings; Golf Competition renders supplied format metadata; format and competitive scenario controls live only in the external local simulator; started rounds lock edits; Competition and Games omit preview-only notices. Resets on reload; no persistence or scoring integration.
-  %% New Game opens a large centered game-library dialog with scope/group filters and setup; Info Add retains its action sheet.
-  %% Fit visually scales the frame to measured available height, width-capped and optionally above 100%; iframe dimensions stay fixed.
-  %% Simulator iframe CSS dimensions are locked to the device/custom selection; centered non-shrinking frame, independent inner document scrolling.
-  %% Haptics test controls sit below annotation and snapshot tools in the right-hand Design review panel.
-  DC --> HT[Test light haptic: development only]
-  HT --> HF[Shared haptics: native plugin only, otherwise no-op]
-  HF --> HD[Dev events: intensity, duration, name]
-  HD --> HM[External 0-10 meter and bounded phone vibration]
-  DC[Dev storyboard: Groups, Pages, nested branches, Conditionals] <--> NB[Validated bridge: route and shared tab reports]
-  NB <--> IF[Isolated iframe viewport: existing app routes]
-  AR[Right annotation column: Interact or draw] --> AC[Viewport-clipped memory-only strokes and undo history]
-  %% Development desktop only: header spans three left columns; selected phone label sits left of LOCAL DEV; central phone is centered in its preview track with symmetric meter gutters and a 24px phone-to-meter gap. Narrow workspace scrolls before shrinking the intended phone size; annotations remain in the right column.
-  %% Official Masters: no inherited history, fixture pars or sample stats; explicit History imports persist in its own scope. Real development data retains stored history separately.
-  %% Real development: stored individual scorecard holes -> shared tripStats engine; saved scoring replaces matching cards and leaderboard snapshots. Shared-ball carry-forward cards are not counted twice.
-  %% Player profile: non-individual round -> same-size team summary (format, partner, competitors, supplied match result or stroke totals); individual rounds retain scorecards.
-  %% Global Tailwind utilities scan only app/components/lib sources; generated artifacts and local caches do not supply CSS classes.
-  IF --> AC
-  IF --> SNAP[Local screen-only or Phone Frame PNG]
-  AC -- Visible ink only --> SNAP
-  SNAP --> EXPORT[User-requested clipboard or download]
-  IF --> GP[Dev Golf Trip preview: shared components]
-  GM[Generic mock, empty and busy fixtures] --> GP
-  MT[Real Maroon tournament source] --> TA[tournamentToGolfTrip adapter]
-  TA --> GP
-  GP --> GS[Games: scope and group size]
-  GS --> GR[Compatible side-game recommendations]
-  GR --> GU[Local player selection and setup preview]
-  GU --> GE[Separate side-game engines: manual gross or preview net]
-  GE --> GT[Hole results, running totals and game results]
-  GP --> GSET[Organizer Games: existing expandable sections]
-  GSET --> GCFG[Standard or Custom scoring config and reset]
-  GCFG --> GE
-  GT --> GLOCK[First recorded hole locks local settings]
-  %% Games use fictional data and component memory only; no edge to official Competition scoring, standings or database.
-  %% Platform page headings sit beside the hamburger menu in smaller bold Spectral type.
-  %% Operator recovery tooling only: REST row exports; optional explicit pg_dump to local dump/manifest; isolated restore drill documented. No provider monitoring, PITR activation or application integration.
-  %% Mobile platform home: sampled #1D0B11 upper region, horizontally snapping Join/Create photo cards, Discover/Courses/News selectors and floating Home/Tournaments/Account links.
-  %% Golf Trips entry: Join a Trip above Create a Golf Trip; matching The Maroon U card opens /maroon-u, a Coming soon placeholder.
-  PH[Platform home: signed-in root] --> AU[Log In or two-step Create Account]
-  NU[Signed-out root and in-app login share maroon welcome] --> AU
-  %% Signup: THE MAROON header, email then password, generated profile; Mobile unavailable.
-  %% Welcome uses Trips dark maroon, centered gold-outline gold-letter actions, and The Maroon title at 15% height.
-  %% /new-user and /login share LoginWelcome; Sign in opens /login/email and Create an Account opens /signup.
-  PH --> DW
-  AU --> A
-  %% Public tournament site kit is fixture-only; local HTML preview in out/tournament-site-preview, no /t route or live data connection.
-  %% Contact page email links and prefilled drafts address themaroonadmin@gmail.com.
-  %% Join Tournament explains the commissioner-link requirement; it does not enroll a player.
-  DW[Local tournament creation wizard] --> DD[Draft configuration and setup dashboard]
-  DD --> DJ[Download draft JSON]
-  DD -. Future integration only .-> DP[Publish and Play locked]
-  %% Journal header: The Maroon left and Tournament site right with edge padding; hero category buttons hold dropdowns on desktop/mobile.
-  %% Desktop footer: /website alone shows the sponsor band and cutout; Journal and other public pages keep only the maroon information band.
-  %% Home Highlights follows the Home display year: curated 2026 archive results with match links; unpopulated years are blank and do not inherit 2026 entries.
-  %% Tournament home hero uses a neutral black readability gradient over desktop video and mobile photo.
-  %% Browser tabs use a single dark-maroon M with a thin muted metallic-gold outline on transparent alpha through favicon.ico (16/32/48px) and icon.png (64px), shared by tournament and journal routes.
-  %% Public entry: / opens the platform home; editorial stays at /the-maroon; founding tournament Home stays at /website.
-  %% Homepage Join Tournament card: immediate press compression, unchanged Next link, then one-shot destination main fade/rise; reduced motion disables both. No shared-element expansion; other entry points unchanged.
-  %% The Maroon routes replace tournament chrome with their own maroon header and tournament-site link to /website; a shallow shared photo hero holds schedule-style Home/category navigation.
-  %% More places The Maroon photo home link below social links, followed by Courses, Equipment, Teaching and News; public journal pages use existing course/history links and explicit unpublished-section placeholders.
-  %% Active follows handoff; the next year becomes Upcoming the day after the active event end date in its time zone; later years are Future. Event countdown follows Upcoming Session 1 / Match 1 saved date and time, independent of home display settings or setup locks.
-  %% Public Players directory: Maroon, White, Unassigned and Stats; mobile selectors use compact spacing. Stats merges static profiles, roster identities and public registered names into an alphabetical table with pinned names and twelve scrolling placeholder columns contained within the viewport.
-  %% Home Teams year pill uses the Match Play expanding selector: inline year choices, collapse on selection or outside click, scrolling for longer year lists.
-  %% Home Teams year pill selects archived 2024-2026 rosters or confirmed native assignments; ten-second refresh restores team-specific TBD slots up to six per side except the four-player 2024-2025 archives. Names face the center; blank MM Hcp, Sc. Avg., and TPE columns mirror outward without grid lines.
-  %% Page and major section titles share the official Spectral Bold Maroon Tournament title font.
-  %% Home-screen bookmarks use the supplied metallic gold artwork with a maroon left M and white right M; Apple icon metadata and Android manifest supply resized PNG assets.
-  %% Optional password-status migration derives player_slots.password_created from the linked Auth password credential; deployment pending.
-  %% Verified password setup displays the account username and authentication email above the password field.
-  %% Invite URL fragments are exchanged for session cookies before password entry; recovery codes use the server callback. Invalid links offer a fresh reset.
-  %% Course photo imports support nested photo folders and replacement/removal of Main labels; Palmer and Pete Dye assets are imported.
-  %% Accordion date/session labels are explicitly positioned below the top overlay and remain horizontal in every panel.
-  %% Schedule landing and accordion are fixed edge-to-edge viewports; Photo Library shows non-main imported images for the active course.
-  %% Schedule landing at /schedule uses the supplied Mission Hills photo and four January 6-9 links into an eight-session photo accordion with all eight desktop strips visible and the active panel at 50% width. The 2026 data source stays live until its calendar pass-on.
-  %% Season timing overview match boxes show both sides' player names, armed/live/archive badges, and hover/tap workflow timing from live Admin-created match boxes or checked-in historical matchup data.
-  %% Session course setup keeps one base rating/slope tee and stores per-hole played tee names/yardages for live scoring display.
-  A[Account and player identity] --> P[Player portal]
-  A --> T[Admin Center]
-  %% Admin Center renders the season timing overview last, after year-specific setup and global tools.
-  T <--> WE[Admin-only website editor]
-  WE --> WS[Shared section display settings]
-  T --> WS
-  WS --> P
-  WS --> B
-  T --> C[Course Library and tee snapshots]
-  T --> S[Season roster, rounds and matchups]
-  T --> Y[Locked season calendar]
-  Y -- Active date and shared pass-on boundary --> S
-  Y -- Preserve prior-year records --> X
-  %% Session count has its own persisted lock; locked selected counts are green and require unlocking before changes.
-  C --> S
-  %% Sessions may lock partially; chosen locked fields publish to schedule, while destination indicators explain separate matchup, time and broadcast gates.
-  S --> R[Lock and start round]
-  R --> L[Live scoring]
-  %% Scoring screen imports browser-safe matchup labels; Supabase session loading remains on the server.
-  L --> D[Local draft and submission queue]
-  D --> V[Validate and compare both scoring perspectives]
-  V --> Q{Both comparisons agree?}
-  Q -- Pending or disputed --> L
-  Q -- Confirmed --> H[Confirmed scores and archive records]
-  H --> O[Official match state and odds publication]
-  H --> K[Career and handicap inputs]
-  H --> PP[Player profile: featured season and older scorecards]
-  X --> MP
-  X --> PP
-  %% Fourball scorecards separate best-ball/status/best-ball into a gold-outlined middle block; mobile player rows retain team colors.
-  %% Mobile scorecard is edge-to-edge with 44px rows and a narrower total; player panels use team colors and status replaces tee time after play starts.
-  %% Player links preserve the source match for Back navigation; slider endpoint thumbs remain fully visible and graph footer copy is visually hidden.
-  %% Match Odds card remains before, during and after play; scheduled matches show a probability ring, live/final matches show the existing hole graph.
-  %% Probability graphs label completed-hole slider positions, with gold ticks over the numbers, decided results carried through hole 18, and Final scorecard cells in the winning team color.
-  %% Desktop match pages fit all 20 columns and align the odds graph; mobile uses fixed-side nine-hole swipe pages and a full-width 18-hole graph.
-  O --> B[Leaderboard, broadcast and live markets]
-  %% Desktop leaderboard match lists are centered at 40vw with taller rows; ticker width and mobile layout are unchanged.
-  B --> MP[Match profile: compact opponents, scorecard and odds]
-  %% Match Back links return to the match day; leaderboard day selection lives in the URL for browser Back and reloads.
-  Z -. 2024-2025 training and 2026 hole replay .-> MP
-  O --> F[Admin closeout and MM Coins settlement]
-  %% My Handicap score list shows only the order dropdown followed by scores; explanatory paragraphs are removed.
-  %% White-team portal navigation area has a maroon backdrop behind Submit a score and the four navigation rows.
-  %% Portal Profile, Career, Round video and Wagers rows use their named supplied photos with white labels, individual gold outlines, and spacing between selections.
-  %% Portal hero links stacked 2026/Skins and a large total to the authenticated Skins/Payout page: expandable winning holes with nested opponent scores and separate $200 individual-round pots; 2027 is not connected.
-  %% Portal hero contains evenly spaced white serif My Handicap and Player Lookup links near its bottom.
-  %% Portal: overall handicap number opens My Handicap; separate Submit a score pill opens the handicap screen.
-  %% Player Lookup starts with its selector below navigation; the header back arrow always returns to /portal.
-  %% Player Lookup is an authenticated read-only player directory with handicap history and profile-stat comparisons.
-  P --> N[Personal 18-hole round entry]
-  C --> N
-  N --> E[Atomic personal-round save]
-  E --> K
-  T --> X[Historical scorecard corrections]
-  X --> K
-  K --> M[Handicap calculations and odds model]
-  M --> O
-  M -- Overall handicap --> PP
-  %% Broadcast ticker: taller, content-sized top five; hidden while the individual leaderboard is visible.
-  B --> W[Watch Live]
-  T -- Save independent event title, date, time and zone --> BC[Watch Live countdown settings]
-  BC -- Poll every ten seconds --> W
-  P --> U[Round video upload]
-  %% Home hype video plays directly from the public website-media R2 object; no tracked MP4.
-  U --> W
-  %% Audit 2026-09-21: historical scorecard round IDs and setup round IDs are misaligned; repair pending.
-  Z[Static history and legacy feed] -. selected older pages and markets .-> B
+  Website[Marketing website /website] --> Login[Existing account sign-in]
+  Website --> Footer[Adapted footer with working destinations]
+  Login --> Dashboard[Guarded website dashboard]
+  Website --> TapIn[Tap In /tap-in]
+  TapIn --> Verified[Verified complete profile]
+  Verified --> TV[Silent TV display /broadcast]
+  TV --> Refresh[Authenticated no-store display refresh]
+  Refresh --> Readers[Existing Maroon leaderboard and match readers]
+  Readers --> Records[Retained live and historical records]
+  TV --> Graphics[Retained leaderboard and match graphics]
+  Graphics --> Controls[Fullscreen and pausable scrolling]
+  App[V2 app home and simulator] --> Profile[Existing V2 profile and player details]
+  App --> Trips[Existing V2 trips and organizer settings]
+  App --> Play[Existing Play and Predict experiences]
+  Profile --> Handicap[Shared handicap and round history]
+  Trips --> Scoring[Existing scoring and submission APIs]
+  Scoring --> Records
+  Retired[V1 page URLs] --> Current[Redirect to current app destinations]
+  Backend[Retained legacy operational APIs and rules] --> Records
+  Native[Existing isolated A6 native client] --> Identity[Verified request profile and membership reads]
+  Identity --> Trips
+  Dev[Development workspace] --> WebsiteViews[Website desktop and mobile]
+  Dev --> App
+  %% V1 UI and review group retired; no database or schema deletion.
+  %% Tap In currently uses founding-tournament data only, with no music, video, producer state or public trip feed.
+  %% No arbitrary Golf Trip TV connection, casting/pairing or native parity is claimed.
+  %% Existing scoring, bearer revocation and RLS checks remain unchanged; override SQL remains disabled/unapplied.
 ```
 
 The branches are related but not interchangeable. A personal round is not a tournament submission. Turning on the broadcast does not start scoring. A submitted hole is not necessarily confirmed. A mathematically completed match is not necessarily administratively closed out.
 
 ## 1. Accounts, identity, and permissions
+
+**2026-10-28 current status:** V2 account/profile identity remains authoritative. Tap In adds only the exact /tap-in auth return destination, preserving dashboard/invite returns. A verified session and complete profile are required before display data loads. Legacy player/host entitlements are not required; account lifecycle enforcement and native clients are unchanged.
 
 **Phase 2A read context.** Golf Trip GET list/detail also opt into request identity through getCurrentProfileForRequest. Missing profiles receive 403; existing incomplete profiles keep browser trip-read permission. Explicit server profile contexts feed the same membership loaders; client profile IDs are ignored. Existing no-argument browser callers remain cookie-based. Contract and limitations: docs/mobile-golf-trip-read-api.md.
 
@@ -866,6 +566,8 @@ Player actions use `requirePlayer` to derive the golfer from the authenticated s
 
 ## 2. Calendar year, active season, and broadcast year
 
+**2026-10-28 current status:** Active-season and broadcast display-year readers are unchanged. Tap In initially uses the founding Maroon tournament source, not arbitrary saved Golf Trip publication.
+
 The Admin Center season overview adds a locked website calendar for 2026-2034. Active and Pass on dates share the neighboring boundary and take effect at midnight America/Chicago. Draft dates do not switch the site. Locking both dates arms the window; a locked previous Pass on also protects the next Active field. Server validation serializes neighboring edits and rejects reversed, conflicting or overlapping windows. On pass-on, the successor becomes active, the outgoing year gets an archive timestamp, and existing year-keyed scores, matches, scorecards and odds remain in place. No score is copied, fabricated or closed out by the calendar. An archive timestamp remains after unlocking the dates. The 2026 data source is not treated as archived merely because 2027 is being prepared or selected; it remains live calendar data until its own Pass on date or archive timestamp.
 
 `season_calendar.sql` installs the table and service-role-only save/sync functions. Calendar reads synchronize the stored active year and completion timestamp; if pg_cron is already enabled, an idempotent named minute job also updates it without a visitor. Public rendering is dynamic, and open browser catalogs refresh every ten seconds. The native season catalog feeds the public year tabs, History, leaderboard, teams, schedule, player scorecard routes and main home/navigation cards. Native archive URLs continue reading their original season and confirmed scores after a new year takes over. Career Archive/handicap records already span years and remain intact. Legacy 2024-2025 archives remain their original data sources; 2026 uses its checked-in tournament data as the live source until the calendar archives it. Static editorial text and the legacy Fantasy/Skins products are not converted into new season data. Broadcast follows the locked calendar when armed; manual display-year behavior remains the fallback before a calendar is armed.
@@ -897,6 +599,8 @@ For example, in September 2026, My Matches can correctly show 2026 matches as Pa
 The season timing overview now distinguishes Archived, Active, Upcoming, and Future (with a separate Test season label). Active and archive handoffs retain their configured calendar boundaries. After Active's saved end date has passed in the tournament time zone, the following real year becomes Upcoming; later years are Future. A missing saved end date falls back to the checked-in historical event end date. Thus, while 2026 remains Active, its January 10, 2026 end makes 2027 Upcoming starting January 11; 2028 onward is Future. No test year is promoted to Upcoming.
 
 ## 3. Public website and navigation
+
+**2026-10-28 current status:** Current UI: /website renders MarketingWebsite, also used by /dev-website; / remains the V2 app homepage. Marketing owns its navigation, adapted footer and Tap In entry. Footer destinations are existing marketing sections, dashboard and Tap In, with no empty policy/shop/sponsor links. The old header/footer, tournament ribbon, More/account drawers, area switcher and InstallPrompt are retired. The V1 simulator group is removed and /dev-v1 redirects to /dev. V2 screens/player details remain. SeasonCatalogProvider still wraps app screens, while standalone marketing/dashboard/Tap In/TV skip its client polling; the root server catalog read remains. The surviving organizer account badge opens Profile rather than the retired portal. The descriptions below are historical V1 presentation and retained-engine references, not current navigation.
 
 **Website and legacy development groups:** `/dev?group=V1` opens the V1 review workspace inside the main simulator; `/dev?group=Website%20desktop` and `/dev?group=Website%20mobile` open the same marketing landing page at desktop and mobile viewport defaults. The old `/dev-v1` and `/dev-website` paths remain development-only renderer/bookmark entry points. No marketing page/component or public homepage is moved or copied. Desktop uses 1440×900 and a rectangular frame; mobile website uses 393×852, zero simulated safe insets and no camera overlay. Device/size controls can still change the viewport. V1 retains its own screen selector and native GET form inside its frame. Its links to other dev groups target the top workspace to avoid nested simulators. Original sign-in checks and API behavior remain.
 
@@ -973,6 +677,8 @@ The Player Portal navigation rows for Profile, Career, Round video, and Wagers u
 
 ## 4. Player portal and My Matches
 
+**2026-10-28 current status:** V1 portal pages redirect to /profile, except admin/scoring pages which redirect to /golf-trips. V2 Profile, its shared handicap/history components, all account identities, records and APIs remain. Descriptions below document former UI and retained backend behavior.
+
 After login, a host goes to Admin Center. A linked player receives a hero, team label, handicap, match cards, and links to Profile, Career, Round Video, and Wagers. A fan account does not get player-only tools.
 
 My Matches opens on Live after reopening. Live / Upcoming / Past filter cards for the portal's calendar year. For an already completed registered year, historical match definitions and archived scorecards construct those cards. Otherwise, the portal reads native rounds and match boxes. An empty Live tab can be correct even when Past contains matches.
@@ -991,6 +697,8 @@ The portal hero uses the same combined overall handicap calculation and `formatH
 
 ## 5. Player profile edits
 
+**2026-10-28 current status:** The V1 bio-edit screen is retired; V2 profile/account editing remains. Existing edit APIs and records are preserved. The description below records the legacy path, not an available V1 screen.
+
 The editor loads the original player profile, merges approved overrides, and shows pending proposals separately. Submitting a bio change writes a proposal to `player_profile_edits`; it does not immediately replace the published biography.
 
 Admin can approve or deny a proposal and can set an override directly. Approved values are merged by the profile-loading helpers. Only allowed fields can be proposed. A biography or display-name edit does not change score ownership or the canonical player slug.
@@ -998,6 +706,8 @@ Admin can approve or deny a proposal and can set an override directly. Approved 
 **Flow:** player proposal → pending edit → Admin decision → approved override → profile display. **Code:** `app/api/portal/profile/route.ts`, `app/api/portal/admin/profile-edits`, `lib/data/players/overrides.ts`.
 
 ## 6. Admin Center and tournament preparation
+
+**2026-10-28 current status:** V1 Admin Center and nested pages redirect to /golf-trips. V2 per-trip organizer settings remain. Existing admin APIs, archive/odds/scoring services and access checks are retained. Native/organizer parity for every former global operation is not established by UI retirement. Descriptions below document retained operational code and historical interfaces.
 
 The season timing overview appears last on Admin Center, after year-specific tournament setup and Global Tools.
 
@@ -1203,6 +913,8 @@ Round & Format metadata supplies course/tee/date information; it is not the tabl
 
 ## 16. Odds model and simulator
 
+**2026-10-28 current status:** The V1 odds-model admin UI is retired. Models, historical inputs and API consumers remain; Predict and calculations are unchanged. The following describes retained engines.
+
 The simulator combines scoring history with the target course's holes, format, sides, completed holes, and current lead. It samples historical scores by hole characteristics, applies round-shape/format calibration, and simulates possible remaining outcomes.
 
 Singles models two players. Fourball models four players and uses each side's best score. Foursome uses player histories with shared-team/pair calibration. Outputs are Maroon-win, tie, and White-win probabilities, converted to fair American odds without an added sportsbook margin.
@@ -1214,6 +926,8 @@ Model eligibility differs from handicap eligibility. Personal Stroke Play requir
 **Code:** `lib/odds/preRoundSingles.ts`, `lib/live/publishMatchOdds.ts`, `app/portal/admin/odds-model/page.tsx`.
 
 ## 17. Wagers, MM Coins, and the portfolio
+
+**2026-10-28 current status:** V1 Fantasy, Wagers, portfolio and My Team pages redirect to /pickems. Existing V2 trip Predict stays. No balances, fantasy teams, wager records, settlement rules or legacy APIs were deleted/reclassified. The following documents retained backend behavior, not available V1 screens.
 
 An authenticated account chooses a market, selection, and stake. It need not be linked to a player. The server resolves the selection and offered odds rather than accepting arbitrary browser-supplied odds.
 
@@ -1227,37 +941,25 @@ The verified functioning currency path is MM Coins. This map does not describe a
 
 **Code:** `app/api/wagers/mm-coins/bet/route.ts`, `lib/wagers/marketKeys.ts`, `lib/wagers/liveMatchMarket.ts`, `lib/wagers/publicWagerCatalog.ts`, `supabase/schema.sql`.
 
-## 18. Broadcast engine and producer controls
+## 18. TV display layer and retained broadcast readers
 
-Broadcast Controls includes a separate Watch Live countdown form with a typed event name, date, time, and time-zone selector. Save publishes directly to the holding screen even during rehearsal; it does not start the broadcast. Host-only POST `/api/portal/admin/broadcast/countdown` validates input and saves a global singleton in `broadcast_countdown`, independent of the broadcast data year and tournament tee times. `supabase/broadcast_countdown.sql` creates the service-role-only table; migration application and deployment are not verified. Read/save failures are reported in the form.
+**Current display layer:** /broadcast requires the existing verified website session and a complete profile, then renders TapInDisplay. It reuses IndividualLeaderboardScene, MatchPlayScene and the existing getBroadcastLeaderboard/getBroadcastMatchPlay readers for one shared display year. The silent TV experience no longer mounts producer state, event takeovers, music, holding countdowns, video transitions or player videos.
 
-The bottom-left leaderboard ticker shows the top five in a content-sized strip capped at the viewport width. It is at least 112px tall (roughly twice its previous height), with larger vertically centered names, placements and scores; text scales down together when space is limited. It hides while the individual leaderboard is visible and returns for holding, match play, player videos, transitions and full-screen event takeovers.
+**Refresh and controls:** /api/tap-in/display verifies request identity on every read and returns private, no-store JSON. The client refreshes every 15 seconds and on reconnect. Session denial hides the board and presents Sign In; transient failure labels the last update as stale and retries. Board selection, fullscreen with browser fallback, and pausable scrolling are implemented. Reduced-motion users get manual scrolling. Legacy broadcast APIs/libraries are retained for compatibility, but are not the new UI refresh path.
 
-Admin controls display year, auto/producer mode, scene timing, pause state, announcements, playlist behavior, and tournament-live presentation. `broadcast_state` and `broadcast_config` hold these controls. The normal broadcast follows its configured display year; host previews support separate rehearsal inputs.
+**Boundary:** existing founding Maroon tournament score ordering, live data and archived results are reused. Arbitrary saved-trip TV sources, publication changes, device pairing/casting and native iOS/Android support are not implemented by this change. Deployment is not verified.
 
-The scene layer displays holding content, individual leaderboard, and match play, with supported event overlays/takeovers and queued player-video transitions. Live data refreshes through Supabase Realtime notifications followed by API refetches, with visibility/reconnect recovery. Archived-year scenes use historical data sources.
+## 19. Tap In and Watch Live
 
-The event queue selects active, unexpired rows using effective priority and age. An event type existing in the library does not prove every scoring path emits it. The atomic hole endpoint publishes official state/odds but does not directly call `publishBroadcastEvent` for every score. Standings may update without every potential celebratory event firing.
+**Entry:** marketing navigation/footer link to /tap-in. Signed-out users go to /login/email?next=%2Ftap-in, using the exact new allowlisted return path. Incomplete profiles go to existing /profile setup. Signed-in golfers see Watch Live, opening /broadcast.
 
-Broadcast consumes tournament data. Changing its year, scene, or live flag does not submit scores, start a tournament round, or change handicap calculations.
+**Retired:** /watch-live redirects to /tap-in. The old player, countdown, Comments/Highlights tabs and music/video experience are removed. No comments, uploads or new external provider is introduced.
 
-**Code:** `lib/broadcast/state.ts`, `lib/broadcast/queue.ts`, `lib/broadcast/useLiveBroadcastData.ts`, `components/broadcast/BroadcastStage.tsx`, `app/portal/admin/broadcast-controls`.
-
-## 19. Watch Live, comments, and highlights
-
-Separately, the home Silver Springs hype tile opens `/videos/hype-1`. Its native video player loads `MM Edit - Silver Springs.mp4` directly from the public `website-media` R2 bucket at `https://pub-6a86d18bc79d43b99b2c02fa816169dc.r2.dev/MM%20Edit%20-%20Silver%20Springs.mp4`. The thumbnail remains bundled with the website; the MP4 is not tracked in Git. This uses the public development endpoint, not a production custom media domain.
-
-Watch Live is the public viewing page. If a YouTube live video ID is configured, it embeds that video. Otherwise, when Admin marks the broadcast live, it displays the app's custom broadcast. Before that it shows countdown/holding content.
-
-The holding screen polls its independent countdown settings every ten seconds. Its title is the saved event name, and its displayed date/time and days/hours/minutes/seconds countdown use the same saved target and time zone. No configured event shows Watch Live, Time TBD, and a date/time-to-be-announced label. Elapsed targets stop at zero without automatically going live. The existing YouTube/custom-player selection remains unchanged. `/api/countdown` serves either this event or the separate home tournament countdown and retains no shared browser cache.
-
-The viewer follows broadcast-state and playlist changes. The custom output consists primarily of tournament graphics and queued media; it is not itself a complete camera-stream ingestion/production service.
-
-Watch Live Comments and Highlights are currently placeholder panels: they display explanatory text, not a functioning realtime chat backend or automatically generated highlight collection. They must be distinguished from the functioning broadcast-state and video presentation paths.
-
-**Code:** `app/watch-live/page.tsx`, `components/watch-live/WatchLiveExperience.tsx`, `components/watch-live/BroadcastPlayer.tsx`.
+**TV use:** open Watch Live in a signed-in TV browser or on a computer connected to the TV, choose Leaderboard or Match Play and use Fullscreen. This is browser display, not wireless casting or native feature availability. Scope/review: docs/v1-retirement-review.md.
 
 ## 20. Round videos and stored media
+
+**2026-10-28 current status:** V1 round-video pages redirect to /profile; the standalone hype-video URL redirects to /tap-in. Hosted media/storage APIs and files remain unchanged. Tap In does not mount music, videos or external embeds. The following describes retained media infrastructure.
 
 A player can attach shot video to their own eligible archived scorecard; Admin can manage others. An authorized request obtains a signed upload URL, and the browser uploads bytes directly to Cloudflare R2. A confirmation request then validates the player/round/hole/shot and saves the storage-object link in Supabase.
 
@@ -1269,6 +971,8 @@ The current linking route specifically looks for `archived_scorecard_rounds`. Do
 
 ## 21. Live Scoring Page Editor and test season
 
+**2026-10-28 current status:** The V1 scoring-page editor and its mobile preview are retired with Admin Center; their URLs redirect to /golf-trips. Existing test data, APIs and scoring rules remain. The following documents historical tooling.
+
 The editor displays two connected sample phones, Maroon and White. Submitting both demonstrates agreement, disagreement, correction/resubmission, team styling, and the compact mobile layout. Desktop places them side by side; mobile stacks them.
 
 It uses local sample state and shared scoring components. It does not call the real live-hole API or save real scores. It is a visual rehearsal surface, not a general drag-and-drop layout editor; layout changes still require code.
@@ -1278,6 +982,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+**2026-10-28 current status:** V1 UI routes redirect to current app destinations. The dependency inventory records removed sources and protected shared/API/test consumers. /dev retains V2 and Website desktop/mobile groups, with no V1 group. V2 Play categories remain; the retired journal-page exit is removed. This change does not verify arbitrary saved-trip TV integration or native feature parity.
 
 **Organizer overrides: disabled database foundation only.** supabase/golf_trip_score_overrides.sql is authored but not applied. It adds new append-only event/receipt and delegation-intent tables plus unseeded lifecycle metadata with overrides_enabled constrained false, for saved Golf Trip 18-hole gross stroke play only. No enabled insert/grant/revoke/reopen/score RPC, API/UI or official reader exists. Proposed new-history RLS permits accepted active-account participants, including history about the primary organizer's own card; existing legacy history visibility/behavior is untouched. Audit UUIDs are historical references, not another official score table; existing submissions/revisions remain authoritative. New audit records do not cascade with source deletion or block it, pending retention review. Existing approved/reopened work blocks installation transactionally; an operator must inventory and explicitly resolve it, with no silent relock/discard. Live records/applied schema are unknown. Existing golfer/attester correction reopening remains active until a separate reviewed cutover. Atomic organizer authority, delegated permission operations, finalized/reopened enforcement, publication, reader compatibility and hosted/device tests are future dependencies. Review: docs/golf-trip-score-overrides-foundation-review.md; inventory handoff: docs/golf-trip-score-overrides-inventory.sql.
 

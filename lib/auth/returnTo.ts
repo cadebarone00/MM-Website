@@ -1,5 +1,5 @@
 /**
- * Where to send someone after login / signup. Only the exact website dashboard and Golf Trip / tournament (incl. tournaments-by-code) invite pages are allowed (exact same-site paths), so
+ * Where to send someone after login / signup. Only the exact website dashboard / Tap In and Golf Trip / tournament (incl. tournaments-by-code) invite pages are allowed (exact same-site paths), so
  * the `next` parameter can never be used to send people to another site or an unexpected page.
  */
 const INVITE_PATH = /^\/(golf-trips|tournaments|tournaments\/code)\/invite\/[A-Za-z0-9_-]{32,200}$/;
@@ -8,7 +8,7 @@ export const inviteReturnPath = (value: string | null | undefined): string | nul
 
 /** Exact website destination only; keep the invite-only helper unchanged for existing callers. */
 export const authReturnPath = (value: unknown): string | null =>
-  typeof value === "string" ? value === "/dashboard" ? value : inviteReturnPath(value) : null;
+  typeof value === "string" ? (value === "/dashboard" || value === "/tap-in") ? value : inviteReturnPath(value) : null;
 
 export const withReturnTo = (href: string, next: string | null): string => {
   const safe = authReturnPath(next);

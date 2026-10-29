@@ -12,6 +12,10 @@
 - When an item is legitimately post-launch or not in the agreed launch scope, record **N/A — deferred by decision** rather than checking it as if done.
 - Store proof in the evidence register: test date, branch/commit, build, platform, tester and result.
 
+## Website and V1 consolidation - October 28, 2026
+
+Owner-approved scope: retire V1 shell, public tournament pages, player portal, fantasy/wagers, journal and admin UI; preserve V2 and all shared data/rules/APIs. The marketing footer is adapted into the new website. Tap In retains silent leaderboard/match graphics behind website sign-in. This local web change does not prove native replacement parity, arbitrary saved-trip TV integration, beta readiness or deployment. Decisions, dependency inventory and verification: `docs/v1-retirement-review.md`, `docs/v1-retirement-dependencies.json` and `docs/app-workflow.md`. Existing readiness boxes remain unchanged.
+
 ## Readiness checklist
 
 ### A. Platform, accounts and security

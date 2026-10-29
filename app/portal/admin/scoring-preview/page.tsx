@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireHost } from "@/lib/portal/requireHost";
-import Link from "next/link";
-import { LiveScoringPreview } from "@/components/portal/admin/LiveScoringPreview";
-export default async function ScoringPreviewPage() { if (!await requireHost()) redirect("/login"); return <main className="mx-auto max-w-5xl px-4 py-8 sm:px-7"><Link href="/portal/admin" className="font-condensed text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-maroon-700">← Back to Admin Center</Link><div className="mt-5"><LiveScoringPreview /></div></main>; }
+
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
+}

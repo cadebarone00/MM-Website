@@ -1,42 +1,6 @@
-import { getSeasonCatalog, getCatalogTournament, nativeSeasonYear } from "@/lib/data/seasonCatalog";
-import { notFound, redirect } from "next/navigation";
-import { YearLeaderboardContent } from "@/components/leaderboard/YearLeaderboardContent";
-import { LiveLeaderboardContent } from "@/components/leaderboard/LiveLeaderboardContent";
-import { pastTournaments, nextTournament } from "@/lib/data";
-import { getScorecardsForTournament } from "@/lib/data/archivedScorecards";
+import { redirect } from "next/navigation";
 
-export function generateStaticParams() {
-  return [...pastTournaments.map((t) => ({ slug: t.slug })), { slug: nextTournament.slug }];
-}
-
-export default async function LeaderboardYearPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const catalog = await getSeasonCatalog();
-
-  if (slug === catalog.nextTournament.slug && nativeSeasonYear(slug)) {
-    // Before the season switchover, `nextTournament` isn't live yet and has
-    // nothing to show — send visitors to the latest completed tournament
-    // instead of a dead-end empty page.
-    if (!catalog.leaderboardOpen) {
-      redirect(`/leaderboard/${catalog.latestCompleted.slug}`);
-    }
-    return (
-      <div className="max-w-[1200px] mx-auto px-4 pb-8 sm:px-7 sm:pb-16">
-        <LiveLeaderboardContent />
-      </div>
-    );
-  }
-
-  const tournament = await getCatalogTournament(slug);
-  if (!tournament) notFound();
-
-  const scorecards = await getScorecardsForTournament(tournament);
-  const tournamentWithScorecards = { ...tournament, scorecards };
-
-  return (
-    <div className="max-w-[1200px] mx-auto px-4 pb-8 sm:px-7 sm:pb-16">
-      <YearLeaderboardContent tournament={tournamentWithScorecards} />
-      {tournament.notes && <p className="font-sans text-xs text-ink-400 mt-6 max-w-[640px]">{tournament.notes}</p>}
-    </div>
-  );
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
 }

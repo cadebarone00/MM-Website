@@ -24,7 +24,7 @@ export function MarketingWebsite({ accountActions }: { accountActions?: ReactNod
     <a className={styles.skip} href="#main">Skip to content</a>
     <header className={styles.header}>
       <WebsiteBrand />
-      <nav aria-label="Website navigation"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#our-story">Our Story</a><a href="#support">Support</a><span className={styles.navActions}>{accountActions ?? <a className={styles.navSignIn} href="/login/email?next=%2Fdashboard">Sign In</a>}<a className={styles.navDownload} href="#download">Download <ArrowUpRight size={15} aria-hidden="true" /></a></span></nav>
+      <nav aria-label="Website navigation"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#our-story">Our Story</a><a href="#support">Support</a><a href="/tap-in">Tap In</a><span className={styles.navActions}>{accountActions ?? <a className={styles.navSignIn} href="/login/email?next=%2Fdashboard">Sign In</a>}<a className={styles.navDownload} href="#download">Download <ArrowUpRight size={15} aria-hidden="true" /></a></span></nav>
     </header>
     <main id="main">
       <WebsiteHero />
@@ -36,6 +36,14 @@ export function MarketingWebsite({ accountActions }: { accountActions?: ReactNod
       <section id="support" className={styles.section}><SectionHeading label="SUPPORT" title="Here for the next round." copy="Support details will be available when The Maroon launches." /></section>
       <section id="download" className={styles.download}><p className={styles.eyebrow}>THE NEXT CHAPTER IS COMING</p><h2>Keep your crew close.<br /><em>Your next round closer.</em></h2><p>The Maroon is coming to iOS and Android.<br />We’ll meet you at the first tee.</p><WebsiteDownloads /></section>
     </main>
-    <footer className={styles.footer}><div className={styles.footerTop}><WebsiteBrand /><p>Golf is better together.</p></div><div className={styles.footerBottom}><span>© {new Date().getFullYear()} The Maroon</span><nav aria-label="Footer information"><a href="/dashboard">Player Dashboard</a><a href="#support">Support</a>{["Legal", "Privacy", "Instagram"].map(label => <span key={label}>{label} <small>Coming soon</small></span>)}</nav><a href="#top">BACK TO TOP ↑</a></div></footer>
+    <footer className={styles.footer}>
+      <div className={styles.footerTop}><WebsiteBrand /><p>Golf is better together.</p></div>
+      <nav className={styles.footerLinks} aria-label="Footer destinations">
+        <div><h2>The Maroon</h2><a href="#our-story">About The Maroon</a><a href="#features">Features</a><a href="#how-it-works">How It Works</a></div>
+        <div><h2>Your game</h2><a href="/dashboard">Player Dashboard</a><a href="/tap-in">Tap In &middot; Watch Live</a><a href="#download">iOS &amp; Android</a></div>
+        <div><h2>Get in touch</h2><a href="#support">Support &amp; Feedback</a></div>
+      </nav>
+      <div className={styles.footerBottom}><span>&copy; {new Date().getFullYear()} The Maroon</span><a href="#top">BACK TO TOP &uarr;</a></div>
+    </footer>
   </div>;
 }

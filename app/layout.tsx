@@ -1,4 +1,3 @@
-import { SeasonCatalogProvider } from "@/components/SeasonCatalogProvider";
 import { ModalScrollLock } from "@/components/ModalScrollLock";
 import { getSeasonCatalog } from "@/lib/data/seasonCatalog";
 import type { Metadata, Viewport } from "next";
@@ -6,15 +5,14 @@ import { spectral, barlow, barlowCondensed } from "@/lib/fonts/brand";
 import "@/lib/fonts/fallbacks.css";
 import "./globals.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
-import { getNextTournamentOverride } from "@/lib/data/activeSeasonOverlay";
 import { cookies } from "next/headers";
 import { appMode, MODE_COOKIE } from "@/lib/theme/appMode";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "The Maroon — Live",
-  description: "The Maroon Tournament — a fictional invitational match-play golf championship. Live leaderboard, pairings, and team rosters.",
+  title: "The Maroon",
+  description: "Golf trips, friendly competition, live scoring, and your golf community.",
 };
 
 // Lock the page to the device's own width and disable pinch-zoom — without
@@ -33,7 +31,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [nextTournamentOverride, catalog, cookieStore] = await Promise.all([getNextTournamentOverride(), getSeasonCatalog(), cookies()]);
+  const [catalog, cookieStore] = await Promise.all([getSeasonCatalog(), cookies()]);
   // Settings → Appearance: Light on this device (dark = none).
   return (
     <html
@@ -43,7 +41,7 @@ export default async function RootLayout({
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
         <ModalScrollLock />
-        <SeasonCatalogProvider initial={catalog}><SiteChrome nextTournamentOverride={nextTournamentOverride}>{children}</SiteChrome></SeasonCatalogProvider>
+        <SiteChrome catalog={catalog}>{children}</SiteChrome>
       </body>
     </html>
   );

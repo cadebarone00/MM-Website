@@ -10,5 +10,5 @@ export const metadata = { title: "Player Dashboard | The Maroon", robots: { inde
 export default async function DashboardPage() {
   const player = await loadWebsitePlayer();
   if (!player) redirect("/login/email?next=%2Fdashboard");
-  return <WebsiteAccountDashboard player={player} websiteHref={process.env.NODE_ENV === "development" ? "/dev-website" : "/"} accountActions={<WebsiteAccountActions signedIn />} />;
+  return <WebsiteAccountDashboard player={player} websiteHref="/website" accountActions={<WebsiteAccountActions signedIn />} />;
 }

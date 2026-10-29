@@ -1,5 +1,6 @@
-import { HistoryPageContent } from "@/components/history/HistoryPageContent";
+import { redirect } from "next/navigation";
 
-export default function HistoryPage() {
-  return <HistoryPageContent />;
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
 }

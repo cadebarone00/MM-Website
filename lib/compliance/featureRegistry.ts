@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "v1-ui-retirement-tap-in", name: "V1 interface retirement and signed-in Tap In",
+    scope: "Owner-approved V1 UI removal with redirects to V2, adapted marketing footer and silent authenticated founding-tournament TV leaderboards. Shared data, scoring, profiles, APIs and schemas preserved. No arbitrary saved-trip broadcasting, music/video, native parity, deployment or release clearance. Review and unresolved privacy/security/IP/retention/provider/professional follow-ups: docs/v1-retirement-review.md; dependency evidence: docs/v1-retirement-dependencies.json.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "intellectual-property", "media-rights", "organizer-responsibility", "platform-rules", "legal-review"],
+  },
+  {
     id: "golf-trip-score-override-foundation", name: "Disabled Golf Trip organizer override database foundation",
     scope: "Additive unapplied SQL only: sealed append-only override receipts and delegation intent, generated canonical fingerprints, participant-scoped new history RLS and disabled lifecycle metadata for 18-hole gross stroke play. No score/grant/reopen RPC, API, UI, legacy history policy or live scoring change. Installation refuses unresolved legacy reopened/approved corrections; live inventory unknown. Audit survives source deletion; retention, professional/security review, atomic authorization/publication and activation remain review_required. Findings: docs/golf-trip-score-overrides-foundation-review.md; read-only inventory handoff: docs/golf-trip-score-overrides-inventory.sql.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "organizer-responsibility", "platform-rules", "legal-review"],

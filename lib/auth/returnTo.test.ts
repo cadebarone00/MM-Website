@@ -30,3 +30,10 @@ test("website auth accepts only the exact dashboard path, retaining invite desti
   assert.equal(withReturnTo("/login/email", "https://evil.example"), "/login/email");
   assert.equal(withReturnTo("/login/email", "/dashboard"), "/login/email?next=%2Fdashboard");
 });
+
+
+test("Tap In allows only its exact authenticated return destination", () => {
+  assert.equal(authReturnPath("/tap-in"), "/tap-in");
+  assert.equal(withReturnTo("/login/email", "/tap-in"), "/login/email?next=%2Ftap-in");
+  for (const value of ["/tap-in/", "/tap-in?next=//evil.test", "/tap-in#x", "/tap-in/../admin", "//evil.test/tap-in", "/%74ap-in", "/tap-in\n"]) assert.equal(authReturnPath(value), null);
+});

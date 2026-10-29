@@ -1,5 +1,6 @@
-import { ComingSoonPage } from "@/components/ui/ComingSoonPage";
+import { redirect } from "next/navigation";
 
-export default function MerchandisePage() {
-  return <ComingSoonPage title="Merchandise" />;
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/website#download");
 }

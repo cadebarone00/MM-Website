@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** The manual settlement screen was retired: Match Close Out settles the
- * authoritative live-match market automatically. */
-export default function RetiredSettlementPage() {
-  redirect("/portal/admin");
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
 }

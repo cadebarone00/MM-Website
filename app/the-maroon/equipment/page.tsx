@@ -1,3 +1,6 @@
-import { MaroonCategoryPage } from "@/components/maroon/MaroonCategoryPage";
-export const metadata = { title: "Equipment | The Maroon" };
-export default function EquipmentPage() { return <MaroonCategoryPage category="equipment" />; }
+import { redirect } from "next/navigation";
+
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/");
+}

@@ -63,7 +63,6 @@ export function PlatformHome({ signedIn = false }: { signedIn?: boolean }) {
           <p className={styles.kicker}>The Maroon &middot; {section}</p>
           <h2>{category.headline}</h2>
           <p className={styles.description}>{category.description}</p>
-          <Link href={"/the-maroon/" + category.slug}>Explore {section}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
       </div>}
     </section>

@@ -1,61 +1,6 @@
-import { buildLiveTournamentSnapshot } from "@/lib/broadcast/liveSnapshot";
-import { liveRoundFormatArchive } from "@/lib/data/liveRoundFormatArchive";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { CareerStatsPanel } from "@/components/portal/admin/CareerStatsPanel";
-import { RoundFormatArchive, type RoundFormatTournament } from "@/components/portal/admin/RoundFormatArchive";
-import { careerArchivePartnerships } from "@/lib/data/careerArchive";
-import { getCombinedCareerArchive } from "@/lib/data/combinedCareerArchive";
-import { getSeasonCatalog, nativeSeasonYear } from "@/lib/data/seasonCatalog";
-import { getRoundFormatSetups } from "@/lib/data/roundFormatSetups";
-import { roundFormatArchive } from "@/lib/data/roundFormatArchive";
-import { getOrphanArchivedRounds } from "@/lib/data/archivedScorecards";
-import { getCourseLibraryForHandicap } from "@/lib/handicap/data";
-import { editionFilter, maroonEdition } from "@/lib/platform/editionScope";
 
-export default async function CareerStatsPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: profile } = await supabase.from("profiles").select("is_host").eq("id", user.id).single();
-  if (!profile?.is_host) redirect("/");
-  const { records, teamRecords } = await getCombinedCareerArchive();
-  const courses = await getCourseLibraryForHandicap(true);
-
-  const { nextTournament, pastTournaments, leaderboardOpen } = await getSeasonCatalog(null);
-  const setups = await getRoundFormatSetups();
-  const roundFormatTournaments: RoundFormatTournament[] = await Promise.all(
-    pastTournaments.map(async (tournament) => {
-      if (nativeSeasonYear(tournament.slug)) {
-        const snapshot = await buildLiveTournamentSnapshot(maroonEdition(tournament.year), { confirmedOnly: true });
-        const service = createSupabaseServiceRoleClient();
-        const { data: settings } = await service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(tournament.year))).maybeSingle();
-        return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, tournament.slug, tournament.year, setups, settings?.timezone ?? "America/Los_Angeles") };
-      }
-      const setupFor = (round: number) => setups.find((s) => s.seasonYear === tournament.year && s.round === round) ?? null;
-      const entries = roundFormatArchive(tournament).map((entry) => ({ ...entry, setup: setupFor(entry.round) }));
-      const orphans = await getOrphanArchivedRounds(tournament.slug, entries.length).catch((err) => {
-        console.error(`Failed to load orphan archived rounds for ${tournament.slug}:`, err);
-        return [];
-      });
-      return { slug: tournament.slug, year: tournament.year, venue: tournament.venue, entries, orphans: orphans.map((entry) => ({ ...entry, setup: setupFor(entry.round) })), dayDates: tournament.dayDates ?? {} };
-    })
-  );
-
-  if (leaderboardOpen && nativeSeasonYear(nextTournament.slug)) {
-    const snapshot = await buildLiveTournamentSnapshot(maroonEdition(nextTournament.year), { confirmedOnly: true });
-    const service = createSupabaseServiceRoleClient();
-    const { data: settingsRow } = await service.from("live_tournament_settings").select("timezone").match(editionFilter(maroonEdition(nextTournament.year))).maybeSingle();
-    const timezone = settingsRow?.timezone ?? "America/Los_Angeles";
-    roundFormatTournaments.unshift({ slug: nextTournament.slug, year: nextTournament.year, venue: nextTournament.venue, orphans: [], ...liveRoundFormatArchive(snapshot, nextTournament.slug, nextTournament.year, setups, timezone) });
-  }
-
-  return (
-    <div className="mx-auto max-w-[900px] px-4 py-12 sm:px-7">
-      <h1 className="font-serif text-3xl font-bold text-ink-900">Career Stats</h1>
-      <div className="mt-6"><RoundFormatArchive tournaments={roundFormatTournaments} courses={courses} /></div>
-      <p className="mt-8 font-sans text-sm text-ink-500">The permanent, versioned archive for historical player, partnership, and match data. Individual score history remains separate from Fourball and Alternate Shot team results.</p>
-      <div className="mt-6"><CareerStatsPanel records={records} partnerships={careerArchivePartnerships} teamRecords={teamRecords} /></div>
-    </div>
-  );
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/golf-trips");
 }

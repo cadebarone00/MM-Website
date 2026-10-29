@@ -176,3 +176,10 @@
 .footer{padding:36px 6% 24px}
 }
 
+
+/* V1 footer destinations adapted to marketing; no dead links or legacy shell. */
+.footerLinks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;padding:32px 0;border-bottom:1px solid #ffffff35}
+.footerLinks h2{font:600 18px var(--font-spectral,Georgia),serif;margin:0 0 16px;color:var(--paper)}
+.footerLinks a{display:block;width:fit-content;margin:12px 0;color:var(--paper);font-size:14px;text-decoration:none}
+.footerLinks a:hover{text-decoration:underline}
+@media(max-width:600px){.footerLinks{grid-template-columns:1fr;gap:18px}}

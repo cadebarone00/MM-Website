@@ -1,10 +1,6 @@
-import { WatchLiveExperience } from "@/components/watch-live/WatchLiveExperience";
-import { getBroadcastPayload } from "@/lib/broadcast/state";
-import { getBroadcastPlaylist } from "@/lib/broadcast/playlist";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function WatchLivePage() {
-  const [{ seasonYear, state }, { tracks }] = await Promise.all([getBroadcastPayload(), getBroadcastPlaylist()]);
-  return <WatchLiveExperience seasonYear={seasonYear} initialState={state} initialTracks={tracks} />;
+/** Retired V1 URL. Shared data and V2 screens remain in their own modules. */
+export default function RetiredPage() {
+  redirect("/tap-in");
 }
