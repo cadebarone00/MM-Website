@@ -3641,3 +3641,18 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
 - **Known gaps:** name / photo / privacy saves (`/api/account/profile|photo|privacy`) and the trip-invite accept route are
   cookie-only, so the phone app can't call them yet (verify-code, birthday, finish, onboarding, terms accept Bearer);
   the Notifications switch has nothing to save to yet; Google / Apple buttons are hidden on these screens until Phase 7.
+
+### Phase 7A — authentication polish and test repairs (built + approved 2026-10-29; committed locally)
+- **Profile Created is one-time.** Website Finish sets `maroon_just_activated` (HttpOnly, SameSite=Strict, 10 minutes)
+  holding the account's own `activated_at` — no id, no secret — only when that activation is under 10 minutes old. The
+  page shows only when the value equals the database's `activated_at` for the signed-in account and is still fresh;
+  on screen it calls `POST /api/account/activation-seen`, which deletes the cookie. Everyone else (returning Active
+  users, refresh, revisits, forged or expired markers) goes to Play. Viewing it never activates anything.
+  (`lib/account/activationMarker.ts`.) The phone app will need its own equivalent in Phase 7B.
+- **Test repairs.** `POST /api/auth/signout` (app token) answered 503 for a token whose session or account no longer
+  exists; it now treats Supabase's 401/403/404 as already signed out, like the website path. The deletion test sent golfer
+  C's leftover cookies with A's token, which the cookie/Bearer conflict rule (since `e73b73e9`) rightly refuses; it now
+  sends an app request with no cookies, and the conflict refusal is tested separately.
+- **Notification preference: not built.** The approved notifications plan makes alerts on/off per phone and per kind,
+  with device and preference tables owned by the notifications work (another window). A per-account switch here would
+  be a competing system, so the onboarding switch still saves nothing until that structure exists.

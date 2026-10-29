@@ -70,6 +70,17 @@ async function latestCode(email, subject, after) {
   }
   throw new Error(`no "${subject}" email for ${email}`);
 }
+/** activated_at exactly as the app reads it (PostgREST's format), for building marker cookies. */
+async function activatedAtOf(id) {
+  const r = await fetch(`${API}/rest/v1/profiles?id=eq.${id}&select=activated_at`, { headers: { apikey: status.SERVICE_ROLE_KEY, authorization: `Bearer ${status.SERVICE_ROLE_KEY}` } });
+  return (await r.json())[0]?.activated_at ?? null;
+}
+/** Moves an activation time (test setup only; the activation guard only lets Finish or this explicit flag change it). */
+const setActivatedAt = (id, expression) => sql(`begin; select set_config('maroon.activation', 'on', true); update public.profiles set activated_at = ${expression} where id = ${q(id)}; commit;`);
+const createdVisit = async (context) => {
+  const r = await context.request.get(`${ORIGIN}/onboarding/created`, { maxRedirects: 0 });
+  return { status: r.status(), to: r.headers().location ? new URL(r.headers().location, ORIGIN).pathname : null };
+};
 const SIGNUP_MAIL = "Confirm your email", RESET_MAIL = "Reset your Maroon password";
 const wrong = (code) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
 
@@ -241,6 +252,42 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     check("Let's go -> Play", true);
     const again = await context.request.get(`${ORIGIN}/onboarding/settings`, { maxRedirects: 0 });
     check("Active: onboarding screens send to Play", again.status() === 307 && new URL(again.headers().location, ORIGIN).pathname === "/");
+
+    // Profile Created is a one-time screen (Phase 7A marker).
+    const id = accountRow(ann.email).id, activatedAt = await activatedAtOf(id);
+    let visit = await createdVisit(context);
+    check("after the screen was shown: revisiting Profile Created -> Play", visit.status === 307 && visit.to === "/", JSON.stringify(visit));
+    check("…and the marker cookie is gone", !(await context.cookies()).some((c) => c.name === "maroon_just_activated"));
+    const host = new URL(ORIGIN).hostname;
+    await context.addCookies([{ name: "maroon_just_activated", value: "2020-01-01T00:00:00+00:00", domain: host, path: "/" }]);
+    visit = await createdVisit(context);
+    check("a made-up marker -> Play", visit.status === 307 && visit.to === "/", JSON.stringify(visit));
+    setActivatedAt(id, "now() - interval '11 minutes'");
+    const old = await activatedAtOf(id);
+    await context.addCookies([{ name: "maroon_just_activated", value: old, domain: host, path: "/" }]);
+    visit = await createdVisit(context);
+    check("an expired marker (activation 11 minutes ago) -> Play", visit.status === 307 && visit.to === "/", JSON.stringify(visit));
+    setActivatedAt(id, "now()");
+    const fresh = await activatedAtOf(id);
+    await context.addCookies([{ name: "maroon_just_activated", value: fresh, domain: host, path: "/" }]);
+    visit = await createdVisit(context);
+    check("the matching, fresh marker -> the screen is allowed (server-verified)", visit.status === 200, JSON.stringify(visit));
+    check("visiting Profile Created never changes the activation", (await activatedAtOf(id)) === fresh);
+    setActivatedAt(id, `${q(activatedAt)}::timestamptz`);
+    await context.clearCookies({ name: "maroon_just_activated" });
+  });
+
+  await step("existing Active user", async () => {
+    const other = await phone(browser);
+    await other.page.goto(`${ORIGIN}/start/log-in`);
+    await other.page.getByLabel("Email").fill(ann.email);
+    await other.page.getByLabel("Password", { exact: true }).fill(ann.password);
+    await other.page.getByRole("button", { name: "Log in" }).click();
+    await waitPath(other.page, "/");
+    await other.page.goto(`${ORIGIN}/onboarding/created`);
+    await waitPath(other.page, "/");
+    check("a returning Active user opening Profile Created goes to Play", !(await other.page.getByRole("heading", { name: "Profile Created!" }).isVisible()));
+    await other.context.close();
   });
   await context.close();
 
@@ -359,6 +406,18 @@ await withServer("C-unenforced", { MAROON_V2_ONBOARDING: "on" }, async (browser)
     await waitPath(page, "/onboarding/created");
     check("enforcement off: same flow -> Profile Created, activated", accountRow(cy.email).activated);
     check("Private by default", sql(`select public.get_rounds_visibility(${q(accountRow(cy.email).id)})`) === "private");
+    // Refresh: the screen used its marker once it showed, so reloading goes to Play and activates nothing again.
+    const activatedAt = await activatedAtOf(accountRow(cy.email).id);
+    await page.getByRole("heading", { name: "Profile Created!" }).waitFor();
+    for (let i = 0; i < 40 && (await context.cookies()).some((c) => c.name === "maroon_just_activated"); i++) await sleep(250);
+    check("the shown screen used up its marker", !(await context.cookies()).some((c) => c.name === "maroon_just_activated"));
+    await page.reload();
+    await waitPath(page, "/");
+    check("refreshing Profile Created -> Play", path(page) === "/");
+    await page.goto(`${ORIGIN}/onboarding/created`);
+    await waitPath(page, "/");
+    check("navigating back to it again -> Play", path(page) === "/");
+    check("refresh / revisits never re-activate (activation time unchanged)", (await activatedAtOf(accountRow(cy.email).id)) === activatedAt);
     await context.close();
   });
 });

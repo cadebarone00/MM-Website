@@ -21,6 +21,13 @@ export async function POST(request: Request) {
     if (error && error.code !== "42P01" && error.code !== "PGRST205") return NextResponse.json({ error: "Could not disable device alerts." }, { status: 503 });
   }
   const result = bearer ? await service.auth.admin.signOut(bearer, "local") : await supabase!.auth.signOut({ scope: "local" });
+  // A token whose session or account no longer exists (signed out elsewhere, deleted account) is already signed out:
+  // Supabase answers 401 / 403 / 404 for it. The web path's signOut() already treats those as done (auth-js
+  // _signOut); the app path must too, or the app retries a sign-out that already happened (found 2026-10-29,
+  // session-regression "sign out afterwards: harmless"). Real failures (5xx, network) still answer 503.
+  if (result.error && alreadySignedOut(result.error)) return NextResponse.json({ ok: true });
   if (result.error) return NextResponse.json({ ok: false, error: "Could not sign out. Try again." }, { status: 503 });
   return NextResponse.json({ ok: true });
 }
+
+const alreadySignedOut = (error: { status?: number }) => error.status === 401 || error.status === 403 || error.status === 404;

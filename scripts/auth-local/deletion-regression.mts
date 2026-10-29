@@ -88,8 +88,17 @@ const sharedBefore = sql(`select count(*) from public.scoring_group_players`) + 
 
 section("Re-authentication and own-account only");
 {
+  // Updated 2026-10-29 (Phase 7A): this request used to run with whatever browser jar the setup left behind — C's
+  // logged-in cookies — next to A's Bearer token. Since e73b73e9 the server refuses a cookie session for one account
+  // sent with another account's Bearer (lib/supabase/requestIdentity.ts), so it answered "signed-out" before the
+  // re-authentication rule could run. An app request has no website cookies, so it is now sent with none; the
+  // conflict rule itself is checked separately just below.
+  (globalThis as { __authLocalJar?: Jar }).__authLocalJar = browser(); // a browser with no cookies at all
   const stale = await deleteAs(A.session.access_token, { nowSeconds: Math.floor(Date.now() / 1000) + 3600 });
   check("a session older than 10 minutes is refused (reauth-required)", stale.status === "reauth-required" && ledger(A.id) === "<none>", JSON.stringify(stale));
+  (globalThis as { __authLocalJar?: Jar }).__authLocalJar = C.jar; // C's website session…
+  const mixed = await deleteAs(A.session.access_token); // …with A's app token
+  check("another account's website session + this Bearer: refused, nothing recorded", mixed.status === "signed-out" && ledger(A.id) === "<none>" && ledger(C.id) === "<none>", JSON.stringify(mixed));
   (globalThis as { __authLocalJar?: Jar }).__authLocalJar = browser(); // a browser with no cookies at all
   const none = await requestAccountDeletion(new Request("http://127.0.0.1:3999/api/account/delete", { method: "POST" }));
   check("no session: refused", none.status === "signed-out" && ledger(C.id) === "<none>");
