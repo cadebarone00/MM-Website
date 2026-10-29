@@ -6,6 +6,8 @@ import { LogInScreen, SignUpScreen } from "@/components/onboarding/StartScreens"
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { ONBOARDING, START, START_SCREENS, type StartScreen } from "@/lib/account/onboardingRoutes";
 import { getAccountLifecycle } from "@/lib/profile/currentProfile";
+import { oauthErrorMessage } from "@/lib/auth/oauth";
+import { enabledOAuthProviders } from "@/lib/auth/oauthServer";
 
 export const metadata = { title: "The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -23,7 +25,7 @@ export default async function StartScreenPage({ params, searchParams }: {
   if (!START_SCREENS.includes(screen as StartScreen)) notFound();
   const query = await searchParams;
   switch (screen as StartScreen) {
-    case "sign-up": return <SignUpScreen />;
+    case "sign-up": return <SignUpScreen providers={await enabledOAuthProviders()} />;
     case "password": return <PasswordScreen kind="create" />;
     case "verify": return <CodeScreen kind="signup" />;
     case "confirmed": {
@@ -33,8 +35,9 @@ export default async function StartScreenPage({ params, searchParams }: {
     }
     case "log-in": {
       const notice = query.reset === "1" ? "Password saved. Log in with your new password."
-        : query.error === "invalid_link" ? "That link didn't work or has expired. Log in, or ask for a new code." : null;
-      return <LogInScreen notice={notice} />;
+        : query.error === "invalid_link" ? "That link didn't work or has expired. Log in, or ask for a new code."
+        : oauthErrorMessage(query.error); // Google / Apple cancelled, unavailable or failed (fixed words only)
+      return <LogInScreen notice={notice} providers={await enabledOAuthProviders()} />;
     }
     case "forgot": return <ForgotScreen />;
     case "reset-code": return <CodeScreen kind="recovery" />;

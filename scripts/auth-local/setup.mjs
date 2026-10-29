@@ -43,7 +43,23 @@ const FILES = [
 try { supabase("stop", "--no-backup"); } catch { /* nothing was running */ }
 rmSync(work, { recursive: true, force: true });
 mkdirSync(join(work, "supabase", "migrations"), { recursive: true });
-writeFileSync(join(work, "supabase", "config.toml"), stack.config(readFileSync(join(root, "scripts", "auth-local", "config.toml"), "utf8")));
+// AUTH_LOCAL_PROVIDERS=on (Phase 7C browser tests only): Google + Apple switched on with DUMMY local credentials, so the
+// buttons appear and a sign-in can start; the browser test intercepts the trip to Google / Apple (nothing leaves the
+// machine). Off by default — oauth-regression.mts expects both providers off.
+const providers = process.env.AUTH_LOCAL_PROVIDERS === "on" ? `
+[auth.external.google]
+enabled = true
+client_id = "local-test-google-client"
+secret = "local-test-google-secret"
+skip_nonce_check = true
+
+[auth.external.apple]
+enabled = true
+client_id = "local.test.apple.client"
+secret = "local-test-apple-secret"
+skip_nonce_check = true
+` : "";
+writeFileSync(join(work, "supabase", "config.toml"), stack.config(readFileSync(join(root, "scripts", "auth-local", "config.toml"), "utf8")) + providers);
 // Phase 6: email templates carrying the 6-digit code (local stack only).
 cpSync(join(root, "scripts", "auth-local", "templates"), join(work, "supabase", "templates"), { recursive: true });
 FILES.forEach((file, i) => {

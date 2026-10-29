@@ -22,11 +22,12 @@ import settingsStyles from "@/components/dev/auth/AuthSettingsPreview.module.css
  * every save is checked again on the server. Nothing here activates the account except Finish.
  */
 
-/** Name + username → POST /api/account/profile (the database decides whether the username is free). */
-export function NameScreen() {
+/** Name + username → POST /api/account/profile (the database decides whether the username is free). A name from
+ *  Google / Apple (Phase 7C) is only a starting value: the person can change it before saving. */
+export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFirst?: string; initialLast?: string }) {
   const router = useRouter();
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
+  const [first, setFirst] = useState(initialFirst);
+  const [last, setLast] = useState(initialLast);
   const [typedUsername, setTypedUsername] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);

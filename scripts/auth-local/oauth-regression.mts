@@ -38,10 +38,11 @@ function startForm(fields: Record<string, string>, origin = SITE) {
 
 /** A real one-time PKCE code for `email`, started from `jar` (so the jar holds the PKCE secret, like a real browser).
  *  Opens the newest reset email, so call pastThrottle() between two codes for one address. */
-async function pkceCode(jar: Jar, email: string, returnTo?: string) {
+async function pkceCode(jar: Jar, email: string, returnTo?: string, onboarding = false) {
   const back = new URL("/auth/callback", SITE);
   back.searchParams.set("flow", "oauth");
   if (returnTo) back.searchParams.set("returnTo", returnTo);
+  if (onboarding) back.searchParams.set("onboarding", "1");
   const { error } = await as(jar, async () => (await createSupabaseServerClient()).auth.resetPasswordForEmail(email, { redirectTo: back.toString() }));
   if (error) throw new Error(`reset link: ${error.message}`);
   const link = await latestLink(email, "recovery");
@@ -52,8 +53,8 @@ async function pkceCode(jar: Jar, email: string, returnTo?: string) {
 }
 const pastThrottle = () => new Promise((r) => setTimeout(r, 1600));
 /** A verified account with no profile yet: what Supabase makes the first time someone uses Google / Apple. */
-async function verifiedAccount(email: string) {
-  const { data, error } = await admin.auth.admin.createUser({ email, email_confirm: true });
+async function verifiedAccount(email: string, userMetadata: Record<string, unknown> = {}) {
+  const { data, error } = await admin.auth.admin.createUser({ email, email_confirm: true, user_metadata: userMetadata });
   if (error || !data.user) throw new Error(`createUser: ${error?.message}`);
   return data.user.id;
 }
@@ -157,6 +158,63 @@ section("Email links still use the old path");
   const jar = browser();
   const old = await call(jar, callbackGET, "/auth/callback?error=access_denied", undefined, { method: "GET" });
   check("non-OAuth callback error still goes to the password form", where(old.location) === "/reset-password?error=invalid_link", where(old.location));
+}
+
+section("Phase 7C: onboarding screens on (MAROON_V2_ONBOARDING=on)");
+process.env.MAROON_V2_ONBOARDING = "on";
+try {
+  const jar = browser();
+  const off = await as(jar, () => oauthPOST(startForm({ provider: "google", onboarding: "1" })));
+  check("provider not configured, started on /start -> /start/log-in says unavailable", where(off.headers.get("location")) === "/start/log-in?error=unavailable", where(off.headers.get("location")));
+  const cancel = await call(jar, callbackGET, "/auth/callback?flow=oauth&onboarding=1&error=access_denied", undefined, { method: "GET" });
+  check("cancel from /start -> /start/log-in?error=cancelled, no session", where(cancel.location) === "/start/log-in?error=cancelled" && !hasSession(jar), where(cancel.location));
+  const failedCode = await call(jar, callbackGET, "/auth/callback?flow=oauth&onboarding=1&code=made-up", undefined, { method: "GET" });
+  check("failed exchange from /start -> /start/log-in?error=failed", where(failedCode.location) === "/start/log-in?error=failed", where(failedCode.location));
+  const oldScreen = await call(jar, callbackGET, "/auth/callback?flow=oauth&error=access_denied", undefined, { method: "GET" });
+  check("a sign-in started on the old /login still returns there", where(oldScreen.location) === "/login?error=cancelled", where(oldScreen.location));
+
+  const gEmail = addr("oauth7c-google");
+  const gId = await verifiedAccount(gEmail, { full_name: "Gale Googler", given_name: "Gale", family_name: "Googler" });
+  const gJar = browser();
+  const g = await call(gJar, callbackGET, await pkceCode(gJar, gEmail, undefined, true), undefined, { method: "GET" });
+  check("new Google-style account -> /onboarding (routes by lifecycle), signed in", where(g.location) === "/onboarding" && hasSession(gJar), where(g.location));
+  check("exactly one profile, id = account id", profileCount(gId) === 1);
+  check("the provider's name is NOT written into the profile (only suggested on the Name screen)", sql(`select coalesce(display_name, '<none>') from public.profiles where id = ${q(gId)}`) === "<none>");
+  await pastThrottle();
+  const again = await call(gJar, callbackGET, await pkceCode(gJar, gEmail, undefined, true), undefined, { method: "GET" });
+  check("signing in again -> still /onboarding, still one profile", where(again.location) === "/onboarding" && profileCount(gId) === 1);
+  await pastThrottle();
+  const invite = await call(gJar, callbackGET, await pkceCode(gJar, gEmail, INVITE, true), undefined, { method: "GET" });
+  check("an allowed return page (invite) is still honoured", where(invite.location) === INVITE, where(invite.location));
+
+  const relay = `oauth7c-${Date.now().toString(36)}@privaterelay.appleid.com`;
+  const aId = await verifiedAccount(relay, { full_name: "Apple Person" });
+  const aJar = browser();
+  const a = await call(aJar, callbackGET, await pkceCode(aJar, relay, undefined, true), undefined, { method: "GET" });
+  check("Apple Hide My Email address -> its own account + profile, routed to /onboarding", where(a.location) === "/onboarding" && profileCount(aId) === 1
+    && sql(`select email from public.profiles where id = ${q(aId)}`) === relay, where(a.location));
+
+  const twinEmail = addr("oauth7c-twin");
+  const twinId = await verifiedAccount(twinEmail, { full_name: "Gale Googler", given_name: "Gale", family_name: "Googler" });
+  const tJar = browser();
+  await call(tJar, callbackGET, await pkceCode(tJar, twinEmail, undefined, true), undefined, { method: "GET" });
+  check("same name, different account: never merged (two accounts, two profiles)", twinId !== gId && profileCount(twinId) === 1 && profileCount(gId) === 1);
+
+  const finished = sql(`select username || '|' || display_name from public.profiles where id = ${q(id)}`);
+  const fJar = browser();
+  await pastThrottle();
+  const f = await call(fJar, callbackGET, await pkceCode(fJar, email, undefined, true), undefined, { method: "GET" });
+  check("an existing finished profile -> /onboarding (server decides), name untouched", where(f.location) === "/onboarding"
+    && sql(`select username || '|' || display_name from public.profiles where id = ${q(id)}`) === finished, where(f.location));
+} finally {
+  delete process.env.MAROON_V2_ONBOARDING;
+}
+{
+  const jar = browser();
+  const off = await as(jar, () => oauthPOST(startForm({ provider: "google", onboarding: "1" })));
+  check("flag off: onboarding=1 is ignored (old /login)", where(off.headers.get("location")) === "/login?error=unavailable", where(off.headers.get("location")));
+  const cancel = await call(jar, callbackGET, "/auth/callback?flow=oauth&onboarding=1&error=access_denied", undefined, { method: "GET" });
+  check("flag off: cancel still goes to /login", where(cancel.location) === "/login?error=cancelled", where(cancel.location));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -11,17 +11,21 @@ export const isOAuthProvider = (value: unknown): value is OAuthProvider => OAUTH
 
 export const OAUTH_FLOW = "oauth";
 
-/** Where Google / Apple send the person back: our callback, carrying only an allow-listed return page. */
-export function oauthCallbackUrl(origin: string, next: unknown): string {
+/** Where Google / Apple send the person back: our callback, carrying only an allow-listed return page, and
+ *  `onboarding=1` when the sign-in started on the Phase 6 screens (/start/*), so a cancel or failure returns there. */
+export function oauthCallbackUrl(origin: string, next: unknown, onboarding = false): string {
   const url = new URL("/auth/callback", origin);
   url.searchParams.set("flow", OAUTH_FLOW);
   const safe = authReturnPath(next);
   if (safe) url.searchParams.set("returnTo", safe);
+  if (onboarding) url.searchParams.set("onboarding", "1");
   return url.toString();
 }
 
-/** Same place as email + password login: the return page, else /profile (which shows profile setup if it isn't done). */
-export const oauthDestination = (returnTo: unknown): string => authReturnPath(returnTo) ?? "/profile";
+/** Same place as email + password login: the return page, else /profile (which shows profile setup if it isn't done).
+ *  With the Phase 6 onboarding screens switched on (`onboarding`), else /onboarding instead: the server sends each account
+ *  on by its lifecycle — Pending → next step, Active → Play, birthday missing → Birthday, blocked → /account/status. */
+export const oauthDestination = (returnTo: unknown, onboarding = false): string => authReturnPath(returnTo) ?? (onboarding ? "/onboarding" : "/profile");
 
 const MESSAGES = {
   cancelled: "Sign-in was cancelled.",
@@ -45,8 +49,8 @@ export const oauthErrorMessage = (value: unknown): string | null =>
   typeof value === "string" && Object.hasOwn(MESSAGES, value) ? MESSAGES[value as OAuthError] : null;
 
 /** Back to the login screen with an error, keeping an allow-listed return page. */
-export function loginErrorUrl(origin: string, error: OAuthError, next: unknown): URL {
-  const url = new URL("/login", origin);
+export function loginErrorUrl(origin: string, error: OAuthError, next: unknown, onboarding = false): URL {
+  const url = new URL(onboarding ? "/start/log-in" : "/login", origin);
   url.searchParams.set("error", error);
   const safe = authReturnPath(next);
   if (safe) url.searchParams.set("next", safe);

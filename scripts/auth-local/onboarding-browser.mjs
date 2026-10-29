@@ -81,6 +81,28 @@ const createdVisit = async (context) => {
   const r = await context.request.get(`${ORIGIN}/onboarding/created`, { maxRedirects: 0 });
   return { status: r.status(), to: r.headers().location ? new URL(r.headers().location, ORIGIN).pathname : null };
 };
+/** Are Google / Apple switched on in this stack (AUTH_LOCAL_PROVIDERS=on setup)? */
+async function providerSettings() {
+  const external = (await (await fetch(`${API}/auth/v1/settings`, { headers: { apikey: status.ANON_KEY } })).json()).external ?? {};
+  return external.google === true && external.apple === true;
+}
+/** An account shaped like Supabase's Google / Apple sign-up (verified, provider app_metadata, provider name metadata),
+ *  given a password only so the test browser can open the same kind of session without the real provider. */
+async function providerAccount(name, provider, userMetadata, email = addr(name)) {
+  const password = `provider-pass-${name}-1`;
+  const r = await fetch(`${API}/auth/v1/admin/users`, { method: "POST",
+    headers: { apikey: status.SERVICE_ROLE_KEY, authorization: `Bearer ${status.SERVICE_ROLE_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({ email, password, email_confirm: true, user_metadata: userMetadata, app_metadata: { provider, providers: [provider] } }) });
+  const user = await r.json();
+  if (!user.id) throw new Error(`providerAccount: ${JSON.stringify(user).slice(0, 200)}`);
+  return { id: user.id, email, password };
+}
+async function logIn(page, who) {
+  await page.goto(`${ORIGIN}/start/log-in`);
+  await page.getByLabel("Email").fill(who.email);
+  await page.getByLabel("Password", { exact: true }).fill(who.password);
+  await page.getByRole("button", { name: "Log in" }).click();
+}
 const SIGNUP_MAIL = "Confirm your email", RESET_MAIL = "Reset your Maroon password";
 const wrong = (code) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
 
@@ -386,6 +408,116 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(p, "/start/sign-up");
     check("code screen without an email -> back to Sign up", true);
     await c.close();
+  });
+
+  // --- Phase 7C: Google / Apple accounts (stand-ins: real provider sign-in needs credentials; these accounts look
+  //     exactly like what Supabase creates for Google / Apple, and sign in with the same session) ---
+  const providersOn = await providerSettings();
+  await step("provider buttons", async () => {
+    const { page: p, context: c } = await phone(browser);
+    for (const route of ["/start/sign-up", "/start/log-in"]) {
+      await p.goto(`${ORIGIN}${route}`);
+      const google = await p.getByRole("button", { name: "Continue with Google" }).count();
+      const apple = await p.getByRole("button", { name: "Continue with Apple" }).count();
+      check(`${route}: Google / Apple buttons ${providersOn ? "shown (switched on in this stack)" : "hidden (not configured)"}`,
+        providersOn ? google === 1 && apple === 1 : google === 0 && apple === 0, `${google}/${apple}`);
+    }
+    if (providersOn) {
+      // The trip to Google / Apple is intercepted: the "provider" sends the person back cancelled, as a real one would.
+      for (const [name, host] of [["Google", "https://accounts.google.com/**"], ["Apple", "https://appleid.apple.com/**"]]) {
+        await c.route(host, (route) => {
+          const state = new URL(route.request().url()).searchParams.get("state") ?? "";
+          return route.fulfill({ status: 302, headers: { location: `${API}/auth/v1/callback?error=access_denied&error_description=cancelled&state=${encodeURIComponent(state)}` } });
+        });
+        await p.goto(`${ORIGIN}/start/sign-up`);
+        await p.getByRole("button", { name: `Continue with ${name}` }).click();
+        await waitPath(p, "/start/log-in");
+        check(`${name} cancelled -> back on Log in with a calm message, no session`, await p.getByText("Sign-in was cancelled.").isVisible()
+          && (await c.request.get(`${ORIGIN}/onboarding`, { maxRedirects: 0 })).headers().location?.endsWith("/start/log-in"));
+        await c.unroute(host);
+      }
+    }
+    await c.close();
+  });
+
+  await step("new Google account: skips code + password, name prefilled but editable, Terms at Finish", async () => {
+    const gale = await providerAccount("gale", "google", { given_name: "Gale", family_name: "Googler", full_name: "Gale Googler" });
+    const { page: p, context: c } = await phone(browser);
+    await logIn(p, gale);
+    await waitPath(p, "/onboarding/name");
+    check("Google account lands on Name (no code / password screens)", true);
+    check("first + last name prefilled from Google", await p.getByLabel("First Name").inputValue() === "Gale" && await p.getByLabel("Last Name").inputValue() === "Googler");
+    check("nothing saved just by signing in", sql(`select coalesce(display_name, '<none>') from public.profiles where id = ${q(gale.id)}`) === "<none>");
+    await p.getByLabel("First Name").fill("Gail");
+    await p.getByLabel("Username").fill(`gail${run}`.slice(0, 30));
+    await p.getByRole("button", { name: "Continue" }).click();
+    await waitPath(p, "/onboarding/birthday");
+    check("the edited name is what's saved", sql(`select display_name from public.profiles where id = ${q(gale.id)}`) === "Gail Googler");
+    await birthdayStep(p, 1992);
+    await waitPath(p, "/onboarding/photo");
+    await p.getByRole("button", { name: "Skip for now" }).click();
+    await waitPath(p, "/onboarding/settings");
+    check("Settings asks for the Terms (provider path has no code step to record them)", await p.getByText("By tapping Finish, you agree to the current Terms of Service and Privacy Policy.").isVisible());
+    check("…and none are recorded yet", sql(`select count(*) from public.terms_acceptances where account_id = ${q(gale.id)}`) === "0");
+    await p.getByRole("button", { name: "Finish" }).click();
+    await waitPath(p, "/onboarding/created");
+    check("Finish -> Profile Created; Terms recorded; activated", sql(`select count(*) from public.terms_acceptances where account_id = ${q(gale.id)}`) === "2" && accountRow(gale.email).activated);
+    check("one profile, id = account id", sql(`select count(*) from public.profiles where id = ${q(gale.id)}`) === "1");
+    await c.close();
+    const back = await phone(browser);
+    await logIn(back.page, gale);
+    await waitPath(back.page, "/");
+    check("returning Active Google user -> Play", true);
+    await back.context.close();
+  });
+
+  await step("new Apple account (Hide My Email): prefill, resume across devices", async () => {
+    const andy = await providerAccount("andy", "apple", { full_name: "Andy Apple" }, `andy-${run}@privaterelay.appleid.com`);
+    const first = await phone(browser);
+    await logIn(first.page, andy);
+    await waitPath(first.page, "/onboarding/name");
+    check("Apple relay-address account -> Name, prefilled from Apple's full name", await first.page.getByLabel("First Name").inputValue() === "Andy" && await first.page.getByLabel("Last Name").inputValue() === "Apple");
+    await first.page.getByLabel("Username").fill(`andy${run}`.slice(0, 30));
+    await first.page.getByRole("button", { name: "Continue" }).click();
+    await waitPath(first.page, "/onboarding/birthday");
+    await first.context.close();
+    const second = await phone(browser);
+    await logIn(second.page, andy);
+    await waitPath(second.page, "/onboarding/birthday");
+    check("another device resumes at Birthday", true);
+    check("the profile keeps the relay address, one profile", sql(`select email from public.profiles where id = ${q(andy.id)}`) === andy.email);
+    await second.context.close();
+  });
+
+  await step("Apple sign-in without a name, legacy and restricted accounts", async () => {
+    const quiet = await providerAccount("quiet", "apple", {});
+    let x = await phone(browser);
+    await logIn(x.page, quiet);
+    await waitPath(x.page, "/onboarding/name");
+    check("no name from Apple -> empty fields", await x.page.getByLabel("First Name").inputValue() === "" && await x.page.getByLabel("Last Name").inputValue() === "");
+    await x.context.close();
+
+    const vet = await providerAccount("vet", "google", { full_name: "Old Vet" });
+    sql(`update public.profiles set display_name = 'Vet Original', username = ${q(`vet${run}`.slice(0, 30))} where id = ${q(vet.id)}`);
+    setActivatedAt(vet.id, "now()");
+    x = await phone(browser);
+    await logIn(x.page, vet);
+    await waitPath(x.page, "/onboarding/birthday");
+    check("legacy account without a birthday -> Birthday", true);
+    await birthdayStep(x.page, 1980);
+    await waitPath(x.page, "/");
+    check("…then straight to Play; the existing name was never replaced by the provider's", sql(`select display_name from public.profiles where id = ${q(vet.id)}`) === "Vet Original");
+    await x.context.close();
+
+    const held = await providerAccount("held", "google", { full_name: "Held Review" });
+    sql(`update public.profiles set display_name = 'Held Review', username = ${q(`held${run}`.slice(0, 30))} where id = ${q(held.id)}`);
+    setActivatedAt(held.id, "now()");
+    sql(`insert into public.account_eligibility (account_id, status, reason) values (${q(held.id)}, 'review', 'manual')`);
+    x = await phone(browser);
+    await logIn(x.page, held);
+    await waitPath(x.page, "/account/status");
+    check("restricted account -> account status (being reviewed)", await x.page.getByRole("heading", { name: "Your account is being reviewed" }).isVisible());
+    await x.context.close();
   });
 });
 

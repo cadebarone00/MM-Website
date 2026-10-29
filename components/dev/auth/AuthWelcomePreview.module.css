@@ -33,3 +33,6 @@
 .error{min-height:18px;margin:0;font-size:13px;line-height:18px;color:#ffb4b4;text-align:center}
 .notice{min-height:18px;margin:0;font-size:13px;line-height:18px;color:#e1cec4;text-align:center}
 .terms{margin:0;font-size:12px;line-height:1.4;color:#e1cec4;text-align:center}
+/* Phase 7C real screens: each Google / Apple button is its own small form; the form itself takes no space, so the
+   button sits in the column exactly like the dev preview's link. */
+.providerForm{display:contents}

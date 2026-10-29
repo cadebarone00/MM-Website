@@ -7,6 +7,7 @@ import { currentOnboardingStep } from "@/lib/account/onboardingResume";
 import { ONBOARDING_SCREENS, PLAY, START, STATUS, onboardingRedirect, type OnboardingScreen } from "@/lib/account/onboardingRoutes";
 import { ACTIVATION_MARKER_COOKIE, markerMatchesNow } from "@/lib/account/activationMarker";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { providerNameParts } from "@/lib/account/providerName";
 
 export const metadata = { title: "The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -28,7 +29,10 @@ export default async function OnboardingScreenPage({ params }: { params: Promise
   const elsewhere = onboardingRedirect(screen as OnboardingScreen, step);
   if (elsewhere) redirect(elsewhere);
   switch (screen as OnboardingScreen) {
-    case "name": return <NameScreen />;
+    case "name": {
+      const suggested = providerNameParts("account" in lifecycle ? lifecycle.account.user_metadata : null);
+      return <NameScreen initialFirst={suggested.first} initialLast={suggested.last} />;
+    }
     case "birthday": return <BirthdayScreen />;
     case "photo": return <PhotoScreen />;
     case "settings": return <SettingsScreen needsTerms={step === "terms"} />;

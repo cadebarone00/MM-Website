@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
-import { EyeIcon, EyeOffIcon } from "@/components/dev/auth/AuthWelcomePreview";
+import { AppleIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "@/components/dev/auth/AuthWelcomePreview";
+import type { OAuthProvider } from "@/lib/auth/oauth";
 import { errorOf, rememberEmail, send } from "@/lib/account/onboardingClient";
 import { START, STATUS, stepPath } from "@/lib/account/onboardingRoutes";
 import type { OnboardingStep } from "@/lib/account/onboardingApi";
@@ -12,8 +13,9 @@ import styles from "@/components/dev/auth/AuthWelcomePreview.module.css";
 
 /**
  * Pending accounts Phase 6: the real Welcome, Sign up and Log in screens — the approved /dev/auth designs
- * (components/dev/auth/AuthWelcomePreview.tsx, same styles) connected to the real APIs. Google / Apple buttons stay
- * hidden here until Phase 7 connects them to onboarding.
+ * (components/dev/auth/AuthWelcomePreview.tsx, same styles) connected to the real APIs. Google / Apple buttons (Phase
+ * 7C) show only for providers switched on in Supabase and post to the existing POST /api/auth/oauth with onboarding=1;
+ * after the provider the account is routed by its lifecycle (/onboarding).
  */
 const EMAIL = /^\S+@\S+\.\S+$/;
 
@@ -28,7 +30,7 @@ export function WelcomeScreen() {
 }
 
 /** Email → Create password (the account is made there, with the password: decision D1). */
-export function SignUpScreen() {
+export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const ready = EMAIL.test(email.trim());
@@ -41,11 +43,12 @@ export function SignUpScreen() {
       <button className={styles.primary} type="submit" disabled={!ready}>Continue</button>
       <p className={styles.terms}>By continuing, you agree to The Maroon&apos;s Terms of Service and Privacy Policy.</p>
     </form>
+    <ProviderButtons providers={providers} />
   </main>;
 }
 
 /** Email + password. Active → Play; Pending → the first unfinished step; blocked → the account status page. */
-export function LogInScreen({ notice }: { notice: string | null }) {
+export function LogInScreen({ notice, providers }: { notice: string | null; providers: OAuthProvider[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,7 +86,28 @@ export function LogInScreen({ notice }: { notice: string | null }) {
       <button className={styles.primary} type="submit" disabled={!ready}>{busy ? "Logging in…" : "Log in"}</button>
     </form>
     <Link className={styles.forgot} href={START.forgot}>Forgot password?</Link>
+    <ProviderButtons providers={providers} />
   </main>;
+}
+
+/** "or" + Continue with Google / Apple, as in the Sign up design; nothing at all when no provider is switched on. */
+function ProviderButtons({ providers }: { providers: OAuthProvider[] }) {
+  if (!providers.length) return null;
+  return <>
+    <p className={styles.or}>or</p>
+    <div className={styles.form}>
+      {providers.includes("google") && <ProviderForm provider="google"><GoogleIcon />Continue with Google</ProviderForm>}
+      {providers.includes("apple") && <ProviderForm provider="apple"><AppleIcon />Continue with Apple</ProviderForm>}
+    </div>
+  </>;
+}
+
+function ProviderForm({ provider, children }: { provider: OAuthProvider; children: React.ReactNode }) {
+  return <form className={styles.providerForm} method="post" action="/api/auth/oauth">
+    <input type="hidden" name="provider" value={provider} />
+    <input type="hidden" name="onboarding" value="1" />
+    <button type="submit" className={styles.provider}>{children}</button>
+  </form>;
 }
 
 /** The Log in design's own password box (placeholder + eye inside the field), not the labelled PasswordField. */

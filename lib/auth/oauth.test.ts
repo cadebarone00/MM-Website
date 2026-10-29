@@ -48,3 +48,13 @@ test("errors go back to /login with the error and a safe return page", () => {
   assert.equal(loginErrorUrl(ORIGIN, "failed", INVITE).toString(), `${ORIGIN}/login?error=failed&next=${encodeURIComponent(INVITE)}`);
   assert.equal(loginErrorUrl(ORIGIN, "failed", "https://evil.example").toString(), `${ORIGIN}/login?error=failed`);
 });
+
+test("Phase 7C: onboarding screens get their own return and error pages", () => {
+  assert.equal(oauthCallbackUrl(ORIGIN, null, true), `${ORIGIN}/auth/callback?flow=oauth&onboarding=1`);
+  assert.equal(oauthCallbackUrl(ORIGIN, INVITE, true), `${ORIGIN}/auth/callback?flow=oauth&returnTo=${encodeURIComponent(INVITE)}&onboarding=1`);
+  assert.equal(oauthDestination(null, true), "/onboarding");
+  assert.equal(oauthDestination(INVITE, true), INVITE);
+  assert.equal(oauthDestination("https://evil.example", true), "/onboarding");
+  assert.equal(loginErrorUrl(ORIGIN, "cancelled", null, true).toString(), `${ORIGIN}/start/log-in?error=cancelled`);
+  assert.equal(loginErrorUrl(ORIGIN, "failed", null).toString(), `${ORIGIN}/login?error=failed`);
+});

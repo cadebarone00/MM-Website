@@ -7,6 +7,7 @@ import { startFakeSupabase } from "./fake-supabase.mjs";
 
 const port = Number(process.env.RETIREMENT_TEST_PORT || 3197);
 const origin = "http://localhost:" + port;
+const tvOnly = process.env.RETIREMENT_TV_ONLY === "1";
 const fake = await startFakeSupabase({ port: port + 20000 });
 const user = await fake.addUser({ name: "retirementtester" });
 await fake.db.query("update profiles set display_name='Retirement Tester', username='retirement-tester' where id=$1", [user.id]);
@@ -37,6 +38,7 @@ try {
   const websiteLegacyRequests = [];
   page.on("request", request => { if (request.url().includes("/api/season-catalog")) websiteLegacyRequests.push(request.url()); });
   page.setDefaultNavigationTimeout(180000);
+  if (!tvOnly) {
   for (const route of ["/tap-in", "/broadcast"]) {
     const response = await anonymous.request.get(origin + route, { maxRedirects: 0, timeout: 180000 });
     assert.equal(response.status(), 307);
@@ -65,16 +67,17 @@ try {
   }
   assert.equal(websiteLegacyRequests.length, 0, "marketing does not mount legacy season polling");
   console.log("PASS responsive marketing footer and no V1 navigation/polling");
-  await page.goto(origin + "/login/email?next=%2Ftap-in");
+  await page.goto(origin + "/login/email?next=%2Ftap-in", { waitUntil: "domcontentloaded" });
   assert.equal(await page.getByRole("link", { name: "Forgot your password?" }).getAttribute("href"), "/forgot-password?next=%2Ftap-in");
+  }
   const signed = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   signed.setDefaultTimeout(120000);
   await signed.addCookies([{ ...fake.sessionCookie(user), url: origin }]);
-  const tv = await signed.newPage(); currentPage = tv; tv.setDefaultNavigationTimeout(180000);
+  const tv = await signed.newPage(); currentPage = tv; tv.setDefaultNavigationTimeout(180000); tv.setDefaultTimeout(30000);
   tv.on("pageerror", error => console.error("Browser error:", error.message));
   const tvLegacyRequests = [];
   tv.on("request", request => { if (request.url().includes("/api/season-catalog")) tvLegacyRequests.push(request.url()); });
-  await tv.goto(origin + "/tap-in");
+  await tv.goto(origin + "/tap-in", { waitUntil: "domcontentloaded" });
   await tv.getByRole("heading", { level: 1 }).waitFor();
   const hydrated = tv.waitForResponse(r => r.url().endsWith("/api/tap-in/display") && r.status() === 200, { timeout: 180000 });
   await tv.getByRole("link", { name: "Watch Live", exact: true }).click();
@@ -87,6 +90,7 @@ try {
   assert.ok(Array.isArray(payload.leaderboard.standings));
   assert.equal(await tv.locator("audio, video, iframe").count(), 0);
   await tv.waitForLoadState("networkidle");
+  console.log("TV hydrated and ready for controls");
   await tv.getByRole("button", { name: "Match Play", exact: true }).click();
   await tv.waitForFunction(() => [...document.querySelectorAll("button")].some(button => button.textContent === "Match Play" && button.getAttribute("aria-pressed") === "true"));
   await tv.getByRole("button", { name: "Pause scrolling", exact: true }).click();
@@ -117,7 +121,7 @@ try {
   console.log("PASS session denial removes visible TV data");
   await tv.unroute("**/api/tap-in/display");
   assert.equal((await tv.goto(origin + "/profile")).status(), 200);
-  await tv.getByRole("heading", { name: "Profile", exact: true }).waitFor();
+  await tv.getByText("@retirement-tester", { exact: true }).waitFor();
   assert.equal((await tv.goto(origin + "/golf-trips")).status(), 200);
   await tv.locator("main").waitFor();
   console.log("PASS V2 profile and trip entry still render");
@@ -141,8 +145,5 @@ try {
   await fake.close();
   const nextEnv = readFileSync("next-env.d.ts", "utf8");
   if (nextEnv.includes(".next-v1-retirement")) writeFileSync("next-env.d.ts", originalNextEnv);
-  const config = readFileSync("tsconfig.json", "utf8");
-  const cleaned = config.replace(/^.*"\.next-v1-retirement\/(?:dev\/)?types\/\*\*\/\*\.ts",?\r?\n/gm, "");
-  const normalized = cleaned.replace(/,(\r?\n\s*\],?\r?\n\s*"exclude")/, "$1");
-  if (config !== normalized) writeFileSync("tsconfig.json", JSON.stringify(JSON.parse(normalized)) === JSON.stringify(JSON.parse(originalTsconfig)) ? originalTsconfig : normalized);
+  writeFileSync("tsconfig.json", originalTsconfig);
 }

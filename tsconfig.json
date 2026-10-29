@@ -39,7 +39,11 @@
     ".next-savedtrip-check/types/**/*.ts",
     ".next-savedtrip-check/dev/types/**/*.ts",
     ".next-v1-retirement/types/**/*.ts",
-    ".next-v1-retirement/dev/types/**/*.ts"
+    ".next-v1-retirement/dev/types/**/*.ts",
+    "out/next-onboarding-e2e-A-off/types/**/*.ts",
+    "out/next-onboarding-e2e-A-off/dev/types/**/*.ts",
+    "out/next-onboarding-e2e-B-enforced/types/**/*.ts",
+    "out/next-onboarding-e2e-B-enforced/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

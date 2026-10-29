@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
 import { authReturnPath } from "@/lib/auth/returnTo";
 import { loginErrorUrl, OAUTH_FLOW, oauthDestination, oauthErrorFromParams } from "@/lib/auth/oauth";
+import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 
 // Password-reset codes are exchanged here. Invite tokens arrive in a URL
 // fragment (invisible to the server); the browser carries that fragment through
@@ -34,16 +35,20 @@ export async function GET(request: Request) {
 
 // Sign in with Google / Apple (POST /api/auth/oauth) comes back here. Cancel / failure goes back to the login screen
 // with no session. Success makes sure the profile exists (the same idempotent step as password login, so an account
-// never gets a second profile), then opens the same page password login does.
+// never gets a second profile), then opens the same page password login does. With the Phase 6 onboarding screens on
+// (MAROON_V2_ONBOARDING) that page is /onboarding, which routes by account lifecycle; a sign-in started on those screens
+// (onboarding=1) also returns its errors to /start/log-in.
 async function finishOAuth(searchParams: URLSearchParams, origin: string) {
   const returnTo = authReturnPath(searchParams.get("returnTo"));
+  const v2 = onboardingEnabled();
+  const fromStart = v2 && searchParams.get("onboarding") === "1";
   const providerError = oauthErrorFromParams(searchParams);
   const code = searchParams.get("code");
-  if (providerError || !code) return NextResponse.redirect(loginErrorUrl(origin, providerError ?? "failed", returnTo));
+  if (providerError || !code) return NextResponse.redirect(loginErrorUrl(origin, providerError ?? "failed", returnTo, fromStart));
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error || !data.user) return NextResponse.redirect(loginErrorUrl(origin, "failed", returnTo));
+  if (error || !data.user) return NextResponse.redirect(loginErrorUrl(origin, "failed", returnTo, fromStart));
   await initializeAfterSignIn(data.user.id);
-  return NextResponse.redirect(new URL(oauthDestination(returnTo), origin));
+  return NextResponse.redirect(new URL(oauthDestination(returnTo, v2), origin));
 }
