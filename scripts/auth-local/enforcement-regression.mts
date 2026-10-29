@@ -19,6 +19,8 @@ const { POST: setupPOST } = await import("../../app/api/account/profile/route.ts
 const { POST: invitePOST } = await import("../../app/api/golf-trips/invitations/[token]/route.ts");
 const { POST: finishPOST } = await import("../../app/api/account/finish/route.ts");
 const { GET: tripsGET } = await import("../../app/api/golf-trips/route.ts");
+const { PATCH: profilePATCH } = await import("../../app/api/account/profile/route.ts");
+const { PUT: privacyPUT } = await import("../../app/api/account/privacy/route.ts");
 
 const stack = authLocalStack();
 let failed = 0, passed = 0;
@@ -150,6 +152,32 @@ section("Enforcement ON: cookie / Bearer consistency and revoked tokens");
   const routeAnswer = await call(browser(), tripsGET as never, "/api/golf-trips", undefined, { method: "GET", headers: { authorization: `Bearer ${kid.token}` } });
   check("...and the route itself then refuses it (401)", routeAnswer.status === 401, JSON.stringify(routeAnswer.json));
   check("garbage token -> treated as signed out (route refuses)", (await gate("/api/golf-trips", { token: "not-a-token" })).passed);
+}
+
+section("Enforcement ON: phone-app (Bearer) account self-service APIs (Phase 7B)");
+{
+  flag(true);
+  const SELF_SERVICE: [string, string][] = [["/api/account/profile", "PATCH"], ["/api/account/photo", "POST"], ["/api/account/privacy", "PUT"]];
+  for (const [path, method] of SELF_SERVICE) {
+    check(`gate passes ${method} ${path} for an Active Bearer`, (await gate(path, { token: active.token, method })).passed);
+    check(`gate passes ${method} ${path} for a Pending Bearer (onboarding)`, (await gate(path, { token: pending.token, method })).passed);
+    // "account" paths pass the gate untouched by design (Phase 5); the ROUTE refuses mixed identities (checked below).
+    check(`gate leaves ${method} ${path} to the route even with mixed cookie + Bearer`, (await gate(path, { jar: active.jar, token: pending.token, method })).passed);
+  }
+  const mixed = await call(active.jar, profilePATCH as never, "/api/account/profile", { displayName: "Mixed" }, { method: "PATCH", headers: { authorization: `Bearer ${pending.token}` } });
+  check("route: mixed cookie + Bearer refused (401), nothing changed", mixed.status === 401
+    && sql(`select count(*) from public.profiles where display_name = 'Mixed' and id in (${q(active.id)}, ${q(pending.id)})`) === "0", JSON.stringify(mixed.json));
+  const bearer = (token: string) => ({ method: "PATCH", headers: { authorization: `Bearer ${token}` } });
+  let r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Pending App" }, bearer(pending.token));
+  check("route: Pending Bearer may set its name", r.status === 200, JSON.stringify(r.json));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Review App" }, bearer(restricted.token));
+  check("route: restricted Bearer refused (403 restricted)", r.status === 403 && r.json?.code === "restricted", JSON.stringify(r.json));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Kid App" }, bearer(kidFresh));
+  check("route: Ineligible Bearer refused (403 not_eligible)", r.status === 403 && r.json?.code === "not_eligible", JSON.stringify(r.json));
+  r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "public" }, { method: "PUT", headers: { authorization: `Bearer ${kidFresh}` } });
+  check("route: Ineligible Bearer can't make itself public", r.status === 403);
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Old Kid Token" }, bearer(kid.token));
+  check("route: a token revoked at the under-13 birthday -> 401", r.status === 401);
 }
 
 section("Enforcement ON: missing database function -> fail closed");

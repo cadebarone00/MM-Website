@@ -3656,3 +3656,16 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
 - **Notification preference: not built.** The approved notifications plan makes alerts on/off per phone and per kind,
   with device and preference tables owned by the notifications work (another window). A per-account switch here would
   be a competing system, so the onboarding switch still saves nothing until that structure exists.
+
+### Phase 7B — mobile account APIs (built + approved 2026-10-29; committed locally)
+- `/api/account/profile` (POST, PATCH), `/api/account/photo` (POST, DELETE), `/api/account/privacy` (PUT) and the Golf
+  Trip invitation accept / decline routes take a website cookie **or** an app `Authorization: Bearer` token, through one
+  shared check (`lib/account/selfServiceRequest.ts`): the verified identity resolver (invalid, expired, revoked or
+  mismatched cookie/token → signed out), the Phase 3 cross-site check for cookie requests only, private no-store replies.
+- Ineligible, under-review and closed accounts are refused (403) by these routes wherever the lifecycle foundation is
+  installed — enforcement on or off. Before this, the access policy let them change name / photo / privacy, because
+  "account" paths pass the gate untouched. Without the foundation the routes behave exactly as before.
+- Account and profile ids always come from the session; ids in the body are ignored. Username rules + uniqueness, photo
+  type / size checks and the photo folder (server-chosen, the caller's own) are unchanged.
+- Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
+  schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).

@@ -136,8 +136,9 @@ export async function getGolfTripInvitation(token: string): Promise<InvitationPr
 
 /** The signed-in person accepts: their profile is attached to the invited member row. Safe to repeat. An unfinished
  *  profile may accept (Accounts V2); a verified account with no profile yet gets one first (initialize). */
-export async function acceptGolfTripInvitation(token: string): Promise<AcceptInvitationResult | { status: "signed-out" | "no-profile" }> {
-  const current = await getCurrentProfile();
+/** `caller` = the request's verified identity (website cookie or app Bearer, Phase 7B); defaults to the cookie session. */
+export async function acceptGolfTripInvitation(token: string, caller?: CurrentProfile): Promise<AcceptInvitationResult | { status: "signed-out" | "no-profile" }> {
+  const current = caller ?? await getCurrentProfile();
   if (current.status === "signed-out") return { status: "signed-out" };
   let profileId = tripProfileId(current);
   if (!profileId) {
@@ -151,8 +152,8 @@ export async function acceptGolfTripInvitation(token: string): Promise<AcceptInv
 }
 
 /** The signed-in person holding the link says no: the row stays as "declined" with no profile; the link dies. */
-export async function declineGolfTripInvitation(token: string): Promise<DeclineInvitationResult | "signed-out" | "no-profile"> {
-  const current = await getCurrentProfile();
+export async function declineGolfTripInvitation(token: string, caller?: CurrentProfile): Promise<DeclineInvitationResult | "signed-out" | "no-profile"> {
+  const current = caller ?? await getCurrentProfile();
   if (current.status === "signed-out") return "signed-out";
   const profileId = tripProfileId(current);
   if (!profileId) return "no-profile";

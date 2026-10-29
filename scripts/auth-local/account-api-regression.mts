@@ -20,6 +20,11 @@ const { POST: finishPOST } = await import("../../app/api/account/finish/route.ts
 const { GET: onboardingGET } = await import("../../app/api/account/onboarding/route.ts");
 const { POST: correctionPOST } = await import("../../app/api/account/birthday-correction/route.ts");
 const { GET: termsGET, POST: termsPOST } = await import("../../app/api/account/terms/route.ts");
+const { PATCH: profilePATCH } = await import("../../app/api/account/profile/route.ts");
+const { POST: photoPOST, DELETE: photoDELETE } = await import("../../app/api/account/photo/route.ts");
+const { PUT: privacyPUT } = await import("../../app/api/account/privacy/route.ts");
+const { POST: invitePOST } = await import("../../app/api/golf-trips/invitations/[token]/route.ts");
+const { POST: declinePOST } = await import("../../app/api/golf-trips/invitations/[token]/decline/route.ts");
 
 const stack = authLocalStack();
 let failed = 0, passed = 0;
@@ -243,6 +248,160 @@ section("Account isolation");
   check("B still resumes at birthday", (await resume(b)).json?.next === "birthday");
   const mixed = await call(b.jar, finishPOST, "/api/account/finish", {}, { headers: { authorization: `Bearer ${a.token}` } });
   check("B's cookie + A's Bearer at once is refused or acts as A only (never B)", mixed.status !== 200 || sql(`select activated_at is null from public.profiles where id = ${q(b.id)}`) === "t", JSON.stringify(mixed.json));
+}
+
+section("Phase 7B: account self-service APIs for the phone app (cookie or Bearer)");
+{
+  setActivation(true);
+  const activateNow = (id: string) => sql(`select public.set_my_birthdate(${q(id)}, '1990-02-02'); select public.record_terms_acceptance(${q(id)}, 'terms', 'local-test', 'signup');
+    select public.record_terms_acceptance(${q(id)}, 'privacy', 'local-test', 'signup'); select public.set_rounds_visibility(${q(id)}, 'private'); select public.activate_my_profile(${q(id)});`);
+  const row = (id: string) => sql(`select coalesce(display_name,'') || '|' || coalesce(username,'') || '|' || coalesce(avatar_path,'') || '|' || public.get_rounds_visibility(id) from public.profiles where id = ${q(id)}`);
+  const bearer = (token: string) => ({ headers: { authorization: `Bearer ${token}` } });
+  /** Multipart photo upload through the real handler, as one browser jar and/or Bearer token. */
+  async function photo(jar: Jar, token: string | null, bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9]), type = "image/jpeg") {
+    (globalThis as { __authLocalJar?: Jar }).__authLocalJar = jar;
+    const form = new FormData();
+    form.append("photo", new File([bytes], "me.jpg", { type }));
+    const headers: Record<string, string> = { origin: "http://127.0.0.1:3999", ...(token ? { authorization: `Bearer ${token}` } : {}) };
+    const response = await photoPOST(new Request("http://127.0.0.1:3999/api/account/photo", { method: "POST", headers, body: form }));
+    return { status: response.status, json: await response.json() as Json, cache: response.headers.get("cache-control") };
+  }
+  const active = await emailPerson("api-m-active", true);
+  activateNow(active.id);
+  const other = await emailPerson("api-m-other", true);
+  activateNow(other.id);
+  const pendingP = await emailPerson("api-m-pending", true);
+  const kid = await emailPerson("api-m-kid", true);
+  sql(`insert into public.account_eligibility (account_id, status, reason, cleanup_state) values (${q(kid.id)}, 'ineligible', 'under_13', 'locked')`);
+  const review = await emailPerson("api-m-review", true);
+  sql(`insert into public.account_eligibility (account_id, status, reason) values (${q(review.id)}, 'review', 'manual')`);
+
+  // Name / username
+  let r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Active Phone" }, { method: "PATCH", ...bearer(active.token) });
+  check("profile PATCH with a valid Bearer -> 200, own row changed", r.status === 200 && row(active.id).startsWith("Active Phone|"), JSON.stringify(r.json));
+  r = await call(active.jar, profilePATCH as never, "/api/account/profile", { displayName: "Active Web" }, { method: "PATCH" });
+  check("profile PATCH with the website cookie still works", r.status === 200 && row(active.id).startsWith("Active Web|"));
+  const otherBefore = row(other.id);
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Hijack", profileId: other.id, id: other.id, accountId: other.id }, { method: "PATCH", ...bearer(active.token) });
+  check("a profile id in the body is ignored: only the caller's own row changes", r.status === 200 && row(other.id) === otherBefore && row(active.id).startsWith("Hijack|"));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { username: otherBefore.split("|")[1] }, { method: "PATCH", ...bearer(active.token) });
+  check("username uniqueness still enforced over Bearer", r.status >= 400 && row(other.id) === otherBefore, JSON.stringify(r.json));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { username: "bad name!" }, { method: "PATCH", ...bearer(active.token) });
+  check("username rules still enforced over Bearer (400)", r.status === 400);
+  r = await call(active.jar, profilePATCH as never, "/api/account/profile", { displayName: "Conflict" }, { method: "PATCH", ...bearer(other.token) });
+  check("A's cookie + B's Bearer -> refused (401), nothing changed", r.status === 401 && !row(active.id).startsWith("Conflict|") && row(other.id) === otherBefore, JSON.stringify(r.json));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Garbage" }, { method: "PATCH", ...bearer("not.a.token") });
+  check("invalid Bearer -> 401", r.status === 401);
+  const revoked = (await anon().auth.signInWithPassword({ email: active.email, password: active.password })).data.session!.access_token;
+  await admin.auth.admin.signOut(revoked, "local");
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Revoked" }, { method: "PATCH", ...bearer(revoked) });
+  check("revoked (signed-out) Bearer -> 401, nothing changed", r.status === 401 && !row(active.id).startsWith("Revoked|"));
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Evil" }, { method: "PATCH", headers: { origin: "https://evil.test" } });
+  check("cross-site cookie request still refused (403 cross_site)", r.status === 403 && r.json?.code === "cross_site");
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Native" }, { method: "PATCH", headers: { origin: "capacitor://localhost", authorization: `Bearer ${active.token}` } });
+  check("Bearer from the native app's own origin is not blocked", r.status === 200);
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Pending Phone" }, { method: "PATCH", ...bearer(pendingP.token) });
+  check("Pending account may edit its name over Bearer (onboarding)", r.status === 200);
+  for (const [label, who] of [["Ineligible", kid], ["restricted", review]] as const) {
+    const before = row(who.id);
+    r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "Blocked Change" }, { method: "PATCH", ...bearer(who.token) });
+    check(`${label} account: profile change refused (403), unchanged`, r.status === 403 && row(who.id) === before, JSON.stringify(r.json));
+  }
+
+  // Privacy
+  r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "public" }, { method: "PUT", ...bearer(active.token) });
+  check("privacy PUT with Bearer -> own setting public", r.status === 200 && row(active.id).endsWith("|public"), JSON.stringify(r.json));
+  r = await call(active.jar, privacyPUT as never, "/api/account/privacy", { visibility: "private" }, { method: "PUT" });
+  check("privacy PUT with the cookie still works", r.status === 200 && row(active.id).endsWith("|private"));
+  r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "public", profileId: other.id }, { method: "PUT", ...bearer(active.token) });
+  check("privacy: another profile's id in the body is ignored", r.status === 200 && row(other.id).endsWith("|private"));
+  r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "public" }, { method: "PUT", ...bearer(kid.token) });
+  check("Ineligible account: privacy change refused (403)", r.status === 403);
+  r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "public" }, { method: "PUT", ...bearer("not.a.token") });
+  check("privacy with an invalid Bearer -> 401", r.status === 401);
+
+  // Photo
+  let p = await photo(browser(), active.token);
+  const activePath = row(active.id).split("|")[2];
+  check("photo upload with Bearer -> stored under the caller's own folder", p.status === 200 && activePath.startsWith(`${active.id}/`), JSON.stringify(p.json));
+  check("photo reply is private, never cached", (p.cache ?? "").includes("no-store") && (p.cache ?? "").includes("private"));
+  p = await photo(browser(), active.token, new Uint8Array([1, 2, 3]), "text/plain");
+  check("image validation still applies over Bearer (400 bad_file)", p.status === 400 && p.json.code === "bad_file");
+  p = await photo(other.jar, null);
+  check("photo upload with the website cookie still works", p.status === 200 && row(other.id).split("|")[2].startsWith(`${other.id}/`));
+  const otherPath = row(other.id).split("|")[2];
+  p = await photo(active.jar, other.token);
+  check("photo with A's cookie + B's Bearer -> 401, neither photo changed", p.status === 401 && row(active.id).split("|")[2] === activePath && row(other.id).split("|")[2] === otherPath);
+  r = await call(browser(), photoDELETE as never, "/api/account/photo", undefined, { method: "DELETE", ...bearer(active.token) });
+  check("photo DELETE with Bearer removes only the caller's photo", r.status === 200 && row(active.id).split("|")[2] === "" && row(other.id).split("|")[2] === otherPath);
+  p = await photo(browser(), kid.token);
+  check("Ineligible account: photo upload refused (403)", p.status === 403);
+
+  // Golf Trip invitations
+  const host = await emailPerson("api-m-host", true);
+  activateNow(host.id);
+  const tripId = ((await admin.rpc("create_golf_trip", { p_profile: host.id, p_input: tripPayload() })).data as { tripId: string }).tripId;
+  setupTrips.push(tripId);
+  const invite = (name: string) => { const t = `api-m-invite-${randomUUID()}`; sql(`select public.invite_golf_trip_member(${q(host.id)}, ${q(tripId)}, ${q(JSON.stringify({ displayName: name }))}::jsonb, ${q(t)})`); return t; };
+  const accept = (token: string, who: { jar?: Jar; token?: string }) => call(who.jar ?? browser(), invitePOST as never, `/api/golf-trips/invitations/${token}`, {}, { params: { token }, ...(who.token ? bearer(who.token) : {}) });
+  const decline = (token: string, who: { jar?: Jar; token?: string }) => call(who.jar ?? browser(), declinePOST as never, `/api/golf-trips/invitations/${token}/decline`, {}, { params: { token }, ...(who.token ? bearer(who.token) : {}) });
+  const memberRows = () => sql(`select count(*) from public.golf_trip_members where golf_trip_id = ${q(tripId)} and invitation_status = 'accepted'`);
+  let t = invite("Phone Joiner");
+  r = await accept(t, { token: other.token });
+  check("invite accept with Bearer -> joined", r.status === 200 && r.json?.status === "accepted" && sql(`select count(*) from public.golf_trip_members where golf_trip_id = ${q(tripId)} and profile_id = ${q(other.id)}`) === "1", JSON.stringify(r.json));
+  r = await accept(t, { token: other.token });
+  check("accepting again is safe (already_member)", r.status === 200 && r.json?.status === "already_member");
+  r = await accept(t, { token: active.token });
+  check("someone else's accepted invitation can't be taken over (409)", r.status === 409);
+  t = invite("Organizer Test");
+  r = await accept(t, { token: host.token });
+  check("the organizer's own row is never overwritten by an invite", sql(`select role from public.golf_trip_members where golf_trip_id = ${q(tripId)} and profile_id = ${q(host.id)} order by role limit 1`) === "organizer"
+    && sql(`select count(*) from public.golf_trip_members where golf_trip_id = ${q(tripId)} and profile_id = ${q(host.id)} and role = 'organizer'`) === "1", JSON.stringify(r.json));
+  t = invite("Web Joiner");
+  r = await accept(t, { jar: active.jar });
+  check("invite accept with the website cookie still works", r.status === 200 && r.json?.status === "accepted");
+  t = invite("Phone Decliner");
+  const membersBefore = memberRows();
+  r = await decline(t, { token: pendingP.token });
+  check("decline with Bearer -> declined, nobody added", r.status === 200 && r.json?.status === "declined" && memberRows() === membersBefore, JSON.stringify(r.json));
+  r = await accept(t, { token: pendingP.token });
+  check("a declined invitation can't be accepted afterwards", r.status === 404);
+  t = invite("Conflict");
+  r = await accept(t, { jar: active.jar, token: pendingP.token });
+  check("invite with A's cookie + B's Bearer -> refused (401)", r.status === 401 && memberRows() === membersBefore);
+  r = await accept(t, { token: "not.a.token" });
+  check("invite with an invalid Bearer -> 401", r.status === 401);
+  for (const [label, who] of [["Ineligible", kid], ["restricted", review]] as const) {
+    r = await accept(t, { token: who.token });
+    check(`${label} account: invite accept refused (403), no membership`, r.status === 403 && sql(`select count(*) from public.golf_trip_members where profile_id = ${q(who.id)} and golf_trip_id = ${q(tripId)}`) === "0", JSON.stringify(r.json));
+    r = await decline(t, { token: who.token });
+    check(`${label} account: invite decline refused (403)`, r.status === 403);
+  }
+  // Enforcement on: a Pending account's Bearer accept only HOLDS the invitation (membership waits for Finish).
+  process.env.MAROON_ACCOUNT_ENFORCEMENT = "on";
+  try {
+    const t2 = invite("Pending Phone");
+    r = await accept(t2, { token: pendingP.token });
+    check("enforcement on: Pending Bearer accept -> held, not a member", r.status === 200 && r.json?.status === "held" && sql(`select count(*) from public.golf_trip_members where profile_id = ${q(pendingP.id)}`) === "0", JSON.stringify(r.json));
+  } finally { delete process.env.MAROON_ACCOUNT_ENFORCEMENT; }
+  const t3 = invite("Pending Legacy Path");
+  r = await accept(t3, { token: pendingP.token });
+  check("enforcement off: Pending Bearer accept behaves as before (joins)", r.status === 200 && r.json?.status === "accepted", JSON.stringify(r.json));
+
+  // Missing Phase 1 foundation: the routes behave exactly as before (no lifecycle check possible, nothing invented).
+  try {
+    sql("alter function public.account_lifecycle_state(uuid) rename to account_lifecycle_state_hidden; notify pgrst, 'reload schema';");
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "No Foundation" }, { method: "PATCH", ...bearer(active.token) });
+    check("foundation missing: profile PATCH over Bearer still works as before", r.status === 200 && row(active.id).startsWith("No Foundation|"), JSON.stringify(r.json));
+    r = await call(browser(), privacyPUT as never, "/api/account/privacy", { visibility: "private" }, { method: "PUT", ...bearer(active.token) });
+    check("foundation missing: privacy over Bearer still works as before", r.status === 200);
+  } finally {
+    sql("alter function public.account_lifecycle_state_hidden(uuid) rename to account_lifecycle_state; notify pgrst, 'reload schema';");
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+  }
+  r = await call(browser(), profilePATCH as never, "/api/account/profile", { displayName: "After" }, { method: "PATCH", ...bearer(active.token) });
+  check("lifecycle restored: Bearer edits work again", r.status === 200);
 }
 
 section("Missing migration / unavailable database");

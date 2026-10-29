@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { getCurrentProfile } from "@/lib/profile/currentProfile";
+import { privateJson, selfServiceCaller } from "@/lib/account/selfServiceRequest";
 import { profileEditFromBody, profileSetupFromBody } from "@/lib/profile/profileEdit";
 import { updateMyProfile, type ProfileWrite } from "@/lib/profile/profileEditServer";
 import { finishProfileSetup } from "@/lib/profile/profileInitialization";
@@ -10,12 +9,13 @@ import { finishProfileSetup } from "@/lib/profile/profileInitialization";
  *         complete just returns that profile's username (nothing is created or overwritten).
  * PATCH = Edit my profile ({ displayName?, username?, bio? }).
  * Who it is always comes from the session; nothing in the body can choose the profile.
+ * Website cookie or app Bearer token (Phase 7B, lib/account/selfServiceRequest.ts); private, never cached.
  */
 function reply(result: ProfileWrite) {
-  if (result.status === "ok") return NextResponse.json({ ok: true, username: result.username, created: result.created });
-  if (result.status === "invalid") return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
-  if (result.status === "unavailable") return NextResponse.json({ ok: false, error: "Profile editing isn't switched on yet." }, { status: 503 });
-  return NextResponse.json({ ok: false, error: "Couldn't save your profile. Try again." }, { status: 500 });
+  if (result.status === "ok") return privateJson({ ok: true, username: result.username, created: result.created });
+  if (result.status === "invalid") return privateJson({ ok: false, error: result.error }, 400);
+  if (result.status === "unavailable") return privateJson({ ok: false, error: "Profile editing isn't switched on yet." }, 503);
+  return privateJson({ ok: false, error: "Couldn't save your profile. Try again." }, 500);
 }
 
 async function body(request: Request) {
@@ -23,22 +23,26 @@ async function body(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const current = await getCurrentProfile();
-  if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401 });
-  if (current.status === "ok") return NextResponse.json({ ok: true, username: current.profile.username, created: false });
+  const caller = await selfServiceCaller(request);
+  if ("error" in caller) return caller.error;
+  const { current } = caller;
+  if (current.status === "signed-out") return privateJson({ ok: false, error: "Log in first." }, 401);
+  if (current.status === "ok") return privateJson({ ok: true, username: current.profile.username, created: false });
   const parsed = profileSetupFromBody(await body(request));
-  if (!parsed.ok) return NextResponse.json({ ok: false, field: parsed.field, error: parsed.error }, { status: 400 });
+  if (!parsed.ok) return privateJson({ ok: false, field: parsed.field, error: parsed.error }, 400);
   const result = await finishProfileSetup(current.account.id, parsed.input);
-  if (result.status === "unverified") return NextResponse.json({ ok: false, error: "Verify your email first." }, { status: 403 });
-  if (result.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401 });
+  if (result.status === "unverified") return privateJson({ ok: false, error: "Verify your email first." }, 403);
+  if (result.status === "signed-out") return privateJson({ ok: false, error: "Log in first." }, 401);
   return reply(result);
 }
 
 export async function PATCH(request: Request) {
-  const current = await getCurrentProfile();
-  if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401 });
-  if (current.status !== "ok") return NextResponse.json({ ok: false, error: "Finish setting up your profile first." }, { status: 409 });
+  const caller = await selfServiceCaller(request);
+  if ("error" in caller) return caller.error;
+  const { current } = caller;
+  if (current.status === "signed-out") return privateJson({ ok: false, error: "Log in first." }, 401);
+  if (current.status !== "ok") return privateJson({ ok: false, error: "Finish setting up your profile first." }, 409);
   const parsed = profileEditFromBody(await body(request));
-  if (!parsed.ok) return NextResponse.json({ ok: false, field: parsed.field, error: parsed.error }, { status: 400 });
+  if (!parsed.ok) return privateJson({ ok: false, field: parsed.field, error: parsed.error }, 400);
   return reply(await updateMyProfile(current.profile.profileId, parsed.input));
 }
