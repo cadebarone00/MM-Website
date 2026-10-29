@@ -209,8 +209,15 @@ begin
   if to_regclass('auth.sessions') is null then
     return 0;
   end if;
-  execute 'delete from auth.sessions where user_id = $1' using p_account;
-  get diagnostics v_count = row_count;
+  -- auth.sessions belongs to Supabase Auth. If this project's role may not delete from it, answer -1 instead of failing:
+  -- the caller's own transaction (e.g. saving an under-13 birthday and marking the account Ineligible) must still
+  -- succeed, and the eligibility checks (account_is_active / pre-request hook / server gate) still refuse its tokens.
+  begin
+    execute 'delete from auth.sessions where user_id = $1' using p_account;
+    get diagnostics v_count = row_count;
+  exception when insufficient_privilege then
+    return -1;
+  end;
   return v_count;
 end;
 $$;

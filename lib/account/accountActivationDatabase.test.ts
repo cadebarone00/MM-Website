@@ -575,6 +575,40 @@ test("enforcement (proposed): Pending can't join or score, Active can; legacy ba
   assert.equal(await active(db, legacyOk), true);
 });
 
+test("enforcement (proposed): organizers can still record activated legacy members (no birthday yet); never Pending or Ineligible ones", async () => {
+  const db = await setup({ enforce: true });
+  const organizer = await ready(db, "rosterorg");
+  await finish(db, organizer);
+  const tripId = await trip(db, organizer);
+  const legacy = await account(db, "rosterlegacy");
+  await one(db, "select backfill_legacy_activation('ACTIVATE-ELIGIBLE-LEGACY-PROFILES') as r");
+  assert.equal(await state(db, legacy), "active_needs_birthday");
+  const add = (who: string) => db.query("insert into golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Member', 'member', 'accepted')", [tripId, who]);
+  await add(legacy);
+  assert.equal((await members(db, tripId)).filter((m) => m.profile_id === legacy).length, 1, "activated legacy member can be recorded");
+  const pending = await ready(db, "rosterpending");
+  await assert.rejects(add(pending), /Finish setting up your profile first/, "Pending can't be attached");
+  const kid = await account(db, "rosterkid");
+  await birthday(db, kid, yearsAgo(10));
+  await assert.rejects(add(kid), /Finish setting up your profile first/, "Ineligible can't be attached");
+});
+
+test("enforcement (proposed): organizer hand-offs only go to participating members; offers to an account withdrawn when it becomes Ineligible", async () => {
+  const db = await setup({ enforce: true });
+  const organizer = await ready(db, "handorg");
+  await finish(db, organizer);
+  const tripId = await trip(db, organizer);
+  const member = await ready(db, "handmember");
+  await finish(db, member);
+  await db.query("insert into golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Member', 'member', 'accepted')", [tripId, member]);
+  await one(db, "select offer_golf_trip_organizer($1, $2, $3) as r", [organizer, tripId, member]);
+  assert.equal((await rows(db, "select count(*)::int n from golf_trip_organizer_handoffs where to_profile = $1", [member]))[0].n, 1);
+  await db.query("insert into account_eligibility (account_id, status, reason) values ($1, 'review', 'manual')", [member]);
+  assert.equal((await rows(db, "select count(*)::int n from golf_trip_organizer_handoffs where to_profile = $1", [member]))[0].n, 0, "offer withdrawn");
+  await assert.rejects(one(db, "select offer_golf_trip_organizer($1, $2, $3) as r", [organizer, tripId, member]), /can't take over this trip/);
+  assert.equal((await members(db, tripId)).find((m) => m.role === "organizer")?.profile_id, organizer, "organizer unchanged");
+});
+
 test("enforcement (proposed): Ineligible is blocked everywhere; discovery shows Active profiles only", async () => {
   const db = await setup({ enforce: true });
   const viewer = await ready(db, "viewer");
@@ -590,7 +624,9 @@ test("enforcement (proposed): Ineligible is blocked everywhere; discovery shows 
   const own = async (who: string) => asUser(db, who, `select id from profiles where id = '${who}'`);
   assert.equal((await own(hidden)).rows?.length, 1, "Pending can still read its own profile to finish onboarding");
   assert.equal((await own(kid)).rows?.length ?? 0, 0, "Ineligible can't read anything");
-  assert.match((await asUser(db, kid, "select public.reject_deleted_accounts()")).error ?? "", /can't use The Maroon/);
+  // Its token must stay VERIFIABLE (the server checks app tokens through the pre-request hook + session_is_revoked), or it
+  // couldn't ask for a correction or delete itself; it simply sees no rows (checked just above).
+  assert.equal((await asUser(db, kid, "select public.reject_deleted_accounts()")).error, undefined, "Ineligible token still verifiable");
 
   const found = (await one<Json[]>(db, "select search_golfers($1, 'finder') as r", [viewer])).map((g) => g.id);
   assert.deepEqual(found, [shown], "search finds Active only");

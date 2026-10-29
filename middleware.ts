@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isCatalogScope, catalogScopeForPath } from "@/lib/website/settings";
+import { enforceAccountAccess } from "@/lib/account/accessGate";
 
 // Refreshes the Supabase auth cookie on every non-static request. Without
 // this, a session's access token silently expires (~1hr) and Server
@@ -33,7 +34,13 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  // Pending accounts Phase 5: Active-only access. Inert unless MAROON_ACCOUNT_ENFORCEMENT=on (lib/account/accessGate.ts).
+  const blocked = await enforceAccountAccess(request, user);
+  if (blocked) {
+    response.cookies.getAll().forEach((cookie) => blocked.cookies.set(cookie));
+    return blocked;
+  }
   return response;
 }
 
