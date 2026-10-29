@@ -76,14 +76,14 @@ function AppleIcon() {
   </svg>;
 }
 
-function EyeIcon() {
+export function EyeIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
   </svg>;
 }
 
-function EyeOffIcon() {
+export function EyeOffIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7c1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"
       fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

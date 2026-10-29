@@ -1,0 +1,7 @@
+<!-- LOCAL TEST STACK ONLY (Pending accounts Phase 6). The hosted "Confirm signup" template is NOT changed by this file;
+     the owner must add the {{ .Token }} line there before code verification can work on a hosted project. The link stays
+     Supabase's own (the fallback when the code isn't used); the 6-digit code is what the app's Verification Code screen asks for. -->
+<h2>Confirm your email</h2>
+<p>Enter this code in The Maroon: <strong>{{ .Token }}</strong></p>
+<p>Or use this link: <a href="{{ .ConfirmationURL }}">Confirm my email</a></p>
+<p>If you didn't create an account, you can ignore this email.</p>

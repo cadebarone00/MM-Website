@@ -7,7 +7,7 @@ import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthNamePreview.module.css";
 
 /** "Alex" + "Smith" → "alexsmith": letters and numbers only, 30 max (the username rules in profileEdit.ts). */
-function suggestUsername(first: string, last: string) {
+export function suggestUsername(first: string, last: string) {
   return (first + last).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
 }
 

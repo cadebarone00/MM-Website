@@ -27,3 +27,9 @@
 .eye svg{width:22px;height:22px}
 .forgot{display:grid;place-items:center;min-height:40px;margin-top:8px;color:#e1cec4;font-size:14px;text-decoration:underline}
 .input:focus-visible,.primary:focus-visible,.secondary:focus-visible,.provider:focus-visible,.eye:focus-visible,.forgot:focus-visible{outline:2px solid #fbf8f1;outline-offset:4px}
+
+/* Phase 6 real screens (components/onboarding/StartScreens.tsx), not used by the dev previews: the reserved message line
+   on Log in, and the Terms line under Sign up's Continue (decision D4). */
+.error{min-height:18px;margin:0;font-size:13px;line-height:18px;color:#ffb4b4;text-align:center}
+.notice{min-height:18px;margin:0;font-size:13px;line-height:18px;color:#e1cec4;text-align:center}
+.terms{margin:0;font-size:12px;line-height:1.4;color:#e1cec4;text-align:center}

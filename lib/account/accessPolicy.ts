@@ -49,6 +49,8 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/account\/status$/, category: "account", why: "where blocked accounts are sent (must never loop)" },
   { pattern: /^\/(login|login\/email|signup|new-user|forgot-password|reset-password)$/, category: "public", why: "sign-in / sign-up / recovery" },
   { pattern: /^\/auth\//, category: "public", why: "email-link and provider callbacks" },
+  { pattern: /^\/start(\/[a-z-]+)?$/, category: "public", why: "Phase 6 sign-up / log-in / password-reset screens (MAROON_V2_ONBOARDING)" },
+  { pattern: /^\/onboarding(\/[a-z-]+)?$/, category: "account", why: "Phase 6 onboarding steps: Pending accounts must reach them (each page checks the step itself)" },
   { pattern: /^\/(settings|settings\/delete-account|account\/choose)$/, category: "account", why: "settings, deletion and correction stay reachable" },
   { pattern: /^\/(golf-trips\/invite|tournaments\/invite|tournaments\/code\/invite)\/[^/]+$/, category: "invite", why: "invitation landing pages" },
   { pattern: /^\/tournaments\/live\/[^/]+$/, category: "public", why: "public tournament view" },

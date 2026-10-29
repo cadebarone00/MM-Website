@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getAccountLifecycleForRequest, type AccountLifecycle } from "@/lib/profile/currentProfile";
-import { apiError, type ApiError } from "./onboardingApi";
+import { apiError, originMatchesHost, type ApiError } from "./onboardingApi";
 
 /**
  * Pending accounts Phase 3 — server plumbing shared by the onboarding APIs. The account ALWAYS comes from the verified
@@ -33,9 +33,11 @@ export function crossSiteCookieRequest(request: Request): ApiError | null {
   if (request.headers.get("authorization")) return null;
   const origin = request.headers.get("origin");
   if (!origin) return null;
-  try {
-    if (new URL(origin).host === new URL(request.url).host) return null;
-  } catch { /* malformed Origin: refuse below */ }
+  // The Host the browser sent (and a proxy's forwarded host) is what the page was loaded from; request.url alone can
+  // name a different host under the Next server (found 2026-10-29: every real-browser POST was refused). A cross-site
+  // page can't change Host or add X-Forwarded-Host without a CORS preflight, so these stay safe to compare against.
+  const hosts = [request.headers.get("host"), request.headers.get("x-forwarded-host"), new URL(request.url).host];
+  if (originMatchesHost(origin, hosts)) return null;
   return apiError(403, "cross_site", "That request can't be made from another site.");
 }
 

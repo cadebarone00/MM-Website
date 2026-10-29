@@ -46,6 +46,13 @@ export function resumeReply(lifecycle: AccountLifecycle, progress: OnboardingPro
 const ok = (state: AccountLifecycle["state"], next: OnboardingStep, activationAvailable: boolean): ResumeReply =>
   ({ status: 200, body: { ok: true, state, next, activationAvailable } });
 
+/** True when the browser's Origin header names one of the hosts this request was addressed to (cross-site guard). */
+export function originMatchesHost(origin: string, hosts: (string | null | undefined)[]): boolean {
+  let host: string;
+  try { host = new URL(origin).host.toLowerCase(); } catch { return false; }
+  return hosts.some((h) => !!h && h.split(",")[0].trim().toLowerCase() === host);
+}
+
 // === Shared error shape ===================================================================================================
 export type ApiError = { status: number; body: { ok: false; code: string; error: string; missing?: string[] } };
 export const apiError = (status: number, code: string, error: string, extra: { missing?: string[] } = {}): ApiError =>

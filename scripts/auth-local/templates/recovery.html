@@ -1,0 +1,6 @@
+<!-- LOCAL TEST STACK ONLY (Pending accounts Phase 6). The hosted "Reset password" template is NOT changed by this file;
+     the owner must add the {{ .Token }} line there before code-based recovery can work on a hosted project. -->
+<h2>Reset your Maroon password</h2>
+<p>Enter this code in The Maroon: <strong>{{ .Token }}</strong></p>
+<p>Or use this link: <a href="{{ .ConfirmationURL }}">Reset my password</a></p>
+<p>If you didn't ask for this, you can ignore it.</p>

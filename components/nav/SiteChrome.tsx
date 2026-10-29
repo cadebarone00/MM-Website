@@ -24,7 +24,7 @@ export function SiteChrome({ children, catalog }: { children: ReactNode; catalog
 function AppChrome({ children }: { children: ReactNode }) {
   const rawPathname = usePathname();
   const pathname = chromePathname(rawPathname);
-  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || ["/new-user", "/signup", "/login", "/dev/gps"].includes(pathname) || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
+  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || isOnboardingScreen(pathname) || ["/new-user", "/signup", "/login", "/dev/gps"].includes(pathname) || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
   const hideBottomNav = isSiteBottomNavHidden(rawPathname);
   const ownShell = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/") || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/") || pathname.startsWith("/rounds/") || pathname === "/dev/tourney";
   const title = pathname === "/" ? "The Maroon" : pathname === "/pickems" ? "Pick'ems" : pathname === "/settings" ? "Settings" : pathname === "/profile/search" ? "Find Golfers" : pathname === "/profile/friends" ? "Friends" : pathname === "/profile" || pathname.startsWith("/profile/") ? "Profile" : undefined;
@@ -36,3 +36,7 @@ function AppChrome({ children }: { children: ReactNode }) {
     {!hideBottomNav && <SiteBottomNav />}
   </>;
 }
+
+/** The real sign-up / onboarding screens (Pending accounts Phase 6) are full-screen, like their /dev/auth designs. */
+const isOnboardingScreen = (pathname: string) =>
+  pathname === "/start" || pathname.startsWith("/start/") || pathname === "/onboarding" || pathname.startsWith("/onboarding/");

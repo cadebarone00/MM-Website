@@ -1,22 +1,34 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { getAccountLifecycle } from "@/lib/profile/currentProfile";
+import { onboardingEnabled } from "@/lib/account/onboardingFlag";
+import { currentOnboardingStep } from "@/lib/account/onboardingResume";
+import { START, stepPath } from "@/lib/account/onboardingRoutes";
 
 export const metadata = { title: "Your account | The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 /**
  * Where account enforcement (Pending accounts Phase 5; middleware.ts) sends a signed-in account that can't use a page
- * yet. INTERIM: plain text in the existing account layout until Phase 6 connects the real onboarding screens. Never
- * gated itself (lib/account/accessPolicy.ts "account"), so it can't loop. Shows nothing private: no birthday, age or reason.
+ * yet. Never gated itself (lib/account/accessPolicy.ts "account"), so it can't loop. Shows nothing private: no birthday,
+ * age or reason. With the real onboarding screens switched on (MAROON_V2_ONBOARDING=on, Phase 6) a Pending account, or
+ * an Active one that still needs its birthday, is sent straight to its next step instead of reading about it; blocked
+ * states keep their message here. `?reason=ineligible` shows the under-13 message after the Birthday step signed out.
  */
-export default async function AccountStatusPage() {
-  const lifecycle = await getAccountLifecycle();
+export default async function AccountStatusPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const v2 = onboardingEnabled();
+  const { lifecycle, step } = v2 ? await currentOnboardingStep() : { lifecycle: await getAccountLifecycle(), step: null };
+  if (v2 && step && (lifecycle.state === "pending" || lifecycle.state === "active_needs_birthday")) redirect(stepPath(step));
+  const ineligibleNotice = (await searchParams).reason === "ineligible";
   const support = <p>Questions? Email <a href="mailto:themaroonadmin@gmail.com">themaroonadmin@gmail.com</a>.</p>;
   let body;
   switch (lifecycle.state) {
     case "signed-out":
-      body = <><h1>Log in</h1><p>Log in to continue.</p><Link href="/login">Log in</Link></>;
+      body = ineligibleNotice
+        ? <><h1>This account can&apos;t use The Maroon</h1><p>The Maroon is for people 13 and older.</p>
+          <p>If your birthday was entered wrong, log in again to ask for a correction, or to delete this account.</p>{support}</>
+        : <><h1>Log in</h1><p>Log in to continue.</p><Link href={v2 ? START.logIn : "/login"}>Log in</Link></>;
       break;
     case "active":
       body = <><h1>You&apos;re all set</h1><Link href="/">Go to Play</Link></>;

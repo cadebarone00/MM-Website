@@ -5,7 +5,7 @@
 // local stack (54xxx) or any hosted project. Nothing here reads .env files or production keys.
 //   AUTH_LOCAL_STACK=main node scripts/auth-local/setup.mjs   a SECOND isolated stack ("maroon-auth-main", ports 56xxx),
 //     so this checkout can be tested without wiping the shared 55xxx stack another checkout / terminal may be using.
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { authLocalStack } from "./stack.mjs";
@@ -44,6 +44,8 @@ try { supabase("stop", "--no-backup"); } catch { /* nothing was running */ }
 rmSync(work, { recursive: true, force: true });
 mkdirSync(join(work, "supabase", "migrations"), { recursive: true });
 writeFileSync(join(work, "supabase", "config.toml"), stack.config(readFileSync(join(root, "scripts", "auth-local", "config.toml"), "utf8")));
+// Phase 6: email templates carrying the 6-digit code (local stack only).
+cpSync(join(root, "scripts", "auth-local", "templates"), join(work, "supabase", "templates"), { recursive: true });
 FILES.forEach((file, i) => {
   const name = `20260101${String(i + 1).padStart(6, "0")}_${file}`;
   writeFileSync(join(work, "supabase", "migrations", name), readFileSync(join(root, "supabase", file), "utf8"));

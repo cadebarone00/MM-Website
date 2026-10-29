@@ -107,3 +107,10 @@ test("the switch is OFF unless exactly 'on'", () => {
   for (const v of ["", "true", "1", "ON", "yes", "enabled"]) assert.equal(enforcementEnabled({ MAROON_ACCOUNT_ENFORCEMENT: v }), false, v);
   assert.equal(enforcementEnabled({ MAROON_ACCOUNT_ENFORCEMENT: "on" }), true);
 });
+
+test("Phase 6 onboarding screens: sign-up / log-in public, onboarding steps reachable by any signed-in state", () => {
+  for (const path of ["/start", "/start/sign-up", "/start/verify", "/start/reset-password"]) assert.equal(classifyPath(path).category, "public", path);
+  for (const path of ["/onboarding", "/onboarding/name", "/onboarding/created"]) assert.equal(classifyPath(path).category, "account", path);
+  assert.equal(classifyPath("/api/auth/verify-code", "POST").category, "public");
+  assert.notEqual(classifyPath("/start/x/y").category, "public");
+});

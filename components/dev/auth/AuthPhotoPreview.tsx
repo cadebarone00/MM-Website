@@ -30,7 +30,7 @@ export function AuthPhotoPreview() {
   </main>;
 }
 
-function AddPhotoIcon() {
+export function AddPhotoIcon() {
   return <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
     <path d="M14 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6M3 16l4.5-4.5a1.5 1.5 0 0 1 2 0L15 17m-2-2 1.5-1.5a1.5 1.5 0 0 1 2 0L19 16M19 3v6m-3-3h6"
       fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

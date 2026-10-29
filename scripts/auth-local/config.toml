@@ -45,7 +45,7 @@ enabled = false
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:3999"
-additional_redirect_urls = ["http://127.0.0.1:3999/**"]
+additional_redirect_urls = ["http://127.0.0.1:3999/**", "http://localhost:3999/**"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
@@ -71,3 +71,13 @@ secure_password_change = true
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600
+
+# Pending accounts Phase 6: the emails carry the 6-digit code as well as the link (local stack only; setup.mjs copies
+# scripts/auth-local/templates). Hosted templates are configured separately by the owner.
+[auth.email.template.confirmation]
+subject = "Confirm your email for The Maroon"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Maroon password"
+content_path = "./supabase/templates/recovery.html"

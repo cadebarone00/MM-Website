@@ -34,7 +34,7 @@ export function AuthSettingsPreview() {
   </main>;
 }
 
-function Setting({ icon, title, on, onChange, children }: { icon: ReactNode; title: string; on: boolean; onChange: (on: boolean) => void; children: ReactNode }) {
+export function Setting({ icon, title, on, onChange, children }: { icon: ReactNode; title: string; on: boolean; onChange: (on: boolean) => void; children: ReactNode }) {
   return <div className={styles.card}>
     <div className={styles.text}>
       <p className={styles.cardTitle}>{icon}{title}</p>
@@ -44,13 +44,13 @@ function Setting({ icon, title, on, onChange, children }: { icon: ReactNode; tit
   </div>;
 }
 
-function PersonIcon() {
+export function PersonIcon() {
   return <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>;
 }
 
-function BellIcon() {
+export function BellIcon() {
   return <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
     <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zm4 4a2 2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
   </svg>;

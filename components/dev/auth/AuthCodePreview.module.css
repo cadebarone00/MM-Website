@@ -18,3 +18,7 @@
 .help a{color:#fbf8f1;text-decoration:underline}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .resend:focus-visible,.verify:focus-visible,.help a:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}
+
+/* Phase 6 real screen (components/onboarding/CodeScreen.tsx): the wrong-code message, always reserving its line so the
+   buttons never move. Not used by the dev preview. */
+.error{min-height:18px;margin:8px 0 0;font-size:13px;line-height:18px;color:#ffb4b4}

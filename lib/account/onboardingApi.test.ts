@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import type { AccountLifecycle } from "../profile/currentProfile.ts";
 import type { ProfileId, ProfileIdentity } from "../profile/profileIdentity.ts";
 import { acceptedVersionsFromBody, birthdayReply, blockedLifecycle, correctionReasonFromBody, correctionReply, finishReply, resumeReply,
-  type OnboardingProgress } from "./onboardingApi.ts";
+  originMatchesHost, type OnboardingProgress } from "./onboardingApi.ts";
 
 // Pure rules behind POST /api/account/birthday, /finish, /birthday-correction, /terms and GET /api/account/onboarding.
 
@@ -94,4 +94,15 @@ test("terms: both CURRENT versions required; nothing accepted before legal versi
   assert.equal((acceptedVersionsFromBody({ termsVersion: "t-2026-12", privacyVersion: "p-2027-01" }, current) as { body: { code: string } }).body.code, "version_mismatch");
   assert.equal((acceptedVersionsFromBody({ termsVersion: "t-2027-01" }, current) as { body: { code: string } }).body.code, "version_mismatch");
   assert.equal((acceptedVersionsFromBody({ termsVersion: "x", privacyVersion: "y" }, { terms: null, privacy: null }) as { body: { code: string } }).body.code, "terms_not_configured");
+});
+
+test("cross-site guard: Origin must name a host the request was addressed to", () => {
+  assert.equal(originMatchesHost("http://127.0.0.1:3999", ["127.0.0.1:3999", null, "localhost:3999"]), true);
+  assert.equal(originMatchesHost("https://themaroon.site", [null, "themaroon.site", "internal:3000"]), true);
+  assert.equal(originMatchesHost("https://THEMAROON.site", ["themaroon.site"]), true);
+  assert.equal(originMatchesHost("https://evil.test", ["themaroon.site", null, "themaroon.site"]), false);
+  assert.equal(originMatchesHost("https://themaroon.site.evil.test", ["themaroon.site"]), false);
+  assert.equal(originMatchesHost("http://127.0.0.1:4000", ["127.0.0.1:3999"]), false);
+  assert.equal(originMatchesHost("null", ["themaroon.site"]), false);
+  assert.equal(originMatchesHost("https://themaroon.site", []), false);
 });

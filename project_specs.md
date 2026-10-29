@@ -3612,3 +3612,32 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
   Finish).
 - *Sign in with Google and Sign in with Apple — Flow 1 routing* ("complete → returnTo or `/profile`; incomplete →
   finish setup") becomes "Active → Play / return page; Pending → resume onboarding; Ineligible → message" in Phase 7.
+
+### Phase 6 — onboarding UI connected (built + approved 2026-10-29; committed locally; NOT public)
+- **Switch:** `MAROON_V2_ONBOARDING=on` (exactly "on"; off by default). Off → every new page and `POST /api/auth/verify-code`
+  answer 404 and nothing else changes. Independent of `MAROON_ACCOUNT_ENFORCEMENT` and of the database activation switch.
+- **Real screens** (the approved `/dev/auth` designs, same CSS modules): `/start` Welcome, `/start/sign-up`,
+  `/start/password`, `/start/verify`, `/start/confirmed`, `/start/log-in`, `/start/forgot`, `/start/reset-code`,
+  `/start/reset-password` (public); `/onboarding` (resume), `/onboarding/name|birthday|photo|settings|created` (any signed-in
+  state; each page asks the server for the account's step and only shows the screen that step allows —
+  `lib/account/onboardingRoutes.ts`). Profile Created only for an account the server confirms Active; Let's go → Play (`/`).
+- **Order (D1):** Sign up (email) → Create password (account made here) → Verification Code → Email Confirmed → Name →
+  Birthday → Photo → Settings → Finish → Profile Created. The dev previews list the code before the password; the real
+  progress bar follows the real order.
+- **Codes:** `POST /api/auth/verify-code { email, code, type: signup|recovery, client?: "app" }` → Supabase `verifyOtp`.
+  5 tries per address per kind per 15 minutes (`supabase/auth_code_attempts.sql`, SHA-256 of the address only), plus
+  Supabase's per-IP limit. Wrong / expired / used code and unknown address → one identical answer. Website: session in
+  cookies; app: session returned in the reply (no cookies).
+- **Recovery:** Forgot → reset code → `/start/reset-password` → existing `POST /api/auth/reset-password` (code or link
+  session within the hour; signs every session out) → Log in.
+- **Link fallback:** the same emails also carry the link; `next: "/onboarding"` / `"/start"` make it land on Email
+  Confirmed / Set a new password (`lib/auth/websiteFlow.ts`).
+- **Terms:** a "By continuing, you agree…" line on Sign up; the current versions are recorded right after verification and,
+  if still missing (or changed), on Finish with a line on Settings. No links until final legal texts exist.
+- **`/account/status`:** with the switch on, Pending and Active-needs-birthday accounts are sent straight to their step.
+- **Hosted prerequisites (owner, later):** add `{{ .Token }}` to the Confirm signup and Reset password templates (local
+  versions: `scripts/auth-local/templates/`), allow `<site>/auth/callback` redirects, run `auth_code_attempts.sql` after
+  `account_activation.sql`, publish legal versions.
+- **Known gaps:** name / photo / privacy saves (`/api/account/profile|photo|privacy`) and the trip-invite accept route are
+  cookie-only, so the phone app can't call them yet (verify-code, birthday, finish, onboarding, terms accept Bearer);
+  the Notifications switch has nothing to save to yet; Google / Apple buttons are hidden on these screens until Phase 7.
