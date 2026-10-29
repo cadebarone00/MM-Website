@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { resumeAccountDeletions, sweepOrphanedDeletionFiles } from "@/lib/account/accountDeletion";
+import { resumeIneligibleCleanups } from "@/lib/account/ineligibleAccounts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,6 +18,14 @@ export async function GET(request: Request) {
   if (!expected || supplied.length !== wanted.length || !timingSafeEqual(supplied, wanted)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Pending accounts Phase 4: finish the cleanup of Ineligible (under-13) registrations the server didn't get to. Its own
+  // failure never stops the existing deletion work below; with account_activation.sql not installed it does nothing.
+  let ineligible: Awaited<ReturnType<typeof resumeIneligibleCleanups>> | null = null;
+  try {
+    ineligible = await resumeIneligibleCleanups();
+  } catch (error) {
+    console.error("Ineligible cleanup job:", (error as Error).message.slice(0, 160));
+  }
   try {
     const resumed = await resumeAccountDeletions();
     const filesRemoved = await sweepOrphanedDeletionFiles();
@@ -26,6 +35,7 @@ export async function GET(request: Request) {
       completed: resumed.filter((r) => r.state === "completed").length,
       stillPending: resumed.filter((r) => r.state !== "completed").length,
       filesRemoved,
+      ineligible,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     // account_deletion.sql not installed yet, or the database is unreachable: nothing to do, try next time.

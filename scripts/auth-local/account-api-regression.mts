@@ -8,6 +8,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { addr, admin, anon, browser, call, confirmByEmail, account, q, sql, type Jar } from "./harness.mts";
 import { authLocalStack } from "./stack.mjs";
+import { randomUUID } from "node:crypto";
+import { golfTripPayloadFromBody, type CreateGolfTripPayload } from "../../lib/platform/golfTripCreate.ts";
 
 const { POST: signupPOST } = await import("../../app/api/auth/signup/route.ts");
 const { POST: loginPOST } = await import("../../app/api/auth/login/route.ts");
@@ -44,9 +46,15 @@ execFileSync("docker", ["exec", "-i", stack.dbContainer, "psql", "-U", "postgres
 const switchBefore = sql("select activation_enabled from public.account_activation_settings");
 sql(`insert into public.legal_document_versions (document, current_version) values ('terms', 'local-test'), ('privacy', 'local-test')
   on conflict (document) do update set current_version = excluded.current_version;`);
+const tripPayload = () => (golfTripPayloadFromBody({ tripName: "Host Trip", destination: "Pinehurst, NC", startDate: "2027-04-22", endDate: "2027-04-26",
+  playerCount: "8", yourName: "Host", yourEmail: "host@example.com", golfDays: "1", day1Date: "2027-04-23", day1Rounds: "1", round1Course: "",
+  includesTournament: "no", knowsLodging: "no", knowsFlights: "yes", knowsTransportation: "no", requestId: randomUUID() }) as { ok: true; payload: CreateGolfTripPayload }).payload;
+/** Trips this script creates as TEST SETUP (excluded from the "golf records untouched" comparison). */
+const setupTrips: string[] = [];
+const notSetup = (column: string) => setupTrips.length ? `where ${column} not in (${setupTrips.map(q).join(",")})` : "";
 const golden = () => sql(`select md5(coalesce(string_agg(x, '|' order by x), '')) from (
-  select row_to_json(m)::text x from public.golf_trip_members m union all select row_to_json(s)::text from public.player_slots s
-  union all select row_to_json(r)::text from public.player_rounds r union all select row_to_json(t)::text from public.golf_trips t) z`);
+  select row_to_json(m)::text x from public.golf_trip_members m ${notSetup("m.golf_trip_id")} union all select row_to_json(s)::text from public.player_slots s
+  union all select row_to_json(r)::text from public.player_rounds r union all select row_to_json(t)::text from public.golf_trips t ${notSetup("t.id")}) z`);
 const goldenBefore = golden();
 
 /** Email sign-up through the app: verified, signed in with a cookie; also a Bearer token for the same account. */
@@ -168,10 +176,20 @@ section("Resume after interruption (new session, same account)");
 
 section("Under 13: Ineligible and blocked; correction request with duplicate + rate limits");
 {
-  const kid = await emailPerson("api-kid", true);
-  const b = await birthday(kid, { birthdate: ymd(13, -1) });
-  check("13 tomorrow -> 200 eligible false, next ineligible", b.status === 200 && b.json?.eligible === false && b.json?.next === "ineligible", JSON.stringify(b.json));
-  check("account is Ineligible in the database", sql(`select public.account_lifecycle_state(${q(kid.id)})`) === "ineligible");
+  // Phase 4: a brand-new under-13 account with no records is REMOVED. This kid holds a trip membership, so it is LOCKED
+  // instead (records preserved) — the case where the correction process below applies.
+  const kidSignup = await emailPerson("api-kid", true);
+  const host = await emailPerson("api-kid-host", true);
+  const hostTrip = JSON.parse(sql(`select public.create_golf_trip(${q(host.id)}, ${q(JSON.stringify(tripPayload()))}::jsonb)`)).tripId as string;
+  setupTrips.push(hostTrip);
+  sql(`insert into public.golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values (${q(hostTrip)}, ${q(kidSignup.id)}, 'Kid', 'member', 'accepted')`);
+  const b = await birthday(kidSignup, { birthdate: ymd(13, -1) });
+  check("13 tomorrow -> 200 eligible false, next ineligible, signed out", b.status === 200 && b.json?.eligible === false && b.json?.next === "ineligible" && b.json?.signedOut === true, JSON.stringify(b.json));
+  check("account is Ineligible in the database", sql(`select public.account_lifecycle_state(${q(kidSignup.id)})`) === "ineligible");
+  check("Phase 4: the ORIGINAL cookie and Bearer sessions are revoked (401)", (await resume(kidSignup)).status === 401 && (await finish({ token: kidSignup.token })).status === 401);
+  // Signing in again is still possible (to ask for a correction); every check below uses that fresh session.
+  const freshKid = (await anon().auth.signInWithPassword({ email: kidSignup.email, password: kidSignup.password })).data.session!.access_token;
+  const kid = { id: kidSignup.id, token: freshKid };
   const r = await resume(kid);
   check("resume -> ineligible, never play", r.json?.state === "ineligible" && r.json?.next === "ineligible", JSON.stringify(r.json));
   const f = await finish(kid);
@@ -179,6 +197,7 @@ section("Under 13: Ineligible and blocked; correction request with duplicate + r
   check("terms -> 403 not_eligible", (await terms(kid, VERSIONS)).json?.code === "not_eligible");
   check("birthday again -> 403 not_eligible (no retry)", (await birthday(kid, { birthdate: "1990-01-01" })).json?.code === "not_eligible");
   check("Bearer is blocked the same way", (await finish({ token: kid.token })).json?.code === "not_eligible");
+  check("locked, not removed (membership kept)", sql(`select cleanup_state from public.account_eligibility where account_id = ${q(kid.id)}`) === "locked");
   check("never activated", sql(`select activated_at is null from public.profiles where id = ${q(kid.id)}`) === "t");
   check("empty reason -> 400", (await correction(kid, "  ")).status === 400);
   const c1 = await correction(kid, "I typed the wrong year");

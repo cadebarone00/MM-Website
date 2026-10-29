@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getAccountLifecycleForRequest, type AccountLifecycle } from "@/lib/profile/currentProfile";
 import { apiError, type ApiError } from "./onboardingApi";
 
@@ -40,6 +40,20 @@ export function crossSiteCookieRequest(request: Request): ApiError | null {
 }
 
 export const service = () => createSupabaseServiceRoleClient();
+
+/** The caller's access token: the app's Bearer token, or the web session's (cookie) token. */
+export async function callerAccessToken(request: Request): Promise<string | null> {
+  const bearer = /^Bearer\s+(\S+)$/i.exec(request.headers.get("authorization") ?? "")?.[1];
+  if (bearer) return bearer;
+  const { data } = await (await createSupabaseServerClient()).auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+/** Clear this browser's session cookies (no-op for app requests, which hold their own tokens). Never throws. */
+export async function signOutThisBrowser(request: Request): Promise<void> {
+  if (request.headers.get("authorization")) return;
+  await (await createSupabaseServerClient()).auth.signOut({ scope: "local" }).catch(() => undefined);
+}
 
 /** Never log private values: just which operation failed and the database's error code. */
 export function logFailure(operation: string, error: { code?: string } | null) {

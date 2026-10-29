@@ -83,6 +83,14 @@ create table if not exists public.account_eligibility (
   decided_at timestamptz not null default now()
 );
 comment on table public.account_eligibility is 'PRIVATE. A row here = the account may not use authenticated services (Ineligible / under review). No row = no eligibility restriction.';
+-- Phase 4: where the safe cleanup of an Ineligible account stands. pending = not decided yet (the retry job picks it up);
+-- removing = handed to the account-deletion workflow (login hard-deleted later; this row then disappears with it);
+-- locked = kept, restricted and hidden, because it holds records that must be preserved (review_reasons = record KINDS).
+alter table public.account_eligibility add column if not exists cleanup_state text not null default 'pending';
+alter table public.account_eligibility drop constraint if exists account_eligibility_cleanup_state_check;
+alter table public.account_eligibility add constraint account_eligibility_cleanup_state_check check (cleanup_state in ('pending', 'removing', 'locked'));
+alter table public.account_eligibility add column if not exists review_reasons text[] not null default '{}';
+alter table public.account_eligibility add column if not exists cleanup_at timestamptz;
 
 create table if not exists public.terms_acceptances (
   account_id uuid not null references auth.users(id) on delete cascade,
@@ -186,6 +194,27 @@ begin
 end;
 $$;
 
+-- === Session revocation ==================================================================================================
+-- Ends EVERY sign-in session of the account at once: refresh tokens can't mint new access tokens, and access tokens
+-- already issued are refused immediately (Supabase Auth's /user no longer finds the session, and the database's
+-- session_is_revoked() / PostgREST pre-request check from account_deletion.sql refuses them). The person can still sign
+-- in again — needed to ask for a birthday correction — and is then treated as Ineligible by every account API.
+-- Verified locally 2026-10-28; a ban was rejected because already-issued tokens kept database access.
+create or replace function public.revoke_account_sessions(p_account uuid)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  v_count integer := 0;
+begin
+  if to_regclass('auth.sessions') is null then
+    return 0;
+  end if;
+  execute 'delete from auth.sessions where user_id = $1' using p_account;
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+
 -- === Birthday (write once) ===============================================================================================
 -- Saves the person's own birthdate ONCE and answers only { eligible }. Under 13 marks the account Ineligible in the same
 -- transaction. A second call never changes the date: corrections go through support (admin_correct_birthdate).
@@ -216,6 +245,7 @@ begin
     insert into account_eligibility (account_id, status, reason)
     values (p_account, 'ineligible', case when v_activated is null then 'under_13' else 'legacy_under_13' end)
     on conflict (account_id) do nothing;
+    perform revoke_account_sessions(p_account);
   end if;
   return jsonb_build_object('eligible', v_eligible);
 end;
@@ -412,14 +442,62 @@ begin
 end;
 $$;
 
+-- Catch-all: any OTHER public table row that points at this account (by a foreign key to profiles / auth.users, or a
+-- known profile_id column without one). Returns "table.column" names only. Tables that hold only this account's own
+-- private onboarding data, and the pairs checked by name in close_ineligible_registration, are skipped.
+create or replace function public.account_other_references(p_account uuid)
+returns text[]
+language plpgsql stable security definer set search_path = public as $$
+declare
+  r record;
+  v_found boolean;
+  v_refs text[] := '{}';
+  v_private text[] := array['profiles', 'account_birthdates', 'account_eligibility', 'terms_acceptances', 'pending_invitations',
+    'birthdate_corrections', 'account_deletions', 'account_deletion_events', 'account_activation_settings', 'legal_document_versions'];
+  v_named text[] := array['golf_trip_members.profile_id', 'golf_trips.created_by', 'code_tournament_players.profile_id',
+    'player_rounds.profile_id', 'shared_round_players.profile_id', 'scoring_group_players.profile_id',
+    'profile_friend_requests.from_profile', 'profile_friend_requests.to_profile', 'player_slots.claimed_by',
+    'player_claim_invitations.account_id'];
+begin
+  for r in
+    select distinct t.relname::text as tbl, a.attname::text as col
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+    where c.contype = 'f' and cardinality(c.conkey) = 1 and n.nspname = 'public'
+      and (c.confrelid = to_regclass('public.profiles') or c.confrelid = to_regclass('auth.users'))
+    union
+    select x.tbl, 'profile_id' from unnest(array['code_tournament_holes', 'code_tournament_cards']) x(tbl) where to_regclass('public.' || x.tbl) is not null
+  loop
+    continue when r.tbl = any(v_private) or (r.tbl || '.' || r.col) = any(v_named);
+    execute format('select exists (select 1 from public.%I where %I = $1)', r.tbl, r.col) into v_found using p_account;
+    if v_found then v_refs := array_append(v_refs, r.tbl || '.' || r.col); end if;
+  end loop;
+  return v_refs;
+end;
+$$;
+
+-- Is it safe to remove this Ineligible account entirely, or must it only be locked? Serialized per account (row lock),
+-- so concurrent calls make one decision. p_remove = false is a dry run (changes nothing). With p_remove = true:
+--   * any blocker -> cleanup_state 'locked' + review_reasons (record KINDS only); nothing deleted;
+--   * no blocker  -> the private onboarding rows go now (birthdate, Terms, held invitations, correction requests) and the
+--     EXISTING deletion workflow starts (request_account_deletion: ledger + tombstone; the server then runs its storage
+--     and login steps); cleanup_state 'removing'. A repeat call answers the same decision and starts nothing new.
 create or replace function public.close_ineligible_registration(p_account uuid, p_remove boolean default false)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
+  v_row account_eligibility;
   v_blockers text[] := '{}';
+  v_ref text;
 begin
-  if not exists (select 1 from account_eligibility where account_id = p_account and status = 'ineligible') then
+  select * into v_row from account_eligibility where account_id = p_account for update;
+  if v_row.account_id is null or v_row.status <> 'ineligible' then
     raise exception 'Only Ineligible accounts can be closed this way.' using errcode = '42501';
+  end if;
+  if v_row.cleanup_state = 'removing' then
+    return jsonb_build_object('action', 'remove', 'blockers', '[]'::jsonb, 'started', true, 'already', true);
   end if;
   if exists (select 1 from profiles where id = p_account and activated_at is not null) then v_blockers := array_append(v_blockers, 'activated'); end if;
   if exists (select 1 from profiles where id = p_account and player_slug is not null)
@@ -436,8 +514,14 @@ begin
   if exists (select 1 from pending_invitations where account_id = p_account and outcome in ('accepted', 'already_member')) then
     v_blockers := array_append(v_blockers, 'invitation_accepted');
   end if;
+  foreach v_ref in array account_other_references(p_account) loop
+    v_blockers := array_append(v_blockers, 'records:' || v_ref);
+  end loop;
 
   if cardinality(v_blockers) > 0 then
+    if p_remove then
+      update account_eligibility set cleanup_state = 'locked', review_reasons = v_blockers, cleanup_at = now() where account_id = p_account;
+    end if;
     return jsonb_build_object('action', 'lock', 'blockers', to_jsonb(v_blockers));
   end if;
   if p_remove then
@@ -446,9 +530,20 @@ begin
     delete from birthdate_corrections where account_id = p_account;
     delete from account_birthdates where account_id = p_account;
     perform request_account_deletion(p_account);
+    update account_eligibility set cleanup_state = 'removing', review_reasons = '{}', cleanup_at = now() where account_id = p_account;
   end if;
   return jsonb_build_object('action', 'remove', 'blockers', '[]'::jsonb, 'started', p_remove);
 end;
+$$;
+
+-- Ineligible accounts whose cleanup hasn't been decided yet (e.g. the server stopped between the birthday and the
+-- cleanup). Ids only; the retry job feeds them back through the same decision.
+create or replace function public.pending_ineligible_cleanups(p_limit integer default 50)
+returns table (account_id uuid)
+language sql stable security definer set search_path = public as $$
+  select e.account_id from account_eligibility e
+  where e.status = 'ineligible' and e.cleanup_state = 'pending'
+  order by e.decided_at limit greatest(1, least(p_limit, 200));
 $$;
 
 -- === Onboarding progress (read only; for the resume API) =================================================================
@@ -522,7 +617,9 @@ begin
     delete from account_eligibility where account_id = v_request.account_id and reason in ('under_13', 'legacy_under_13', 'correction_under_13');
   else
     insert into account_eligibility (account_id, status, reason) values (v_request.account_id, 'ineligible', 'correction_under_13')
-    on conflict (account_id) do update set status = 'ineligible', reason = 'correction_under_13', decided_at = now();
+    on conflict (account_id) do update set status = 'ineligible', reason = 'correction_under_13', decided_at = now(),
+      cleanup_state = 'pending', review_reasons = '{}', cleanup_at = null;
+    perform revoke_account_sessions(v_request.account_id);
   end if;
   update birthdate_corrections set status = 'approved', decided_at = now(), decided_by = p_admin, eligible_after = v_eligible, note = p_note
   where id = p_request;
@@ -643,7 +740,8 @@ begin
     'public.account_has_rows(text, text, uuid)', 'public.close_ineligible_registration(uuid, boolean)',
     'public.request_birthdate_correction(uuid, text)', 'public.admin_correct_birthdate(uuid, uuid, date, text)',
     'public.admin_reject_birthdate_correction(uuid, uuid, text)', 'public.legacy_activation_classify()', 'public.legacy_activation_inventory()',
-    'public.account_onboarding_progress(uuid)'] loop
+    'public.account_onboarding_progress(uuid)', 'public.revoke_account_sessions(uuid)', 'public.account_other_references(uuid)',
+    'public.pending_ineligible_cleanups(integer)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
   end loop;
   foreach f in array array[
@@ -651,14 +749,16 @@ begin
     'public.set_my_birthdate(uuid, date)', 'public.record_terms_acceptance(uuid, text, text, text)', 'public.hold_golf_trip_invitation(uuid, text)',
     'public.activate_my_profile(uuid)', 'public.close_ineligible_registration(uuid, boolean)', 'public.request_birthdate_correction(uuid, text)',
     'public.admin_correct_birthdate(uuid, uuid, date, text)', 'public.admin_reject_birthdate_correction(uuid, uuid, text)',
-    'public.legacy_activation_classify()', 'public.legacy_activation_inventory()', 'public.account_onboarding_progress(uuid)'] loop
+    'public.legacy_activation_classify()', 'public.legacy_activation_inventory()', 'public.account_onboarding_progress(uuid)', 'public.revoke_account_sessions(uuid)',
+    'public.pending_ineligible_cleanups(integer)'] loop
     execute format('grant execute on function %s to service_role', f);
   end loop;
 end $$;
 
 -- === Undo (only before any account is activated) =========================================================================
 -- drop trigger if exists guard_profile_activation on public.profiles;
--- drop function if exists public.account_onboarding_progress(uuid), public.legacy_activation_inventory(), public.legacy_activation_classify(),
+-- drop function if exists public.pending_ineligible_cleanups(integer), public.account_other_references(uuid),
+--   public.revoke_account_sessions(uuid), public.account_onboarding_progress(uuid), public.legacy_activation_inventory(), public.legacy_activation_classify(),
 --   public.admin_reject_birthdate_correction(uuid, uuid, text), public.admin_correct_birthdate(uuid, uuid, date, text),
 --   public.request_birthdate_correction(uuid, text), public.close_ineligible_registration(uuid, boolean),
 --   public.account_has_rows(text, text, uuid), public.activate_my_profile(uuid), public.activation_accept_golf_trip(uuid, text),

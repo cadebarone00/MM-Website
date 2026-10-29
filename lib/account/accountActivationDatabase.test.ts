@@ -424,6 +424,88 @@ test("onboarding progress answers yes/no facts only", async () => {
   assert.deepEqual([q.termsConfigured, q.activationEnabled], [false, false]);
 });
 
+// === Phase 4: revocation + recorded, serialized cleanup decisions =========================================================
+
+/** Stand-in for Supabase Auth's sessions table (the real one is tested on the local stack). */
+async function withSessions(db: PGlite) {
+  await db.exec("create table if not exists auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid not null)");
+  return {
+    open: (id: string, n = 2) => db.query(`insert into auth.sessions (user_id) select $1 from generate_series(1, ${n})`, [id]),
+    count: async (id: string) => (await rows(db, "select count(*)::int n from auth.sessions where user_id = $1", [id]))[0].n as number,
+  };
+}
+
+test("under 13 ends every session of THAT account in the same transaction; other accounts keep theirs", async () => {
+  const db = await setup();
+  const sessions = await withSessions(db);
+  const kid = await account(db, "sessionkid");
+  const bystander = await account(db, "sessionbystander");
+  await sessions.open(kid, 3);
+  await sessions.open(bystander, 2);
+  await birthday(db, kid, yearsAgo(9));
+  assert.equal(await sessions.count(kid), 0, "all of the kid's sessions gone");
+  assert.equal(await sessions.count(bystander), 2, "nobody else signed out");
+  const adult = await account(db, "sessionadult");
+  await sessions.open(adult, 2);
+  await birthday(db, adult, "1990-01-01");
+  assert.equal(await sessions.count(adult), 2, "an eligible birthday signs nobody out");
+});
+
+test("an approved correction to under 13 revokes sessions and sends the account back to an undecided cleanup", async () => {
+  const db = await setup();
+  const sessions = await withSessions(db);
+  const adminId = await account(db, "revokeadmin");
+  await db.query("update profiles set platform_role = 'admin' where id = $1", [adminId]);
+  const grown = await ready(db, "revokegrown");
+  await finish(db, grown);
+  await sessions.open(grown, 2);
+  const { requestId } = await one<{ requestId: string }>(db, "select request_birthdate_correction($1, 'wrong') as r", [grown]);
+  await one(db, "select admin_correct_birthdate($1, $2, $3::date) as r", [adminId, requestId, yearsAgo(12)]);
+  assert.equal(await sessions.count(grown), 0);
+  assert.deepEqual(await rows(db, "select status, cleanup_state from account_eligibility where account_id = $1", [grown]), [{ status: "ineligible", cleanup_state: "pending" }]);
+  assert.deepEqual((await rows(db, "select account_id from pending_ineligible_cleanups()")).map((r) => r.account_id), [grown]);
+});
+
+test("cleanup decisions are recorded and repeat-safe: remove once, lock with record kinds, never re-run a removal", async () => {
+  const db = await setup();
+  const clean = await account(db, "decideclean");
+  await birthday(db, clean, yearsAgo(8));
+  const first = await one(db, "select close_ineligible_registration($1, true) as r", [clean]);
+  const second = await one(db, "select close_ineligible_registration($1, true) as r", [clean]);
+  assert.deepEqual([first.action, first.started, second.action, second.already], ["remove", true, "remove", true]);
+  assert.equal((await rows(db, "select count(*)::int n from account_deletions where account_id = $1", [clean]))[0].n, 1, "one deletion job");
+  assert.equal((await rows(db, "select count(*)::int n from account_deletion_events where account_id = $1 and step = 'requested'", [clean]))[0].n, 1, "requested once");
+  assert.equal((await rows(db, "select cleanup_state from account_eligibility where account_id = $1", [clean]))[0].cleanup_state, "removing");
+  assert.deepEqual(await rows(db, "select account_id from pending_ineligible_cleanups()"), [], "decided accounts aren't retried");
+
+  const organizer = await ready(db, "decideorg");
+  await finish(db, organizer);
+  const tripId = await trip(db, organizer);
+  const member = await account(db, "decidemember");
+  await db.query("insert into golf_trip_members (golf_trip_id, profile_id, display_name, role, invitation_status) values ($1, $2, 'Kid', 'member', 'accepted')", [tripId, member]);
+  await birthday(db, member, yearsAgo(11));
+  const membersBefore = JSON.stringify(await members(db, tripId));
+  const locked = await one(db, "select close_ineligible_registration($1, true) as r", [member]);
+  assert.equal(locked.action, "lock");
+  assert.deepEqual(await rows(db, "select cleanup_state, review_reasons from account_eligibility where account_id = $1", [member]),
+    [{ cleanup_state: "locked", review_reasons: ["trip_membership"] }]);
+  assert.equal(JSON.stringify(await members(db, tripId)), membersBefore, "organizer and member rows unchanged");
+  assert.equal((await rows(db, "select count(*)::int n from account_deletions where account_id = $1", [member]))[0].n, 0);
+});
+
+test("catch-all: a record in ANY other table pointing at the account means lock, not remove", async () => {
+  const db = await setup();
+  await db.exec("create table public.future_feature_rows (id serial primary key, owner uuid references public.profiles(id))");
+  const kid = await account(db, "catchall");
+  await db.query("insert into future_feature_rows (owner) values ($1)", [kid]);
+  await birthday(db, kid, yearsAgo(10));
+  const r = await one(db, "select close_ineligible_registration($1, true) as r", [kid]);
+  assert.deepEqual([r.action, r.blockers], ["lock", ["records:future_feature_rows.owner"]]);
+  const other = await account(db, "catchallclean");
+  await birthday(db, other, yearsAgo(10));
+  assert.deepEqual((await one(db, "select close_ineligible_registration($1) as r", [other])).blockers, [], "someone else's rows don't count against this account");
+});
+
 // === Legacy dry run =====================================================================================================
 
 test("legacy dry-run classification: every category, ids and reason codes only, changes nothing", async () => {

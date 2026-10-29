@@ -54,7 +54,7 @@ async function person(name: string, finishSetup: boolean) {
   await call(jar, loginPOST, "/api/auth/login", { usernameOrEmail: email, password });
   if (finishSetup) await call(jar, setupPOST, "/api/account/profile", { displayName: `${name} Golfer`, username: `${name.replace(/-/g, "_")}_${Date.now() % 100000}` });
   const token = (await anon().auth.signInWithPassword({ email, password })).data.session!.access_token;
-  return { id: account(email)!.id, jar, token };
+  return { id: account(email)!.id, jar, token, email, password };
 }
 const ready = (id: string, birthdate = "1991-07-07") => sql(`select public.set_my_birthdate(${q(id)}, ${q(birthdate)});
   select public.record_terms_acceptance(${q(id)}, 'terms', 'local-test', 'signup');
@@ -115,7 +115,15 @@ const kid = await person("lc-kid", true);
 const held = await person("lc-review", true);
 {
   ready(kid.id, tenYearsAgo());
-  const r = await viaCookie(kid.jar), b = await viaBearer(kid.token);
+  // Phase 4: under 13 ends every session in the same database step, so the ORIGINAL cookie and token are dead...
+  const oldCookie = await viaCookie(kid.jar), oldBearer = await viaBearer(kid.token);
+  check("Phase 4: the original cookie and Bearer sessions are revoked -> signed-out", oldCookie.state === "signed-out" && oldBearer.state === "signed-out",
+    JSON.stringify([oldCookie, oldBearer]));
+  // ...and signing in again (allowed, to ask for a correction) is recognised as Ineligible.
+  const freshJar = browser();
+  await call(freshJar, loginPOST, "/api/auth/login", { usernameOrEmail: kid.email, password: kid.password });
+  const freshToken = (await anon().auth.signInWithPassword({ email: kid.email, password: kid.password })).data.session!.access_token;
+  const r = await viaCookie(freshJar), b = await viaBearer(freshToken);
   check("under 13 -> ineligible (cookie)", r.state === "ineligible", JSON.stringify(r));
   check("under 13 -> ineligible (bearer)", b.state === "ineligible", JSON.stringify(b));
   check("answer carries no date, age or reason", !JSON.stringify([r, b]).includes(tenYearsAgo().slice(0, 4)) && r.reason === null);
