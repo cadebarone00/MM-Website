@@ -451,7 +451,24 @@ begin
 end;
 $$;
 
+-- === Onboarding progress (read only; for the resume API) =================================================================
+-- Yes/no facts only: never the birthdate, versions accepted, or anything about other accounts.
+create or replace function public.account_onboarding_progress(p_account uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'verified', exists (select 1 from auth.users where id = p_account and confirmed_at is not null),
+    'birthday', exists (select 1 from account_birthdates where account_id = p_account),
+    'termsConfigured', exists (select 1 from legal_document_versions where document = 'terms')
+                       and exists (select 1 from legal_document_versions where document = 'privacy'),
+    'termsAccepted', not exists (
+      select 1 from legal_document_versions v
+      where not exists (select 1 from terms_acceptances a where a.account_id = p_account and a.document = v.document and a.version = v.current_version)),
+    'activationEnabled', coalesce((select activation_enabled from account_activation_settings where id), false));
+$$;
+
 -- === Birthday correction (support process) ===============================================================================
+-- At most one OPEN request, and at most 3 requests in any 30 days (stops a person from cycling requests).
 create or replace function public.request_birthdate_correction(p_account uuid, p_reason text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -463,6 +480,12 @@ begin
   end if;
   if account_is_closed(p_account) then
     raise exception 'This account is closed.' using errcode = '42501';
+  end if;
+  if p_reason is null or length(trim(p_reason)) not between 1 and 500 then
+    raise exception 'Tell us what is wrong (up to 500 characters).' using errcode = '22023';
+  end if;
+  if (select count(*) from birthdate_corrections where account_id = p_account and requested_at > now() - interval '30 days') >= 3 then
+    raise exception 'Too many correction requests. Contact support.' using errcode = '54000';
   end if;
   begin
     insert into birthdate_corrections (account_id, reason) values (p_account, trim(p_reason)) returning id into v_id;
@@ -619,7 +642,8 @@ begin
     'public.hold_golf_trip_invitation(uuid, text)', 'public.activation_accept_golf_trip(uuid, text)', 'public.activate_my_profile(uuid)',
     'public.account_has_rows(text, text, uuid)', 'public.close_ineligible_registration(uuid, boolean)',
     'public.request_birthdate_correction(uuid, text)', 'public.admin_correct_birthdate(uuid, uuid, date, text)',
-    'public.admin_reject_birthdate_correction(uuid, uuid, text)', 'public.legacy_activation_classify()', 'public.legacy_activation_inventory()'] loop
+    'public.admin_reject_birthdate_correction(uuid, uuid, text)', 'public.legacy_activation_classify()', 'public.legacy_activation_inventory()',
+    'public.account_onboarding_progress(uuid)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
   end loop;
   foreach f in array array[
@@ -627,14 +651,14 @@ begin
     'public.set_my_birthdate(uuid, date)', 'public.record_terms_acceptance(uuid, text, text, text)', 'public.hold_golf_trip_invitation(uuid, text)',
     'public.activate_my_profile(uuid)', 'public.close_ineligible_registration(uuid, boolean)', 'public.request_birthdate_correction(uuid, text)',
     'public.admin_correct_birthdate(uuid, uuid, date, text)', 'public.admin_reject_birthdate_correction(uuid, uuid, text)',
-    'public.legacy_activation_classify()', 'public.legacy_activation_inventory()'] loop
+    'public.legacy_activation_classify()', 'public.legacy_activation_inventory()', 'public.account_onboarding_progress(uuid)'] loop
     execute format('grant execute on function %s to service_role', f);
   end loop;
 end $$;
 
 -- === Undo (only before any account is activated) =========================================================================
 -- drop trigger if exists guard_profile_activation on public.profiles;
--- drop function if exists public.legacy_activation_inventory(), public.legacy_activation_classify(),
+-- drop function if exists public.account_onboarding_progress(uuid), public.legacy_activation_inventory(), public.legacy_activation_classify(),
 --   public.admin_reject_birthdate_correction(uuid, uuid, text), public.admin_correct_birthdate(uuid, uuid, date, text),
 --   public.request_birthdate_correction(uuid, text), public.close_ineligible_registration(uuid, boolean),
 --   public.account_has_rows(text, text, uuid), public.activate_my_profile(uuid), public.activation_accept_golf_trip(uuid, text),

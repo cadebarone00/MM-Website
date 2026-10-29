@@ -17,6 +17,9 @@ const PRIVACY = "2026-10-28-test-privacy";
 /** Everything up to (not including) the new file: "today's" database. */
 async function before(): Promise<PGlite> {
   const db = await database();
+  // Hosted Supabase runs in UTC; the in-memory database would otherwise use this computer's zone, so its current_date
+  // could differ from the UTC date these tests compute (found 2026-10-28 when a run crossed midnight UTC).
+  await db.exec("set timezone to 'UTC'");
   await db.exec("alter table auth.users add column email text, add column confirmed_at timestamptz, add column banned_until timestamptz, add column deleted_at timestamptz;");
   for (const file of CHAIN) await db.exec(sqlFile(file));
   return db;
@@ -384,6 +387,41 @@ test("birthday correction: one open request, admin only, re-evaluates eligibilit
   assert.equal(await active(db, grown), false);
   const r3 = await one<{ requestId: string }>(db, "select request_birthdate_correction($1, 'please') as r", [grown]);
   assert.deepEqual(await one(db, "select admin_reject_birthdate_correction($1, $2, 'no evidence') as r", [adminId, r3.requestId]), { rejected: true });
+});
+
+test("correction requests: at most 3 in 30 days (rate limit), reason required", async () => {
+  const db = await setup();
+  const adminId = await account(db, "limiter");
+  await db.query("update profiles set platform_role = 'admin' where id = $1", [adminId]);
+  const id = await account(db, "cycler");
+  await birthday(db, id, yearsAgo(10));
+  await assert.rejects(one(db, "select request_birthdate_correction($1, '   ') as r", [id]), /Tell us what is wrong/);
+  for (let i = 1; i <= 3; i++) {
+    const { requestId } = await one<{ requestId: string }>(db, "select request_birthdate_correction($1, $2) as r", [id, `try ${i}`]);
+    await one(db, "select admin_reject_birthdate_correction($1, $2) as r", [adminId, requestId]);
+  }
+  await assert.rejects(one(db, "select request_birthdate_correction($1, 'try 4') as r", [id]), (e: Error & { code?: string }) => /Too many/.test(e.message) && e.code === "54000");
+  await db.query("update birthdate_corrections set requested_at = now() - interval '31 days' where account_id = $1", [id]);
+  assert.ok(await one(db, "select request_birthdate_correction($1, 'next month') as r", [id]), "allowed again after 30 days");
+});
+
+test("onboarding progress answers yes/no facts only", async () => {
+  const db = await setup();
+  const id = await account(db, "progress", { verified: false });
+  assert.deepEqual(await one(db, "select account_onboarding_progress($1) as r", [id]),
+    { verified: false, birthday: false, termsConfigured: true, termsAccepted: false, activationEnabled: true });
+  await db.query("update auth.users set confirmed_at = now() where id = $1", [id]);
+  await birthday(db, id, "1999-09-09");
+  await accept(db, id);
+  const p = await one(db, "select account_onboarding_progress($1) as r", [id]);
+  assert.deepEqual(p, { verified: true, birthday: true, termsConfigured: true, termsAccepted: true, activationEnabled: true });
+  assert.ok(!JSON.stringify(p).includes("1999"), "no birthdate in the answer");
+  await db.query("update legal_document_versions set current_version = 'v-next' where document = 'privacy'");
+  assert.equal((await one(db, "select account_onboarding_progress($1) as r", [id])).termsAccepted, false, "a new version needs accepting again");
+  const off = await setup({ enable: false });
+  const other = await account(off, "progressoff");
+  const q = await one(off, "select account_onboarding_progress($1) as r", [other]);
+  assert.deepEqual([q.termsConfigured, q.activationEnabled], [false, false]);
 });
 
 // === Legacy dry run =====================================================================================================
