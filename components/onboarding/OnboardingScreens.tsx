@@ -20,6 +20,9 @@ import settingsStyles from "@/components/dev/auth/AuthSettingsPreview.module.css
  * Pending accounts Phase 6: the real onboarding steps for a signed-in Pending account — the approved /dev/auth designs
  * (same styles) connected to the real APIs. The server page decides which step may show (lib/account/onboardingRoutes.ts);
  * every save is checked again on the server. Nothing here activates the account except Finish.
+ * After a save each screen only REPLACES the page (no router.refresh()): refreshing the current step races the move,
+ * because the server then redirects the finished step onward — e.g. Birthday → Settings, skipping Photo (found
+ * 2026-10-29). The pages are dynamic, so the next one is always read fresh from the server.
  */
 
 /** Name + username → POST /api/account/profile (the database decides whether the username is free). A name from
@@ -41,7 +44,6 @@ export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFir
     const sent = await send("/api/account/profile", { displayName: `${first.trim()} ${last.trim()}`.trim(), username });
     if (sent.json.ok !== true) { setServerError(errorOf(sent)); setBusy(false); return; }
     router.replace(ONBOARDING.birthday);
-    router.refresh();
   }
 
   return <main className={frame.page}>
@@ -77,8 +79,8 @@ export function BirthdayScreen() {
     setBusy(true);
     setError(null);
     const sent = await send("/api/account/birthday", { birthdate: birthday });
-    if (sent.json.ok === true && sent.json.eligible === true) { router.replace(ONBOARDING.photo); router.refresh(); return; }
-    if (sent.json.ok === true || sent.json.signedOut === true) { router.replace(`${STATUS}?reason=ineligible`); router.refresh(); return; }
+    if (sent.json.ok === true && sent.json.eligible === true) { router.replace(ONBOARDING.photo); return; }
+    if (sent.json.ok === true || sent.json.signedOut === true) { router.replace(`${STATUS}?reason=ineligible`); return; }
     setError(errorOf(sent));
     setBusy(false);
   }
@@ -183,7 +185,6 @@ export function SettingsScreen({ needsTerms }: { needsTerms: boolean }) {
       return fail(finishProblem(done.json.code as string | undefined, done.json.error as string | undefined, done.json.missing as string[] | undefined));
     }
     router.replace(ONBOARDING.created);
-    router.refresh();
   }
 
   return <main className={frame.page}>
