@@ -52,6 +52,7 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/start(\/[a-z-]+)?$/, category: "public", why: "Phase 6 sign-up / log-in / password-reset screens (MAROON_V2_ONBOARDING)" },
   { pattern: /^\/onboarding(\/[a-z-]+)?$/, category: "account", why: "Phase 6 onboarding steps: Pending accounts must reach them (each page checks the step itself)" },
   { pattern: /^\/(settings|settings\/delete-account|account\/choose)$/, category: "account", why: "settings, deletion and correction stay reachable" },
+  { pattern: /^\/settings\/content-team$/, category: "active", why: "Play page content team (Admins only)" },
   { pattern: /^\/(golf-trips\/invite|tournaments\/invite|tournaments\/code\/invite)\/[^/]+$/, category: "invite", why: "invitation landing pages" },
   { pattern: /^\/tournaments\/live\/[^/]+$/, category: "public", why: "public tournament view" },
   { pattern: /^\/watch\/[^/]+$/, category: "public", why: "watch code, no sign-in" },

@@ -3669,3 +3669,80 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
   type / size checks and the photo folder (server-chosen, the caller's own) are unchanged.
 - Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
   schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).
+
+## Feature: Play page ribbon content — admin-posted Explore, Courses, Equipment, Teaching & News (spec 2026-10-29, AWAITING APPROVAL — nothing built)
+
+**What it does / who uses it.** The Play page ribbon (Explore · Courses · Equipment · Teaching · News, `components/platform/PlatformHome.tsx`) stops being hard-coded. Content Admins approve and publish; Posters they invite write drafts (see **Roles, approval and invites** below). A published post shows up for everyone the next time they open that tab — no code change, no redeploy, no App Store update. Everyone sees the same posts. Visitors and signed-in players only read.
+
+**Owner decisions (2026-10-29).** Only the content team posts (Admins + invited Posters, 2026-10-30). A post can include anything (photos, text, links, video, a full article). Explore always shows a trip promo, and admins can put in a new weekly trip plan.
+
+**Tech stack.** Existing only: Next.js App Router, Supabase (two new tables), Cloudflare R2 for photos/video (existing bucket and presigned-upload pattern from `app/api/portal/admin/broadcast/playlist/upload/*`, new `ribbon/` folder), a new server-side guard for content roles (pattern copied from `requirePlatformAdmin`). No new service, package or key.
+
+**Pages and flows.**
+- Public (no sign-in): Play page ribbon tabs read published content. Tapping a post opens a post page, `/explore/[slug]`.
+- **Two kinds of post (owner request 2026-10-30):**
+  - **Story:** an ESPN-style article. Card shows cover photo, headline, intro line and "Read · N min". Tapping opens a full-screen article page: cover photo, kicker (The Maroon · tab), headline, intro line, date and read time (no author), then the body in the order written: paragraphs, subheadings, photos with captions, videos (uploaded file or YouTube link) with captions, quotes and link buttons. "More from [tab]" at the end.
+  - **Quick post:** one photo or one video plus a short message (up to 200 characters). Card shows the photo (or the video playing silently) with the message; tapping opens the photo or video full width with the message and date.
+  - The editor starts with a Story / Quick post choice; Story blocks can be moved up and down; "See the full article" opens the full page preview before saving.
+- Explore tab: the **Featured trip** card is always there. It shows the newest published trip plan; if none is published, it falls back to today's built-in Palm Springs plan, so the spot is never empty. "Plan this trip" keeps working exactly as today. Regular Explore posts appear below the featured trip.
+- Courses tab: posts (e.g. "Course of the week") sit above the existing course search, which is unchanged.
+- Equipment, Teaching, News: a list of posts, newest first. With no posts yet, today's photo + headline shows, so nothing looks broken.
+- Content team only (Admins and Posters, see roles below). Admins also get a **Content team** screen at `/settings/content-team` (the old `/portal/admin` area was retired on main 2026-10-29) and a **Waiting for approval** list.
+  - **Editing happens on the Play page itself**, not a separate-looking screen (owner decision 2026-10-29; mockup: https://claude.ai/artifact/CkLH2AKc4xqAx6QSRJkWEQ). Admins see the exact same Play page and ribbon as everyone else, plus: a thin gold admin bar at the top with an **Admin / Player** switch (Player shows exactly what everyone sees: drafts and scheduled posts hidden, no admin buttons); an **+ Add to [tab]** button at the top of each tab's posts; and on each post card a status pill (Live / Scheduled + date / Draft) and an **Edit** button. The featured trip card has a **Swap trip** button.
+  - Tabs stay separate: there is no "All" view, and a post added from a tab can only go on that tab.
+  - **No author is shown** anywhere (not on cards, not in the admin view). `created_by`/`updated_by` are still stored for the record but never displayed.
+  - Posts use the same card look as today's Featured trip card (photo with the title and caption over it). Equipment, Teaching and News keep today's big photo header; their posts sit below it. Courses posts sit above the existing course search.
+  - Add / Edit opens a bottom sheet in the app's cream style: cover photo, title, caption, "+ more" for extra photos / video / link button / full article, a live preview card, optional schedule date, then Publish now / Schedule / Save draft (editing also offers Unpublish and Delete with a confirm step). Missing title or schedule date shows a plain message saying what to fill in.
+  - **New post** form: tab, title, short summary, cover photo, body made of blocks in any order (text, photo, photo gallery, video upload or YouTube link, link button), publish date.
+  - **New trip plan** form (Explore only), the same fields the featured trip uses today: city, region, length, number of players, photo, and 1–3 price levels, each with a label, price, lodging, courses, day-by-day plan and what's included.
+  - Buttons: Save draft, Schedule (pick a date and time), Publish now, Unpublish, Delete (with a confirm step).
+- **Previewing before the world sees it:**
+  1. A live phone-sized preview next to the form, built from the same card and post-page components the app uses, so it can't look different.
+  2. Drafts and scheduled items also show **inside the real app, only for admins**, with a "DRAFT — only admins can see this" label, so you can check them in the iPhone simulator or on a phone before publishing.
+
+**Roles, approval and invites (owner decisions 2026-10-30).**
+- **Two roles, for this feature only:**
+  - **Admin:** posts and publishes directly; approves or sends back Posters' drafts; edits, unpublishes and deletes any post; invites and removes Posters.
+  - **Poster:** writes posts and trip plans as drafts and sends them for approval; edits only their own drafts; cannot publish, delete or touch anyone else's posts; cannot invite anyone.
+- **Who is an Admin:** accounts with `profiles.platform_role = 'admin'` (Cade and Cam; set by hand, as today) plus anyone in `content_team` with role `admin`. Only Admins can invite Posters. There are only two Admins (Cade and Cam); Admins cannot invite or create other Admins from the app (owner decision 2026-10-30), so `content_team.role` is always `poster`.
+- **Approval flow:**
+  1. Poster fills in the post and taps **Send for approval** (or **Save draft** to finish later). The card shows "Waiting for approval" to the Poster.
+  2. Admins see a **Waiting for approval (N)** count in the gold admin bar; tapping it opens the list. Each item opens in the same preview as the live card.
+  3. Admin taps **Approve & publish**, **Approve & schedule** (pick a date), or **Send back** with a short note. Sent-back posts show the note to the Poster, who fixes and resends.
+  4. A Poster editing their own already-published post creates a new pending version; the live version stays up until an Admin approves the change.
+- **Where everything lives (2026-10-30):**
+  - **Play page, gold admin bar** (Admins and Posters only): Admin / Player switch. Admins also see **Waiting for approval (N)**, which opens the approval list; Posters see **My drafts (N)** with each draft's status (Draft / Waiting for approval / Sent back + note).
+  - **Play page, each tab:** **+ Add to [tab]** and **Edit** on cards (Posters: only their own drafts).
+  - **Profile → ⚙️ Settings → Content team** (Admins only, new section in `app/settings/page.tsx`): opens `/settings/content-team` with the Posters list and **Invite poster**.
+  - **Invite card for the invitee:** shown at the top of the Play page and in Settings (same Accept / Decline pattern as the existing Organizer offers card, `components/settings/OrganizerOffers.tsx`).
+- **Inviting a Poster (Admins only), from Settings → Content team → Invite poster:**
+  - **Has an account:** search by username or email, tap **Invite**. They see an in-app card ("You've been invited to post on The Maroon", Accept / Decline) next time they open the app. Accept → role becomes active and the gold bar appears for them.
+  - **No account yet:** tap **Create invite link**, send it by text. The link works once and expires in 7 days. They sign up or log in, then see the same Accept / Decline card.
+  - The Content team screen lists everyone with their role and status (Invited / Active), who invited them and when, with **Cancel invite** and **Remove** (instant; their drafts stay for an Admin to keep or delete).
+  - Each Poster's row also shows their post counts (owner request 2026-10-30): **Published**, **Waiting for approval** and **Sent back**, plus the date of their last published post. Counted live from `ribbon_content` (`created_by`), no extra table. A published post counts for the Poster who wrote it, even though an Admin approved it. Counts stay visible for removed Posters in the history.
+
+**Data model.**
+- New table `ribbon_content` (SQL file `supabase/ribbon_content.sql`, run once in the Supabase SQL editor):
+  `id`, `kind` (`post` | `trip_plan`), `tab` (`explore` | `courses` | `equipment` | `teaching` | `news`; trip plans are always `explore`), `slug` (unique, used in the post page link), `title`, `summary`, `cover_image_url`, `body` (JSON list of blocks for posts / trip-plan fields for trip plans), `status` (`draft` | `published`), `publish_at` (scheduling: a published item with a future date is "Scheduled"), `created_by`, `updated_by`, `created_at`, `updated_at`.
+- `ribbon_content.status` becomes `draft` | `pending` (sent for approval) | `changes_requested` (with `review_note`) | `published`; plus `approved_by`, `approved_at`.
+- New table `content_team`: `profile_id`, `role` (`poster` only), `status` (`invited` | `active` | `removed`), `invited_by`, `invited_at`, `accepted_at`, `removed_by`, `removed_at`, and for link invites a hashed one-time `invite_token` + `expires_at` (7 days). One row per person; history kept when removed.
+- Security: the public can only read rows with `status = 'published'` and `publish_at <= now()`. All writes go through API routes that check the caller's content role on the server (session user only, never a role sent by the app) and use the service-role client. Posters can only create and edit their own rows and can never set `published`; only Admins can publish, schedule, unpublish, delete, approve, send back, invite or remove. Admin preview reads go through an admin route, never the public read.
+- Files: photos and videos in R2 under `ribbon/<content id>/…`; the table stores only their public URLs. Deleting a post also removes its files.
+- No player or personal data is stored; the only people referenced are the admin authors (`created_by`/`updated_by`).
+
+**Third-party services.** Supabase (existing), Cloudflare R2 (existing). YouTube links are shown as embeds only if pasted by an admin.
+
+**Out of scope.** Content roles do not unlock any other part of the Admin area (scores, wagers, players, broadcast). Comments/likes, per-group or per-user content, push notifications for new posts (can reuse the notification plan later), editing the App Store wrapper.
+
+**Open item before building.** Cade to OK the change to his Play page (`PlatformHome.tsx` / `TripPromos.tsx`) and the new table.
+
+**Done =**
+- Admin can create, preview, schedule, publish, unpublish and delete posts on all 5 tabs and weekly trip plans on Explore, on a local/test database.
+- Admin can invite a Poster (by username and by link), the Poster can accept, write a draft and send it for approval, and an Admin can approve, schedule or send it back; Admin can remove a Poster.
+- The Content team list shows correct Published / Waiting / Sent back counts and last-post date per Poster (tested).
+- Posters cannot publish, delete, edit others' posts, invite anyone or open other Admin pages (tested on the server, not just hidden buttons).
+- Non-admins see only published, due content; drafts and scheduled items are hidden from them and from the public API (tested).
+- Explore always shows a featured trip (newest published plan, or the built-in fallback); "Plan this trip" fills the trip setup as today.
+- Courses search and the existing ribbon behave as before when there is no content.
+- Previews match the live look (same components); checked in the browser and the iPhone simulator.
+- Typecheck, lint and new tests (admin guard, visibility rules, scheduling, fallback) pass; existing Play page tests unchanged.

@@ -19,6 +19,7 @@ import { myPhotoPath, profilePhotoUrl } from "@/lib/profile/profilePhoto";
 import { getMyProfileForm } from "@/lib/profile/profileEditServer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import styles from "@/components/settings/Settings.module.css";
+import { isRibbonSampleEnabled } from "@/lib/content/ribbonSample";
 
 export const metadata: Metadata = { title: "Settings | The Maroon" };
 
@@ -49,6 +50,11 @@ export default async function SettingsPage() {
     </> : <>
       <p className={styles.text}>You&apos;re not signed in.</p>
       <Link href="/login" className={styles.linkButton}>Log In</Link>
+    </>}
+    // DEV ONLY until content roles exist: shown with DEV_RIBBON_SAMPLE=true. Later: Admins only.
+    contentTeam={isRibbonSampleEnabled() && <>
+      <p className={styles.text}><span className={styles.muted}>Invite Posters and see what they&apos;ve posted.</span></p>
+      <Link href="/settings/content-team" className={styles.linkButton}>Open Content team</Link>
     </>}
     offers={offers.length > 0 && <OrganizerOffers initial={offers} />}
     privacy={privacy && <PrivacySetting initial={privacy.visibility} />}
