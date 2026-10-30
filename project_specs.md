@@ -3669,3 +3669,34 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
   type / size checks and the photo folder (server-chosen, the caller's own) are unchanged.
 - Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
   schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).
+
+## Vercel Hobby cron blocker — tester-preview branch (approved 2026-10-30; branch `v2-tester-preview`, local only)
+
+**Problem.** Every deployment since 2026-10-09 (production and preview) failed before building: *"Hobby accounts are limited
+to daily cron jobs. This cron expression (`* * * * *`) would run more than once per day."* `vercel.json` scheduled
+`/api/internal/trip-push` every minute (added `03748a87`) and `/api/internal/account-deletions` every 10 minutes (added
+`84d11d4f`). Production still serves the 2026-10-08 deployment (`8f6d17c3`). The owner chose not to upgrade Vercel for this.
+
+**Production protection (checked before editing, 2026-10-30).** Vercel project setting `autoAssignCustomDomains` is
+`false` (the manual-promotion step of `docs/deploy-gate-2026-10-19.md`): a successful `main` build gets only its own
+`…vercel.app` address; `themaroon.site` changes only when someone presses **Promote**. `main` is not changed by this work.
+
+**Change (this branch only; nothing merged, pushed or deployed).**
+- `vercel.json`: `trip-push` entry removed; `account-deletions` runs once a day, `0 9 * * *` (09:00 UTC; Hobby fires it
+  any time in that hour). Vercel runs cron jobs for **production** deployments only, so previews never run either job;
+  they only have to pass the schedule check.
+- Both route implementations are unchanged.
+- Push opt-in can't promise alerts nobody sends: `tripPushDeliveryEnabled()` (`lib/platform/tripPush.ts`) requires the
+  push keys, `CRON_SECRET` **and** `TRIP_PUSH_DELIVERY=on`. Without it the Round alerts panel shows "Push alerts are not
+  available yet." with the button disabled, and `POST /api/golf-trips/[tripId]/push` refuses to save (503). Turning
+  alerts off (`DELETE`) still works. `TRIP_PUSH_DELIVERY` is set nowhere; set it only after a per-minute scheduler
+  (e.g. Supabase Cron + `pg_net`) calls `/api/internal/trip-push` with the cron secret.
+- Account-deletion safeguards are unchanged: deletion still runs in the request (block everywhere, sessions signed out,
+  database → Storage → login); the daily job only finishes interrupted deletions, under-13 cleanups and late files.
+
+**Tests.** `lib/platform/tripPush.test.ts`: the switch (each missing piece, wrong values) and `vercel.json` (only
+`account-deletions`, every schedule once a day). Full unit suite, TypeScript and lint run on the branch.
+
+**Not done / next.** Push branch and run the protected preview (owner approval); per-minute scheduler for web alerts
+(only if web alerts are wanted before native push); native push (APNs/FCM) belongs to the notifications work; mobile
+authentication API audit is a separate future phase.
