@@ -7,7 +7,7 @@
 --
 -- Groups (each approved separately in step 0; the plan's decisions D2-D4 explain them):
 --   S1 trips               every golf trip and everything under it, plus the score-override history (no foreign key)
---   S2 personal scoring    scoring groups not tied to a trip, and player_rounds
+--   S2 personal scoring    scoring groups with source 'personal' (stops if any 'tournament' ones exist), and player_rounds
 --   S3 shared rounds       shared rounds with their players, holes and picks
 --   S4 code tournaments    tournaments by code with their rounds, players, holes and cards
 --   S5 customer tournaments platform tournaments that are not The Maroon, and organizations left with no tournament
@@ -33,7 +33,7 @@ insert into reset_expected values
   ('accounts: profiles', null, 'select count(*) from public.profiles', null),
   ('S1 golf_trips', 'S1', 'select count(*) from public.golf_trips', null),
   ('S1 override history', 'S1', 'select (select count(*) from public.golf_trip_override_events) + (select count(*) from public.golf_trip_override_delegations)', null),
-  ('S2 personal scoring_groups', 'S2', 'select count(*) from public.scoring_groups where source <> ''trip''', null),
+  ('S2 personal scoring_groups', 'S2', 'select count(*) from public.scoring_groups where source = ''personal''', null),
   ('S2 player_rounds', 'S2', 'select count(*) from public.player_rounds', null),
   ('S3 shared_rounds', 'S3', 'select count(*) from public.shared_rounds', null),
   ('S4 code_tournaments', 'S4', 'select count(*) from public.code_tournaments', null),
@@ -103,7 +103,21 @@ end $$;
 select pg_temp.reset_delete('S1', array['delete from public.golf_trips']);
 
 -- === S2 personal scoring ===============================================================================================
-select pg_temp.reset_delete('S2', array['delete from public.scoring_groups where source <> ''trip''', 'delete from public.player_rounds']);
+-- 2026-10-30 review: ONLY source = 'personal'. Scoring groups with source = 'tournament' may be Maroon Masters cards
+-- (requirement: every independent Maroon record is kept), so their presence stops the run (check below) for a decision.
+-- player_rounds are each golfer's personal COPY of a round (profile_id cascades); the trip / tournament cards and the
+-- Maroon archive tables keep their own records.
+do $$
+declare v bigint := 0;
+begin
+  if to_regclass('public.scoring_groups') is not null then
+    execute 'select count(*) from public.scoring_groups where source = ''tournament''' into v;
+  end if;
+  if v > 0 then
+    raise exception 'S2: % tournament scoring group(s) exist. They may be Maroon records and block account deletion (created_by). Owner decision needed. Nothing was changed.', v;
+  end if;
+end $$;
+select pg_temp.reset_delete('S2', array['delete from public.scoring_groups where source = ''personal''', 'delete from public.player_rounds']);
 
 -- === S3 shared rounds ==================================================================================================
 select pg_temp.reset_delete('S3', array['delete from public.shared_rounds']);

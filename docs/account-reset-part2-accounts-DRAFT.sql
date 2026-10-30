@@ -119,7 +119,10 @@ begin
     execute format('select count(*) from %s', t.tbl) into v;
     insert into reset_counts values ('after', t.tbl, v);
     if v < t.n and t.tbl not like 'auth.%' and t.tbl not in (
-        'public.profiles', 'public.profile_friends', 'public.tournament_creator_access', 'public.tournament_access_requests',
+        -- 2026-10-30 review: the friends table is profile_friend_requests (there is no profile_friends); also account-only:
+        -- account_security_events (sign-in alerts) and historical_link_requests (a person's own claim requests).
+        'public.profiles', 'public.profile_friend_requests', 'public.account_security_events', 'public.historical_link_requests',
+        'public.tournament_creator_access', 'public.tournament_access_requests',
         'public.tournament_members', 'public.player_claim_invitations', 'public.account_deletions', 'public.account_deletion_events',
         'public.auth_code_attempts', 'public.account_birthdates', 'public.account_eligibility', 'public.terms_acceptances',
         'public.pending_invitations', 'public.birthdate_corrections') then

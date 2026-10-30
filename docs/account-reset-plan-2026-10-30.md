@@ -1,5 +1,11 @@
 # V2 legacy account reset: audit and plan for approval (2026-10-30, revised)
 
+> **Superseded sequencing (2026-10-30, approved decisions):** the order of work, the backup location, the rehearsal
+> (now LOCAL, `maroon-legacy`), and the Preview-on-production idea are replaced by
+> `docs/account-retirement-architecture-2026-10-30.md`. Production is reset only after V2 authentication is built and
+> tested; V1 registration closes at the cutover. Part 1 S2, Part 2's allowed-loss list and the re-grant were corrected
+> (architecture doc section 6). The coverage checklist, outside-world analysis and test evidence below still apply.
+
 **Status: DRAFT. Nothing has been run, deleted or changed in production.** No production connection was made, and no
 production deployment or authentication setting was touched. All scripts are dry runs: they end with `rollback`, which
 undoes everything. They are **not** to be run against production until this plan is approved, and even then only in the

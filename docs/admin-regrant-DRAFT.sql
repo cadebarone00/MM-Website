@@ -21,14 +21,16 @@ begin;
 set local lock_timeout = '5s';
 set local statement_timeout = '60s';
 
-create temp table regrant_input (email text) on commit drop;
-insert into regrant_input values (null);   -- type the owner's V2 sign-up email between quotes, e.g. ('name@example.com')
+-- 2026-10-30: grant 'owner' (all four powers, for the owner) or 'organizer' (The Maroon organizer membership ONLY: no
+-- Admin Center, no platform admin, no creator access). Each person is authorized explicitly, after their fresh V2 sign-up.
+create temp table regrant_input (email text, grant_kind text check (grant_kind in ('owner', 'organizer'))) on commit drop;
+insert into regrant_input values (null, null);   -- e.g. ('name@example.com', 'owner') or ('cam@example.com', 'organizer')
 
 do $$
-declare v_email text; v_id uuid; v_count int; v_maroon uuid;
+declare v_email text; v_kind text; v_id uuid; v_count int; v_maroon uuid;
 begin
-  select lower(trim(email)) into v_email from regrant_input;
-  if v_email is null or v_email = '' then raise exception 'Type the email first. Nothing was changed.'; end if;
+  select lower(trim(email)), grant_kind into v_email, v_kind from regrant_input;
+  if v_email is null or v_email = '' or v_kind is null then raise exception 'Type the email and owner / organizer first. Nothing was changed.'; end if;
 
   select count(*) into v_count from auth.users where lower(email) = v_email;
   if v_count <> 1 then raise exception 'Expected exactly 1 login with that email, found %. Nothing was changed.', v_count; end if;
@@ -44,6 +46,16 @@ begin
   if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'deleted_at') then
     execute 'select count(*) from public.profiles where id = $1 and deleted_at is not null' into v_count using v_id;
     if v_count > 0 then raise exception 'That profile is a deleted-account tombstone. Nothing was changed.'; end if;
+  end if;
+
+  if v_kind = 'organizer' then
+    if to_regclass('public.tournament_members') is null then raise exception 'tournament_members is not installed. Nothing was changed.'; end if;
+    select id into v_maroon from public.tournaments where slug = 'the-maroon-tournament';
+    if v_maroon is null then raise exception 'The Maroon tournament was not found. Nothing was changed.'; end if;
+    -- Never downgrades an owner.
+    insert into public.tournament_members (tournament_id, profile_id, role) values (v_maroon, v_id, 'organizer')
+    on conflict (tournament_id, profile_id) do update set role = 'organizer' where public.tournament_members.role not in ('owner', 'organizer');
+    return;
   end if;
 
   update public.profiles set is_host = true where id = v_id;
@@ -68,7 +80,9 @@ select (select count(*) from public.profiles where is_host) as maroon_admins,
   (select count(*) from public.profiles p where to_jsonb(p) ->> 'platform_role' = 'admin') as platform_admins,
   (select count(*) from public.tournament_creator_access where status = 'approved') as tournament_creators,
   (select count(*) from public.tournament_members m join public.tournaments t on t.id = m.tournament_id
-    where t.slug = 'the-maroon-tournament' and m.role = 'owner') as maroon_owners;
+    where t.slug = 'the-maroon-tournament' and m.role = 'owner') as maroon_owners,
+  (select count(*) from public.tournament_members m join public.tournaments t on t.id = m.tournament_id
+    where t.slug = 'the-maroon-tournament' and m.role = 'organizer') as maroon_organizers;
 
 -- DRY RUN: undo everything above. Only the approved run may replace this one word with COMMIT.
 rollback;

@@ -3669,3 +3669,44 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
   type / size checks and the photo folder (server-chosen, the caller's own) are unchanged.
 - Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
   schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).
+
+## Account retirement and legacy testing (decisions approved 2026-10-30; PREPARED FOR REVIEW, nothing run)
+
+**What it does / who it affects.** V2 starts with **zero legacy logins**: everyone, including organizers and past
+players, registers again. Every independent Maroon Masters record stays in production. Legacy golf data (trips, player
+rounds, scores, account relationships) is kept only in an isolated LOCAL test copy. Nothing reconnects old records to new
+accounts automatically; owner and organizer powers return only after a fresh sign-up and an explicit grant.
+
+**Approved decisions:** (1) local Docker copy `maroon-legacy`, not `maroon-auth-dev`; (2) production is on the Free plan
+(no Supabase backups: our dump is the only one); (3) public Maroon archive names kept in the local copy; (4) profile photos
+kept in the local copy; (5) V1 registration stays open until the approved cutover; (6) no production reset until V2
+authentication is fully built and tested; (7) tester allowlist and strict 13+ enforced at the Supabase / server boundary,
+including direct API and OAuth; (8) encrypted backups kept until the owner explicitly approves deleting them.
+
+**Documents:** `docs/account-retirement-architecture-2026-10-30.md` (data classification, sequence, checklists, gates,
+risks, local setup) and `docs/v2-auth-enforcement-spec-2026-10-30.md` (hook, birthday-first, OAuth limits, tester
+activation, bypass tests). `docs/account-reset-plan-2026-10-30.md` keeps the scripts' background; its sequencing is
+superseded.
+
+**Data, in four places:**
+- *Production, permanently kept:* archived scorecards (159 rounds), shot videos, career archive / stats, edition rosters /
+  teams / rounds, live scoring, handicap rounds, broadcast, player records (13), The Maroon tournament and its 11
+  editions and players, course library, settings. Only account links are emptied.
+- *Production, removed at the reset:* 16 logins and their Supabase login data, 14 profiles, 162 personal player-round
+  copies, 1 golf trip, 2 shared rounds, personal scoring, code tournaments, customer tournaments, MM coin, account-only
+  rows, profile photos; typed-in emails on kept records emptied (S7, owner confirms).
+- *Local copy:* everything restored from the backup, sanitized (test emails `legacy-NN@legacy.invalid`, one test password,
+  no real passwords / tokens / sessions / OAuth / phones / push endpoints, webhooks off). Private account names,
+  usernames, bios and typed-in trip names anonymized (G4 approval, 2026-10-30); public Maroon archive names and profile
+  photos (local only) kept.
+- *Encrypted backups (outside Git and synced folders):* the full production dump plus Storage files, kept until approved.
+
+**Built for review (2026-10-30, local tests only):** `scripts/legacy-local/` (guard, stack, backup-storage, verify-backup,
+restore-local, sanitize, rehearse-reset, start-app, history snapshot, unit tests); `scripts/backup-database.ts` now
+requires `MAROON_BACKUP_DIR` and the production project. Draft corrections: Part 1 S2 deletes only personal scoring
+groups and stops on tournament ones; Part 2's allowed list names `profile_friend_requests`; the re-grant takes `owner` or
+`organizer`.
+
+**Done (this preparation) when:** the owner approves the architecture and the enforcement spec. **Done (whole feature)
+when:** V2 enforcement bypass tests pass; the local copy is restored, sanitized and rehearsed; production is reset with
+Maroon history counts unchanged and zero legacy logins; the owner and each organizer are re-granted after fresh sign-up.
