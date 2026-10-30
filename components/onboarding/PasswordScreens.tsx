@@ -19,7 +19,7 @@ import forgotStyles from "@/components/dev/auth/AuthForgotPreview.module.css";
  *   the hour and signs every session out afterwards → Log in.
  * - Forgot password → POST /api/auth/forgot-password (same answer whether or not the address has an account) → code.
  */
-export function PasswordScreen({ kind }: { kind: "create" | "reset" }) {
+export function PasswordScreen({ kind, returnTo = null }: { kind: "create" | "reset"; returnTo?: string | null }) {
   const router = useRouter();
   const email = useRememberedEmail();
   const [password, setPassword] = useState("");
@@ -46,7 +46,7 @@ export function PasswordScreen({ kind }: { kind: "create" | "reset" }) {
     }
     const sent = await send("/api/auth/reset-password", { password });
     if (sent.json.ok !== true) { setServerError(errorOf(sent)); setBusy(false); return; }
-    router.replace(`${START.logIn}?reset=1`);
+    router.replace(`${START.logIn}?reset=1${returnTo ? `&next=${encodeURIComponent(returnTo)}` : ""}`);
   }
 
   const progress = kind === "create";

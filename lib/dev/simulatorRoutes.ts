@@ -6,6 +6,7 @@ import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavig
 import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { AUTH_SCREENS } from "./authScreens";
+import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
 
@@ -50,6 +51,14 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Authentication: every account screen, numbered in signup order (placeholders until each is designed).
   AUTH_SCREENS.forEach(([slug, label], index) => pages.push({ id: "auth-" + slug, path: "/dev/auth/" + slug, label: `${index + 1}. ${label}`, group: "Authentication", fixtures: false, conditions: [] }));
+  // Live V2 Auth: the REAL sign-up / onboarding routes (not previews), against this server's own Supabase project. Listed
+  // only where those routes exist (MAROON_V2_ONBOARDING=on); each screen moves on by itself inside the phone.
+  if (onboardingEnabled()) {
+    for (const [path, label] of [["/start", "Welcome"], ["/start/sign-up", "Sign up (real)"], ["/start/log-in", "Log in (real)"],
+      ["/start/forgot", "Forgot password (real)"], ["/onboarding", "Carry on setup"], ["/account/status", "Account status"]]) {
+      pages.push({ id: "live-v2" + path.replaceAll("/", "-"), path, label, group: "Live V2 Auth", fixtures: false, conditions: [] });
+    }
+  }
   for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }

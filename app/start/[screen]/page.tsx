@@ -8,6 +8,7 @@ import { ONBOARDING, START, START_SCREENS, type StartScreen } from "@/lib/accoun
 import { getAccountLifecycle } from "@/lib/profile/currentProfile";
 import { oauthErrorMessage } from "@/lib/auth/oauth";
 import { enabledOAuthProviders } from "@/lib/auth/oauthServer";
+import { authReturnPath } from "@/lib/auth/returnTo";
 
 export const metadata = { title: "The Maroon", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -37,14 +38,14 @@ export default async function StartScreenPage({ params, searchParams }: {
       const notice = query.reset === "1" ? "Password saved. Log in with your new password."
         : query.error === "invalid_link" ? "That link didn't work or has expired. Log in, or ask for a new code."
         : oauthErrorMessage(query.error); // Google / Apple cancelled, unavailable or failed (fixed words only)
-      return <LogInScreen notice={notice} providers={await enabledOAuthProviders()} />;
+      return <LogInScreen notice={notice} providers={await enabledOAuthProviders()} returnTo={authReturnPath(query.next)} />;
     }
     case "forgot": return <ForgotScreen />;
     case "reset-code": return <CodeScreen kind="recovery" />;
     case "reset-password": {
       const lifecycle = await getAccountLifecycle();
       if (query.error || lifecycle.state === "signed-out") redirect(START.forgot);
-      return <PasswordScreen kind="reset" />;
+      return <PasswordScreen kind="reset" returnTo={authReturnPath(query.next)} />;
     }
   }
 }

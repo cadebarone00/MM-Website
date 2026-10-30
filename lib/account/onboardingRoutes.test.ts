@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finishProblem, onboardingRedirect, progressWidth, stepPath, type OnboardingScreen } from "./onboardingRoutes";
+import { afterLogInPath, finishProblem, onboardingRedirect, progressWidth, stepPath, type OnboardingScreen } from "./onboardingRoutes";
 import type { OnboardingStep } from "./onboardingApi";
 
 test("each server step has one page; blocked states go to the status page, never Play", () => {
@@ -39,4 +39,14 @@ test("Finish problems name the step to fix", () => {
   assert.equal(finishProblem("incomplete", "x", ["privacy_setting"]), "Choose Public or Private, then tap Finish.");
   assert.equal(finishProblem("activation_disabled", "Finishing sign-up isn't open yet. Your progress is saved.", undefined), "Finishing sign-up isn't open yet. Your progress is saved.");
   assert.match(finishProblem(undefined, undefined, undefined), /progress is saved/);
+});
+
+test("after Log in only an Active account uses the return page; Pending resumes and blocked never reaches Play", () => {
+  assert.equal(afterLogInPath("play", null), "/");
+  assert.equal(afterLogInPath("play", "/dashboard"), "/dashboard");
+  assert.equal(afterLogInPath("play", "https://evil.example"), "/");
+  assert.equal(afterLogInPath("name_username", "/dashboard"), "/onboarding/name");
+  assert.equal(afterLogInPath("birthday", "/dashboard"), "/onboarding/birthday");
+  assert.equal(afterLogInPath("settings", "/tap-in"), "/onboarding/settings");
+  for (const s of ["ineligible", "restricted", "closed"] as const) assert.equal(afterLogInPath(s, "/dashboard"), "/account/status");
 });

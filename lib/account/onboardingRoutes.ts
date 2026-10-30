@@ -4,6 +4,7 @@
  * (GET /api/account/onboarding, lib/account/onboardingApi.ts resumeReply) and these rules only map it to a page.
  */
 import type { OnboardingStep } from "./onboardingApi";
+import { authReturnPath } from "@/lib/auth/returnTo";
 
 export const START = {
   welcome: "/start", signUp: "/start/sign-up", password: "/start/password", verify: "/start/verify", confirmed: "/start/confirmed",
@@ -32,6 +33,13 @@ export function stepPath(step: OnboardingStep): string {
     case "play": return PLAY;
     case "ineligible": case "restricted": case "closed": return STATUS;
   }
+}
+
+/** After Log in: only an Active account (step "play") may go to the allow-listed return page it came with (a legacy
+ *  /login?next=…); every other step goes where the server says, so Pending resumes and blocked never reaches Play. */
+export function afterLogInPath(step: OnboardingStep, returnTo: string | null): string {
+  const safe = authReturnPath(returnTo);
+  return step === "play" && safe ? safe : stepPath(step);
 }
 
 /** Null = this account may see `screen` now; otherwise where to send it instead. Strictly forward: name and birthday are
