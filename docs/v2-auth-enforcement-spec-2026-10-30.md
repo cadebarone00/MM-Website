@@ -1,6 +1,15 @@
 # V2 sign-up enforcement: tester allowlist, birthday-first and strict 13+ (design for approval, 2026-10-30)
 
-**Status: DESIGN ONLY.** Nothing built, no SQL, no Supabase setting. Owner decision 7: enforcement sits at the Supabase /
+> **G4 implemented LOCALLY (2026-10-30).** Built on branch `authdev`, tested only on the disposable local stack
+> `maroon-auth-gate` (ports 58xxx, Supabase Auth v2.197.0 with the hook on). No hosted project touched. Results:
+> `scripts/auth-local/signup-gate-regression.mts` 51 / 51, `onboarding-regression.mts` 52 / 52.
+> **Proven:** every public-API attack (B1-B7, B9, B13) is refused by Supabase Auth itself; under-13 stores nothing.
+> **Platform limits confirmed:** (1) Supabase's admin API (service key) does NOT run the hook: the second lock stops such
+> logins from ever getting a profile, and the only app route using it (V1 player invite) is closed while V2 is on;
+> (2) OAuth sign-up could only be tested at function level locally (no real Google / Apple), so OAuth stays off on hosted
+> projects during the beta. See section 11 for what was built and the hosted changes still needed.
+
+**Original status: DESIGN ONLY.** Nothing built, no SQL, no Supabase setting. Owner decision 7: enforcement sits at the Supabase /
 server boundary, including direct API and OAuth paths. **The age gate is not called secure until every bypass test in
 section 9 passes.** Builds on the approved pending-accounts architecture (`project_specs.md`, "Pending accounts").
 
@@ -134,3 +143,43 @@ alone.** Options:
    until cutover, production has no Supabase-level gate (V1 behavior), and V2 is tested on non-production projects.
 4. A person can lie about their birthday; the system enforces the declared date (approved policy), not identity.
 5. Email confirmation and code emails need custom SMTP on the project before testers (built-in sender limits).
+6. **Confirmed 2026-10-30:** Supabase's admin API (`createUser`, `inviteUserByEmail`) does not run the Before User Created
+   hook. Anyone holding the service-role key can create a login without an age check. Mitigation: that login can never
+   get a profile (lock 2), and no V2 code path uses the admin API to create logins.
+
+## 11. G4 local implementation (2026-10-30)
+
+| Piece | File |
+|---|---|
+| Gate tables, server functions, hook, profile trigger (draft migration) | `supabase/signup_gate.sql` |
+| Tester activation without Terms (`tester_activations`; no `terms_acceptances`) | `supabase/account_activation.sql` (`activate_my_profile`) |
+| Pending profiles hidden from search (not Stage D) | `supabase/profile_friends.sql` (`search_golfers`) |
+| Birthday first: pass issue | `app/api/auth/age-check/route.ts`, `lib/auth/agePass.ts` (+ tests) |
+| Sign-up requires and binds the pass | `app/api/auth/signup/route.ts`, `lib/auth/signup.ts` (hook refusals shown) |
+| "Birthday check required" reported cleanly | `lib/profile/profileInitialization.ts`, `app/api/account/initialize`, `app/api/account/profile` |
+| Screens: Welcome -> Birthday -> Sign up (no Apple / Google) -> Create password -> code -> Name -> ... | `app/start/[screen]/page.tsx`, `components/onboarding/OnboardingScreens.tsx` (`BirthdayScreen start`), `StartScreens.tsx`, `lib/account/onboardingRoutes.ts`, `lib/account/legacyAuthRedirect.ts` |
+| V1 player invite (admin API) closed while V2 is on | `app/api/portal/admin/invite/route.ts` |
+| Isolated test stack with the hook on | `scripts/auth-local/stack.mjs` (`gate`, 58xxx), `scripts/auth-local/setup.mjs` |
+| Bypass tests | `scripts/auth-local/signup-gate-regression.mts`; `onboarding-regression.mts` now runs on the gate stack |
+
+**Test results (local gate stack):** 51 / 51 gate checks and 52 / 52 onboarding checks pass. Covered: B1 (no pass), B2
+(forged / malformed), B3 (replay), B4 (expired), B5 (unbound pass; pass bound to another email), B6 (not allowlisted, API
+and app), B7 (closed), B8 (admin API: created but no profile; V1 invite route 410), B9 (under 13: no row, no cookie, no
+date in Auth metadata), B10 (Google / Apple / phone / anonymous refused by the hook function), B11 (login written around
+the hook: no profile), B13 (app path); birthday -> sign-up -> code -> profile with the stored birthdate -> Name; tester
+Finish without Terms (no acceptance recorded); a non-tester can't use that path; recovery code -> new password -> log in;
+search shows Active, hides Pending. **Not tested:** the screens in a real browser (`onboarding-browser.mjs` still follows
+the old order and must be updated), real Google / Apple sign-up (B10 end to end), B12 (hook timeout).
+
+**Hosted changes still needed (separate approval gate, none made):**
+1. `maroon-auth-dev`: run `supabase/signup_gate.sql` after re-reviewing the amended `account_activation.sql` and
+   `profile_friends.sql` (`authdev-migrate.mjs` pins the old `account_activation.sql` fingerprint, so it now refuses Stage C
+   until that review updates it, by design).
+2. `maroon-auth-dev`: Authentication -> Hooks -> Before User Created -> Postgres -> `public.before_user_created_gate`.
+3. `maroon-auth-dev`: keep Google / Apple providers off (or sign-in only) for the beta; anonymous sign-ins off.
+4. Add tester emails to `signup_allowlist`; set `registration_settings.mode = 'testers'`.
+5. Custom SMTP + the 6-digit code templates on `maroon-auth-dev`.
+6. Preview environment variables limited to the tester branch, pointing at `maroon-auth-dev` (not production), plus
+   `MAROON_V2_ONBOARDING=on`.
+7. Re-run the bypass suite's public-API attacks against `maroon-auth-dev` with dedicated test emails.
+Production gets all of this only at the approved cutover (architecture doc, step P6 / P7).

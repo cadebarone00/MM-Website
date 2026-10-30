@@ -10,7 +10,7 @@ import { AddPhotoIcon } from "@/components/dev/auth/AuthPhotoPreview";
 import { BellIcon, PersonIcon, Setting } from "@/components/dev/auth/AuthSettingsPreview";
 import { NAME_MAX, usernameProblem } from "@/lib/profile/profileEdit";
 import { errorOf, send } from "@/lib/account/onboardingClient";
-import { finishProblem, ONBOARDING, progressWidth, STATUS } from "@/lib/account/onboardingRoutes";
+import { finishProblem, ONBOARDING, progressWidth, START, STATUS } from "@/lib/account/onboardingRoutes";
 import frame from "@/components/dev/auth/AuthNamePreview.module.css";
 import birthdayStyles from "@/components/dev/auth/AuthBirthdayPreview.module.css";
 import photoStyles from "@/components/dev/auth/AuthPhotoPreview.module.css";
@@ -66,18 +66,41 @@ export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFir
 }
 
 /** Birthday → POST /api/account/birthday (saved once). Under 13: the server signs this browser out → status page. */
-export function BirthdayScreen() {
+/**
+ * G4 birthday-first: on the Sign up path (`start`) this is the FIRST screen, before any email or password. It asks
+ * POST /api/auth/age-check (nothing is stored for under 13; 13+ gets a pass the sign-up needs) and goes on to Sign up.
+ * Not eligible -> the same neutral sentence every time; the device remembers it so Back + another date shows it again
+ * (a convenience only: the server and the Supabase hook are what enforce 13+). Without `start` it is the onboarding step
+ * for accounts made before the sign-up gate (POST /api/account/birthday, write-once).
+ */
+const INELIGIBLE_HINT = "maroon_age_ineligible";
+export function BirthdayScreen({ start = false }: { start?: boolean } = {}) {
   const router = useRouter();
   const [birthday, setBirthday] = useState(""); // YYYY-MM-DD
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refused, setRefused] = useState(false);
   const today = new Date().toLocaleDateString("en-CA");
   const [year, month, day] = birthday ? birthday.split("-") : [];
 
   async function save() {
     setBusy(true);
     setError(null);
+    if (start) {
+      let remembered = false;
+      try { remembered = Boolean(localStorage.getItem(INELIGIBLE_HINT)); } catch { /* storage blocked */ }
+      if (remembered) { setRefused(true); setError("Sorry, you're not eligible to create an account on The Maroon."); setBusy(false); return; }
+      const sent = await send("/api/auth/age-check", { birthdate: birthday });
+      if (sent.json.ok === true && sent.json.eligible === true) { router.push(START.signUp); return; }
+      if (sent.json.ok === true) {
+        try { localStorage.setItem(INELIGIBLE_HINT, "1"); } catch { /* storage blocked */ }
+        setRefused(true);
+      }
+      setError(errorOf(sent));
+      setBusy(false);
+      return;
+    }
     const sent = await send("/api/account/birthday", { birthdate: birthday });
     if (sent.json.ok === true && sent.json.eligible === true) { router.replace(ONBOARDING.photo); return; }
     if (sent.json.ok === true || sent.json.signedOut === true) { router.replace(`${STATUS}?reason=ineligible`); return; }
@@ -99,7 +122,7 @@ export function BirthdayScreen() {
     </button>
     <p className={birthdayStyles.note}>We require your date of birth to assist us in complying with privacy laws, as well as manage and personalize your account.</p>
     <p className={frame.error} role="alert">{error}</p>
-    <button type="button" className={`${frame.continue} ${birthdayStyles.continue}`} disabled={!birthday || busy} onClick={() => void save()}>
+    <button type="button" className={`${frame.continue} ${birthdayStyles.continue}`} disabled={!birthday || busy || refused} onClick={() => void save()}>
       {busy ? "Saving…" : "Continue"}
     </button>
     {open && createPortal(<GolfTripDatePicker singleDay pickYear label="Birthday" arrival={birthday} departure={birthday} maxDays={1}

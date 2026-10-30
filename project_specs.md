@@ -3707,6 +3707,15 @@ requires `MAROON_BACKUP_DIR` and the production project. Draft corrections: Part
 groups and stops on tournament ones; Part 2's allowed list names `profile_friend_requests`; the re-grant takes `owner` or
 `organizer`.
 
+**G4 (approved 2026-10-30) built LOCALLY, nothing hosted:** sign-up gate (`supabase/signup_gate.sql`): Supabase Auth
+Before User Created hook refuses any new login without a single-use 13+ age pass bound to its email, refuses non-allowlisted
+emails in `testers` mode and every non-email provider (no Apple / Google sign-up in the beta); a profile trigger stops any
+login made around the hook from getting a profile. Birthday-first screens and `POST /api/auth/age-check`; under 13 stores
+nothing. Testers activate without recording Terms acceptance (`tester_activations`); Pending profiles are hidden from search.
+V1 player invites closed while V2 is on. Local results: 51 / 51 bypass checks, 52 / 52 onboarding checks. Confirmed platform
+limit: Supabase's admin API skips the hook (mitigated as above). Details and hosted steps:
+`docs/v2-auth-enforcement-spec-2026-10-30.md` section 11.
+
 **Done (this preparation) when:** the owner approves the architecture and the enforcement spec. **Done (whole feature)
 when:** V2 enforcement bypass tests pass; the local copy is restored, sanitized and rehearsed; production is reset with
 Maroon history counts unchanged and zero legacy logins; the owner and each organizer are re-granted after fresh sign-up.

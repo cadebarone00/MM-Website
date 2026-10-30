@@ -28,8 +28,9 @@ test("screens are strictly forward and Profile Created needs Active", () => {
 });
 
 test("progress bar follows the real order", () => {
-  assert.equal(progressWidth("sign-up"), "12.5%");
-  assert.equal(progressWidth("verify"), "37.5%");
+  assert.equal(progressWidth("birthday"), "12.5%");
+  assert.equal(progressWidth("sign-up"), "25%");
+  assert.equal(progressWidth("verify"), "50%");
   assert.equal(progressWidth("created"), "100%");
 });
 

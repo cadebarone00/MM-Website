@@ -23,7 +23,7 @@ export function WelcomeScreen() {
   return <main className={`${styles.page} ${styles.fork}`}>
     <div className={styles.forkLogo}><MaroonMark color="#fbf8f1" /></div>
     <div className={styles.forkButtons}>
-      <Link className={styles.primary} href={START.signUp}>Sign up</Link>
+      <Link className={styles.primary} href={START.birthday}>Sign up</Link>
       <Link className={styles.secondary} href={START.logIn}>Log in</Link>
     </div>
   </main>;

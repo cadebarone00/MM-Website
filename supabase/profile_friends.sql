@@ -47,6 +47,9 @@ returns jsonb language sql stable security definer set search_path = public as $
       else 'none' end) order by p.display_name), '[]'::jsonb)
   from (select * from profiles x
         where x.id <> p_viewer and x.deleted_at is null and x.display_name is not null and length(btrim(coalesce(p_query, ''))) >= 2
+          -- Pending accounts are never discoverable (G4, 2026-10-30). Only where activation is installed (the column
+          -- exists): before that every profile counts as before. Not Stage D.
+          and (not (to_jsonb(x) ? 'activated_at') or to_jsonb(x) ->> 'activated_at' is not null)
           and (position(lower(btrim(p_query)) in lower(x.display_name)) > 0 or position(lower(ltrim(btrim(p_query), '@')) in lower(coalesce(x.username, ''))) > 0)
         order by x.display_name limit 25) p;
 $$;

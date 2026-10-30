@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { BirthdayScreen } from "@/components/onboarding/OnboardingScreens";
+import { AGE_PASS_COOKIE } from "@/lib/auth/agePass";
 import { AuthLinkResultPreview } from "@/components/dev/auth/AuthLinkResultPreview";
 import { CodeScreen } from "@/components/onboarding/CodeScreen";
 import { ForgotScreen, PasswordScreen } from "@/components/onboarding/PasswordScreens";
@@ -25,9 +28,14 @@ export default async function StartScreenPage({ params, searchParams }: {
   const { screen } = await params;
   if (!START_SCREENS.includes(screen as StartScreen)) notFound();
   const query = await searchParams;
+  // G4 birthday-first: Sign up and Create password need the age pass from the Birthday screen. This redirect is only for
+  // the person on the screens; the sign-up API and Supabase's Before User Created hook are what enforce it.
+  const hasAgePass = Boolean((await cookies()).get(AGE_PASS_COOKIE)?.value);
   switch (screen as StartScreen) {
-    case "sign-up": return <SignUpScreen providers={await enabledOAuthProviders()} />;
-    case "password": return <PasswordScreen kind="create" />;
+    case "birthday": return <BirthdayScreen start />;
+    // No Apple / Google on Sign up during the beta (owner decision 2026-10-30): new accounts are email only.
+    case "sign-up": if (!hasAgePass) redirect(START.birthday); return <SignUpScreen providers={[]} />;
+    case "password": if (!hasAgePass) redirect(START.birthday); return <PasswordScreen kind="create" />;
     case "verify": return <CodeScreen kind="signup" />;
     case "confirmed": {
       const lifecycle = await getAccountLifecycle();

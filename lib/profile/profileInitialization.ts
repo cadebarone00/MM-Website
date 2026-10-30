@@ -18,12 +18,14 @@ export type InitializeResult =
   | { status: "unverified" }
   /** profile_initialization.sql isn't installed yet. */
   | { status: "unavailable" }
+  /** G4: a login made after the sign-up gate was installed, without a used age pass (supabase/signup_gate.sql). */
+  | { status: "age_check_required" }
   | { status: "failed" };
 
 export type SetupResult =
   | { status: "ok"; username: string; created: boolean }
   | { status: "invalid"; error: string }
-  | { status: "signed-out" } | { status: "unverified" } | { status: "unavailable" } | { status: "failed" };
+  | { status: "signed-out" } | { status: "unverified" } | { status: "unavailable" } | { status: "age_check_required" } | { status: "failed" };
 
 const missingFunction = (code?: string) => code === "PGRST202" || code === "42883";
 
@@ -39,6 +41,7 @@ export async function initializeProfile(accountId: string): Promise<InitializeRe
   if (error) {
     if (/Verify your email/.test(error.message)) return { status: "unverified" };
     if (/No account/.test(error.message)) return { status: "signed-out" };
+    if (/Birthday check required/.test(error.message)) return { status: "age_check_required" };
     if (missingFunction(error.code)) return { status: "unavailable" };
     console.error("initialize_my_profile failed:", error.message);
     return { status: "failed" };
