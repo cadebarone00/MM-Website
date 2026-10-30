@@ -1,6 +1,6 @@
 import { getGolfTrip } from '@/lib/platform/golfTripsServer';
 import { createSupabaseServiceRoleClient } from '@/lib/supabase/server';
-import { pushSubscriptionFrom } from '@/lib/platform/tripPush';
+import { pushSubscriptionFrom, tripPushDeliveryEnabled } from '@/lib/platform/tripPush';
 export async function GET(request:Request,{params}:{params:Promise<{tripId:string}>}) {
  const {tripId}=await params;const trip=await getGolfTrip(tripId);
  if(trip.status!=='ok') return Response.json({error:'Trip not found.'},{status:trip.status==='signed-out'?401:404});
@@ -8,7 +8,7 @@ export async function GET(request:Request,{params}:{params:Promise<{tripId:strin
  const db=createSupabaseServiceRoleClient();
  const {data,error}=await db.from('trip_push_subscriptions').select('scores,milestones').eq('profile_id',trip.viewer.profileId).eq('golf_trip_id',tripId).eq('endpoint',endpoint??'').maybeSingle();
  if(error) return Response.json({error:'Alerts are unavailable.'},{status:503});
- const configured=Boolean(process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_KEY && process.env.WEB_PUSH_VAPID_PRIVATE_KEY && process.env.WEB_PUSH_VAPID_SUBJECT && process.env.CRON_SECRET);
+ const configured=tripPushDeliveryEnabled(process.env);
  return Response.json({configured,publicKey:configured?process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_KEY:null,preferences:data},{headers:{'Cache-Control':'private, no-store'}});
 }
 async function change(request:Request,tripId:string,remove:boolean) {
@@ -24,7 +24,7 @@ async function change(request:Request,tripId:string,remove:boolean) {
   const {error}=await db.from('trip_push_subscriptions').delete().eq('profile_id',trip.viewer.profileId).eq('golf_trip_id',tripId).eq('endpoint',body.endpoint);
   return Response.json(error?{error:'Could not turn alerts off.'}:{ok:true},{status:error?503:200});
  }
- if(!process.env.WEB_PUSH_VAPID_PRIVATE_KEY || !process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_KEY || !process.env.WEB_PUSH_VAPID_SUBJECT || !process.env.CRON_SECRET) return Response.json({error:'Push alerts are not available yet.'},{status:503});
+ if(!tripPushDeliveryEnabled(process.env)) return Response.json({error:'Push alerts are not available yet.'},{status:503});
  const sub=pushSubscriptionFrom(body.subscription);
  if(!sub || typeof body.scores!=='boolean' || typeof body.milestones!=='boolean') return Response.json({error:'Invalid subscription.'},{status:400});
  const {data,error}=await db.rpc('save_trip_push',{p_profile:trip.viewer.profileId,p_trip:tripId,p_endpoint:sub.endpoint,p_key:sub.keys.p256dh,p_auth:sub.keys.auth,p_scores:body.scores,p_milestones:body.milestones});
