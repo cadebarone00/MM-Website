@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "ClaudeInChromeDomain(supabase.com)"
+      "ClaudeInChromeDomain(supabase.com)",
+      "Bash(diff --strip-trailing-cr -q ../MM-Website/components/dev/SimulatorBridge.tsx components/dev/SimulatorBridge.tsx && echo \"SimulatorBridge: only line endings differ\"; git diff --stat main authdev -- components/dev/SimulatorBridge.tsx | tail -1; echo \"\\(blank = same in git\\)\")",
+      "Read(//c/Users/Owner/Documents/GitHub/MM-Website/components/dev/**)"
     ]
   }
 }

@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// Development only (`next dev`): the MAIN workspace's /dev simulator at this one local address may show this workspace's
+// pages (the real sign-in screens, on maroon-auth-dev) in its phone. Builds for production keep X-Frame-Options SAMEORIGIN.
+const devFrameParent = process.env.NODE_ENV === "development" ? "http://localhost:3001" : null;
+
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_BUILD_OUTPUT || ".next",
   serverExternalPackages: ["lightningcss", "@tailwindcss/oxide"],
@@ -11,7 +15,9 @@ const nextConfig: NextConfig = {
           // Tells browsers to only ever reach this site over HTTPS, never HTTP.
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
           // Admin embeds real website pages on this origin; other origins cannot frame them.
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          devFrameParent
+            ? { key: "Content-Security-Policy", value: `frame-ancestors 'self' ${devFrameParent}` }
+            : { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Stops the browser from guessing a file's type in a way that can be tricked into running as script.
           { key: "X-Content-Type-Options", value: "nosniff" },
           // Limits how much of this site's URL is leaked to other sites when a link is clicked.
