@@ -1,5 +1,5 @@
 /* Explore → Courses. Sits where the Explore feature photo sits, on the same warm card background as the filters. */
-.panel{min-height:460px;padding:22px 20px 32px;color:var(--color-maroon-950)}
+.panel{padding:22px 20px 32px;color:var(--color-maroon-950)}
 .kicker{margin:0;font:500 10px/1.5 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-7a1b2e)}
 .title{margin:10px 0 18px;font:400 clamp(32px,8.5vw,48px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em}
 .searchBox{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 16px;border:1px solid #b99c6b;border-radius:14px;background:#fffdf8;color:var(--brand-7a1b2e);box-shadow:0 2px 8px color-mix(in srgb,var(--color-maroon-950) 6.3%,transparent)}

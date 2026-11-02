@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Flag, FlagTriangleRight, GraduationCap, Newspaper, Plane, Trophy } from "lucide-react";
 import { ExploreIcon } from "@/components/nav/ImageIcons";
-import { maroonCategories } from "@/lib/data/theMaroon";
 import { GolfBagIcon } from "./GolfBagIcon";
 import { ExploreCourseSearch } from "./ExploreCourseSearch";
 import { RoundInvites } from "./RoundInvites";
@@ -35,8 +34,6 @@ export function PlatformHome({ signedIn = false, ribbon }: { signedIn?: boolean;
 function PlatformHomeContent({ signedIn }: { signedIn: boolean }) {
   const { buttonPress, cardInteraction } = useAppMotion();
   const [section, setSection] = useState<(typeof sections)[number]>("Explore");
-  // Explore has no category of its own, so it borrows the Courses photo.
-  const category = maroonCategories.find(item => item.slug === (section === "Explore" ? "courses" : section.toLowerCase()))!;
   const featured = useFeaturedTrip(BUILT_IN_TRIP);
   return <main className={styles.home}>
     <RibbonAdminBar />
@@ -67,16 +64,10 @@ function PlatformHomeContent({ signedIn }: { signedIn: boolean }) {
           return <button key={item} type="button" aria-pressed={section === item} onClick={() => setSection(item)}><Icon size={22} aria-hidden="true" />{item}</button>;
         })}
       </div>
-      {/* Courses turns this spot into course search; every other filter keeps the photo feature. */}
+      {/* Explore keeps the featured trip and Courses keeps course search; every other filter is posts only. */}
       {section === "Courses" ? <><ExploreCourseSearch /><RibbonTabPosts tab="Courses" /></>
-        : section === "Explore" ? <><TripPromos trip={featured.trip} adminSlot={featured.controls} /><RibbonTabPosts tab="Explore" />{featured.editor}</> : <><div className={styles.feature}>
-        <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
-        <div className={styles.featureCopy}>
-          <p className={styles.kicker}>The Maroon &middot; {section}</p>
-          <h2>{category.headline}</h2>
-          <p className={styles.description}>{category.description}</p>
-        </div>
-      </div><RibbonTabPosts tab={section} /></>}
+        : section === "Explore" ? <><TripPromos trip={featured.trip} adminSlot={featured.controls} /><RibbonTabPosts tab="Explore" />{featured.editor}</>
+        : <RibbonTabPosts tab={section} showEmpty />}
     </section>
   </main>;
 }

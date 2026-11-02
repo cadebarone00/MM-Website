@@ -8,15 +8,16 @@ import { useRibbon } from "./RibbonProvider";
 import { RibbonEditor } from "./RibbonEditor";
 import styles from "./Ribbon.module.css";
 
-/** A tab's posts: "+ Add to [tab]" for the content team, then the posts this viewer may see, newest first. */
-export function RibbonTabPosts({ tab }: { tab: RibbonTab }) {
+/** A tab's posts: "+ Add to [tab]" for the content team, then the posts this viewer may see, newest first. `showEmpty` is for tabs with nothing else on them, so they don't look broken. */
+export function RibbonTabPosts({ tab, showEmpty = false }: { tab: RibbonTab; showEmpty?: boolean }) {
   const ribbon = useRibbon();
   const [editing, setEditing] = useState<RibbonItem | "new" | null>(null);
   const [reading, setReading] = useState<RibbonPost | null>(null);
-  if (!ribbon) return null;
+  const noPosts = showEmpty ? <div className={styles.posts}><p className={styles.empty}>No posts yet.</p></div> : null;
+  if (!ribbon) return noPosts;
   const { viewer, items } = ribbon;
   const posts = tabPosts(items, tab, viewer, new Date());
-  if (!posts.length && !canPost(viewer)) return null;
+  if (!posts.length && !canPost(viewer)) return noPosts;
   return <div className={styles.posts}>
     {canPost(viewer) && <button type="button" className={styles.add} onClick={() => setEditing("new")}><span><Plus size={16} aria-hidden="true" /></span>Add to {tab}</button>}
     {posts.map((post) => <RibbonPostCard key={post.id} post={post} onOpen={() => setReading(post)}

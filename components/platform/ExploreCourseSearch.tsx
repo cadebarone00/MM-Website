@@ -118,7 +118,6 @@ export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", 
       {near.status === "error" && <p className={styles.hint} role="alert">{near.message}</p>}
       {near.status === "done" && (near.courses.length ? <>{list(near.courses, "Courses near you")}{near.attribution && <p className={styles.credit}>Course data {near.attribution}</p>}</>
         : <p className={styles.hint}>No courses found nearby. Search by name instead.</p>)}
-      <p className={styles.hint}>Or type at least two letters to search courses across the country.</p>
     </div>}
     {search.status === "loading" && skeleton}
     {search.status === "error" && <p className={styles.hint} role="alert">{search.message}</p>}
