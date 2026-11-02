@@ -122,7 +122,8 @@ begin
     return jsonb_build_object('error', jsonb_build_object('http_code', 403, 'message', 'Registration is closed.'));
   end if;
   -- Beta: new accounts only by email (Apple / Google sign-up stays off until age enforcement can be shown for them).
-  if coalesce((v_user ->> 'is_anonymous')::boolean, false) or v_provider <> 'email' or v_email = '' then
+  -- Anything but an explicit "false" counts as anonymous (refused): a malformed value can never make the hook raise.
+  if coalesce(v_user ->> 'is_anonymous', 'false') <> 'false' or v_provider <> 'email' or v_email = '' then
     return jsonb_build_object('error', jsonb_build_object('http_code', 403, 'message', 'New accounts can only be created with email.'));
   end if;
   if v_mode = 'testers' and not exists (select 1 from signup_allowlist where email_normalized = v_email) then
@@ -132,9 +133,14 @@ begin
     return jsonb_build_object('error', jsonb_build_object('http_code', 403, 'message', 'Start with your birthday.'));
   end if;
   begin v_id := (v_user ->> 'id')::uuid; exception when others then v_id := null; end;
+  -- SKIP LOCKED: a duplicate sign-up racing for the same pass (double-click, retries) is refused at once instead of
+  -- queueing behind the first one inside Supabase Auth's transaction (found 2026-10-30: the queue could push the first
+  -- sign-up past Auth's ~10 s limit, failing closed but losing a genuine sign-up).
   update age_passes set used_at = now(), account_id = v_id
-  where nonce_hash = encode(sha256(convert_to(v_nonce, 'UTF8')), 'hex') and used_at is null and expires_at > now()
-    and email_hash = signup_email_hash(v_email);
+  where id = (select id from age_passes
+              where nonce_hash = encode(sha256(convert_to(v_nonce, 'UTF8')), 'hex') and used_at is null and expires_at > now()
+                and email_hash = signup_email_hash(v_email)
+              for update skip locked);
   if not found then
     return jsonb_build_object('error', jsonb_build_object('http_code', 403, 'message', 'Start with your birthday.'));
   end if;
@@ -162,7 +168,9 @@ begin
   if not found or account_age_years(v_pass.birthdate, current_date) < 13 then
     raise exception 'Birthday check required before a profile can be created.' using errcode = '42501';
   end if;
+  perform set_config('maroon.age_pass_redeem', 'on', true);
   insert into account_birthdates (account_id, birthdate, source) values (new.id, v_pass.birthdate, 'self');
+  perform set_config('maroon.age_pass_redeem', 'off', true);
   delete from age_passes where account_id = new.id;
   update auth.users set raw_user_meta_data = raw_user_meta_data - 'age_pass' where id = new.id;
   return new;
@@ -173,9 +181,32 @@ drop trigger if exists require_age_pass_for_profile on public.profiles;
 create trigger require_age_pass_for_profile before insert on public.profiles
   for each row execute function public.require_age_pass_for_profile();
 
+-- A login created after the gate can't self-declare a birthday (set_my_birthdate / POST /api/account/birthday): its only
+-- birthday is the one from its age pass, written by the trigger above. Found 2026-10-30 (hardening suite): an admin-API
+-- login could otherwise declare an adult birthday and then get a profile. Pre-gate logins keep the onboarding Birthday
+-- step; admin corrections (source 'admin_correction') are unaffected.
+create or replace function public.guard_post_gate_birthdate()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_since timestamptz; v_created timestamptz;
+begin
+  if new.source <> 'self' or coalesce(current_setting('maroon.age_pass_redeem', true), '') = 'on' then return new; end if;
+  select enforced_since into v_since from registration_settings where id;
+  select created_at into v_created from auth.users where id = new.account_id;
+  if v_since is not null and v_created is not null and v_created >= v_since then
+    raise exception 'Birthday check required before a profile can be created.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.guard_post_gate_birthdate() from public, anon, authenticated;
+drop trigger if exists guard_post_gate_birthdate on public.account_birthdates;
+create trigger guard_post_gate_birthdate before insert on public.account_birthdates
+  for each row execute function public.guard_post_gate_birthdate();
+
 commit;
 
--- Undo (development only): drop trigger require_age_pass_for_profile on public.profiles;
+-- Undo (development only): drop trigger guard_post_gate_birthdate on public.account_birthdates;
+--   drop function public.guard_post_gate_birthdate(); drop trigger require_age_pass_for_profile on public.profiles;
 --   drop function public.require_age_pass_for_profile(), public.before_user_created_gate(jsonb), public.signup_tester_preview(uuid),
 --   public.bind_age_pass(text, text), public.issue_age_pass(date, text), public.signup_email_hash(text);
 --   drop table public.tester_activations, public.age_passes, public.signup_allowlist, public.registration_settings;

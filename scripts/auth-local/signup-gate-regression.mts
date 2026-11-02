@@ -159,6 +159,8 @@ let testerId = "";
   sql(`select public.set_rounds_visibility(${q(testerId)}, 'public')`);
 
   section("Tester activation without final Terms (switch off, no legal versions)");
+  // This suite's own starting state (other suites on the stack may have set legal versions or the switch).
+  sql("delete from public.legal_document_versions; update public.account_activation_settings set activation_enabled = false");
   check("activation switch is off and no legal versions exist", sql("select activation_enabled from public.account_activation_settings") === "f" && sql("select count(*) from public.legal_document_versions") === "0");
   const f = await call(w.jar, finishPOST, "/api/account/finish", {});
   check("Finish activates the allowlisted tester", f.status === 200 && f.json?.activated === true, JSON.stringify(f.json));

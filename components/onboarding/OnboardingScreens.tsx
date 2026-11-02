@@ -43,7 +43,9 @@ export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFir
     setServerError(null);
     const sent = await send("/api/account/profile", { displayName: `${first.trim()} ${last.trim()}`.trim(), username });
     if (sent.json.ok !== true) { setServerError(errorOf(sent)); setBusy(false); return; }
-    router.replace(ONBOARDING.birthday);
+    // G4: Photo is next for birthday-first accounts; for an account made before the sign-up gate the Photo page sends it
+    // to Birthday first (lib/account/onboardingRoutes.ts), so nobody skips a step.
+    router.replace(ONBOARDING.photo);
   }
 
   return <main className={frame.page}>
@@ -110,7 +112,7 @@ export function BirthdayScreen({ start = false }: { start?: boolean } = {}) {
 
   return <main className={frame.page}>
     <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
-    <div className={frame.progress} aria-hidden="true"><span style={{ width: progressWidth("birthday") }} /></div>
+    <div className={frame.progress} aria-hidden="true"><span style={{ width: progressWidth(start ? "birthday" : "birthday-late") }} /></div>
     <h1 className={frame.title}>What&apos;s your birthday?</h1>
     <button type="button" className={birthdayStyles.boxes} aria-haspopup="dialog"
       aria-label={birthday ? `Birthday ${month}/${day}/${year}. Change` : "Pick your birthday"} onClick={() => setOpen(true)}>

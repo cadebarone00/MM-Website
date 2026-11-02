@@ -56,9 +56,14 @@ export function onboardingRedirect(screen: OnboardingScreen, step: OnboardingSte
 
 /** Progress bar on the email sign-up screens, in the order they really come (password before the code: decision D1). */
 // G4 (2026-10-30): birthday first, before any personal information. Accounts made before the sign-up gate still meet
-// the Birthday screen after Name (onboarding); the bar then simply shows the same 1/8 position.
+// the Birthday screen AFTER Name (onboarding): "birthday-late" sits half-way between Name and Photo, so the bar keeps
+// moving forward for them.
 const PROGRESS = ["birthday", "sign-up", "password", "verify", "name", "photo", "settings", "created"] as const;
-export const progressWidth = (screen: (typeof PROGRESS)[number]) => `${((PROGRESS.indexOf(screen) + 1) / PROGRESS.length) * 100}%`;
+export type ProgressScreen = (typeof PROGRESS)[number] | "birthday-late";
+export const progressWidth = (screen: ProgressScreen) => {
+  const position = screen === "birthday-late" ? PROGRESS.indexOf("name") + 1.5 : PROGRESS.indexOf(screen) + 1;
+  return `${(position / PROGRESS.length) * 100}%`;
+};
 
 /** Finish's "missing" list → which screen to fix, in plain words. */
 export function finishProblem(code: string | undefined, error: string | undefined, missing: string[] | undefined): string {

@@ -31,6 +31,10 @@ test("progress bar follows the real order", () => {
   assert.equal(progressWidth("birthday"), "12.5%");
   assert.equal(progressWidth("sign-up"), "25%");
   assert.equal(progressWidth("verify"), "50%");
+  // Pre-gate accounts meet Birthday after Name: between Name (62.5%) and Photo (75%), never back at the start.
+  assert.equal(progressWidth("name"), "62.5%");
+  assert.equal(progressWidth("birthday-late"), "68.75%");
+  assert.equal(progressWidth("photo"), "75%");
   assert.equal(progressWidth("created"), "100%");
 });
 

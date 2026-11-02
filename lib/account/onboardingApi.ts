@@ -84,6 +84,8 @@ export function birthdayReply(error: RpcError, data: unknown): BirthdayReply {
     if (/already saved/i.test(error.message ?? "")) return apiError(409, "birthday_already_saved", "Your birthday is already saved. Contact support to correct it.");
     if (/real date/i.test(error.message ?? "")) return apiError(400, "invalid_birthdate", "Enter your real date of birth.");
     if (/closed/i.test(error.message ?? "")) return apiError(403, "account_closed", "This account is closed.");
+    // G4: a login made after the sign-up gate only gets its birthday from its age pass (supabase/signup_gate.sql).
+    if (/Birthday check required/i.test(error.message ?? "")) return apiError(403, "age_check_required", "This account can't be set up. Start again with your birthday.");
     return apiError(500, "failed", "We couldn't save that. Try again.");
   }
   const eligible = (data as { eligible?: unknown } | null)?.eligible;

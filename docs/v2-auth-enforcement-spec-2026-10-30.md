@@ -171,6 +171,25 @@ Finish without Terms (no acceptance recorded); a non-tester can't use that path;
 search shows Active, hides Pending. **Not tested:** the screens in a real browser (`onboarding-browser.mjs` still follows
 the old order and must be updated), real Google / Apple sign-up (B10 end to end), B12 (hook timeout).
 
+**Hardening round (2026-10-30, `scripts/auth-local/signup-gate-hardening.mts`, 32 / 32, three consecutive runs):**
+- *Concurrency:* 12 simultaneous hook calls, 8 simultaneous public-API sign-ups, 10 simultaneous binds and 6 simultaneous
+  profile creations on one pass: exactly one wins each time. Fixed on the way: duplicates queued behind the first
+  redemption inside Supabase Auth's transaction and could push it past Auth's ~10 s limit (failing closed, but losing a
+  genuine sign-up); the hook now uses `FOR UPDATE SKIP LOCKED`, so duplicates are refused at once.
+- *Logins made around the hook:* a gap was found and closed: an admin-API login could call the old onboarding birthday API,
+  declare an adult birthday and then get a profile. `guard_post_gate_birthdate` now refuses self-declared birthdays for
+  logins created after the gate; their only birthday is the one redeemed from their age pass (the API answers 403
+  `age_check_required`). Such a login (also an allowlisted tester's) can't save a birthday, get a profile, set a name,
+  activate, reach Play or create a trip.
+- *Hook failures:* a database error, a missing hook function, and a slow hook running the real checks all refuse
+  registration. Supabase Auth cuts a hook off after about 10 s (504) and refuses: a timeout fails closed.
+  **Platform behaviour:** Supabase Auth treats a hook answer of NULL as "allow". Our hook never answers NULL (tested with
+  odd and malformed events; a malformed `is_anonymous` no longer raises), and a login that got through that way still can't
+  get a profile (lock 2).
+- *Admin-path audit:* the only app code creating logins through the admin API is the V1 player invite (closed while V2 is
+  on). Every other `createUser` / `inviteUserByEmail` call is in local test scripts that refuse non-local stacks.
+- Pre-gate accounts: the onboarding Birthday screen shows progress 68.75% ("birthday-late", between Name and Photo).
+
 **Hosted changes still needed (separate approval gate, none made):**
 1. `maroon-auth-dev`: run `supabase/signup_gate.sql` after re-reviewing the amended `account_activation.sql` and
    `profile_friends.sql` (`authdev-migrate.mjs` pins the old `account_activation.sql` fingerprint, so it now refuses Stage C
