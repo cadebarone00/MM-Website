@@ -68,7 +68,7 @@ function PlatformHomeContent({ signedIn }: { signedIn: boolean }) {
         })}
       </div>
       {/* Courses turns this spot into course search; every other filter keeps the photo feature. */}
-      {section === "Courses" ? <><RibbonTabPosts tab="Courses" /><ExploreCourseSearch /></>
+      {section === "Courses" ? <><ExploreCourseSearch /><RibbonTabPosts tab="Courses" /></>
         : section === "Explore" ? <><TripPromos trip={featured.trip} adminSlot={featured.controls} /><RibbonTabPosts tab="Explore" />{featured.editor}</> : <><div className={styles.feature}>
         <Image src={category.image} alt="" fill sizes="(max-width: 600px) 100vw, 1120px" />
         <div className={styles.featureCopy}>

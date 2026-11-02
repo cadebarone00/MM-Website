@@ -20,6 +20,8 @@ import { getMyProfileForm } from "@/lib/profile/profileEditServer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import styles from "@/components/settings/Settings.module.css";
 import { isRibbonSampleEnabled } from "@/lib/content/ribbonSample";
+import { canPublish } from "@/lib/content/ribbon";
+import { contentViewer } from "@/lib/content/ribbonServer";
 
 export const metadata: Metadata = { title: "Settings | The Maroon" };
 
@@ -37,6 +39,7 @@ export default async function SettingsPage() {
   const privacy = current.status === "ok" ? await getMyRoundsVisibility(current.profile.profileId) : null;
   const photo = current.status === "ok" ? await myPhotoPath(current.profile.profileId) : null;
   const fields = current.status === "ok" ? await getMyProfileForm(current.profile.profileId) : null;
+  const contentAdmin = isRibbonSampleEnabled() || canPublish(await contentViewer());
   const offers = current.status === "ok" ? (await myOrganizerOffers(current.profile.profileId)).filter((offer) => !offer.declined) : [];
 
   return <SettingsScreen backHref="/profile"
@@ -51,8 +54,7 @@ export default async function SettingsPage() {
       <p className={styles.text}>You&apos;re not signed in.</p>
       <Link href="/login" className={styles.linkButton}>Log In</Link>
     </>}
-    // DEV ONLY until content roles exist: shown with DEV_RIBBON_SAMPLE=true. Later: Admins only.
-    contentTeam={isRibbonSampleEnabled() && <>
+    contentTeam={contentAdmin && <>
       <p className={styles.text}><span className={styles.muted}>Invite Posters and see what they&apos;ve posted.</span></p>
       <Link href="/settings/content-team" className={styles.linkButton}>Open Content team</Link>
     </>}

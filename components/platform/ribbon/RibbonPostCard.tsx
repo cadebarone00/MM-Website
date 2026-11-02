@@ -4,8 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { isLive, isScheduled, readMinutes, statusLabel, videoSource, type RibbonItem, type RibbonPost } from "@/lib/content/ribbon";
 import styles from "./Ribbon.module.css";
 
-/** Local photos go through Next's image optimizer; a photo just picked on this device (blob:) is shown as is. */
-export const photoProps = (src: string) => ({ src, unoptimized: src.startsWith("blob:") });
+/** The site's own photos go through Next's image optimizer; uploaded ones (R2) and ones just picked (blob:) are shown as is. */
+export const photoProps = (src: string) => ({ src, unoptimized: !src.startsWith("/") });
 
 const tone = (item: RibbonItem, now: Date) => isLive(item, now) ? "live" : isScheduled(item, now) ? "scheduled" : item.status === "changes_requested" ? "back" : "draft";
 export function StatusPill({ item }: { item: RibbonItem }) {

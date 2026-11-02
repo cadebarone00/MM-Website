@@ -16,6 +16,7 @@
     "test:db:platform": "node -e \"process.env.WITH_PLATFORM=1;import('./scripts/test-scoring-reliability.mjs')\"",
     "backup:production": "tsx scripts/backup-production.ts",
     "backup:database": "tsx scripts/backup-database.ts",
+    "test:db:ribbon": "node scripts/test-ribbon-content.mjs",
     "test:browser": "node scripts/test-scoring-browser.mjs",
     "test:browser:dashboard": "node scripts/test-tournament-dashboard-browser.mjs",
     "test:browser:public": "node scripts/test-public-site-browser.mjs",

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { GolfTripActionSheet } from "../GolfTripActionSheet";
+import { itemProblem } from "@/lib/content/ribbonSave";
 import { canPublish, type FeaturedTrip, type RibbonBlock, type RibbonItem, type RibbonPost, type RibbonTab, type RibbonTripPlan, type TripTier } from "@/lib/content/ribbon";
 import { useRibbon, type SaveMode } from "./RibbonProvider";
 import { RibbonPostCard } from "./RibbonPostCard";
@@ -23,8 +24,8 @@ export function RibbonEditor({ tab, kind, item, startTrip, onClose }: { tab: Rib
   const ribbon = useRibbon()!;
   const admin = canPublish(ribbon.viewer);
   const [draft, setDraft] = useState<RibbonItem>(() => item ?? (kind === "post"
-    ? { id: `new-${Date.now()}`, kind: "post", format: "story", tab, title: "", summary: "", coverImage: "", blocks: [], status: "draft", publishAt: null, createdBy: ribbon.viewer.profileId ?? "", updatedAt: new Date().toISOString() }
-    : { id: `new-${Date.now()}`, kind: "trip_plan", tab: "Explore", status: "draft", publishAt: null, createdBy: ribbon.viewer.profileId ?? "", updatedAt: new Date().toISOString(),
+    ? { id: crypto.randomUUID(), kind: "post", format: "story", tab, title: "", summary: "", coverImage: "", blocks: [], status: "draft", publishAt: null, createdBy: ribbon.viewer.profileId ?? "", updatedAt: new Date().toISOString() }
+    : { id: crypto.randomUUID(), kind: "trip_plan", tab: "Explore", status: "draft", publishAt: null, createdBy: ribbon.viewer.profileId ?? "", updatedAt: new Date().toISOString(),
         trip: { ...(startTrip ?? { city: "", region: "", length: "", players: 4, image: "", tiers: [] }), city: "", tiers: (startTrip?.tiers ?? []).map((t) => ({ ...t })) } }));
   const [when, setWhen] = useState(toLocalInput(item?.publishAt ?? null));
   const [error, setError] = useState<string | null>(null);
@@ -36,22 +37,39 @@ export function RibbonEditor({ tab, kind, item, startTrip, onClose }: { tab: Rib
   const setPost = (changes: Partial<RibbonPost>) => setDraft((d) => ({ ...d, ...changes }) as RibbonItem);
   const setTrip = (changes: Partial<FeaturedTrip>) => setDraft((d) => ({ ...(d as RibbonTripPlan), trip: { ...(d as RibbonTripPlan).trip, ...changes } }));
   const setTier = (i: number, changes: Partial<TripTier>) => trip && setTrip({ tiers: trip.tiers.map((t, n) => n === i ? { ...t, ...changes } : t) });
-  const pickPhoto = (file: File | undefined, apply: (src: string) => void) => { if (file) apply(URL.createObjectURL(file)); };
+  const [uploads, setUploads] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const busy = uploads > 0 || saving;
+  async function pickPhoto(file: File | undefined, apply: (src: string) => void) {
+    if (!file) return;
+    setError(null); setUploads((n) => n + 1);
+    const sent = await ribbon.upload(file, draft.id);
+    setUploads((n) => n - 1);
+    if ("error" in sent) setError(sent.error); else apply(sent.url);
+  }
 
-  function save(mode: SaveMode) {
+  async function save(mode: SaveMode) {
     setError(null);
-    if (post && !post.title.trim()) return setError(post.format === "quick" ? "Add a short message to go with it." : "Add a headline so players know what the story is.");
-    if (post?.format === "quick" && !post.coverImage && !post.coverVideo) return setError("Add a photo or a video.");
-    if (trip && !trip.city.trim()) return setError("Add the city so players know where the trip is.");
-    if (trip && !trip.tiers.length) return setError("Add at least one price level.");
-    if ((post?.format === "story" && !post.coverImage) || (trip && !trip.image)) return setError("Add a cover photo. Every card needs one.");
+    const problem = itemProblem(draft);
+    if (problem) return setError(problem);
     if (mode === "schedule") {
       if (!when) return setError("Pick a date and time, then press Schedule.");
       if (new Date(when) <= new Date()) return setError("Pick a time in the future, or press Publish now.");
     }
-    ribbon.save(draft, mode, mode === "schedule" ? new Date(when).toISOString() : null);
+    setSaving(true);
+    const failed = await ribbon.save(draft, mode, mode === "schedule" ? new Date(when).toISOString() : null);
+    setSaving(false);
+    if (failed) return setError(failed);
     onClose();
   }
+  async function deleteItem() {
+    setSaving(true);
+    const failed = await ribbon.remove(draft.id);
+    setSaving(false);
+    if (failed) return setError(failed);
+    onClose();
+  }
+  const uploadedVideo = (url: string) => url.startsWith("blob:") || url.includes("/ribbon/");
 
   const title = kind === "trip_plan" ? (admin ? "This week's trip" : "Suggest a trip") : isNew ? "New post" : "Edit post";
   return <GolfTripActionSheet label={title} onClose={onClose} className={styles.sheet}>
@@ -100,9 +118,9 @@ export function RibbonEditor({ tab, kind, item, startTrip, onClose }: { tab: Rib
                 <input type="file" accept="image/*" aria-label="Photo" onChange={(e) => pickPhoto(e.target.files?.[0], (src) => put({ ...block, src }))} /></label>
               <input className={styles.input} aria-label="Photo caption" placeholder="Caption (optional)" value={block.caption ?? ""} onChange={(e) => put({ ...block, caption: e.target.value })} /></>}
             {block.type === "video" && <>
-              <label className={styles.photo} data-added={block.url.startsWith("blob:")}>{block.url.startsWith("blob:") ? "Video added · tap to change" : "Tap to upload a video"}
+              <label className={styles.photo} data-added={uploadedVideo(block.url)}>{uploadedVideo(block.url) ? "Video added · tap to change" : "Tap to upload a video"}
                 <input type="file" accept="video/*" aria-label="Upload video" onChange={(e) => pickPhoto(e.target.files?.[0], (url) => put({ ...block, url }))} /></label>
-              {!block.url.startsWith("blob:") && <input className={styles.input} aria-label="YouTube link" placeholder="…or paste a YouTube link" value={block.url} onChange={(e) => put({ ...block, url: e.target.value })} />}
+              {!uploadedVideo(block.url) && <input className={styles.input} aria-label="YouTube link" placeholder="…or paste a YouTube link" value={block.url} onChange={(e) => put({ ...block, url: e.target.value })} />}
               <input className={styles.input} aria-label="Video caption" placeholder="Caption (optional)" value={block.caption ?? ""} onChange={(e) => put({ ...block, caption: e.target.value })} /></>}
             {block.type === "link" && <div className={styles.row2}>
               <input className={styles.input} aria-label="Button words" placeholder="Book a tee time" value={block.label} onChange={(e) => put({ ...block, label: e.target.value })} />
@@ -145,22 +163,23 @@ export function RibbonEditor({ tab, kind, item, startTrip, onClose }: { tab: Rib
 
     {admin && <div className={styles.field}><label className={styles.label} htmlFor="ribbon-when">Schedule for later (optional)</label>
       <input id="ribbon-when" className={styles.input} type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></div>}
+    {uploads > 0 && <p className={styles.hint} role="status">Uploading… keep this open until it finishes.</p>}
     {error && <p className={styles.error} role="alert">{error}</p>}
 
     <div className={styles.buttons}>
       {admin ? <>
-        <button type="button" className={styles.primary} onClick={() => save("publish")}>{item?.status === "pending" ? "Approve & publish" : "Publish now"}</button>
-        <button type="button" className={styles.button} onClick={() => save("schedule")}>Schedule</button>
-        <button type="button" className={styles.button} onClick={() => save("draft")}>Save draft</button>
-        {item?.status === "published" && <button type="button" className={styles.button} style={{ gridColumn: "1/-1" }} onClick={() => { ribbon.save(draft, "unpublish"); onClose(); }}>Unpublish</button>}
+        <button type="button" className={styles.primary} disabled={busy} onClick={() => save("publish")}>{item?.status === "pending" ? "Approve & publish" : "Publish now"}</button>
+        <button type="button" className={styles.button} disabled={busy} onClick={() => save("schedule")}>Schedule</button>
+        <button type="button" className={styles.button} disabled={busy} onClick={() => save("draft")}>Save draft</button>
+        {item?.status === "published" && <button type="button" className={styles.button} style={{ gridColumn: "1/-1" }} disabled={busy} onClick={() => save("unpublish")}>Unpublish</button>}
       </> : <>
-        <button type="button" className={styles.primary} onClick={() => save("submit")}>Send for approval</button>
-        <button type="button" className={styles.button} style={{ gridColumn: "1/-1" }} onClick={() => save("draft")}>Save draft</button>
+        <button type="button" className={styles.primary} disabled={busy} onClick={() => save("submit")}>Send for approval</button>
+        <button type="button" className={styles.button} style={{ gridColumn: "1/-1" }} disabled={busy} onClick={() => save("draft")}>Save draft</button>
       </>}
       {!isNew && (confirmDelete
         ? <div className={styles.confirm}><span>Delete this {kind === "trip_plan" ? "trip plan" : "post"} for good?</span>
             <button type="button" className={styles.button} onClick={() => setConfirmDelete(false)}>Keep</button>
-            <button type="button" className={styles.button} onClick={() => { ribbon.remove(draft.id); onClose(); }}>Delete</button></div>
+            <button type="button" className={styles.button} disabled={busy} onClick={deleteItem}>Delete</button></div>
         : <button type="button" className={styles.danger} onClick={() => setConfirmDelete(true)}>{admin ? "Delete" : "Delete draft"}</button>)}
     </div>
   </GolfTripActionSheet>;

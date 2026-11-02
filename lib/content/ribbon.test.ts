@@ -20,6 +20,18 @@ test("players only see live posts; drafts, pending and scheduled stay hidden", (
   assert.equal(tabPosts(items, "Teaching", admin, now).length, 4);
 });
 
+test("the newest post is first; a scheduled post's future date can't put it above a newer live post", () => {
+  const items = [post("yesterday"), post("later", { publishAt: "2026-11-09T09:00:00Z", updatedAt: "2026-11-01T10:00:00Z" }), post("justNow", { publishAt: "2026-11-02T11:59:00Z" }), post("draft", { status: "draft", publishAt: null, updatedAt: "2026-11-02T08:00:00Z" })];
+  assert.deepEqual(tabPosts(items, "Teaching", admin, now).map((p) => p.id), ["justNow", "draft", "later", "yesterday"]);
+  // Once its date arrives, the scheduled post is the newest.
+  assert.equal(tabPosts(items, "Teaching", admin, new Date("2026-11-09T09:00:00Z"))[0].id, "later");
+});
+
+test("feed order compares real times, whichever way the time is written", () => {
+  const items = [post("older", { publishAt: "2026-11-02T12:00:00+05:00" }), post("newer", { publishAt: "2026-11-02T08:00:00.750Z" })];
+  assert.deepEqual(tabPosts(items, "Teaching", player, now).map((p) => p.id), ["newer", "older"]);
+});
+
 test("tabs stay separate and trip plans never show as posts", () => {
   const trip: RibbonItem = { id: "t", kind: "trip_plan", tab: "Explore", trip: fallback, status: "published", publishAt: null, createdBy: "admin-1", updatedAt: "2026-11-01T00:00:00Z" };
   const items = [post("teach"), post("news", { tab: "News" }), trip];

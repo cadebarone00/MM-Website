@@ -23,25 +23,48 @@ export function ContentTeam({ initial, sample = false }: { initial: ContentTeamR
   const [confirm, setConfirm] = useState<string | null>(null);
   const empty: PostCounts = { published: 0, waiting: 0, sentBack: 0, lastPublishedAt: null };
 
-  function invite() {
+  /** Sends a change to the server. Null means it failed and the message is already showing. */
+  async function send(url: string, init: RequestInit) {
+    setError(null); setMessage(null);
+    const sent = await fetch(url, init).then((r) => r.json()).catch(() => ({ ok: false, error: "Couldn't reach the server. Try again." }));
+    if (!sent.ok) { setError(sent.error); return null; }
+    return sent;
+  }
+  const post = (body: object): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+  async function invite() {
     setError(null); setMessage(null);
     const name = who.trim().replace(/^@/, "");
     if (!name) return setError("Type their username or email.");
+    if (!sample) {
+      const sent = await send("/api/content/team", post({ who: name }));
+      if (sent) { setRows(sent.team); setWho(""); setMessage(`Invite sent. ${name} will see it next time they open the app.`); }
+      return;
+    }
     if (rows.some((r) => r.username === name && r.status !== "removed")) return setError(`@${name} is already on the team or invited.`);
-    // Sample: any name works. Saved version: the server looks the account up and refuses unknown names.
+    // Sample: any name works.
     setRows((list) => [{ profileId: `invited-${name}`, name, username: name, status: "invited", invitedBy: "You", invitedAt: new Date().toISOString(), counts: empty }, ...list]);
     setWho(""); setMessage(`Invite sent. @${name} will see it next time they open the app.`);
   }
-  function makeLink() {
+  async function makeLink() {
     setError(null); setMessage(null);
-    // Sample only: a made-up code. Saved version: the server makes a one-time code and keeps only its hash.
+    if (!sample) {
+      const sent = await send("/api/content/team", post({ link: true }));
+      if (sent) setLink(sent.link);
+      return;
+    }
+    // Sample only: a made-up code. The server makes a one-time code and keeps only its hash.
     setLink(`${window.location.origin}/join-team/${Math.random().toString(36).slice(2, 10)}`);
   }
-  function remove(id: string) {
+  async function remove(id: string) {
+    if (!sample && !await send(`/api/content/team/${id}`, { method: "DELETE" })) return;
     setRows((list) => list.map((r) => r.profileId === id ? { ...r, status: "removed" } : r));
     setConfirm(null); setMessage("Removed. They can't post anymore.");
   }
-  const cancel = (id: string) => { setRows((list) => list.filter((r) => r.profileId !== id)); setMessage("Invite cancelled."); };
+  const cancel = async (id: string) => {
+    if (!sample && !await send(`/api/content/team/${id}`, { method: "DELETE" })) return;
+    setRows((list) => list.filter((r) => r.profileId !== id)); setMessage("Invite cancelled.");
+  };
 
   const current = rows.filter((r) => r.status !== "removed");
   const past = rows.filter((r) => r.status === "removed");

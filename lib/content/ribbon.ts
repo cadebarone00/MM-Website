@@ -1,7 +1,7 @@
 /**
  * Play page ribbon content (spec "Play page ribbon content", approved 2026-10-30): posts on the Explore, Courses,
  * Equipment, Teaching and News tabs, plus the weekly featured trip on Explore. Pure rules only, shared by the screens and
- * (later) the server routes: who sees what, who can do what, and the Content team post counts. Authors are stored for the
+ * the server routes: who sees what, who can do what, and the Content team post counts. Authors are stored for the
  * record but never shown.
  */
 
@@ -68,13 +68,13 @@ export const canPost = (viewer: Viewer) => viewer.role === "admin" || viewer.rol
 export function tabPosts(items: RibbonItem[], tab: RibbonTab, viewer: Viewer, now: Date): RibbonPost[] {
   return items
     .filter((item): item is RibbonPost => item.kind === "post" && item.tab === tab && canSee(item, viewer, now))
-    .sort((a, b) => sortTime(b).localeCompare(sortTime(a)));
+    .sort((a, b) => feedTime(b, now) - feedTime(a, now));
 }
 
 /** The featured trip everyone sees: the newest live trip plan, otherwise the built-in plan, so Explore is never empty. */
 export function featuredTrip(items: RibbonItem[], now: Date, fallback: FeaturedTrip): { trip: FeaturedTrip; item: RibbonTripPlan | null } {
   const live = items.filter((item): item is RibbonTripPlan => item.kind === "trip_plan" && isLive(item, now))
-    .sort((a, b) => sortTime(b).localeCompare(sortTime(a)))[0];
+    .sort((a, b) => feedTime(b, now) - feedTime(a, now))[0];
   return live ? { trip: live.trip, item: live } : { trip: fallback, item: null };
 }
 
@@ -133,3 +133,6 @@ export function videoSource(url: string): { kind: "youtube"; src: string } | { k
 }
 
 const sortTime = (item: RibbonItem) => item.publishAt ?? item.updatedAt;
+
+/** Where an item sits in a feed, as a real time. A scheduled item counts from its last save, so its future date can't put it above newer live posts. */
+const feedTime = (item: RibbonItem, now: Date) => new Date(isScheduled(item, now) ? item.updatedAt : sortTime(item)).getTime();

@@ -6,9 +6,12 @@ const INVITE_PATH = /^\/(golf-trips|tournaments|tournaments\/code)\/invite\/[A-Z
 
 export const inviteReturnPath = (value: string | null | undefined): string | null => value && INVITE_PATH.test(value) ? value : null;
 
+/** A Content team invite link (app/join-team). */
+const JOIN_TEAM_PATH = /^\/join-team\/[A-Za-z0-9_-]{32,200}$/;
+
 /** Exact website destination only; keep the invite-only helper unchanged for existing callers. */
 export const authReturnPath = (value: unknown): string | null =>
-  typeof value === "string" ? (value === "/dashboard" || value === "/tap-in") ? value : inviteReturnPath(value) : null;
+  typeof value === "string" ? (value === "/dashboard" || value === "/tap-in" || JOIN_TEAM_PATH.test(value)) ? value : inviteReturnPath(value) : null;
 
 export const withReturnTo = (href: string, next: string | null): string => {
   const safe = authReturnPath(next);

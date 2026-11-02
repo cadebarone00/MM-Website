@@ -40,7 +40,7 @@ export const API_RULES: readonly AccessRule[] = [
     category: "public", why: "V1 public read-only data (no account)" },
   { pattern: /^\/api\/wagers\/(hole-in-one|low-individual|player-birdies|player-doubles|team-winner|total-birdies|published-types|mm-coins\/settled-markets|player-tournament-birdies\/[^/]+)$/,
     category: "public", methods: READS, why: "V1 public odds / market reads" },
-  { pattern: /^\/api\/(account\/search|code-tournaments|courses\/[^/]+\/gps|fantasy|golf-trips|platform|portal|profile|rounds|tap-in|wagers)(\/|$)/,
+  { pattern: /^\/api\/(account\/search|code-tournaments|content|courses\/[^/]+\/gps|fantasy|golf-trips|platform|portal|profile|rounds|tap-in|wagers)(\/|$)/,
     category: "active", why: "golf / social / organizer / admin features" },
 ];
 
@@ -54,6 +54,7 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/(settings|settings\/delete-account|account\/choose)$/, category: "account", why: "settings, deletion and correction stay reachable" },
   { pattern: /^\/settings\/content-team$/, category: "active", why: "Play page content team (Admins only)" },
   { pattern: /^\/(golf-trips\/invite|tournaments\/invite|tournaments\/code\/invite)\/[^/]+$/, category: "invite", why: "invitation landing pages" },
+  { pattern: /^\/join-team\/[^/]+$/, category: "active", why: "Content team invite link" },
   { pattern: /^\/tournaments\/live\/[^/]+$/, category: "public", why: "public tournament view" },
   { pattern: /^\/watch\/[^/]+$/, category: "public", why: "watch code, no sign-in" },
   { pattern: /^\/t\//, category: "public", why: "public tournament websites" },
