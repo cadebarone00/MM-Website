@@ -3669,3 +3669,27 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
   type / size checks and the photo folder (server-chosen, the caller's own) are unchanged.
 - Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
   schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).
+
+### Phase 7C — web Google / Apple sign-in joins the onboarding lifecycle (built 2026-10-29; awaiting review)
+- **Routing** (only with `MAROON_V2_ONBOARDING=on`; off = unchanged, `/profile`): after Google / Apple the callback sends
+  the person to `/onboarding`, which routes by lifecycle — Pending → next required step (Name for a new account),
+  Active → Play, Active without birthday → Birthday, Ineligible / restricted / closed → `/account/status`, unknown →
+  `/account/status`. An allow-listed return page (invite / dashboard) still wins. A sign-in started on the `/start`
+  screens (`onboarding=1`) returns cancel / failure to `/start/log-in?error=…` (fixed words only).
+- **Screens:** `/start/sign-up` and `/start/log-in` show "or" + Continue with Google / Apple only for providers switched
+  on in Supabase (unchanged rule); same styles as the Sign up design. Provider accounts skip Verification Code, Email
+  Confirmed and Create password; Name, Birthday (13+), Settings (privacy) and Finish are still required.
+- **Name:** Google's given / family name or Apple's first-sign-in full name only PREFILLS the Name screen (editable);
+  nothing is written to the profile until the person saves, and the Name step only saves an incomplete profile, so an
+  existing name is never replaced.
+- **Terms:** provider accounts have no code step, so the current Terms / Privacy are accepted on Settings at Finish
+  (the existing "terms" step). Final legal texts remain a launch blocker.
+- **Identity:** one profile per Supabase account (`initialize_my_profile`, idempotent; profile id = account id).
+  Matching names never merge. Apple Hide My Email = its own account unless linked while signed in (Phase 7D).
+  Supabase's automatic linking of a provider login to an existing account with the same VERIFIED email (decision D1)
+  can only be exercised with real provider credentials — open risk to verify: an unverified email/password account
+  for the same address must not be taken over.
+- **Fix found while testing:** onboarding steps no longer call `router.refresh()` after moving on; the refresh of the
+  finished step raced the move (Birthday could jump to Settings and skip Photo).
+- **Local tests only:** `AUTH_LOCAL_PROVIDERS=on node scripts/auth-local/setup.mjs` switches Google + Apple on with dummy
+  local credentials; the browser test intercepts Supabase's authorize step (nothing reaches Google / Apple).

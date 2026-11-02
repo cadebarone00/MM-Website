@@ -16,6 +16,8 @@ import styles from "./DevSimulator.module.css";
 
 const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
+/** Same-origin pages load by path; a page served by another local dev server (page.origin) loads from there. */
+const frameUrl = (page: SimulatorPage) => `${page.origin ?? ""}${page.path}`;
 
 export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: { pages: SimulatorPage[]; unmapped: Record<string, unknown>; initialGroup?: string }) {
   const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
@@ -23,7 +25,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const initialPage = pages.find(page => page.group === initialGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
   const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialPage.viewport === "desktop" ? "desktop" : initialPage.viewport === "mobile" ? "iphone16" : initialDevice.id))!;
   const [pageId, setPageId] = useState(initialPage.id);
-  const [frameSrc, setFrameSrc] = useState(`${initialPage.path}?simulator=1`);
+  const [frameSrc, setFrameSrc] = useState(`${frameUrl(initialPage)}?simulator=1`);
   const [currentPath, setCurrentPath] = useState(initialPage.path);
   const [device, setDevice] = useState<string>(initialPreset.id);
   const [size, setSize] = useState({ width: initialPreset.width as number, height: initialPreset.height as number });
@@ -48,6 +50,17 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const bridgeReady = useRef(false);
   const config = useMemo<SimulatorConfig>(() => ({ source, state, navigation }), [source, state, navigation]);
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
+  // A page from another local dev server: if that server isn't running, the phone says how to start it (not an error page).
+  const [downOrigin, setDownOrigin] = useState<string | null>(null);
+  const [originCheck, setOriginCheck] = useState(0);
+  useEffect(() => {
+    const origin = selectedPage.origin;
+    if (!origin) return;
+    let live = true;
+    // no-cors: any answer at all means the server is up; only a refused connection rejects.
+    fetch(`${origin}/favicon.ico`, { mode: "no-cors", cache: "no-store" }).then(() => { if (live) setDownOrigin(null); }, () => { if (live) setDownOrigin(origin); });
+    return () => { live = false; };
+  }, [selectedPage.origin, originCheck]);
   const desktopPreview = size.width >= 1024;
   const websitePreview = selectedPage.group === "Website desktop" || selectedPage.group === "Website mobile";
   const isBrandIntro = currentPath === "/dev/brand/intro";
@@ -172,13 +185,14 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
     const requested = next.navigation ? { ...next.navigation, command: ++command.current } : undefined;
     setNavigation(requested);
     // These canvases intentionally have no simulator bridge. Always replace their
-    // document, including desktop/mobile entries that share the same route.
-    if (next.standalone || selectedPage.standalone) {
+    // document, including desktop/mobile entries that share the same route. Pages
+    // served by another local dev server (origin) can't hear the bridge either.
+    if (next.standalone || selectedPage.standalone || next.origin || selectedPage.origin) {
       bridgeReady.current = false;
       setReady(false);
       setGps(null);
       setCurrentPath(next.path);
-      setFrameSrc(`${next.path}?simulator=1&command=${++command.current}`);
+      setFrameSrc(`${frameUrl(next)}?simulator=1&command=${++command.current}`);
       return;
     }
     let path = currentPath;
@@ -189,7 +203,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       if (path !== next.path) iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "navigate", path: next.path }, window.location.origin);
     } else if (path !== next.path) {
       setReady(false);
-      setFrameSrc(`${next.path}?simulator=1&command=${++command.current}`);
+      setFrameSrc(`${frameUrl(next)}?simulator=1&command=${++command.current}`);
     }
   }
   function chooseDevice(id: string) {
@@ -291,6 +305,11 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
               <iframe ref={iframe} title={selectedPage.standalone ? `${selectedPage.group} preview` : "Mobile application preview"} src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
                 className={`${styles.frame} ${desktopPreview ? styles.desktopFrame : ""}`} onLoad={() => { setReady(true); sendConfig(); }} />
+              {selectedPage.origin && downOrigin === selectedPage.origin && <div role="status" style={{ position: "absolute", inset: 0, display: "grid", placeContent: "center", gap: 12, padding: 24, background: "#240001", color: "#fbf8f1", textAlign: "center", fontFamily: "var(--font-barlow), sans-serif" }}>
+                <strong style={{ font: "400 26px/1.2 var(--font-spectral), Georgia, serif" }}>The auth test server isn&apos;t running</strong>
+                <p style={{ margin: 0, fontSize: 14, color: "#e1cec4" }}>These screens come from {selectedPage.origin} (MM-Website-authdev, maroon-auth-dev). In that folder run <code>node authdev-start.mjs</code>, then check again.</p>
+                <button type="button" style={{ justifySelf: "center", padding: "10px 18px", borderRadius: 8, border: 0, background: "#c9a86e", color: "#240001", fontWeight: 600 }} onClick={() => { setOriginCheck(count => count + 1); setFrameSrc(`${frameUrl(selectedPage)}?simulator=1&command=${++command.current}`); }}>Check again</button>
+              </div>}
               {/* The phone's front camera, drawn over the screen like the real hardware (taps pass through). */}
               {!websitePreview && device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
               {!websitePreview && device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}

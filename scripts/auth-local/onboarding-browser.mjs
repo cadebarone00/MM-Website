@@ -161,11 +161,11 @@ async function signUpToCode(page, email, password) {
   await waitPath(page, "/start/sign-up");
   await page.getByLabel("Email").fill(email);
   const sentAt = Date.now() - 1000;
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await waitPath(page, "/start/password");
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await waitPath(page, "/start/verify");
   return latestCode(email, SIGNUP_MAIL, sentAt);
 }
@@ -180,7 +180,7 @@ async function nameStep(page, first, last) {
   await page.getByLabel("First Name").fill(first);
   await page.getByLabel("Last Name").fill(last);
   await page.getByLabel("Username").fill(`${first}${run}`.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30));
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await waitPath(page, "/onboarding/birthday");
 }
 async function birthdayStep(page, year) {
@@ -188,7 +188,7 @@ async function birthdayStep(page, year) {
   await page.getByLabel("Year").selectOption(String(year));
   await page.locator(`button[aria-label$="15 January ${year}"]`).click();
   await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
 }
 
 // =====================================================================================================================
@@ -201,7 +201,8 @@ await withServer("A-off", {}, async (browser) => {
   const api = await context.request.post(`${ORIGIN}/api/auth/verify-code`, { data: { email: addr("off"), code: "123456", type: "signup" }, timeout: 180000 });
   check("flag off: POST /api/auth/verify-code -> 404", api.status() === 404);
   await page.goto(`${ORIGIN}/dev/auth/verification-code`);
-  check("flag off: the dev preview still renders", await page.getByRole("heading", { name: "Email Verification" }).isVisible());
+  const heading = await page.getByRole("heading", { name: "Email Verification" }).waitFor({ timeout: 120000 }).then(() => true, () => false);
+  check("flag off: the dev preview still renders", heading);
 });
 
 setActivation(true);
@@ -219,7 +220,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(page, "/start/confirmed");
     check("right code -> Email confirmed", await page.getByRole("heading", { name: "Email confirmed" }).isVisible() && accountRow(ann.email).confirmed);
     check("Terms + Privacy recorded after verification", sql(`select count(*) from public.terms_acceptances where account_id = ${q(accountRow(ann.email).id)}`) === "2");
-    await page.getByRole("link", { name: "Continue" }).click();
+    await page.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(page, "Ann", "Browser");
     check("name + username saved", accountRow(ann.email).username !== "");
     // Enforcement: a Pending account can't reach Play; it's sent to its step.
@@ -320,7 +321,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     const { code } = await signUpToCode(p, kid.email, kid.password);
     await typeCode(p, code);
     await waitPath(p, "/start/confirmed");
-    await p.getByRole("link", { name: "Continue" }).click();
+    await p.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(p, "Kid", "Browser");
     await birthdayStep(p, new Date().getUTCFullYear() - 5);
     await waitPath(p, "/account/status");
@@ -390,7 +391,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await p.goto(fresh.link ?? first.link);
     await waitPath(p, "/start/confirmed");
     check("email link -> Email confirmed, verified", await p.getByRole("heading", { name: "Email confirmed" }).isVisible() && accountRow(fay.email).confirmed);
-    await p.getByRole("link", { name: "Continue" }).click();
+    await p.getByRole("link", { name: "Continue", exact: true }).click();
     await waitPath(p, "/onboarding/name");
     check("…and onboarding carries on at Name", true);
     await c.close();
@@ -423,11 +424,18 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
         providersOn ? google === 1 && apple === 1 : google === 0 && apple === 0, `${google}/${apple}`);
     }
     if (providersOn) {
-      // The trip to Google / Apple is intercepted: the "provider" sends the person back cancelled, as a real one would.
-      for (const [name, host] of [["Google", "https://accounts.google.com/**"], ["Apple", "https://appleid.apple.com/**"]]) {
-        await c.route(host, (route) => {
-          const state = new URL(route.request().url()).searchParams.get("state") ?? "";
-          return route.fulfill({ status: 302, headers: { location: `${API}/auth/v1/callback?error=access_denied&error_description=cancelled&state=${encodeURIComponent(state)}` } });
+      // Nothing goes to Google / Apple. Chromium only lets a test intercept the FIRST request of a redirect chain, so the
+      // button's own POST /api/auth/oauth is intercepted: it runs for real (PKCE secret cookie and all), Supabase's
+      // authorize step is then followed by hand to read the provider `state`, and the "provider" answers cancelled
+      // through Supabase's own callback — the same return trip a real cancel takes.
+      for (const name of ["Google", "Apple"]) {
+        const host = `${ORIGIN}/api/auth/oauth`;
+        await c.route(host, async (route) => {
+          const started = await route.fetch({ maxRedirects: 0 });
+          const authorize = started.headers().location ?? "";
+          const toProvider = (await c.request.get(authorize, { maxRedirects: 0 })).headers().location ?? "";
+          const state = new URL(toProvider).searchParams.get("state") ?? "";
+          return route.fulfill({ response: started, headers: { ...started.headers(), location: `${API}/auth/v1/callback?error=access_denied&error_description=cancelled&state=${encodeURIComponent(state)}` } });
         });
         await p.goto(`${ORIGIN}/start/sign-up`);
         await p.getByRole("button", { name: `Continue with ${name}` }).click();
@@ -450,7 +458,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     check("nothing saved just by signing in", sql(`select coalesce(display_name, '<none>') from public.profiles where id = ${q(gale.id)}`) === "<none>");
     await p.getByLabel("First Name").fill("Gail");
     await p.getByLabel("Username").fill(`gail${run}`.slice(0, 30));
-    await p.getByRole("button", { name: "Continue" }).click();
+    await p.getByRole("button", { name: "Continue", exact: true }).click();
     await waitPath(p, "/onboarding/birthday");
     check("the edited name is what's saved", sql(`select display_name from public.profiles where id = ${q(gale.id)}`) === "Gail Googler");
     await birthdayStep(p, 1992);
@@ -478,7 +486,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(first.page, "/onboarding/name");
     check("Apple relay-address account -> Name, prefilled from Apple's full name", await first.page.getByLabel("First Name").inputValue() === "Andy" && await first.page.getByLabel("Last Name").inputValue() === "Apple");
     await first.page.getByLabel("Username").fill(`andy${run}`.slice(0, 30));
-    await first.page.getByRole("button", { name: "Continue" }).click();
+    await first.page.getByRole("button", { name: "Continue", exact: true }).click();
     await waitPath(first.page, "/onboarding/birthday");
     await first.context.close();
     const second = await phone(browser);
@@ -489,18 +497,21 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await second.context.close();
   });
 
-  await step("Apple sign-in without a name, legacy and restricted accounts", async () => {
+  await step("Apple sign-in without a name", async () => {
     const quiet = await providerAccount("quiet", "apple", {});
-    let x = await phone(browser);
+    const x = await phone(browser);
     await logIn(x.page, quiet);
     await waitPath(x.page, "/onboarding/name");
     check("no name from Apple -> empty fields", await x.page.getByLabel("First Name").inputValue() === "" && await x.page.getByLabel("Last Name").inputValue() === "");
     await x.context.close();
+  });
 
+  await step("legacy account without a birthday", async () => {
     const vet = await providerAccount("vet", "google", { full_name: "Old Vet" });
+    sql(`select public.initialize_my_profile(${q(vet.id)})`); // the row first log-in would create
     sql(`update public.profiles set display_name = 'Vet Original', username = ${q(`vet${run}`.slice(0, 30))} where id = ${q(vet.id)}`);
     setActivatedAt(vet.id, "now()");
-    x = await phone(browser);
+    const x = await phone(browser);
     await logIn(x.page, vet);
     await waitPath(x.page, "/onboarding/birthday");
     check("legacy account without a birthday -> Birthday", true);
@@ -508,8 +519,13 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(x.page, "/");
     check("…then straight to Play; the existing name was never replaced by the provider's", sql(`select display_name from public.profiles where id = ${q(vet.id)}`) === "Vet Original");
     await x.context.close();
+  });
+
+  await step("restricted account", async () => {
+    let x;
 
     const held = await providerAccount("held", "google", { full_name: "Held Review" });
+    sql(`select public.initialize_my_profile(${q(held.id)})`); // the row first log-in would create
     sql(`update public.profiles set display_name = 'Held Review', username = ${q(`held${run}`.slice(0, 30))} where id = ${q(held.id)}`);
     setActivatedAt(held.id, "now()");
     sql(`insert into public.account_eligibility (account_id, status, reason) values (${q(held.id)}, 'review', 'manual')`);
@@ -528,7 +544,7 @@ await withServer("C-unenforced", { MAROON_V2_ONBOARDING: "on" }, async (browser)
     const { code } = await signUpToCode(page, cy.email, cy.password);
     await typeCode(page, code);
     await waitPath(page, "/start/confirmed");
-    await page.getByRole("link", { name: "Continue" }).click();
+    await page.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(page, "Cy", "Browser");
     await birthdayStep(page, 1990);
     await waitPath(page, "/onboarding/photo");
