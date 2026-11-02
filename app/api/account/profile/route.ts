@@ -33,6 +33,8 @@ export async function POST(request: Request) {
   const result = await finishProfileSetup(current.account.id, parsed.input);
   if (result.status === "unverified") return privateJson({ ok: false, error: "Verify your email first." }, 403);
   if (result.status === "signed-out") return privateJson({ ok: false, error: "Log in first." }, 401);
+  // G4: a login that never passed the birthday step (supabase/signup_gate.sql) can't get a profile.
+  if (result.status === "age_check_required") return privateJson({ ok: false, code: "age_check_required", error: "This account can't be set up. Start again with your birthday." }, 403);
   return reply(result);
 }
 

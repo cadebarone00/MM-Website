@@ -1,7 +1,10 @@
 // Pending accounts Phase 6: code-based email verification and code-based password recovery through the REAL route
 // handlers against the ISOLATED local Supabase (its email templates carry the 6-digit code: scripts/auth-local/templates).
-//   AUTH_LOCAL_STACK=main node scripts/auth-local/setup.mjs
-//   AUTH_LOCAL_STACK=main npx tsx --import ./scripts/auth-local/register.mjs scripts/auth-local/onboarding-regression.mts
+//   AUTH_LOCAL_STACK=gate node scripts/auth-local/setup.mjs
+//   AUTH_LOCAL_STACK=gate npx tsx --import ./scripts/auth-local/register.mjs scripts/auth-local/onboarding-regression.mts
+// G4 (2026-10-30): sign-up with V2 on needs the birthday-first age pass (supabase/signup_gate.sql, installed only on the
+// gate stack, whose Supabase Auth runs the Before User Created hook). The suite opens registration ('open') for its run
+// and closes it again at the end.
 // Installs supabase/account_activation.sql + supabase/auth_code_attempts.sql on the isolated stack only.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -16,6 +19,7 @@ const { POST: resetPOST } = await import("../../app/api/auth/reset-password/rout
 const { POST: verifyPOST } = await import("../../app/api/auth/verify-code/route.ts");
 const { GET: callbackGET } = await import("../../app/auth/callback/route.ts");
 const { GET: onboardingGET } = await import("../../app/api/account/onboarding/route.ts");
+const { POST: ageCheckPOST } = await import("../../app/api/auth/age-check/route.ts");
 
 const stack = authLocalStack();
 let failed = 0, passed = 0;
@@ -27,6 +31,8 @@ const section = (title: string) => console.log(`\n${title}`);
 const psql = (file: string) => execFileSync("docker", ["exec", "-i", stack.dbContainer, "psql", "-U", "postgres", "-q", "-v", "ON_ERROR_STOP=1"], { input: readFileSync(file) });
 psql("supabase/account_activation.sql");
 psql("supabase/auth_code_attempts.sql");
+if (stack.name !== "gate") throw new Error("Run on the gate stack (AUTH_LOCAL_STACK=gate): sign-up now needs the birthday-first age pass.");
+sql("update public.registration_settings set mode = 'open'");
 sql("notify pgrst, 'reload schema'");
 await new Promise((r) => setTimeout(r, 1500));
 
@@ -56,6 +62,7 @@ const SIGNUP_MAIL = "Confirm your email", RESET_MAIL = "Reset your Maroon passwo
 /** Signs up through the real route (as the Create password screen does) and returns the emailed code. */
 async function signUp(name: string) {
   const email = addr(name), jar = browser(), sent = Date.now() - 1000;
+  await call(jar, ageCheckPOST, "/api/auth/age-check", { birthdate: "1990-06-15" }); // G4: birthday first
   const r = await call(jar, signupPOST, "/api/auth/signup", { email, password: PASSWORD, next: "/onboarding" });
   return { email, jar, status: r.status, code: await latestCode(email, SIGNUP_MAIL, sent) };
 }
@@ -199,5 +206,6 @@ await latestCode(fay.email, RESET_MAIL, sentAt);
 const resetLink = await latestLink(fay.email, "recovery");
 check("the reset email's link returns to Set a new password", decodeURIComponent(resetLink).includes("flow=onboarding-recovery"));
 
+sql("update public.registration_settings set mode = 'closed'");
 console.log(`\n${passed} passed, ${failed} failed.`);
 process.exit(failed ? 1 : 0);

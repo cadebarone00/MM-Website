@@ -25,6 +25,10 @@ export type SignupReply = { status: number; body: { ok: true } | { ok: false; er
 
 const CHECK_YOUR_EMAIL: SignupReply = { status: 200, body: { ok: true } };
 
+/** The fixed refusals of the Before User Created hook (supabase/signup_gate.sql); only these exact texts are shown. */
+export const GATE_REFUSALS = ["Registration is closed.", "New accounts can only be created with email.",
+  "Registration is invite-only right now.", "Start with your birthday."] as const;
+
 /** What the endpoint answers for Supabase's signUp result. */
 export function signupReply(error: AuthError): SignupReply {
   if (!error) return CHECK_YOUR_EMAIL;
@@ -37,6 +41,8 @@ export function signupReply(error: AuthError): SignupReply {
   if (code === "weak_password" || /longer than 72/i.test(message)) return { status: 400, body: { ok: false, error: passwordErrorMessage(error) } };
   if (code === "email_address_invalid" || code === "validation_failed") return { status: 400, body: { ok: false, error: "Enter a valid email address." } };
   if (code === "signup_disabled") return { status: 403, body: { ok: false, error: "New accounts aren't open yet." } };
+  const refusal = GATE_REFUSALS.find((text) => message.includes(text));
+  if (refusal) return { status: 403, body: { ok: false, error: refusal } };
   if (error.status === 429) return { status: 429, body: { ok: false, error: "Too many tries. Wait a minute and try again." } };
   return { status: 503, body: { ok: false, error: "Couldn't create your account. Try again." } };
 }

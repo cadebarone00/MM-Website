@@ -1,0 +1,74 @@
+# LOCAL legacy-testing copy "maroon-legacy" (docs/account-retirement-architecture-2026-10-30.md). Copied into
+# out/legacy-local/supabase/ by scripts/legacy-local/stack.mjs. Its own project id and ports (57xxx), so it never
+# touches the main local stack (54xxx), maroon-auth-test (55xxx), maroon-auth-main (56xxx) or any hosted project.
+#
+# No migrations: the schema and data come ONLY from a verified production backup (restore-local.mjs), then
+# sanitize.mjs. Outbound delivery is impossible by configuration: no SMTP (every email lands in the local Mailpit inbox),
+# no Google / Apple providers, no Edge Functions, no Realtime, no analytics. Sign-ups are OFF: testers sign in as the
+# sanitized legacy accounts with the test password set by sanitize.mjs.
+
+project_id = "maroon-legacy"
+
+[api]
+enabled = true
+port = 57321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 57322
+shadow_port = 57320
+# Must match production's major version (check the backup manifest / pg_restore --list header before restoring).
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = false
+
+# Studio is local-only and lets the owner browse the copied golf data at http://127.0.0.1:57323.
+[studio]
+enabled = true
+port = 57323
+
+[inbucket]
+enabled = true
+port = 57324
+
+# Profile photos and other approved files are restored into the local Storage service.
+[storage]
+enabled = true
+
+[analytics]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3998"
+additional_redirect_urls = ["http://127.0.0.1:3998/**", "http://localhost:3998/**"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# No new accounts in the legacy copy: it exists to test the restored legacy accounts and their golf data.
+enable_signup = false
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = true
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+# No [auth.email.smtp] section on purpose: the local stack then delivers only to the Mailpit inbox above.

@@ -13,7 +13,7 @@ test("never points back at a legacy page, so there is no redirect loop", () => {
 });
 
 test("sign up and log in go to the V2 screens", () => {
-  assert.equal(legacyAuthRedirect("/signup", {}, { signedIn: false }), "/start/sign-up");
+  assert.equal(legacyAuthRedirect("/signup", {}, { signedIn: false }), "/start/birthday");
   assert.equal(legacyAuthRedirect("/login", {}, { signedIn: false }), "/start/log-in");
   assert.equal(legacyAuthRedirect("/login/email", {}, { signedIn: false }), "/start/log-in");
   assert.equal(legacyAuthRedirect("/forgot-password", {}, { signedIn: false }), "/start/forgot");
@@ -30,7 +30,7 @@ test("log in keeps an allow-listed return page and Google / Apple error code, an
 });
 
 test("the old sign-up player code is not carried (V2 sign-up has no player-code claim)", () => {
-  assert.equal(legacyAuthRedirect("/signup", { code: "MM123", next: "/dashboard" }, { signedIn: false }), "/start/sign-up");
+  assert.equal(legacyAuthRedirect("/signup", { code: "MM123", next: "/dashboard" }, { signedIn: false }), "/start/birthday");
 });
 
 test("reset password: a bad link goes to Forgot; a recovery session goes to Set a new password", () => {

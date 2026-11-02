@@ -14,5 +14,7 @@ export async function POST(request: Request) {
   if (result.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in first." }, { status: 401, headers });
   if (result.status === "unverified") return NextResponse.json({ ok: false, error: "Verify your email first." }, { status: 403, headers });
   if (result.status === "unavailable") return NextResponse.json({ ok: false, error: "Profiles aren't switched on yet." }, { status: 503, headers });
+  // G4: this login never passed the birthday step (it was not created through the gated sign-up), so it can't get a profile.
+  if (result.status === "age_check_required") return NextResponse.json({ ok: false, code: "age_check_required", error: "This account can't be set up. Start again with your birthday." }, { status: 403, headers });
   return NextResponse.json({ ok: false, error: "Couldn't set up your profile. Try again." }, { status: 500, headers });
 }
