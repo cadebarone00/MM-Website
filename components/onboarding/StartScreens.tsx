@@ -7,7 +7,7 @@ import { MaroonMark } from "@/components/brand/MaroonMark";
 import { AppleIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "@/components/dev/auth/AuthWelcomePreview";
 import type { OAuthProvider } from "@/lib/auth/oauth";
 import { errorOf, rememberEmail, send } from "@/lib/account/onboardingClient";
-import { START, STATUS, stepPath } from "@/lib/account/onboardingRoutes";
+import { START, STATUS, afterLogInPath } from "@/lib/account/onboardingRoutes";
 import type { OnboardingStep } from "@/lib/account/onboardingApi";
 import styles from "@/components/dev/auth/AuthWelcomePreview.module.css";
 
@@ -47,8 +47,9 @@ export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
   </main>;
 }
 
-/** Email + password. Active → Play; Pending → the first unfinished step; blocked → the account status page. */
-export function LogInScreen({ notice, providers }: { notice: string | null; providers: OAuthProvider[] }) {
+/** Email + password. Active → Play (or the allow-listed return page it came with); Pending → the first unfinished step;
+ *  blocked → the account status page. */
+export function LogInScreen({ notice, providers, returnTo = null }: { notice: string | null; providers: OAuthProvider[]; returnTo?: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,7 +71,7 @@ export function LogInScreen({ notice, providers }: { notice: string | null; prov
     if (sent.json.ok !== true) { setError(errorOf(sent)); setBusy(false); return; }
     const resume = await send("/api/account/onboarding", undefined, "GET");
     const next = resume.json.next as OnboardingStep | null | undefined;
-    router.replace(next ? stepPath(next) : STATUS);
+    router.replace(next ? afterLogInPath(next, returnTo) : STATUS);
     router.refresh();
   }
 

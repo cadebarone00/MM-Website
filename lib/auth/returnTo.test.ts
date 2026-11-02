@@ -37,3 +37,10 @@ test("Tap In allows only its exact authenticated return destination", () => {
   assert.equal(withReturnTo("/login/email", "/tap-in"), "/login/email?next=%2Ftap-in");
   for (const value of ["/tap-in/", "/tap-in?next=//evil.test", "/tap-in#x", "/tap-in/../admin", "//evil.test/tap-in", "/%74ap-in", "/tap-in\n"]) assert.equal(authReturnPath(value), null);
 });
+
+test("a Content team invite link survives login; lookalikes don't", () => {
+  const link = "/join-team/abcdefghijklmnopqrstuvwxyzABCDEF012345";
+  assert.equal(authReturnPath(link), link);
+  assert.equal(withReturnTo("/login", link), `/login?next=${encodeURIComponent(link)}`);
+  for (const value of ["/join-team/short", "/join-team/", "//evil.example/join-team/abcdefghijklmnopqrstuvwxyzABCDEF012345", "/join-team/abcdefghijklmnopqrstuvwxyzABCDEF012345/extra", "/join-team/../abcdefghijklmnopqrstuvwxyzABCDEF012345"]) assert.equal(authReturnPath(value), null, value);
+});

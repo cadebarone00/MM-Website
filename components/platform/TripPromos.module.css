@@ -1,6 +1,7 @@
 /* Play page → Explore filter: the Featured trip card and its itinerary sheet (maroon / cream / gold). */
 .wrap{padding:8px 18px 24px;color:var(--color-maroon-950)}
 .heading{margin:0 0 10px;font:400 24px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
+.cardWrap{position:relative}
 .card{position:relative;display:block;width:100%;aspect-ratio:16/9;max-height:320px;overflow:hidden;padding:0;border:1px solid var(--lm-ink-d9cdb8);border-radius:18px;background:var(--lm-bg-1d0b11);cursor:pointer;isolation:isolate;box-shadow:0 4px 14px color-mix(in srgb,var(--color-maroon-950) 9.4%,transparent)}
 .card>img{object-fit:cover;z-index:-2;transition:transform .4s}
 /* The photo's dark fade and the light city name stay the same in light mode (they sit on the photo). */

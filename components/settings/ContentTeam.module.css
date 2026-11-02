@@ -1,0 +1,21 @@
+/* Settings → Content team: invite box and one row per Poster (status, who invited, post counts). */
+.inviteRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:12px}
+.linkBox{display:grid;gap:8px;margin-top:12px}
+.link{display:block;overflow-x:auto;padding:10px 12px;border:1px solid #dfd3ba;border-radius:10px;background:#fffdf8;font:500 13px/1.4 ui-monospace,Menlo,monospace;color:var(--color-maroon-950);white-space:nowrap}
+.list{display:grid;margin:0;padding:0;list-style:none}
+.row{display:grid;gap:4px;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--color-maroon-950) 12.2%,transparent)}
+.row:first-child{border-top:0;padding-top:2px}
+.rowHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.who{display:grid;min-width:0}
+.who b{font:600 15px/1.3 var(--font-barlow),sans-serif}
+.who span{font:500 13px var(--font-barlow),sans-serif;color:#5d4f47}
+.status{flex:none;padding:3px 9px;border-radius:999px;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#2f6b3c;background:#e1efe3}
+.status[data-status=invited]{color:#806331;background:#f3e9d2}
+.status[data-status=removed]{color:#6b5a50;background:#e6dccb}
+.meta{margin:0;font:500 12px var(--font-barlow),sans-serif;color:#6b5a50}
+.counts{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 0;font:500 13px var(--font-barlow),sans-serif;color:#5d4f47}
+.counts b{font:400 18px var(--font-spectral),Georgia,serif;color:var(--color-maroon-950);font-variant-numeric:tabular-nums;margin-right:3px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.ask{flex-basis:100%;font:600 13px var(--font-barlow),sans-serif}
+.danger{border-color:#9b1c1c;background:#9b1c1c;color:#fffdf8}
+.sample{margin:14px 0 0;text-align:center;font:500 12px var(--font-barlow),sans-serif;color:var(--lm-ink-d6c5ca)}

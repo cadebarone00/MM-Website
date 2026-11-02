@@ -62,6 +62,13 @@ export function simulatorPages(): SimulatorPage[] {
       ["/start/forgot", "Forgot password (real)"], ["/onboarding", "Carry on setup"], ["/account/status", "Account status"]]) {
       pages.push({ id: "authdev-v2" + path.replaceAll("/", "-"), path, origin: AUTHDEV_ORIGIN, label, group: "Live V2 Auth (dev project)", fixtures: false, conditions: [] });
     }
+  } else {
+    // Live V2 Auth: the REAL sign-up / onboarding routes (not previews), against this server's own Supabase project. Listed
+    // only where those routes exist (MAROON_V2_ONBOARDING=on); each screen moves on by itself inside the phone.
+    for (const [path, label] of [["/start", "Welcome"], ["/start/sign-up", "Sign up (real)"], ["/start/log-in", "Log in (real)"],
+      ["/start/forgot", "Forgot password (real)"], ["/onboarding", "Carry on setup"], ["/account/status", "Account status"]]) {
+      pages.push({ id: "live-v2" + path.replaceAll("/", "-"), path, label, group: "Live V2 Auth", fixtures: false, conditions: [] });
+    }
   }
   for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
