@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import styles from "./GolfTripDatePicker.module.css";
+import wheels from "./TeeTimePicker.module.css";
+import { Wheel } from "./TeeTimePicker";
 
 /** Solid triangle arrow (a filled-in < or >) for the month buttons. */
 const Arrow = ({ left }: { left?: boolean }) => <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d={left ? "M10 1.5 3 7l7 5.5z" : "M4 1.5 11 7l-7 5.5z"} fill="currentColor" /></svg>;
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const toDate = (iso: string) => new Date(`${iso}T12:00:00Z`);
 const toIso = (date: Date) => date.toISOString().slice(0, 10);
@@ -16,8 +19,10 @@ const format = (iso: string, options: Intl.DateTimeFormatOptions) => new Intl.Da
  * Cream month calendar in a popup for a trip's dates (YYYY-MM-DD). Tap the arrival day, the title switches to
  * Departure, tap the departure day (up to `maxDays` long); circles mark endpoints with a translucent range between.
  * Once complete, picking any date starts a new arrival/departure range. Single-day mode submits just one date.
- * `pickYear` adds a year dropdown beside the month (for dates far back, like a birthday); `openMonth` (YYYY-MM) is
- * where the calendar opens when nothing is picked yet.
+ * Tapping the month name slides up a second sheet under the date line: a Month wheel and a Year wheel (the time
+ * picker's wheels and look, owner request 2026-11-02); Done jumps the calendar there. Years run from `min` to `max`
+ * (default: 5 back / 5 ahead; `pickYear` = back to 1900, for a birthday). `openMonth` (YYYY-MM) is where the calendar
+ * opens when nothing is picked yet.
  */
 export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onClose, singleDay = false, label = "Date", min, max, pickYear = false, openMonth }: {
   arrival: string; departure: string; maxDays: number; onSubmit: (arrival: string, departure: string) => void; onClose: () => void;
@@ -34,10 +39,18 @@ export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onCl
   const [end, setEnd] = useState<string | null>(departure || null);
   const [phase, setPhase] = useState<"Arrival" | "Departure">("Arrival");
   const [month, setMonth] = useState(() => (arrival || openMonth || min || new Date().toLocaleDateString("en-CA")).slice(0, 7));
+  const thisYear = new Date().getFullYear();
+  const firstYear = Number((min || (pickYear ? "1900" : String(thisYear - 5))).slice(0, 4));
+  const lastYear = Number((max || String(thisYear + 5)).slice(0, 4));
+  const years = Array.from({ length: Math.max(1, lastYear - firstYear + 1) }, (_, index) => String(firstYear + index));
+  const [jump, setJump] = useState<{ month: number; year: number } | null>(null); // the Month / Year sheet, while open
+  const openJump = () => setJump({ month: Number(month.slice(5)) - 1, year: Math.max(0, years.indexOf(month.slice(0, 4))) });
   const first = toDate(`${month}-01`);
   const daysInMonth = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
   const leading = (first.getUTCDay() + 6) % 7; // Monday-first week
-  const cells = [...Array(leading).fill(null), ...Array.from({ length: daysInMonth }, (_, index) => `${month}-${String(index + 1).padStart(2, "0")}`)];
+  // Always 6 week rows (42 cells): a month that fits in 5 gets an empty last row, so the sheet never changes height.
+  const days = [...Array(leading).fill(null), ...Array.from({ length: daysInMonth }, (_, index) => `${month}-${String(index + 1).padStart(2, "0")}`)];
+  const cells: (string | null)[] = [...days, ...Array(42 - days.length).fill(null)];
   const shiftMonth = (by: number) => setMonth(toIso(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + by, 1))).slice(0, 7));
   const lastDeparture = start ? plusDays(start, maxDays - 1) : "";
   const pick = (iso: string) => {
@@ -56,15 +69,12 @@ export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onCl
         </div>
         <button type="button" className={styles.close} aria-label="Close" onClick={onClose}><X size={20} aria-hidden /></button>
       </div>
+      <div className={styles.body}>
       <div className={styles.monthBar}>
         <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)}><Arrow left /></button>
-        {pickYear
-          ? <span>{format(`${month}-01`, { month: "long" })}{" "}
-            <select className={styles.yearSelect} aria-label="Year" value={month.slice(0, 4)} onChange={event => setMonth(`${event.target.value}-${month.slice(5)}`)}>
-              {Array.from({ length: Number((max || toIso(new Date())).slice(0, 4)) - Number((min || "1900").slice(0, 4)) + 1 }, (_, index) => String(Number((max || toIso(new Date())).slice(0, 4)) - index))
-                .map(year => <option key={year} value={year}>{year}</option>)}
-            </select></span>
-          : <span>{format(`${month}-01`, { month: "long", year: "numeric" })}</span>}
+        <button type="button" className={styles.monthName} aria-haspopup="dialog" aria-label={`${format(`${month}-01`, { month: "long", year: "numeric" })}. Choose month and year`} onClick={openJump}>
+          {format(`${month}-01`, { month: "long", year: "numeric" })}
+        </button>
         <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)}><Arrow /></button>
       </div>
       <div className={styles.grid}>
@@ -76,7 +86,16 @@ export function GolfTripDatePicker({ arrival, departure, maxDays, onSubmit, onCl
             disabled={!!((min && iso < min) || (max && iso > max) || (!singleDay && !end && start && (iso < start || iso > lastDeparture)))} onClick={() => pick(iso)}>{Number(iso.slice(8))}</button></span>
           : <span key={`blank-${index}`} />)}
       </div>
-      <button type="button" className={styles.set} disabled={singleDay ? !start : !end} onClick={() => { if (singleDay && start) onSubmit(start, start); else if (end) onSubmit(start, end); }}>Submit</button>
+      <button type="button" className={styles.set} disabled={singleDay ? !start : !end} onClick={() => { if (singleDay && start) onSubmit(start, start); else if (end) onSubmit(start, end); }}>Set</button>
+      {jump && <section className={styles.jump} role="dialog" aria-label="Choose month and year">
+        <div className={`${wheels.wheels} ${styles.jumpWheels}`}>
+          <div className={wheels.band} aria-hidden="true" />
+          <Wheel label="Month" values={MONTHS} index={jump.month} width={150} onIndex={next => setJump(current => current && { ...current, month: next })} />
+          <Wheel label="Year" values={years} index={jump.year} width={90} onIndex={next => setJump(current => current && { ...current, year: next })} />
+        </div>
+        <button type="button" className={wheels.save} onClick={() => { setMonth(`${years[jump.year]}-${String(jump.month + 1).padStart(2, "0")}`); setJump(null); }}>Done</button>
+      </section>}
+      </div>
     </div>
   </div>;
 }

@@ -1,7 +1,8 @@
-/* The friend button on someone's profile (top right): outlined when you're not friends, filled maroon when you are. */
-.wrap{position:absolute;right:16px;top:24px;display:grid;justify-items:end;gap:4px}
-.toggle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:1.5px solid var(--color-maroon-700);border-radius:999px;background:transparent;color:var(--color-maroon-700);font:700 14px var(--font-barlow),sans-serif;cursor:pointer;transition:background .15s,color .15s}
-.toggle.on{background:var(--color-maroon-700);color:#fbf8f1}
+/* The friend button on someone's profile (top right, on the maroon header): gold outline when you're not friends, filled
+   gold when you are. */
+.wrap{position:absolute;right:16px;top:var(--app-top-clearance, 0px);display:grid;justify-items:end;gap:4px}
+.toggle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 14px var(--font-barlow),sans-serif;cursor:pointer;transition:background .15s,color .15s}
+.toggle.on{background:#dcc495;color:var(--color-maroon-900)}
 .toggle:disabled{opacity:.7}
 .toggle:focus-visible{outline:2px solid #c7a55e;outline-offset:3px}
-.problem{max-width:220px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;color:#a1121f;text-align:right}
+.problem{max-width:220px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;color:#f3b4a8;text-align:right}

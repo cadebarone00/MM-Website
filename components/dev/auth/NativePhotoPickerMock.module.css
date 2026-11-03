@@ -1,0 +1,36 @@
+/* DEV ONLY look-alikes of the system photo pickers. iOS: system font, light materials. Android: Material 3 sheet. */
+.thumb{position:relative;padding:0;border:0;background:#ddd;aspect-ratio:1;overflow:hidden;cursor:pointer}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* iPhone: menu that pops up from the tapped field */
+.iosBackdrop{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.18)}
+.iosMenu{position:absolute;left:50%;top:52%;transform:translateX(-50%);width:250px;border-radius:13px;overflow:hidden;background:rgba(242,242,247,.96);box-shadow:0 10px 40px rgba(0,0,0,.35);font:400 17px/1.25 -apple-system,"SF Pro Text",system-ui,sans-serif}
+.iosItem{display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 16px;border:0;border-bottom:.5px solid rgba(60,60,67,.29);background:transparent;color:#000;font:inherit;text-align:left;cursor:pointer}
+.iosItem:last-child{border-bottom:0}
+.iosItem svg{width:22px;height:22px;color:#000}
+
+/* iPhone: photo picker sheet */
+.iosSheetBackdrop{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.4)}
+.iosSheet{position:absolute;inset:calc(54px + env(safe-area-inset-top)) 0 0;display:flex;flex-direction:column;border-radius:12px 12px 0 0;background:#fff;color:#000;font:400 17px/1.25 -apple-system,"SF Pro Text",system-ui,sans-serif;overflow:hidden}
+.grabber{width:36px;height:5px;margin:6px auto 0;border-radius:3px;background:rgba(60,60,67,.3)}
+.iosHeader{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:8px 16px 10px}
+.iosCancel{justify-self:start;padding:0;border:0;background:none;color:#007aff;font:inherit;cursor:pointer}
+.iosSegments{display:flex;padding:2px;border-radius:9px;background:rgba(118,118,128,.12);font-size:13px;font-weight:600}
+.iosSegments span{padding:4px 14px;border-radius:7px}
+.iosSegmentOn{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.iosHeaderSpacer{justify-self:end}
+.iosGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;overflow:auto}
+
+/* Android: system photo picker */
+.androidBackdrop{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.32)}
+.androidSheet{position:absolute;left:0;right:0;bottom:0;top:18%;display:flex;flex-direction:column;border-radius:28px 28px 0 0;background:#fdfbff;color:#1b1b1f;font:400 16px/1.4 Roboto,"Google Sans",system-ui,sans-serif;overflow:hidden}
+.androidHandle{width:32px;height:4px;margin:16px auto 6px;border-radius:2px;background:#79747e}
+.androidHeader{display:flex;align-items:center;gap:16px;padding:4px 16px 8px;font-size:22px}
+.androidClose{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:#1b1b1f;font-size:20px;cursor:pointer}
+.androidTabs{display:flex;gap:8px;padding:0 16px 8px}
+.androidTabs span{padding:6px 16px;border-radius:8px;border:1px solid #79747e;font-size:14px;font-weight:500}
+.androidTabOn{background:#d8e2ff;border-color:#d8e2ff !important}
+.androidDay{margin:6px 16px 8px;font-size:14px;font-weight:500;color:#44474f}
+.androidGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 4px;overflow:auto}
+.androidGrid .thumb{border-radius:4px}
+.androidNote{margin:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));font-size:12px;color:#44474f;text-align:center}

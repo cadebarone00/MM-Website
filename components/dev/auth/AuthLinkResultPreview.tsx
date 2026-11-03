@@ -28,7 +28,7 @@ const PILLS = (() => {
  * The gold M (the same mark as the top of the other screens) writes itself left to right in 1 second, then little
  * pills burst out of it like a firework and fade (all skipped for reduced motion).
  * The simulator's "Replay animation" bumps brandReplay, which remounts the mark and plays it again. */
-export function AuthLinkResultPreview({ nextHref = "/dev/auth/password" }: { nextHref?: string } = {}) {
+export function AuthLinkResultPreview({ nextHref = "/dev/auth/name-username" }: { nextHref?: string } = {}) {
   const replay = useSimulator()?.state?.brandReplay ?? 0;
   // Only the title + button are centred; the M hangs just above the title so it never pushes them off centre.
   return <main className={styles.page}>

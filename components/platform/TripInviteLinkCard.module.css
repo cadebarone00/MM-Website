@@ -1,0 +1,11 @@
+/* Settings → Players: the invite link card. Fixed height in every state (loading, ready, confirm reset). */
+.card{box-sizing:border-box;height:172px;padding:16px;border-radius:16px;background:#fbf8f1;color:var(--color-maroon-900);display:flex;flex-direction:column;gap:8px}
+.title{margin:0;font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--color-maroon-700)}
+.link{margin:0;height:22px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 15px/22px var(--font-barlow),sans-serif;user-select:all}
+.actions{display:flex;gap:8px;height:40px}
+.primary,.secondary{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;border-radius:10px;cursor:pointer;font:700 14px/1 var(--font-barlow),sans-serif}
+.primary{border:0;background:var(--color-maroon-900);color:#fbf8f1}
+.secondary{border:1px solid var(--color-maroon-700);background:transparent;color:var(--color-maroon-900)}
+.primary:disabled,.secondary:disabled{opacity:.5;cursor:default}
+.primary:focus-visible,.secondary:focus-visible{outline:2px solid var(--color-maroon-700);outline-offset:2px}
+.status{margin:0;height:36px;overflow:hidden;font:500 13px/18px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--color-maroon-800) 75%,transparent)}

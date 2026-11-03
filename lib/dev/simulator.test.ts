@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, type SimulatorPage } from "./simulator";
+import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, TRIP_BUILDER_STAGES, type SimulatorPage } from "./simulator";
 import { randomMockTrip, simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
@@ -256,3 +256,44 @@ test("player-role viewer conditionals are bounded development inputs",()=>{
  assert.equal(syncSimulatorNavigation(matches,undefined),matches);
  assert.deepEqual(syncSimulatorNavigation(home,{tab:"Home",settingsView:"players"}),{tab:"Home",settingsView:"players",command:3});
  });
+
+test("profile photo stages survive the frame boundary; unknown stages are rejected", () => {
+  for (const photoStage of ["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"] as const) {
+    const state = { ...DEFAULT_SIMULATOR_STATE, photoStage };
+    assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  }
+  for (const invalid of ["open", "", 1]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, photoStage: invalid } }), null);
+});
+
+test("birthday stages survive the frame boundary; unknown stages are rejected", () => {
+  for (const birthdayStage of ["empty", "calendar", "picked"] as const) {
+    const state = { ...DEFAULT_SIMULATOR_STATE, birthdayStage };
+    assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  }
+  for (const invalid of ["open", "", 2]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, birthdayStage: invalid } }), null);
+});
+
+test("venue stages survive the frame boundary; unknown stages are rejected", () => {
+  for (const venueStage of ["list", "loading", "category", "saved", "empty", "no-destination"] as const) {
+    const state = { ...DEFAULT_SIMULATOR_STATE, venueStage };
+    assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  }
+  assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, venueStage: "map" } }), null);
+});
+
+test("rating prompt stages survive the frame boundary; unknown stages are rejected", () => {
+  for (const ratingStage of ["off", "prompt", "one", "done"] as const) {
+    const state = { ...DEFAULT_SIMULATOR_STATE, ratingStage };
+    assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  }
+  assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, ratingStage: "always" } }), null);
+});
+
+test("Trip Builder preview stages survive the frame boundary; unknown stages are rejected", () => {
+  for (const tripBuilderStage of TRIP_BUILDER_STAGES) {
+    const state = { ...DEFAULT_SIMULATOR_STATE, tripBuilderStage };
+    assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  }
+  assert.ok(TRIP_BUILDER_STAGES.includes("join-expired"));
+  for (const invalid of ["open", "", 1]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, tripBuilderStage: invalid } }), null);
+});

@@ -203,9 +203,13 @@ async function nameStep(page, first, last, next = "/onboarding/birthday") {
 const progressOf = (page) => page.locator("[class*=progress] span").first().evaluate((el) => el.style.width);
 async function birthdayStep(page, year) {
   await page.getByRole("button", { name: "Pick your birthday" }).click();
-  await page.getByLabel("Year").selectOption(String(year));
+  // Month / Year sheet (2026-11-02): tap the month name, roll the Year wheel to the year, Done.
+  await page.getByRole("button", { name: /Choose month and year/ }).click();
+  await page.getByRole("listbox", { name: "Year" }).getByRole("option", { name: String(year), exact: true }).click();
+  await page.waitForTimeout(700); // the wheel settles, then picks the row in the band
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   await page.locator(`button[aria-label$="15 January ${year}"]`).click();
-  await page.getByRole("button", { name: "Submit" }).click();
+  await page.getByRole("button", { name: "Set", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
 }
 

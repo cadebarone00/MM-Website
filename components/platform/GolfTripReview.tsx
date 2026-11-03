@@ -7,6 +7,7 @@ import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { golfTripDraftSnapshot, parseGolfTripDraft, readGolfTripDraft, reviewRows, saveGolfTripDraft } from "@/lib/platform/golfTripDraft";
 import { GolfTripInviteDialog } from "./GolfTripInviteDialog";
 import styles from "./CreateTournament.module.css";
+import { SetupSheet } from "./SetupSheet";
 
 /** The draft only changes when a step's Next is tapped, so there is nothing to listen for here. */
 const subscribeNever = () => () => {};
@@ -59,7 +60,7 @@ export function GolfTripReview() {
   }
 
   const creating = state.status === "creating" || state.status === "created";
-  return <main className={styles.review}>
+  return <SetupSheet label="Review" wizardStep={8}>
     <dl className={styles.reviewList}>
       {rows.map((row) => <div key={row.label} className={styles.reviewRow}>
         <dt className={styles.reviewLabel}>{row.label}</dt>
@@ -77,5 +78,5 @@ export function GolfTripReview() {
       </button>
     </div>
     {state.status === "created" && <GolfTripInviteDialog tripId={state.tripId} url={state.url} onDone={() => router.replace(state.url)} />}
-  </main>;
+  </SetupSheet>;
 }

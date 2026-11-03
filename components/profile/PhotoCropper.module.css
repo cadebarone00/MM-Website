@@ -1,0 +1,14 @@
+/* Full-screen "Move and scale": maroon page, one square with the circle guide, Cancel / Done at the bottom. */
+.overlay{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;padding:calc(56px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif;touch-action:none}
+.title{margin:8px 0 20px;font:400 26px/1.2 var(--font-spectral),Georgia,serif}
+.square{position:relative;width:min(100%,420px);aspect-ratio:1;background:#000;overflow:hidden}
+.container{background:#000}
+.circle{border:2px solid #fbf8f1 !important;color:rgba(36,0,1,.72) !important}
+.hint{margin:14px 0 0;font-size:13px;color:#e1cec4}
+.error{min-height:20px;margin:6px 0 0;font-size:13px;color:#f3b4a8;text-align:center}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(100%,420px);margin-top:auto}
+.cancel,.done{height:48px;border-radius:12px;font:600 17px var(--font-barlow),sans-serif;cursor:pointer}
+.cancel{border:1px solid rgba(251,248,241,.35);background:transparent;color:#fbf8f1}
+.done{border:0;background:#c9a86e;color:#240001}
+.cancel:disabled,.done:disabled{opacity:.5;cursor:not-allowed}
+.cancel:focus-visible,.done:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}

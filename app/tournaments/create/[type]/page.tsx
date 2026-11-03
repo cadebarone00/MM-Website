@@ -17,7 +17,7 @@ export default async function SetupNextStepPage({ params }: { params: Promise<{ 
   if (!type) notFound();
   const isGolfTrip = type.key === "golf-trip";
 
-  return <SetupSheet label={`${type.name} setup`} top={<h2 className={styles.creamTitle}>{type.name} setup</h2>}>
+  return <SetupSheet label={isGolfTrip ? "Plan your golf trip" : `${type.name} setup`} wizardStep={isGolfTrip ? 0 : undefined} top={<h2 className={styles.creamTitle}>{type.name} setup</h2>}>
     {isGolfTrip
       ? <Link href="/golf-trips/new" className={`${styles.continue} ${styles.start}`}>Let&apos;s go golfing</Link>
       : <p className={styles.sheetNote}>The next step is coming soon</p>}

@@ -1,4 +1,4 @@
-import { DatePicker } from "@/components/platform/DatePicker";
+import { TripDatesField } from "@/components/platform/TripDatesField";
 import type { Metadata } from "next";
 import { SetupSheet } from "@/components/platform/SetupSheet";
 import { SetupStepForm } from "@/components/platform/SetupStepForm";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
 /** Golf Trip questionnaire, step 1 (Trip Basics): name, destination, dates and how many are going. You (the signed-in profile) are the organizer. */
 export default function NewGolfTripPage() {
-  return <SetupSheet label="Trip Basics" tall>
+  return <SetupSheet label="Trip Basics" wizardStep={1}>
     <SetupStepForm nextHref="/golf-trips/new/golf" backHref="/tournaments/create/golf-trip">
       <div className={styles.fields}>
         <label className={styles.field}>
@@ -18,16 +18,8 @@ export default function NewGolfTripPage() {
           <input className={styles.input} type="text" name="tripName" placeholder="Maroon Masters 2027" autoComplete="off" required />
         </label>
         <DestinationSearch />
-        <div className={styles.fieldRow}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Start Date</span>
-            <DatePicker className={styles.input} name="startDate" required />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>End Date</span>
-            <DatePicker className={styles.input} name="endDate" required />
-          </label>
-        </div>
+        {/* One calendar picks both: tap the first day, then the last (owner request 2026-11-02). */}
+        <TripDatesField />
         <PlayerCountSlider />
       </div>
     </SetupStepForm>

@@ -324,10 +324,14 @@ h1, h2 {
   font-weight: 700 !important;
 }
 
-/* Paint each top surface to the screen edge; only its content gets clearance. */
-:root { --app-top-clearance: 0px; }
+/* Paint each top surface to the screen edge; only its content gets clearance.
+   The icon line (owner rule 2026-11-02): on a phone the top of every screen's icons sits 5px under the bottom of the
+   Dynamic Island. The island is 37px tall starting 11px down on every iPhone that has one, so its bottom is at 48px and
+   the line at 53px; anything with a shorter top strip (notch iPhones, older iPhones, Android status bars) gets 5px
+   under its own strip instead. --app-icon-top is that line; --app-top-clearance (what screens pad their top by) = it. */
+:root { --app-icon-top: 0px; --app-top-clearance: 0px; }
 @media (max-width: 1023px) {
-  :root { --app-top-clearance: calc(env(safe-area-inset-top, 0px) + 1svh); }
+  :root { --app-icon-top: min(calc(env(safe-area-inset-top, 0px) + 5px), 53px); --app-top-clearance: var(--app-icon-top); }
   .app-camera-buffer { --app-page-top-inset: 0px; }
   .app-camera-buffer > :first-child:not(.app-camera-content),
   .app-camera-content > :first-child {
@@ -552,7 +556,8 @@ h1, h2 {
   --lm-ink-fffdf8: #fffdf8;
   --lm-ink-ffffff: #ffffff;
 }
-html[data-mode="light"] {
+html[data-mode="light"],
+.profile-body {
   color-scheme: light;
   --lm-bg-000000: #ffffff;
   --lm-bg-050101: #ffffff;
@@ -721,10 +726,16 @@ html[data-mode="light"] {
   --lm-ink-ffffff: #240001;
 }
 
-/* Light mode on Profile (components/profile/ProfileView.tsx, Tailwind): the maroon page goes white, and the cream / gold
-   words on it go dark. Cream cards (the header, the stat rings) keep their own colours; the Compare list goes white. */
-html[data-mode="light"] .profile-root { --color-cream-50: #240001; --color-gold-300: #7a5a26; background: #fff; }
-html[data-mode="light"] .profile-root .bg-maroon-900 { background-color: #fff; }
+/* Profile (components/profile/ProfileView.tsx, Tailwind), owner request 2026-11-02: the top section is maroon in every
+   mode; everything under it (.profile-body) always uses the light palette above on cream, so the tabs' cream / gold
+   words go dark. Cream cards (the stat rings) keep their own colours; the Compare list goes white. */
+.profile-body { --color-cream-50: #240001; --color-gold-300: #7a5a26; --lm-bg-240001: #fbf8f1; background: #fbf8f1; }
+.profile-body .bg-maroon-900 { background-color: #fbf8f1; }
+/* Cards that are cream on the dark page (the stat rings) turn white here, so they still stand off the cream. */
+.profile-body .bg-cream-50 { --color-cream-50: #ffffff; --color-gold-300: #dcc495; box-shadow: 0 1px 3px rgba(36, 0, 1, .08); }
+html[data-mode="light"] .profile-root { --color-cream-50: #240001; --color-gold-300: #7a5a26; background: #fbf8f1; }
+html[data-mode="light"] .profile-root .bg-maroon-900 { background-color: #fbf8f1; }
+html[data-mode="light"] .profile-root .profile-hero { --color-cream-50: #fbf8f1; --color-gold-300: #dcc495; background-color: #240001; }
 html[data-mode="light"] .profile-root .bg-cream-50 { --color-cream-50: #fbf8f1; --color-gold-300: #dcc495; }
 html[data-mode="light"] .profile-root [role="listbox"] { background: #fff; border-color: rgba(36, 0, 1, .15); box-shadow: 0 14px 30px rgba(36, 0, 1, .16); }
 html[data-mode="light"] .profile-root > header { box-shadow: 0 6px 18px rgba(36, 0, 1, .08); }

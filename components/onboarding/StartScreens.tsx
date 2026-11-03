@@ -7,9 +7,10 @@ import { MaroonMark } from "@/components/brand/MaroonMark";
 import { AppleIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "@/components/dev/auth/AuthWelcomePreview";
 import type { OAuthProvider } from "@/lib/auth/oauth";
 import { errorOf, rememberEmail, send } from "@/lib/account/onboardingClient";
-import { START, STATUS, afterLogInPath } from "@/lib/account/onboardingRoutes";
+import { START, STATUS, afterLogInPath, progressWidth } from "@/lib/account/onboardingRoutes";
 import type { OnboardingStep } from "@/lib/account/onboardingApi";
 import styles from "@/components/dev/auth/AuthWelcomePreview.module.css";
+import frame from "@/components/dev/auth/AuthNamePreview.module.css";
 
 /**
  * Pending accounts Phase 6: the real Welcome, Sign up and Log in screens — the approved /dev/auth designs
@@ -34,9 +35,14 @@ export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const ready = EMAIL.test(email.trim());
+  // The first sign-up step: the small M + progress line of the steps after it at the top; everything below stays where it
+  // was (owner request 2026-11-02).
   return <main className={styles.page}>
-    <div className={styles.logo}><MaroonMark color="#fbf8f1" /></div>
-    <h1 className={styles.title}>Sign up</h1>
+    <div className={styles.stepTop}>
+      <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
+      <div className={frame.progress} aria-hidden="true"><span style={{ width: progressWidth("sign-up") }} /></div>
+    </div>
+    <h1 className={`${styles.title} ${styles.signUpTitle}`}>Sign up</h1>
     <form className={styles.form} onSubmit={(e) => { e.preventDefault(); if (!ready) return; rememberEmail(email); router.push(START.password); }}>
       <input className={styles.input} type="email" name="email" placeholder="Email" autoComplete="email" autoCapitalize="none" spellCheck={false}
         aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />

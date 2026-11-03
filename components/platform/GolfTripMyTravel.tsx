@@ -55,7 +55,7 @@ export function GolfTripMyTravel({ travel, onChange }: { travel: TripTravel; onC
     </div>)}
     <button type="button" className={homeStyles.addItemButton} onClick={() => setChoosing(true)}><Plus size={16} strokeWidth={2.5} aria-hidden />Add</button>
 
-    {choosing && <GolfTripActionSheet label="Add to my travel" onClose={() => setChoosing(false)}
+    {choosing && <GolfTripActionSheet slideUp label="Add to my travel" onClose={() => setChoosing(false)}
       actions={ADDABLE.map(({ label, icon }) => ({ label, icon }))}
       onAction={(label) => { const pick = ADDABLE.find((option) => option.label === label); setChoosing(false); if (pick) setEditing({ kind: pick.kind }); }} />}
 
@@ -113,7 +113,7 @@ export function GolfTripAddTravel({ travel, onChange, className }: { travel: Tri
   const [inviting, setInviting] = useState<string | null>(null);
   return <>
     <button type="button" className={className ?? homeStyles.addItemButton} aria-haspopup="dialog" onClick={() => setChoosing(true)}><Plus size={16} strokeWidth={2.5} aria-hidden />Add</button>
-    {choosing && <GolfTripActionSheet label="Add to my travel" onClose={() => setChoosing(false)}
+    {choosing && <GolfTripActionSheet slideUp label="Add to my travel" onClose={() => setChoosing(false)}
       actions={ADDABLE.map(({ label, icon }) => ({ label, icon }))}
       onAction={(label) => { const pick = ADDABLE.find((option) => option.label === label); setChoosing(false); if (pick) setAdding(pick.kind); }} />}
     {adding && <TravelForm kind={adding} onCancel={() => setAdding(null)} onBack={() => { setAdding(null); setChoosing(true); }}
@@ -155,7 +155,7 @@ function TravelForm({ kind, item, onSave, onCancel, onBack }: {
   }
 
   const title = `${item ? "Edit" : "Add"} ${kind === "ride" ? "ride" : ITINERARY_KIND_LABEL[kind].toLowerCase()}`;
-  return <GolfTripActionSheet label={title} onClose={onCancel} className={styles.sheet}>
+  return <GolfTripActionSheet slideUp label={title} onClose={onCancel} className={styles.sheet}>
     <div className={styles.titleRow}>
       {onBack && <button type="button" className={styles.back} aria-label="Back to add choices" onClick={onBack}><ChevronLeft size={22} strokeWidth={2.25} aria-hidden /></button>}
       <h2 className={styles.title}>{title}</h2>
@@ -215,7 +215,7 @@ function InvitePeople({ travel, itemId, onSend, onClose }: { travel: TripTravel;
   const others = travel.members.filter((member) => member.id !== travel.meId);
   const statusOf = (memberId: string) => travel.participants.find((p) => p.itemId === itemId && p.memberId === memberId)?.status;
   const toggle = (memberId: string) => setPicked((current) => current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId]);
-  return <GolfTripActionSheet label="Invite people" onClose={onClose} className={styles.sheet}>
+  return <GolfTripActionSheet slideUp label="Invite people" onClose={onClose} className={styles.sheet}>
     <h2 className={styles.title}>Invite people</h2>
     {others.length === 0 && <p className={styles.inviteEmpty}>No one else is on this trip yet.</p>}
     <div className={styles.inviteList} role="group" aria-label="Trip members">

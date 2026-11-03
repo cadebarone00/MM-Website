@@ -31,6 +31,8 @@ import { GolfTripGames, type SavedGamesContext } from "./GolfTripGames";
 import type { GameId } from "@/lib/platform/roundGames";
 import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripVenue } from "./GolfTripVenue";
+import { VenuePlaces } from "./VenuePlaces";
+import { RatePlacesPrompt } from "./RatePlacesPrompt";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
@@ -255,6 +257,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           }}>{name}</button>)}
       </div>}
     </header>
+    {/* After-visit ratings ("How was yesterday?"): dev preview only until phase 4 is built (project_specs.md). */}
+    {preview && <RatePlacesPrompt />}
     <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
@@ -265,7 +269,10 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
             <GolfSlides schedule={preview} now={tripNow} key={`${structure.individual}-${structure.team}`} previewMatch={previewMatch} structure={structure} rsvpKey={rsvpKey} navigation={navigation} onNavigationChange={onNavigationChange} tripStats={tripStats} scoreChanges={scoreChanges} roundStarted={roundLive} signedInName={signedInName} savedGames={savedGames} organizerGames={organizerGames} spectator={spectator} />
           </div>
         </>
-        : tab === "Venue" ? <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
+        // Venue → place recommendations: dev preview only until phases 2-3 (project_specs.md); real trips keep the old Venue.
+        : tab === "Venue" ? preview ? <VenuePlaces destination={draft.destination ?? ""}
+          center={coordinate(draft.destinationLatitude) !== undefined && coordinate(draft.destinationLongitude) !== undefined ? { latitude: coordinate(draft.destinationLatitude)!, longitude: coordinate(draft.destinationLongitude)! } : undefined} />
+        : <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
           players={travel?.members.map(member => member.name) ?? []} items={goingItinerary ?? []} onOpenItinerary={openItinerary} />
         : tab === "Itinerary" ? <>

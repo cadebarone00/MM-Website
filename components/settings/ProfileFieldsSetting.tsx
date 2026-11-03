@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
-import { BIO_MAX, NAME_MAX, USERNAME_RULE } from "@/lib/profile/profileEdit";
+import { BIO_MAX, limitBio, NAME_MAX, USERNAME_RULE } from "@/lib/profile/profileEdit";
 import styles from "./Settings.module.css";
 
 type Field = "displayName" | "username" | "bio";
@@ -53,7 +53,7 @@ export function ProfileFieldsSetting({ initial, bioAvailable, email, onSave }: {
       {editing === field ? <form className={styles.fieldEdit} onSubmit={(event) => { event.preventDefault(); void save(field); }}>
         <label className={styles.fieldLabel} htmlFor={`edit-${field}`}>{LABELS[field]}</label>
         {field === "bio"
-          ? <textarea id={`edit-${field}`} className={styles.fieldInput} rows={4} maxLength={BIO_MAX} value={draft} onChange={(event) => setDraft(event.target.value)} autoFocus />
+          ? <textarea id={`edit-${field}`} className={styles.fieldInput} rows={3} maxLength={BIO_MAX} value={draft} onChange={(event) => setDraft(limitBio(event.target.value))} autoFocus />
           : <input id={`edit-${field}`} className={styles.fieldInput} value={draft} onChange={(event) => setDraft(event.target.value)} autoFocus
               maxLength={field === "displayName" ? NAME_MAX : 30} autoComplete={field === "displayName" ? "name" : "username"} autoCapitalize={field === "username" ? "none" : undefined} />}
         {field === "username" && <p className={styles.note}>{USERNAME_RULE}</p>}

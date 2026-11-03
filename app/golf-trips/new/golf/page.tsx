@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
 /** Golf Trip questionnaire, step 3 (Golf). Fields only for now: nothing is saved to the database yet. */
 export default function GolfTripGolfPage() {
-  return <SetupSheet label="Golf">
+  return <SetupSheet label="Golf" wizardStep={2}>
     <GolfTripGolfStep />
   </SetupSheet>;
 }

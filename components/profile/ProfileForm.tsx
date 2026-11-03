@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BIO_MAX, NAME_MAX, USERNAME_RULE, nameProblem, usernameProblem } from "@/lib/profile/profileEdit";
+import { BIO_MAX, limitBio, NAME_MAX, USERNAME_RULE, nameProblem, usernameProblem } from "@/lib/profile/profileEdit";
 
 const field = "flex flex-col gap-1.5 font-condensed text-sm font-semibold uppercase tracking-wide text-maroon-700";
 const hint = "m-0 text-xs text-maroon-900/60";
@@ -68,7 +68,7 @@ export function ProfileForm({ mode, initial, onSave, doneHref = "/profile" }: { 
     </div>
     {mode === "edit" && initial.bioAvailable !== false && <div className="flex flex-col gap-1.5">
       <label className={field}>Bio
-        <textarea className={`${input} min-h-32`} value={bio} maxLength={BIO_MAX} onChange={(e) => setBio(e.target.value)} aria-describedby="bio-count" />
+        <textarea className={input} rows={3} value={bio} maxLength={BIO_MAX} onChange={(e) => setBio(limitBio(e.target.value))} aria-describedby="bio-count" />
       </label>
       <p id="bio-count" className={hint}>{bio.length} / {BIO_MAX}</p>
     </div>}

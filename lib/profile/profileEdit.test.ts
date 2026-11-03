@@ -13,7 +13,7 @@ test("finish setup needs a name and a username in the right shape", () => {
 test("edit takes only name / username / bio, each optional; anything else is ignored", () => {
   assert.deepEqual(profileEditFromBody({ bio: "  Hi  ", id: "x", playerSlug: "y", memberSince: "z" }), { ok: true, input: { bio: "Hi" } });
   assert.deepEqual(profileEditFromBody({ displayName: "Cade", username: "cade.b" }), { ok: true, input: { displayName: "Cade", username: "cade.b" } });
-  for (const [body, field] of [[{}, "body"], [{ id: "x" }, "body"], [{ displayName: "" }, "displayName"], [{ username: "a b" }, "username"], [{ bio: "x".repeat(1001) }, "bio"], [{ bio: 5 }, "bio"]] as const) {
+  for (const [body, field] of [[{}, "body"], [{ id: "x" }, "body"], [{ displayName: "" }, "displayName"], [{ username: "a b" }, "username"], [{ bio: "x".repeat(151) }, "bio"], [{ bio: "a\nb\nc\nd" }, "bio"], [{ bio: 5 }, "bio"]] as const) {
     const r = profileEditFromBody(body);
     assert.equal(!r.ok && r.field, field, JSON.stringify(body));
   }
@@ -25,4 +25,13 @@ test("usernames and profile links", () => {
   assert.equal(profileHref("Cade.B"), "/profile/Cade.B");
   assert.equal(profileHref(null), null, "no username (an invitation, an unclaimed player) = no link");
   assert.equal(profileHref("  "), null);
+});
+
+test("bio: 3 lines and 150 characters at most; typing past that is trimmed", async () => {
+  const { limitBio, bioProblem } = await import("./profileEdit.ts");
+  assert.equal(bioProblem("one\ntwo\nthree"), null);
+  assert.equal(bioProblem("x".repeat(150)), null);
+  assert.match(String(bioProblem("1\n2\n3\n4")), /3 lines/);
+  assert.equal(limitBio("1\n2\n3\n4\n5"), "1\n2\n34 5");
+  assert.equal(limitBio("x".repeat(200)).length, 150);
 });

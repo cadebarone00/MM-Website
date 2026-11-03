@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
 
 /** Golf Trip questionnaire, step 5 (Format): will the trip include a tournament? Nothing is saved to the database yet. */
 export default function GolfTripFormatPage() {
-  return <SetupSheet label="Format">
+  return <SetupSheet label="Format" wizardStep={4}>
     <GolfTripChoiceStep question="Will this trip include a tournament?" name="includesTournament"
       nextHref="/golf-trips/new/lodging" backHref="/golf-trips/new/courses" answers={{
         yes: <p className={styles.formatMessage}>Let&apos;s talk formats</p>,

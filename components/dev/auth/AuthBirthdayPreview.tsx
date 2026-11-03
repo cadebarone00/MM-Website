@@ -4,17 +4,23 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { GolfTripDatePicker } from "@/components/platform/GolfTripDatePicker";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
 import frame from "./AuthNamePreview.module.css";
 import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthBirthdayPreview.module.css";
 
 /** DEV ONLY: Authentication "Birthday" (signup step). Three boxes (Month, Day, a longer Year); tapping any of them opens
  * the app's date picker (with a year dropdown), and the picked date fills all three. The real version saves it to the
- * profile; nothing is saved here. */
+ * profile; nothing is saved here. Simulator conditionals: Empty / Calendar open / Birthday picked. */
 export function AuthBirthdayPreview() {
+  const stage = useSimulator()?.state.birthdayStage ?? "empty";
+  return <BirthdayStep key={stage} stage={stage} />;
+}
+
+function BirthdayStep({ stage }: { stage: "empty" | "calendar" | "picked" }) {
   const router = useRouter();
-  const [birthday, setBirthday] = useState(""); // YYYY-MM-DD
-  const [open, setOpen] = useState(false);
+  const [birthday, setBirthday] = useState(stage === "picked" ? "1998-06-15" : ""); // YYYY-MM-DD
+  const [open, setOpen] = useState(stage === "calendar");
   const today = new Date().toLocaleDateString("en-CA");
   const [year, month, day] = birthday ? birthday.split("-") : [];
 

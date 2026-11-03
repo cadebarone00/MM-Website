@@ -3955,3 +3955,58 @@ the code is deployed + promoted (production uses manual promotion: `autoAssignCu
 to Sign up; Name → Birthday → Photo; `/api/auth/age-check` answers 410 retired. Tests on the local gate stack: unit
 1803/1803, `scripts/auth-local/signup-birthday-after-regression.mts` 27/27, `onboarding-browser.mjs` 81/81, tsc + eslint
 clean, `next build` passes. `signup-gate-regression.mts` still tests the old birthday-first locks (superseded).
+
+### Round: Trip Builder — golf trip setup wizard + optional tutorial (spec 2026-11-03, approved 2026-11-03)
+
+**What.** Rebuild Golf Trip creation as "Trip Builder": Welcome → first-time Learn screen (phone-in-phone, 3 swipes,
+optional 5–7 slide tutorial) → name + destination → dates + group travel → people + competing (team mini-wizard) →
+rounds + courses → competition formats (suggested setups + Make your own) → lodging → "Your trip is ready" (Email
+confirmed look) → invite pop-up with native share → trip home with first-visit coach marks. Players moves to Settings →
+General with the invite link at the top (organizer-only edits). New simple "Join this trip" sign-up page reached from the
+trip link.
+
+**Who.** Organizers creating a trip; invited friends joining from a shared link.
+
+**Stack / data.** Existing Next.js + Supabase. New SQL (trip-wide join link + join function) written by Claude, run by the
+owner. Tour/tips "seen" remembered per account.
+
+**Done =** see the full design: `docs/superpowers/specs/2026-11-03-trip-builder-design.md`.
+
+---
+
+## Venue tab → Places recommendations (owner decision 2026-11-02) — APPROVED (phase 1 = simulator design)
+
+**What it is.** The Golf Trip's Venue tab becomes a place-recommendation list (reference: a "Find a Place" list screen —
+search bar, round category pictures, big place cards). It is NOT a map: every place has **Open in Maps** (Apple Maps on
+iPhone, Google Maps on Android / web — a plain link, no API cost) for directions, hours and reviews, and **Add to
+itinerary** so the group can plan it. Goal: a recommendation platform that feeds itineraries, not a maps replacement.
+
+**Data: free, and our own database grows over time (Untappd-style).**
+- Base data: **OpenStreetMap** (free, ODbL — may be stored permanently with visible "© OpenStreetMap contributors"
+  credit). Fetched through the public Overpass API once per destination area + category, then stored in OUR database
+  and reused by every trip to that area (re-fetched at most every ~30 days). Never called from phones directly.
+- Our layer (the long-term value): every save (heart), add-to-itinerary and later rating/check-in by our users is stored
+  against the place, and ranks it ("Added by 4 trips", "Your group saved this", organizer's picks). Organizers/users can
+  add a place OSM doesn't have. No Google Places / Foursquare in this version (paid; may add photos on tap later).
+- Trip location: the trip's saved destination coordinates; without them the tab asks the organizer to set a destination.
+
+**Screens (Venue tab, maroon/cream app style).**
+1. Top: the trip destination in a search-bar pill ("Scottsdale, AZ"); tap = search places by name within the area.
+2. "What are you looking for?" — round category pictures: Food · Bars & Breweries · Golf · Coffee · Things to do.
+3. Place cards: picture area (category artwork until we have real photos), heart (save), name, address, distance from
+   the trip venue, one detail line (cuisine / type), our badge ("Added by N trips" / "Your group saved this"), buttons
+   **Add to itinerary** and **Open in Maps**.
+4. Simulator conditionals (Golf Trip Active → Venue): Loading · Places list · Category picked · Place saved / added ·
+   No places found · No destination set.
+
+**Phases.** (1) Design in the dev simulator with sample places (no data/API) → owner signs off on the look.
+(2) Database tables (`places`, `place_area_fetches`, `place_saves`, `place_trip_adds`) + server-side OSM fetch/cache.
+(3) Add to itinerary + rankings from our users. Each phase approved separately; SQL is run by the owner.
+
+**Phase 4 — after-visit ratings (approved 2026-11-02).** The first app open the day AFTER an itinerary plan: a
+slide-up "How was yesterday?" listing the places you went, a 1-10 rating each (Skip allowed; asked once per place).
+Each place keeps its average + count; avg 8+ from at least 5 ratings = "Ranked highly by Maroon users" badge and a
+higher spot for the next trip to that area. Designed first in the simulator (Golf Trip Home conditionals).
+
+**Done (phase 1) =** the new Venue tab in the simulator with every conditional, Open in Maps links working, owner
+approval of the look. Nothing live changes until phases 2–3.

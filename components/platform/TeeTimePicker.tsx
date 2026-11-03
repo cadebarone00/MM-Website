@@ -25,13 +25,13 @@ function timeLabel(time: string): string {
 
 /** One scroll wheel: the row that settles in the middle band is the chosen value (also the tee sheet's first tee time).
  *  `row`: each row's height in px (44 here; smaller where the wheel sits in a row of fields). */
-export function Wheel({ label, values, index, onIndex, row = ROW }: { label: string; values: string[]; index: number; onIndex: (index: number) => void; row?: number }) {
+export function Wheel({ label, values, index, onIndex, row = ROW, width }: { label: string; values: string[]; index: number; onIndex: (index: number) => void; row?: number; width?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const startIndex = useRef(index);
   useEffect(() => { ref.current?.scrollTo({ top: startIndex.current * row }); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
   const scrollTo = (next: number) => ref.current?.scrollTo({ top: Math.max(0, Math.min(values.length - 1, next)) * row, behavior: "smooth" });
-  return <div ref={ref} className={styles.wheel} role="listbox" aria-label={label} tabIndex={0}
+  return <div ref={ref} className={styles.wheel} style={width ? { width } : undefined} role="listbox" aria-label={label} tabIndex={0}
     onScroll={() => {
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {

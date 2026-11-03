@@ -4,7 +4,8 @@
 /* The top-of-screen M (standalone mark), bigger, sitting just above the title (out of the flow, so the title and
    button stay centred on the screen). */
 .heading{position:relative;width:100%}
-.mark{position:absolute;bottom:calc(100% + 4px);left:50%;width:180px;height:150px;margin-left:-90px}
+/* Owner tweak 2026-11-02: lifted 12px so the M sits in exactly the same spot as on the Welcome screen. */
+.mark{position:absolute;bottom:calc(100% + 4px);left:50%;width:180px;height:150px;margin-left:-90px;transform:translateY(-12.2px)}
 .reveal{width:100%;height:100%}
 .burst{position:absolute;left:50%;top:50%;width:0;height:0}
 /* Firework: each dash flies from the M to its own spot (--x, --y) with its own tilt and length, then fades out. */
