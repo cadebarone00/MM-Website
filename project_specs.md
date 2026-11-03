@@ -3921,3 +3921,37 @@ to daily cron jobs. This cron expression (`* * * * *`) would run more than once 
 **Not done / next.** Push branch and run the protected preview (owner approval); per-minute scheduler for web alerts
 (only if web alerts are wanted before native push); native push (APNs/FCM) belongs to the notifications work; mobile
 authentication API audit is a separate future phase.
+
+---
+
+## Sign-up order: birthday AFTER account creation (owner decision 2026-11-02, replaces "birthday first" of 2026-10-30) — APPROVED + BUILT
+
+**Why.** The owner wants sign-up to feel like a normal app: create the account first, birthday afterwards. Under 13 →
+the process stops and the account is never finalized. This reverses owner decision 4 of 2026-10-30 (birthday first);
+the owner was told the trade-off (an under-13's email/password is briefly held before their age is known).
+
+**New order.** Welcome → Sign up (email) → Create password → 6-digit code → Name → **Birthday** → Finish.
+- 13+ → Finish → Active account (testers activate as today).
+- Under 13 → the existing Pending-accounts Phase 4 path: account becomes Ineligible, signed out everywhere, its login and
+  data removed by the cleanup (daily job retries any interrupted cleanup). No profile is ever made Active.
+
+**What changes.**
+- `supabase/signup_gate.sql` (new re-runnable file, e.g. `signup_gate_birthday_after.sql`): the Before User Created
+  hook keeps **closed / testers allowlist / email-only**, but no longer requires an age pass. The two age-pass triggers
+  (`require_age_pass_for_profile`, `guard_post_gate_birthdate`) are dropped so the onboarding Birthday step
+  (`set_my_birthdate`, write-once, 13+) is how every new account gives its birthday. `age_passes` table kept (unused).
+- `app/start/[screen]/page.tsx`: Sign up / Create password no longer redirect to Birthday; Welcome goes to Sign up.
+- `app/api/auth/signup/route.ts`: no age pass required. `/api/auth/age-check` and the start Birthday screen retired.
+- The onboarding Birthday screen after Name (already built, Phase 6) becomes the birthday step for everyone.
+- Tests: update gate regression + onboarding regression + unit tests to the new order; run on the local gate stack.
+
+**Not changing.** Tester allowlist, email-only sign-up, 13+ rule, under-13 cleanup, admin re-grant, production data.
+
+**Done =** on the local stack: a tester signs up → code → name → birthday 13+ → Active; an under-13 birthday → signed out
+and the login removed; a non-allowlisted email is refused; all suites green. Then owner runs the SQL on production and
+the code is deployed + promoted (production uses manual promotion: `autoAssignCustomDomains` is false).
+
+**Built 2026-11-02.** `supabase/signup_gate_birthday_after.sql` (run on production 2026-11-02); `/start/birthday` now forwards
+to Sign up; Name → Birthday → Photo; `/api/auth/age-check` answers 410 retired. Tests on the local gate stack: unit
+1803/1803, `scripts/auth-local/signup-birthday-after-regression.mts` 27/27, `onboarding-browser.mjs` 81/81, tsc + eslint
+clean, `next build` passes. `signup-gate-regression.mts` still tests the old birthday-first locks (superseded).

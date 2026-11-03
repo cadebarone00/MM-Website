@@ -38,7 +38,7 @@ const FILES = [
   // Accounts V2. Leave them out (`setup.mjs v1`) to rebuild the V1 database the 2c reproduction ran against.
   ...(process.argv[2] === "v1" ? [] : ["profile_initialization.sql", "account_deletion.sql"]),
   // G4 sign-up gate stack only (AUTH_LOCAL_STACK=gate): activation, code limits, friends search and the gate itself.
-  ...(stack.name === "gate" ? ["account_activation.sql", "auth_code_attempts.sql", "profile_friends.sql", "signup_gate.sql"] : []),
+  ...(stack.name === "gate" ? ["account_activation.sql", "auth_code_attempts.sql", "profile_friends.sql", "signup_gate.sql", "signup_gate_birthday_after.sql"] : []),
 ];
 
 // Always start from an empty database: stop (and delete the data of) any earlier run first.
