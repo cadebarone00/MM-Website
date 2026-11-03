@@ -1,6 +1,6 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { areaCenter, areaKey, needsRefresh, overpassQuery, parseOverpass } from "./osmPlaces";
+import { areaCenter, areaKey, areasToRefresh, needsRefresh, overpassQuery, parseOverpass } from "./osmPlaces";
 import { PLACE_CATEGORIES, type Place, type PlaceCategory } from "./venuePlaces";
 
 /**
@@ -84,4 +84,31 @@ async function overpass(query: string): Promise<unknown> {
     }
   }
   throw new Error(`no Overpass server answered (${problems.join("; ")})`);
+}
+
+/**
+ * The daily job (GET /api/internal/venue-places, vercel.json): looks up the areas of upcoming and current trips ahead of
+ * time, so places are already stored when someone opens Venue. Soonest trips first, one lookup at a time, stopping
+ * before `budgetMs` runs out; whatever is left (or failed) is retried the next day. Answers counts only.
+ */
+export async function refreshUpcomingAreas(now = new Date(), budgetMs = 50_000, limit = 6): Promise<{ planned: number; stored: number; failed: number; skipped: string | null }> {
+  const started = Date.now();
+  const db = createSupabaseServiceRoleClient();
+  const today = now.toISOString().slice(0, 10);
+  const trips = await db.from("golf_trips").select("latitude, longitude, start_date").gte("end_date", today).not("latitude", "is", null).limit(500);
+  if (trips.error) return { planned: 0, stored: 0, failed: 0, skipped: "trips unavailable" };
+  const rows = (trips.data ?? []) as { latitude: number | null; longitude: number | null; start_date: string }[];
+  const areas = [...new Set(rows.filter((r) => r.latitude != null && r.longitude != null).map((r) => areaKey(r.latitude!, r.longitude!)))];
+  if (!areas.length) return { planned: 0, stored: 0, failed: 0, skipped: null };
+  const fetches = await db.from("place_area_fetches").select("area_key, category, fetched_at").in("area_key", areas);
+  if (fetches.error) return { planned: 0, stored: 0, failed: 0, skipped: "venue_places.sql not installed" };
+  const fetched = new Map(((fetches.data ?? []) as { area_key: string; category: string; fetched_at: string }[]).map((f) => [`${f.area_key}|${f.category}`, f.fetched_at]));
+  const jobs = areasToRefresh(rows.map((r) => ({ latitude: r.latitude, longitude: r.longitude, startDate: r.start_date })), fetched, now, categoriesFor(null), limit);
+  let stored = 0, failed = 0;
+  for (const job of jobs) {
+    if (Date.now() - started > budgetMs - ATTEMPT_MS) break; // not enough time left for another attempt
+    try { await refreshArea(job.area, job.category); stored++; }
+    catch (problem) { failed++; console.error("venue places daily lookup failed:", job.area, job.category, problem instanceof Error ? problem.message.slice(0, 160) : problem); }
+  }
+  return { planned: jobs.length, stored, failed, skipped: null };
 }

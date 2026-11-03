@@ -6,7 +6,9 @@ import type { PlaceCategory } from "./venuePlaces";
  * a ~5 km grid, so nearby trips share it), stores the answer in our database, and reuses it for 30 days. Data is
  * © OpenStreetMap contributors (ODbL): storing it is allowed with that credit shown.
  */
-export const OSM_RADIUS_METERS = 15_000;
+/** How far around the area to look: town-sized for food / drinks / coffee, wider for golf and things to do (courses and
+ *  attractions are spread out). Smaller searches are lighter on the busy free servers. */
+export const OSM_RADIUS_METERS: Record<PlaceCategory, number> = { food: 8_000, bars: 8_000, coffee: 8_000, golf: 15_000, todo: 15_000 };
 export const OSM_REFRESH_DAYS = 30;
 export const OSM_MAX_PLACES = 120;
 const GRID = 0.05; // degrees (~5.5 km north-south)
@@ -31,9 +33,9 @@ const FILTERS: Record<PlaceCategory, string[]> = {
   todo: ['["tourism"~"^(attraction|museum|zoo|theme_park|viewpoint|aquarium)$"]', '["leisure"="water_park"]'],
 };
 
-/** One Overpass request: named places of a category within OSM_RADIUS_METERS of the area's centre. */
+/** One Overpass request: named places of a category within its OSM_RADIUS_METERS of the area's centre. */
 export function overpassQuery(category: PlaceCategory, center: { latitude: number; longitude: number }): string {
-  const around = `(around:${OSM_RADIUS_METERS},${center.latitude.toFixed(5)},${center.longitude.toFixed(5)})`;
+  const around = `(around:${OSM_RADIUS_METERS[category]},${center.latitude.toFixed(5)},${center.longitude.toFixed(5)})`;
   const parts = FILTERS[category].map((filter) => `nwr${filter}["name"]${around};`).join("");
   return `[out:json][timeout:25];(${parts});out center tags ${OSM_MAX_PLACES};`;
 }
@@ -93,4 +95,27 @@ export function needsRefresh(fetchedAt: string | null | undefined, now: Date): b
   if (!fetchedAt) return true;
   const age = now.getTime() - Date.parse(fetchedAt);
   return !Number.isFinite(age) || age > OSM_REFRESH_DAYS * 86_400_000;
+}
+
+/**
+ * The daily job's to-do list: every area + category of an upcoming or current trip that needs a lookup, soonest trip
+ * first, at most `limit` (each lookup can take tens of seconds on the busy free servers). `fetched` maps
+ * "area|category" to its last lookup time.
+ */
+export function areasToRefresh(trips: { latitude: number | null; longitude: number | null; startDate: string }[],
+  fetched: Map<string, string>, now: Date, categories: readonly PlaceCategory[], limit: number): { area: string; category: PlaceCategory }[] {
+  const jobs: { area: string; category: PlaceCategory }[] = [];
+  const seen = new Set<string>();
+  const ordered = [...trips].filter((t) => t.latitude != null && t.longitude != null).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  for (const trip of ordered) {
+    const area = areaKey(trip.latitude as number, trip.longitude as number);
+    for (const category of categories) {
+      const key = `${area}|${category}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (needsRefresh(fetched.get(key), now)) jobs.push({ area, category });
+      if (jobs.length >= limit) return jobs;
+    }
+  }
+  return jobs;
 }

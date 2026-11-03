@@ -13,10 +13,10 @@ test("nearby trips share one area (≈5 km grid)", () => {
 test("the Overpass request: one category, named places, around the area centre, capped", () => {
   const q = overpassQuery("bars", { latitude: 33.5, longitude: -111.95 });
   assert.match(q, /^\[out:json\]\[timeout:25\];\(/);
-  assert.ok(q.includes('nwr["amenity"~"^(bar|pub|biergarten)$"]["name"](around:15000,33.50000,-111.95000);'));
+  assert.ok(q.includes('nwr["amenity"~"^(bar|pub|biergarten)$"]["name"](around:8000,33.50000,-111.95000);'), "drinks: town-sized search");
   assert.ok(q.includes('nwr["craft"="brewery"]["name"]'));
   assert.ok(q.endsWith(`out center tags ${OSM_MAX_PLACES};`));
-  assert.ok(overpassQuery("golf", { latitude: 1, longitude: 2 }).includes('["leisure"="golf_course"]'));
+  assert.ok(overpassQuery("golf", { latitude: 1, longitude: 2 }).includes('["leisure"="golf_course"]["name"](around:15000,'), "golf: wider search");
 });
 
 test("parsing: named + located only, ways use their centre, one per OSM id, readable details", () => {
@@ -47,4 +47,19 @@ test("refresh: never fetched or older than 30 days", () => {
   assert.equal(needsRefresh("2026-10-20T12:00:00Z", now), false);
   assert.equal(needsRefresh("2026-09-20T12:00:00Z", now), true);
   assert.equal(needsRefresh("garbage", now), true);
+});
+
+test("daily job: upcoming trips' areas that need a lookup, soonest first, shared areas once, capped", async () => {
+  const { areasToRefresh } = await import("./osmPlaces.ts");
+  const now = new Date("2026-11-03T09:00:00Z");
+  const trips = [
+    { latitude: 35.19, longitude: -79.47, startDate: "2027-05-01" },   // Pinehurst, later
+    { latitude: 33.4942, longitude: -111.9261, startDate: "2027-04-22" }, // Scottsdale, sooner
+    { latitude: 33.51, longitude: -111.94, startDate: "2027-06-01" },   // same Scottsdale area
+    { latitude: null, longitude: null, startDate: "2027-01-01" },       // no destination
+  ];
+  const fetched = new Map([["33.50,-111.95|food", "2026-10-30T00:00:00Z"]]); // fresh: skipped
+  const jobs = areasToRefresh(trips, fetched, now, ["food", "golf"], 10);
+  assert.deepEqual(jobs, [{ area: "33.50,-111.95", category: "golf" }, { area: "35.20,-79.45", category: "food" }, { area: "35.20,-79.45", category: "golf" }]);
+  assert.equal(areasToRefresh(trips, fetched, now, ["food", "golf"], 2).length, 2);
 });
