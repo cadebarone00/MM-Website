@@ -31,7 +31,7 @@ test('alerts are offered only when keys, job secret AND a delivery scheduler are
 });
 test('vercel.json only schedules jobs Vercel Hobby accepts (at most once a day) and no longer schedules trip-push',()=>{
  const {crons}=JSON.parse(readFileSync(new URL('../../vercel.json',import.meta.url),'utf8')) as {crons:{path:string;schedule:string}[]};
- assert.deepEqual(crons.map(c=>c.path),['/api/internal/account-deletions','/api/internal/venue-places']);
+ assert.deepEqual(crons.map(c=>c.path),['/api/internal/account-deletions']);
  for(const {path,schedule} of crons) {
   const [minute,hour,...rest]=schedule.split(' ');
   // One fixed minute and one fixed hour = once a day; day, month and weekday may stay "*".

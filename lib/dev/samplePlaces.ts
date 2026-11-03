@@ -1,8 +1,8 @@
 import type { Place, PlaceCategory } from "@/lib/platform/venuePlaces";
 
 /**
- * DEV ONLY: made-up places around a trip's location for the Venue tab design (simulator). Phase 2 replaces these with
- * OpenStreetMap places stored in our database. Offsets are in degrees from the trip's spot, so distances look real.
+ * DEV ONLY: made-up places around a trip's location for the Venue tab design (simulator). Real trips get places from
+ * Overture Maps Places stored in our database (scripts/places/import_overture.py). Offsets are in degrees from the trip's spot, so distances look real.
  */
 const SAMPLES: [string, PlaceCategory, number, number, string, string, number][] = [
   ["The Mission", "food", 0.006, -0.004, "3815 N Brown Ave", "Modern Latin · Old Town", 6],

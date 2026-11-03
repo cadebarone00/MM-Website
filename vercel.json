@@ -3,10 +3,6 @@
     {
       "path": "/api/internal/account-deletions",
       "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/internal/venue-places",
-      "schedule": "0 10 * * *"
     }
   ]
 }

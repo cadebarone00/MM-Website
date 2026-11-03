@@ -1,0 +1,38 @@
+# Venue places: the free daily import from Overture Maps Places (scripts/places/import_overture.py;
+# project_specs.md "Venue tab -> Places recommendations"). Runs on GitHub's included Actions minutes - no paid service.
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions): SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+# "Run workflow" on the Actions tab starts it by hand (e.g. right after a new trip is created).
+name: Venue places import
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # once a day, 10:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: venue-places-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Job-level so the import step can skip cleanly (instead of failing) until the secrets are added.
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install DuckDB
+        run: pip install duckdb==2.0.0
+      - name: Unit tests
+        run: python -m unittest scripts/places/test_import_overture.py
+      - name: Import places for upcoming trips
+        if: ${{ env.SUPABASE_URL != '' }}
+        run: python scripts/places/import_overture.py

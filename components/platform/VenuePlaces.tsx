@@ -5,6 +5,7 @@ import { Beer, Check, Coffee, Flag, Heart, MapPin, Navigation, Plus, Search, Tic
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { distanceLabel, distanceMiles, isAppleDevice, mapsLink, PLACE_CATEGORIES, placeBadge, rankPlaces, type Place, type PlaceCategory } from "@/lib/platform/venuePlaces";
 import { SAMPLE_CENTER, samplePlaces } from "@/lib/dev/samplePlaces";
+import { PLACES_CREDIT } from "@/lib/platform/placeAreas";
 import styles from "./VenuePlaces.module.css";
 
 const ICONS: Record<PlaceCategory, LucideIcon> = { food: Utensils, bars: Beer, golf: Flag, coffee: Coffee, todo: Ticket };
@@ -98,6 +99,6 @@ function VenueStageView({ stage, destination, center }: { stage: VenueStage; des
             </article>;
           })}
         </div>}
-    <p className={styles.credit}>Places © OpenStreetMap contributors</p>
+    <p className={styles.credit}>{PLACES_CREDIT}</p>
   </section>;
 }
