@@ -6,7 +6,7 @@ test("signup input: email + password only; player codes, names and usernames are
   assert.deepEqual(signupInputFromBody({ email: " a@b.co ", password: "a long passphrase", username: "MMCADBAR", name: "Cade" }), { ok: true, input: { email: "a@b.co", password: "a long passphrase" } });
   assert.equal(signupInputFromBody(null).ok, false);
   assert.equal(signupInputFromBody({ email: "nope", password: "a long passphrase" }).ok, false);
-  assert.equal(signupInputFromBody({ email: "a@b.co", password: "elevenchars" }).ok, false, "under 12 characters");
+  assert.equal(signupInputFromBody({ email: "a@b.co", password: "seven77" }).ok, false, "under 8 characters");
   assert.equal(signupInputFromBody({ email: "a@b.co", password: "ab".repeat(37) }).ok, false, "over 72 bytes");
 });
 

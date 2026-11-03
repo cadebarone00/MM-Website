@@ -15,7 +15,7 @@ export function signupInputFromBody(body: unknown): SignupParse {
   if (typeof record.email !== "string" || typeof record.password !== "string") return { ok: false, error: "Email and password are required." };
   const email = record.email.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Enter a valid email address." };
-  const password = checkNewPassword(record.password); // shared rules: 12+ characters, at most 72 bytes (Supabase's limit)
+  const password = checkNewPassword(record.password); // shared rules: 8+ characters, at most 72 bytes (Supabase's limit)
   if (!password.ok) return { ok: false, error: password.error };
   return { ok: true, input: { email, password: record.password } };
 }

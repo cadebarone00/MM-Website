@@ -42,12 +42,12 @@ async function restWorks(token: string, id: string) {
   return !r.error && (r.data ?? []).length === 1;
 }
 
-section("Password rules everywhere a password is set (12+ characters, at most 72 bytes)");
+section("Password rules everywhere a password is set (8+ characters, at most 72 bytes)");
 {
-  const short = await call(browser(), signupPOST, "/api/auth/signup", { email: addr("short"), password: "elevenchars" });
-  check("signup: 11 characters refused by the app", short.status === 400, JSON.stringify(short.json));
-  const direct = await anon().auth.signUp({ email: addr("short-direct"), password: "elevenchars" });
-  check("signup straight to Supabase: 11 characters refused by Supabase too", !!direct.error, direct.error?.message);
+  const short = await call(browser(), signupPOST, "/api/auth/signup", { email: addr("short"), password: "seven77" });
+  check("signup: 7 characters refused by the app", short.status === 400, JSON.stringify(short.json));
+  const direct = await anon().auth.signUp({ email: addr("short-direct"), password: "seven77" });
+  check("signup straight to Supabase: 7 characters refused by Supabase too", !!direct.error, direct.error?.message);
   const phrase = await call(browser(), signupPOST, "/api/auth/signup", { email: addr("phrase"), password: "correct horse battery staple" });
   check("a passphrase with spaces is accepted", phrase.status === 200);
   const max = await call(browser(), signupPOST, "/api/auth/signup", { email: addr("max"), password: "ab".repeat(36) });
@@ -95,8 +95,8 @@ section("Change password (correct current password)");
   const other = (await signIn(U.email, U.password)).data.session!; // a third device
   const wrong = await change(U.jar, "nope nope nope", "new pass phrase 2026");
   check("wrong current password: 401, field marked", wrong.status === 401 && wrong.json?.field === "currentPassword");
-  const weak = await change(U.jar, U.password, "too short");
-  check("weak new password: 400 with the rule", weak.status === 400 && /12 characters/.test(String(weak.json?.error)), JSON.stringify(weak.json));
+  const weak = await change(U.jar, U.password, "short");
+  check("weak new password: 400 with the rule", weak.status === 400 && /8 characters/.test(String(weak.json?.error)), JSON.stringify(weak.json));
   const same = await change(U.jar, U.password, U.password);
   check("same as current: 400", same.status === 400 && /different/.test(String(same.json?.error)));
   check("other devices work before the change", await restWorks(other.access_token, U.id));
