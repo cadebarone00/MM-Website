@@ -86,10 +86,18 @@ export function golfTripPayloadFromBody(body: unknown):
   const email = text("yourEmail");
   if (!EMAIL.test(email) || email.length > 254) fail("yourEmail", "Add a valid email.");
 
-  const golfDays = Number(text("golfDays"));
-  if (!(Number.isInteger(golfDays) && golfDays >= 1 && golfDays <= Math.max(dates.length, 1))) fail("golfDays", "Add at least one golf day within the trip.");
+  // Trip Builder: Skip for now on the golf step leaves a trip with no golf days yet (set later in Settings).
+  const golfSkipped = text("golfSkipped") === "1";
+  const golfDays = golfSkipped ? 0 : Number(text("golfDays"));
+  if (!golfSkipped && !(Number.isInteger(golfDays) && golfDays >= 1 && golfDays <= Math.max(dates.length, 1))) fail("golfDays", "Add at least one golf day within the trip.");
 
   const rounds = Number.isInteger(golfDays) && golfDays >= 1 ? plannedRounds(draft) : [];
+  // Trip Builder answers fill the plan answers when the old questions weren't asked (an answer that IS sent must be valid).
+  const derived: Record<string, PlanAnswer> = {
+    includesTournament: text("competing") === "yes" ? "yes" : text("competing") === "no" ? "no" : "undecided",
+    knowsFlights: text("travelMode") === "flying" ? "yes" : text("travelMode") === "driving" ? "no" : "undecided",
+    knowsLodging: "undecided", knowsTransportation: "undecided",
+  };
   for (const round of dates.length ? rounds : []) {
     if (round.date && !dates.includes(round.date)) { fail("rounds", "Every golf day has to fall within the trip dates."); break; }
   }
@@ -98,6 +106,7 @@ export function golfTripPayloadFromBody(body: unknown):
   }
 
   const answer = (key: string): PlanAnswer => {
+    if (!(key in draft)) return derived[key] ?? "undecided";
     const value = text(key) as PlanAnswer;
     if (!ANSWERS.includes(value)) { fail(key, "Pick Yes, No or Not sure yet."); return "undecided"; }
     return value;

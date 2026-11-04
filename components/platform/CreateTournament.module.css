@@ -167,3 +167,4 @@
 /* Review inside the wizard: the answer list scrolls, the buttons stay at the bottom. */
 .wizard .reviewList{flex:1 1 auto;min-height:0;overflow-y:auto}
 @media(min-width:1024px){.wizard{margin-bottom:0}.wizardBody{padding-bottom:48px}}
+/* Trip Builder: Skip for now, a quiet link above Back. */.skip{align-self:center;padding:0;border:0;background:none;cursor:pointer;font:600 14px/1.3 var(--font-barlow),sans-serif;color:#e1cec4;opacity:.85;text-decoration:underline;text-underline-offset:3px}.skip:focus-visible{outline:2px solid #e1cec4;outline-offset:3px}

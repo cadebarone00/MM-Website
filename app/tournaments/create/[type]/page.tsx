@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SetupSheet } from "@/components/platform/SetupSheet";
+import { GetStartedButton } from "@/components/platform/tour/GetStartedButton";
 import { setupTypeFromParam } from "@/lib/platform/setupTypes";
+import { getCurrentProfile, tripProfileId } from "@/lib/profile/currentProfile";
 import styles from "@/components/platform/CreateTournament.module.css";
 
 export const metadata: Metadata = { title: "Create a Tournament | The Maroon" };
@@ -17,9 +19,11 @@ export default async function SetupNextStepPage({ params }: { params: Promise<{ 
   if (!type) notFound();
   const isGolfTrip = type.key === "golf-trip";
 
-  return <SetupSheet label={isGolfTrip ? "Plan your golf trip" : `${type.name} setup`} wizardStep={isGolfTrip ? 0 : undefined} top={<h2 className={styles.creamTitle}>{type.name} setup</h2>}>
+  // Trip Builder (2026-11-03): Welcome to Golf Trips → Get Started (the Learn screen the first time).
+  const profileId = isGolfTrip ? tripProfileId(await getCurrentProfile()) ?? "guest" : "guest";
+  return <SetupSheet label={isGolfTrip ? "Welcome to Golf Trips" : `${type.name} setup`} wizardStep={isGolfTrip ? 0 : undefined} top={<h2 className={styles.creamTitle}>{type.name} setup</h2>}>
     {isGolfTrip
-      ? <Link href="/golf-trips/new" className={`${styles.continue} ${styles.start}`}>Let&apos;s go golfing</Link>
+      ? <GetStartedButton profileId={profileId} className={`${styles.continue} ${styles.start}`} />
       : <p className={styles.sheetNote}>The next step is coming soon</p>}
     <Link href={isGolfTrip ? "/golf-trips" : "/tournaments/join"} className={styles.back}>Back</Link>
   </SetupSheet>;

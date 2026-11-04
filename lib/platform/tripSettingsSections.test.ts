@@ -11,3 +11,10 @@ test("Players is the first General card for everyone, and no longer under Organi
 test("the General grid keeps its size (6 boxes in the preview)", () => {
   assert.equal(GENERAL_CARDS.length, 6);
 });
+
+test("everyone can replay the tour and the tips from General", () => {
+  for (const cards of [GENERAL_CARDS, LIVE_GENERAL_CARDS]) {
+    assert.ok(cards.includes("Watch the Golf Trips tour"));
+    assert.ok(cards.includes("Show tips again"));
+  }
+});

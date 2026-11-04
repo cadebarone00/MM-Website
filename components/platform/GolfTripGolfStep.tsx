@@ -39,7 +39,8 @@ export function GolfTripGolfStep() {
   const updateDay = (index: number, change: Partial<GolfDay>) =>
     setDays((current) => current.map((day, i) => i === index ? { ...day, ...change } : day));
 
-  return <SetupStepForm nextHref="/golf-trips/new/courses" backHref="/golf-trips/new" complete={days.length > 0}>
+  return <SetupStepForm step="golf" skip={{ golfSkipped: "1", golfDays: "0" }} complete={days.length > 0}>
+    <input type="hidden" name="golfSkipped" value="" />
     <div className={styles.fields}>
       <div className={styles.counter}>
         <span className={styles.fieldLabel} id="golf-days-label">How many golf days?</span>

@@ -54,6 +54,7 @@ import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { setRoundRsvp, useRoundRsvps } from "@/lib/platform/roundRsvp";
 import { useInAppScoring } from "@/lib/platform/inAppScoringSetting";
 import { teamColor } from "@/lib/platform/teamColors";
+import { TripTips } from "./TripTips";
 type Tab = (typeof TABS)[number];
 
 const TOURNAMENT_ANSWERS: Record<string, string> = { yes: "Yes, there's a tournament", no: "No tournament, just golf", undecided: "Not sure yet" };
@@ -79,7 +80,7 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames, spectator = false }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames, spectator = false, tips }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
@@ -127,7 +128,9 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     onDecideCorrection?: ComponentProps<typeof GolfTripScoring>["onDecideCorrection"]; correctionOpen?: ComponentProps<typeof GolfTripScoring>["correctionOpen"];
     /** Watch code (read only, no sign-in): the trip name and the Golf tab only — no other tabs, chat, notifications,
      *  settings, Games, Predict or scoring. */
-    spectator?: boolean }) {
+    spectator?: boolean;
+    /** Trip Builder: first-visit coach marks for this viewer (saved trips); shown once per account. */
+    tips?: { profileId: string; isOrganizer: boolean } }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -242,11 +245,11 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
             <GolfTripNotifications scope={alertScope} />
           </div></>, document.body)}
         </div>
-        <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
+        <Link href={settingsHref} className={styles.iconButton} aria-label="Trip settings" data-coach="settings"><Settings size={24} strokeWidth={1.75} aria-hidden /></Link>
       </div>}
       <GolfTripTitle name={draft.tripName || "Your Golf Trip"} />
       {!spectator && <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">
-        {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name}
+        {TABS.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name} data-coach={name === "Golf" ? "golf-tab" : undefined}
           className={`${styles.tab} ${tab === name ? styles.tabActive : ""}`} onClick={event => {
             setTab(name);
             const button = event.currentTarget;
@@ -286,6 +289,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         </>
         : <Card title={tab}><Empty>Coming soon</Empty></Card>}
     </div>
+    {tips && <TripTips profileId={tips.profileId} isOrganizer={tips.isOrganizer} />}
     {roundLive && <GolfTripScoring key={`${scoringOwner ?? "me"}-${scoringPrefill ? `prefilled-${scoringPrefill.otherCardDiff ? "mismatch" : "match"}` : "blank"}`} prefill={scoringPrefill} onSubmit={onScoringSubmit} submittedCard={submittedCard} par={previewMatch?.par} parIsReference={previewMatch?.parIsReference} initialHoles={yourHoles} courseName={previewMatch?.course} playerName={scoringPlayerName ?? (you ? getPlayerDisplayName(you) : draft.yourName || "You")} opponentCardMatches={opponentCardMatches}  attesteeName={attesteeName} edits={scoringEdits} onCardChange={onScoringCardChange} attestedStrokes={attestedStrokes} onAttestChange={onAttestChange} savedCard={savedScoringCard} attesteeStrokes={attesteeStrokes} scoresVerified={scoresVerified} syncStatus={syncStatus} conflicts={conflicts} onResolveConflict={onResolveConflict} resetCard={resetScoringCard} corrections={corrections} onRequestCorrection={onRequestCorrection} onDecideCorrection={onDecideCorrection} correctionOpen={correctionOpen} />}
     <GolfTripChat open={chatOpen} onClose={() => setChatOpen(false)} tripName={draft.tripName || "Your Golf Trip"}
       members={[...new Set(previewMatch?.matches.flatMap(match => [match.left, match.right].flatMap(side => side ? normalizeCompetitor(side).golfers.map(golfer => getPlayerDisplayName(golfer.name)) : [])) ?? [])].filter(name => name !== getPlayerDisplayName(you ?? draft.yourName ?? ""))} />

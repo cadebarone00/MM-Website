@@ -18,7 +18,7 @@ export function SavedTripSettingsWorkspace({ trip, snapshot, viewer }: { trip: S
     <GolfTripSettingsPreview tripName={trip.trip.name} backHref={`/golf-trips/${tripId}`} dataKey={tripId} persistenceScope={tripId} scoringTripId={tripId}
       scheduleBaseDate={snapshot.basis.startDate} playerCount={trip.trip.expected_traveler_count ?? 1} players={trip.members.filter(member => member.invitationStatus === "accepted").map(member => member.displayName)} pastTrips={[]}
       tripRounds={snapshot.basis.rounds.map(round => ({ id: `round-${round.roundNumber}`, number: round.roundNumber, date: round.playDate ?? "", course: round.courseName || "Course TBD", format: "Singles", nassau: false, handicap: false, status: "scheduled" }))}
-      livePanels={{ members, tripId, scorecards: <SavedTripScorecards trip={trip} />, isOrganizer: viewer.isOrganizer, deleteHref: `/golf-trips/${tripId}/settings/delete`,
+      livePanels={{ members, tripId, profileId: viewer.profileId, scorecards: <SavedTripScorecards trip={trip} />, isOrganizer: viewer.isOrganizer, deleteHref: `/golf-trips/${tripId}/settings/delete`,
         scoring: <><Link href={`/golf-trips/${tripId}`}>Open trip scoring</Link><GolfTripCorrections tripId={tripId} profileId={viewer.profileId} /></> }} />
     </GolfTripCompetitionPreviewProvider>
   </SavedTripSetupProvider>;

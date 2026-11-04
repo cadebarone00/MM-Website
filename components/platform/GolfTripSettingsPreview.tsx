@@ -59,6 +59,7 @@ import { savePredictSettings as saveDevicePredictSettings, usePredictSettings, t
 
 import { GENERAL_CARDS, LIVE_GENERAL_CARDS, ORGANIZER_SECTIONS } from "@/lib/platform/tripSettingsSections";
 import { TripInviteLinkCard } from "./TripInviteLinkCard";
+import { TIPS_SEEN_KEY, clearSeen } from "@/lib/platform/tripTour";
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -107,7 +108,7 @@ const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 /** Reference layout with local game scoring settings in the site's maroon palette. */
 export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name }: {
   scheduleBaseDate?: string; organizerName?: string;
-  livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string; tripId?: string };
+  livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string; tripId?: string; profileId?: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
   pastTrips?: PastTrip[];
@@ -1624,6 +1625,9 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             onClick={() => { setOverviewType(title === "Team Competition" ? "team" : "individual"); setCompetitionSection("Overview"); setCompetitionOpen(true); }}>
             <h2>{title.replace("Competition", "Comp")}</h2>
           </button>;
+          if (title === "Watch the Golf Trips tour") return <Link key={index} href={`/golf-trips/new/tour?back=${encodeURIComponent(backHref)}`} className={`${styles.card} ${styles.cardButton}`}><h2>{title}</h2></Link>;
+          if (title === "Show tips again") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
+            onClick={() => { clearSeen(TIPS_SEEN_KEY, livePanels?.profileId ?? "guest"); window.location.assign(backHref); }}><h2>{title}</h2></button>;
           if (title === "Players") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setPlayersOpen(true)}>
             <h2>{title}</h2>
           </button>;

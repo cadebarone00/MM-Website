@@ -4008,5 +4008,30 @@ slide-up "How was yesterday?" listing the places you went, a 1-10 rating each (S
 Each place keeps its average + count; avg 8+ from at least 5 ratings = "Ranked highly by Maroon users" badge and a
 higher spot for the next trip to that area. Designed first in the simulator (Golf Trip Home conditionals).
 
+**Data source change (owner decision 2026-11-03, option 3) — APPROVED ("as long as it's free").** The free public OpenStreetMap
+(Overpass) servers proved unreliable (at capacity / timing out on almost every attempt during testing), so places come
+from **Overture Maps Places** instead: a free, openly licensed dataset (~60M+ places; Amazon / Meta / Microsoft /
+TomTom-backed Overture Maps Foundation; open licences that allow storing). Tested 2026-11-03: one ~15 km area reads in
+~7 s straight from Overture's public files on Amazon storage — no server to be "busy". Each place has name, address,
+website, phone, category, a confidence score and open / closed status.
+- **Where it runs:** a free daily **GitHub Actions** job (Python + DuckDB, no paid service): reads the areas of upcoming
+  trips from our database, reads each area from Overture's newest release, keeps our five categories, drops closed
+  places and low-confidence ones (< 0.7), and stores them (source 'overture') in our `places` table. Trips get their
+  places within a day of being created (the job can also be run by hand from GitHub at any time).
+- **Category mapping:** Food = restaurant, casual eatery, fast food, food court · Bars & Breweries = bar, brewery,
+  winery, distillery, nightlife · Coffee = coffee shop, cafe · Golf = golf course + anything golf (driving ranges, golf
+  shops) · Things to do = museum, aquarium, zoo, amusement / gaming / music / theatre venues, trails, national parks.
+- **Credit** on the Venue tab: "Places data © Overture Maps Foundation".
+- **Removed:** the Overpass lookups (app route + Vercel daily job). The app route only reads our database.
+- **One-time setup by the owner:** two secrets in GitHub (Settings → Secrets → Actions): the Supabase URL and the
+  service-role key, so the job can write places. Free (GitHub's included Actions minutes).
+
 **Done (phase 1) =** the new Venue tab in the simulator with every conditional, Open in Maps links working, owner
 approval of the look. Nothing live changes until phases 2–3.
+
+**Built 2026-11-03 (uncommitted, on main alongside the other agent's work).** Plan: `docs/superpowers/plans/2026-11-03-trip-builder.md`.
+New: `supabase/golf_trip_join_links.sql` (**NOT run in production** — owner runs it), join page `/golf-trips/join/<code>`,
+join-link API, invite link card at the top of Settings → General → Players, Trip Builder steps (basics, dates, players,
+teams, golf, courses, format, lodging → Create → Your trip is ready → invite pop-up), Learn screen + tour, coach marks.
+Dev previews: `/dev/trip-builder/join`, `/dev/trip-builder/ready`, `/dev/trip-builder/tips`. `@capacitor/share` 8.0.3
+added (`npx cap sync` not run). The Maroon photo goes at `public/images/the-maroon.jpg` (then set `MAROON_PHOTO`).

@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import styles from "./CreateTournament.module.css";
 import { TripWizardArt } from "./TripWizardArt";
+import { TRIP_BUILDER_STEPS } from "@/lib/platform/tripBuilderSteps";
 
 /** The Golf Trip wizard's steps in order (the cream animation and the progress line fill as these are completed). */
-export const TRIP_WIZARD_STEPS = ["Trip Basics", "Golf", "Courses", "Format", "Lodging", "Flights", "Transportation", "Review"] as const;
+export const TRIP_WIZARD_STEPS = TRIP_BUILDER_STEPS;
 
 /**
  * The create / questionnaire layout (same look as Create Tournament, page 1): no header, cream up top
