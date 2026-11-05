@@ -4035,3 +4035,4 @@ join-link API, invite link card at the top of Settings → General → Players, 
 teams, golf, courses, format, lodging → Create → Your trip is ready → invite pop-up), Learn screen + tour, coach marks.
 Dev previews: `/dev/trip-builder/join`, `/dev/trip-builder/ready`, `/dev/trip-builder/tips`. `@capacitor/share` 8.0.3
 added (`npx cap sync` not run). The Maroon photo goes at `public/images/the-maroon.jpg` (then set `MAROON_PHOTO`).
+
