@@ -170,14 +170,49 @@ returns jsonb language sql stable security definer set search_path = public as $
     and exists (select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = p_profile and m.invitation_status = 'accepted');
 $$;
 
+-- Phase 3: a member hearts / un-hearts a place for their trip ("Your group saved this"). Returns whether it's saved now.
+-- Only an accepted member of the trip can do it, for any stored place; anyone else gets 'Not found.'.
+create or replace function public.set_place_save(p_profile uuid, p_trip uuid, p_place uuid, p_saved boolean)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = p_profile and m.invitation_status = 'accepted')
+     or not exists (select 1 from places where id = p_place) then
+    raise exception 'Not found.' using errcode = 'P0002';
+  end if;
+  if p_saved then
+    insert into place_saves (place_id, golf_trip_id, profile_id) values (p_place, p_trip, p_profile) on conflict do nothing;
+  else
+    delete from place_saves where place_id = p_place and golf_trip_id = p_trip and profile_id = p_profile;
+  end if;
+  return p_saved;
+end;
+$$;
+
+-- Phase 3: a member put the place on the trip's itinerary ("Added by N trips"). Counted once per trip; safe to repeat.
+create or replace function public.record_place_trip_add(p_profile uuid, p_trip uuid, p_place uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = p_profile and m.invitation_status = 'accepted')
+     or not exists (select 1 from places where id = p_place) then
+    raise exception 'Not found.' using errcode = 'P0002';
+  end if;
+  insert into place_trip_adds (place_id, golf_trip_id, profile_id) values (p_place, p_trip, p_profile)
+  on conflict (place_id, golf_trip_id) where golf_trip_id is not null do nothing;
+  return true;
+end;
+$$;
+
 revoke all on function public.place_area_fetched_at(text, text), public.store_places(text, text, text, jsonb),
-  public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text) from public, anon, authenticated;
+  public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text),
+  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid) from public, anon, authenticated;
 grant execute on function public.place_area_fetched_at(text, text), public.store_places(text, text, text, jsonb),
-  public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text) to service_role;
+  public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text),
+  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid) to service_role;
 
 commit;
 
 -- Undo (development only):
+--   drop function public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid);
 --   drop function public.list_trip_places(uuid, uuid, text, text), public.store_places(text, text, text, jsonb),
 --     public.place_areas_to_import(), public.place_area_fetched_at(text, text);
 --   drop table public.place_ratings, public.place_trip_adds, public.place_saves, public.place_area_fetches, public.places;

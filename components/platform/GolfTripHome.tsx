@@ -10,7 +10,7 @@ import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedR
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, homeBoxes, localNow, withGolfRounds, type HomeStatus, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
 import { addMyItem, goingOnly, inviteToItem, itineraryFor, removeMyItem, respondToInvite, updateMyItem, type TripTravel } from "@/lib/platform/tripTravel";
-import { GolfTripAddTravel, type MyTravelChange } from "./GolfTripMyTravel";
+import { GolfTripAddPlace, GolfTripAddTravel, type MyTravelChange } from "./GolfTripMyTravel";
 import { TravelKindIcon } from "./travelKinds";
 import type { TripWeather } from "@/lib/platform/weather/types";
 import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
@@ -80,7 +80,7 @@ const subscribeNever = () => () => {};
  * `navigation` optionally requests a shared tab/section; in-app navigation remains local between requests.
  * `onNavigationChange` optionally observes the actual tab/section; the dev wrapper supplies it only when embedded.
  */
-export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames, spectator = false, tips }:
+export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, weather, flights, travel: travelSeed, navigation, onNavigationChange, now: tripNow, competitionKey, savedCompetitionType, savedTeamColors, savedTeamDraft, organizer, onTravelChange, roundLive = false, opponentCardMatches, scoringPrefill, onScoringSubmit, submittedCard, scoringOwner, tripStats, scoreChanges, attesteeName, scoringEdits, onScoringCardChange, attestedStrokes, onAttestChange, scoringPlayerName, savedScoringCard, attesteeStrokes, scoresVerified, syncStatus, conflicts, onResolveConflict, resetScoringCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, alertScope, signedInName, savedGames, organizerGames, spectator = false, tips, placesTripId }:
   { preview?: GolfTripDraft; settingsHref: string; backHref?: string; previewMatch?: GolfMatchPreview; weather?: Promise<TripWeather>; flights?: TripFlights;
     /** Everyone's travel (My Info, the Itinerary and the Home "what's next" cards). Only the dev mock trip has it for now. */
     travel?: TripTravel; navigation?: GolfTripNavigation; onNavigationChange?: (navigation: GolfTripNavigation) => void; now?: string; competitionKey?: string;
@@ -130,7 +130,9 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
      *  settings, Games, Predict or scoring. */
     spectator?: boolean;
     /** Trip Builder: first-visit coach marks for this viewer (saved trips); shown once per account. */
-    tips?: { profileId: string; isOrganizer: boolean } }) {
+    tips?: { profileId: string; isOrganizer: boolean };
+    /** A real trip's id: Venue shows its real places (members only; spectators keep the old Venue, samples are dev / tour only). */
+    placesTripId?: string }) {
   const raw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const stored = useMemo(() => parseGolfTripDraft(raw), [raw]);
   const draft = preview ?? stored;
@@ -156,6 +158,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const myName = travel?.members.find(member => member.id === travel.meId)?.name || draft.yourName || "You";
   // Organizer-only controls (Team Draft's Edit): a saved trip says so; the dev preview by its signed-in account, else my role.
   const isOrganizer = alertScope?.isOrganizer ?? organizer ?? travel?.members.find(member => member.id === travel.meId)?.role === "organizer";
+  // Venue → Add to itinerary: the place being added (the plan form is open) and what to call once it's saved.
+  const [addingPlace, setAddingPlace] = useState<{ name: string; address?: string; done: () => void } | null>(null);
   const changeMyTravel = (change: MyTravelChange) => setTravelState((current) => {
     if (!current.travel) return current;
     const next = change.type === "add" ? addMyItem(current.travel, change.item)
@@ -262,6 +266,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
     </header>
     {/* After-visit ratings ("How was yesterday?"): dev preview only until phase 4 is built (project_specs.md). */}
     {preview && <RatePlacesPrompt />}
+    {addingPlace && travel && <GolfTripAddPlace travel={travel} name={addingPlace.name} address={addingPlace.address} onChange={changeMyTravel}
+      onAdded={addingPlace.done} onClose={() => setAddingPlace(null)} />}
     <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
@@ -273,8 +279,11 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           </div>
         </>
         // Venue → place recommendations: dev preview only until phases 2-3 (project_specs.md); real trips keep the old Venue.
-        : tab === "Venue" ? preview ? <VenuePlaces destination={draft.destination ?? ""}
-          center={coordinate(draft.destinationLatitude) !== undefined && coordinate(draft.destinationLongitude) !== undefined ? { latitude: coordinate(draft.destinationLatitude)!, longitude: coordinate(draft.destinationLongitude)! } : undefined} />
+        // Venue → place recommendations (project_specs.md): a real trip's members get its real places; spectators keep
+        // the old Venue (places are members-only); the dev simulator and the app tour show samples.
+        : tab === "Venue" ? (placesTripId || (preview && !spectator)) ? <VenuePlaces destination={draft.destination ?? ""} tripId={placesTripId}
+          center={coordinate(draft.destinationLatitude) !== undefined && coordinate(draft.destinationLongitude) !== undefined ? { latitude: coordinate(draft.destinationLatitude)!, longitude: coordinate(draft.destinationLongitude)! } : undefined}
+          onAddToItinerary={placesTripId && travel ? (place, done) => setAddingPlace({ name: place.name, address: place.address, done }) : undefined} />
         : <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
           players={travel?.members.map(member => member.name) ?? []} items={goingItinerary ?? []} onOpenItinerary={openItinerary} />

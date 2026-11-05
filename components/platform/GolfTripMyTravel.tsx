@@ -132,10 +132,12 @@ export function GolfTripAddTravel({ travel, onChange, className }: { travel: Tri
  * Add / edit sheet. Fields change with the kind; problems show under each field when you tap a save button. X closes
  * without saving; adding also has < back to the choices. Save = just me; Save & Invite = save, then pick who to invite.
  */
-function TravelForm({ kind, item, onSave, onCancel, onBack }: {
+function TravelForm({ kind, item, initial, onSave, onCancel, onBack }: {
   kind: TravelKind; item?: TravelItem; onSave: (details: TravelDetails, startsAt: string, endsAt: string | undefined, invite: boolean) => void; onCancel: () => void; onBack?: () => void;
+  /** A new item's starting answers (Venue → Add to itinerary fills in the place). */
+  initial?: TravelDetails;
 }) {
-  const d = item?.details ?? {};
+  const d = item?.details ?? initial ?? {};
   const [fields, setFields] = useState<FormFields>({
     airline: d.airline ?? "", flightNumber: d.flightNumber ?? "", from: d.from ?? "", to: d.to ?? "", rideType: d.rideType ?? "driving",
     place: d.place ?? "", seats: d.seats !== undefined ? String(d.seats) : "", name: d.name ?? "", note: d.note ?? "",
@@ -204,6 +206,26 @@ function TravelForm({ kind, item, onSave, onCancel, onBack }: {
       <button type="button" className={styles.save} onClick={() => save(true)}>Save &amp; Invite</button>
     </div>
   </GolfTripActionSheet>;
+}
+
+/**
+ * Venue → Add to itinerary (places phase 3): the "Other plans" form with the place's name and address filled in, so only
+ * the day and time are left. Saved like any other plan (Save = just me, Save & Invite = then pick who); `onAdded` runs
+ * once it's on the itinerary, so the Venue card can say "Added" and the place counts the trip.
+ */
+export function GolfTripAddPlace({ travel, name, address, onChange, onAdded, onClose }: {
+  travel: TripTravel; name: string; address?: string; onChange: (change: MyTravelChange) => void; onAdded: () => void; onClose: () => void;
+}) {
+  const [inviting, setInviting] = useState<string | null>(null);
+  if (inviting) return <InvitePeople travel={travel} itemId={inviting} onClose={onClose}
+    onSend={(memberIds) => { onChange({ type: "invite", id: inviting, memberIds }); onClose(); }} />;
+  return <TravelForm kind="other" initial={{ name, place: address }} onCancel={onClose}
+    onSave={(details, startsAt, endsAt, invite) => {
+      const id = `tr-${crypto.randomUUID()}`;
+      onChange({ type: "add", item: { id, kind: "other", details, startsAt, endsAt, joinPolicy: "none" } });
+      onAdded();
+      if (invite) setInviting(id); else onClose();
+    }} />;
 }
 
 /**

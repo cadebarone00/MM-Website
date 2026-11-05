@@ -31,3 +31,20 @@ export async function tripPlaces(input: { profileId: string; tripId: string; lat
   if (error) return { status: "unavailable" };
   return { status: "ok", area, places: (Array.isArray(data) ? data : []) as StoredPlace[], pending };
 }
+
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+export type PlaceActionResult = "ok" | "not-found" | "unavailable";
+
+/** Phase 3: heart / un-heart a place for the trip (members only; the database checks membership again). */
+export async function setPlaceSave(profileId: string, tripId: string, placeId: string, saved: boolean): Promise<PlaceActionResult> {
+  if (!isUuid(placeId)) return "not-found";
+  const { error } = await createSupabaseServiceRoleClient().rpc("set_place_save", { p_profile: profileId, p_trip: tripId, p_place: placeId, p_saved: saved });
+  return !error ? "ok" : error.code === "P0002" ? "not-found" : "unavailable";
+}
+
+/** Phase 3: the place was put on the trip's itinerary ("Added by N trips"; counted once per trip). */
+export async function recordPlaceAdd(profileId: string, tripId: string, placeId: string): Promise<PlaceActionResult> {
+  if (!isUuid(placeId)) return "not-found";
+  const { error } = await createSupabaseServiceRoleClient().rpc("record_place_trip_add", { p_profile: profileId, p_trip: tripId, p_place: placeId });
+  return !error ? "ok" : error.code === "P0002" ? "not-found" : "unavailable";
+}
