@@ -136,9 +136,14 @@ def read_area(con, release: str, lat: float, lon: float):
     """, [lon - dlon, lon + dlon, lat - dlat, lat + dlat, MIN_CONFIDENCE]).fetchall()
 
 
+def secret(name: str) -> str:
+    """An environment value as pasted into GitHub: surrounding spaces, line breaks and quote marks removed."""
+    return os.environ.get(name, "").strip().strip('"').strip("'").strip()
+
+
 def supabase(path: str, body: dict) -> object:
-    url = os.environ["SUPABASE_URL"].rstrip("/") + path
-    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    url = secret("SUPABASE_URL").rstrip("/") + path
+    key = secret("SUPABASE_SERVICE_ROLE_KEY")
     request = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST",
                                      headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"})
     with urllib.request.urlopen(request, timeout=120) as response:

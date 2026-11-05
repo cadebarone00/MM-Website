@@ -61,6 +61,14 @@ class Shape(unittest.TestCase):
         self.assertEqual(food[0]["name"], "Spot 199")
 
 
+class Secrets(unittest.TestCase):
+    def test_pasted_values_are_cleaned(self):
+        os.environ["MAROON_TEST_SECRET"] = ' "abc.def" 
+'
+        self.assertEqual(imp.secret("MAROON_TEST_SECRET"), "abc.def")
+        del os.environ["MAROON_TEST_SECRET"]
+
+
 class Refresh(unittest.TestCase):
     def test_refresh(self):
         now = datetime(2026, 11, 3, 12, tzinfo=timezone.utc)
