@@ -63,8 +63,7 @@ class Shape(unittest.TestCase):
 
 class Secrets(unittest.TestCase):
     def test_pasted_values_are_cleaned(self):
-        os.environ["MAROON_TEST_SECRET"] = ' "abc.def" 
-'
+        os.environ["MAROON_TEST_SECRET"] = ' "abc.def" ' + chr(10)
         self.assertEqual(imp.secret("MAROON_TEST_SECRET"), "abc.def")
         del os.environ["MAROON_TEST_SECRET"]
 
