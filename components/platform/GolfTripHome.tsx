@@ -33,6 +33,7 @@ import { GolfTripChat } from "./GolfTripChat";
 import { GolfTripVenue } from "./GolfTripVenue";
 import { VenuePlaces } from "./VenuePlaces";
 import { RatePlacesPrompt } from "./RatePlacesPrompt";
+import { placesToRate, RATE_WITHIN_DAYS } from "@/lib/platform/venuePlaces";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
@@ -159,7 +160,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   // Organizer-only controls (Team Draft's Edit): a saved trip says so; the dev preview by its signed-in account, else my role.
   const isOrganizer = alertScope?.isOrganizer ?? organizer ?? travel?.members.find(member => member.id === travel.meId)?.role === "organizer";
   // Venue → Add to itinerary: the place being added (the plan form is open) and what to call once it's saved.
-  const [addingPlace, setAddingPlace] = useState<{ name: string; address?: string; done: () => void } | null>(null);
+  const [addingPlace, setAddingPlace] = useState<{ placeId: string; name: string; address?: string; done: () => void } | null>(null);
   const changeMyTravel = (change: MyTravelChange) => setTravelState((current) => {
     if (!current.travel) return current;
     const next = change.type === "add" ? addMyItem(current.travel, change.item)
@@ -265,11 +266,16 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       </div>}
     </header>
     {/* After-visit ratings ("How was yesterday?"): dev preview only until phase 4 is built (project_specs.md). */}
-    {preview && <RatePlacesPrompt />}
-    {addingPlace && travel && <GolfTripAddPlace travel={travel} name={addingPlace.name} address={addingPlace.address} onChange={changeMyTravel}
+    {/* After-visit ratings: a real trip asks about my recent plans made from Venue (places phase 4); the dev simulator shows samples. */}
+    {placesTripId ? <RatePlacesPrompt tripId={placesTripId} visits={travel ? placesToRate(travel.items
+      .filter((item) => item.details.placeId && travel.participants.some((p) => p.itemId === item.id && p.memberId === travel.meId && p.status === "going"))
+      .map((item) => ({ placeId: item.details.placeId!, name: item.details.name || "Plan", startsAt: item.startsAt,
+        when: `${itineraryWeekday(item.startsAt)} · ${itineraryTime(item.startsAt)}`, visitedOn: item.startsAt.slice(0, 10) })),
+      (tripNow ?? new Date().toLocaleString("sv-SE")).slice(0, 10), [], RATE_WITHIN_DAYS) : []} /> : preview && <RatePlacesPrompt />}
+    {addingPlace && travel && <GolfTripAddPlace travel={travel} placeId={addingPlace.placeId} name={addingPlace.name} address={addingPlace.address} onChange={changeMyTravel}
       onAdded={addingPlace.done} onClose={() => setAddingPlace(null)} />}
     <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
-      {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary}
+      {tab === "Home" ? <><InfoAccount draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary} players={previewMatch?.leaderboard.map(row => row.golfer)}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
         liveRound={roundLive && previewMatch ? { id: `round-${previewMatch.round}`, kind: "teeTime", title: `Round ${previewMatch.round} · ${previewMatch.course}`, startsAt: (tripNow ?? "").slice(0, 16) } : undefined} /></>
@@ -283,7 +289,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
         // the old Venue (places are members-only); the dev simulator and the app tour show samples.
         : tab === "Venue" ? (placesTripId || (preview && !spectator)) ? <VenuePlaces destination={draft.destination ?? ""} tripId={placesTripId}
           center={coordinate(draft.destinationLatitude) !== undefined && coordinate(draft.destinationLongitude) !== undefined ? { latitude: coordinate(draft.destinationLatitude)!, longitude: coordinate(draft.destinationLongitude)! } : undefined}
-          onAddToItinerary={placesTripId && travel ? (place, done) => setAddingPlace({ name: place.name, address: place.address, done }) : undefined} />
+          onAddToItinerary={placesTripId && travel ? (place, done) => setAddingPlace({ placeId: place.id, name: place.name, address: place.address, done }) : undefined} />
         : <GolfTripVenue draft={draft} settingsHref={settingsHref} today={tripNow?.slice(0, 10)}
           latitude={coordinate(draft.destinationLatitude)} longitude={coordinate(draft.destinationLongitude)}
           players={travel?.members.map(member => member.name) ?? []} items={goingItinerary ?? []} onOpenItinerary={openItinerary} />
