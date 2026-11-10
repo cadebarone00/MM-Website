@@ -1,5 +1,5 @@
 /* Tee time sheet: slides up from the bottom; maroon with gold accents, Spectral numbers, a centered selection band. */
-.overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:color-mix(in srgb,var(--lm-bg-0a0406) 55%,transparent)}
+.overlay{position:fixed;inset:0;z-index:1001;display:flex;align-items:flex-end;justify-content:center;background:color-mix(in srgb,var(--lm-bg-0a0406) 55%,transparent)}
 .sheet{position:relative;width:min(100vw,480px);box-sizing:border-box;padding:28px 24px calc(28px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);text-align:center;box-shadow:0 -16px 40px rgba(0,0,0,.35);animation:rise .3s ease-out}
 @keyframes rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}}

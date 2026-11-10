@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import styles from "./AuthWelcomePreview.module.css";
+import frame from "./AuthNamePreview.module.css";
+import { signUpProgress } from "@/lib/dev/authScreens";
 
 /** DEV ONLY: Authentication screen 1 (Welcome): the fork. Two buttons, Sign up or Log in, each to its own page, so the
  * app never has to look up whether an email already has an account. */
@@ -20,9 +22,12 @@ export function AuthWelcomePreview() {
 /** DEV ONLY: Sign up: email → the code screen, or Google / Apple (which also log existing accounts in). */
 export function AuthSignUpPreview() {
   return <main className={styles.page}>
-    <div className={styles.logo}><MaroonMark color="#fbf8f1" /></div>
-    <h1 className={styles.title}>Sign up</h1>
-    <form className={styles.form} action="/dev/auth/verification-code">
+    <div className={styles.stepTop}>
+      <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
+      <div className={frame.progress} aria-hidden="true"><span style={{ width: signUpProgress("sign-up") }} /></div>
+    </div>
+    <h1 className={`${styles.title} ${styles.signUpTitle}`}>Sign up</h1>
+    <form className={styles.form} action="/dev/auth/password">
       <input className={styles.input} type="email" name="email" placeholder="Email" autoComplete="email" aria-label="Email" />
       <button className={styles.primary} type="submit">Continue</button>
     </form>

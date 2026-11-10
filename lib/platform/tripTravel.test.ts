@@ -83,3 +83,11 @@ test("Accept / Decline: declined stays on my itinerary (marked) and I can change
   const asRiley = { ...declined, meId: "member-riley" };
   assert.equal(inviteToItem(asRiley, "tr-topgolf", ["member-alex"]).participants.find((p) => p.itemId === "tr-topgolf" && p.memberId === "member-alex")?.status, "invited");
 });
+
+test("a plan made from Venue keeps its place link through cleaning; junk ids are dropped", async () => {
+  const { cleanDetails } = await import("./tripTravel.ts");
+  const id = "0b5c2f4e-1a2b-4c3d-8e9f-0123456789ab";
+  assert.deepEqual(cleanDetails("other", { name: " Goldwater ", placeId: id }), { name: "Goldwater", place: undefined, note: undefined, placeId: id });
+  assert.equal(cleanDetails("other", { name: "x", placeId: "not-a-place" }).placeId, undefined);
+  assert.equal(cleanDetails("flight", { airline: "AA", placeId: id }).placeId, undefined, "only plans at a place carry it");
+});

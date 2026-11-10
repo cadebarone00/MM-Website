@@ -53,7 +53,7 @@ enable_signup = true
 enable_anonymous_sign_ins = false
 enable_manual_linking = false
 # Accounts V2 phase A2: same minimum as the app (lib/auth/passwordPolicy.ts). Supabase caps passwords at 72 bytes.
-minimum_password_length = 12
+minimum_password_length = 8
 
 [auth.rate_limit]
 email_sent = 1000

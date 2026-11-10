@@ -15,7 +15,7 @@ export function signupInputFromBody(body: unknown): SignupParse {
   if (typeof record.email !== "string" || typeof record.password !== "string") return { ok: false, error: "Email and password are required." };
   const email = record.email.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Enter a valid email address." };
-  const password = checkNewPassword(record.password); // shared rules: 12+ characters, at most 72 bytes (Supabase's limit)
+  const password = checkNewPassword(record.password); // shared rules: 8+ characters, at most 72 bytes (Supabase's limit)
   if (!password.ok) return { ok: false, error: password.error };
   return { ok: true, input: { email, password: record.password } };
 }
@@ -24,6 +24,10 @@ type AuthError = { code?: string; status?: number; message: string } | null;
 export type SignupReply = { status: number; body: { ok: true } | { ok: false; error: string } };
 
 const CHECK_YOUR_EMAIL: SignupReply = { status: 200, body: { ok: true } };
+
+/** The fixed refusals of the Before User Created hook (supabase/signup_gate.sql); only these exact texts are shown. */
+export const GATE_REFUSALS = ["Registration is closed.", "New accounts can only be created with email.",
+  "Registration is invite-only right now.", "Start with your birthday."] as const;
 
 /** What the endpoint answers for Supabase's signUp result. */
 export function signupReply(error: AuthError): SignupReply {
@@ -37,6 +41,8 @@ export function signupReply(error: AuthError): SignupReply {
   if (code === "weak_password" || /longer than 72/i.test(message)) return { status: 400, body: { ok: false, error: passwordErrorMessage(error) } };
   if (code === "email_address_invalid" || code === "validation_failed") return { status: 400, body: { ok: false, error: "Enter a valid email address." } };
   if (code === "signup_disabled") return { status: 403, body: { ok: false, error: "New accounts aren't open yet." } };
+  const refusal = GATE_REFUSALS.find((text) => message.includes(text));
+  if (refusal) return { status: 403, body: { ok: false, error: refusal } };
   if (error.status === 429) return { status: 429, body: { ok: false, error: "Too many tries. Wait a minute and try again." } };
   return { status: 503, body: { ok: false, error: "Couldn't create your account. Try again." } };
 }

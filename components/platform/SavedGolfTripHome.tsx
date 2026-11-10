@@ -64,7 +64,7 @@ export function SavedGolfTripHome(props: SavedHomeProps) {
       } catch (error) { planFailed.current = true; setPlanStatus(error instanceof Error ? error.message : "Couldn't save plan."); }
     });
   };
-  const home = <><div role={planFailed.current ? "alert" : "status"}>{planStatus}</div><SavedGolfTripHomeInner {...props} travel={props.planSnapshot?.available ? props.planSnapshot.travel : props.travel} onTravelChange={props.planSnapshot?.available ? savePlans : props.onTravelChange} /></>;
+  const home = <><div role={planFailed.current ? "alert" : "status"}>{planStatus}</div><SavedGolfTripHomeInner {...props} placesTripId={props.savedTrip?.trip.id} travel={props.planSnapshot?.available ? props.planSnapshot.travel : props.travel} onTravelChange={props.planSnapshot?.available ? savePlans : props.onTravelChange} /></>;
   return props.savedTrip && props.setupSnapshot ? <SavedTripSetupProvider tripId={props.savedTrip.trip.id} snapshot={props.setupSnapshot} editable={false}>{home}</SavedTripSetupProvider> : home;
 }
 function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnapshot, planSnapshot: _planSnapshot, ...home }: SavedHomeProps) {

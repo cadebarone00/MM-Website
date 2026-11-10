@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile, notGolfer, tripProfileId, type CurrentProfile } from "@/lib/profile/currentProfile";
 import { initializeProfile } from "@/lib/profile/profileInitialization";
 import { acceptResultFromJson, declineResultFromJson, invitationPreviewFromJson, type AcceptInvitationResult, type DeclineInvitationResult, type InvitationPreview, type InviteInput } from "./golfTripInvitations.ts";
+import { joinLinkFromJson, joinPreviewFromJson, joinResultFromJson, newJoinCode, type JoinLink, type JoinPreview, type JoinResult } from "./golfTripJoinLinks.ts";
 import { membersForViewer } from "./golfTripMembers.ts";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
@@ -209,4 +210,71 @@ export async function leaveGolfTrip(tripId: string): Promise<boolean | "signed-o
   const { data, error } = await createSupabaseServiceRoleClient().rpc("leave_golf_trip", { p_profile: current.profile.profileId, p_trip: tripId });
   if (error) throw failure("leave_golf_trip", error);
   return data === true;
+}
+
+// --- Trip Builder: the shareable trip link (supabase/golf_trip_join_links.sql) ------------------------------------
+
+/** The RPC isn't in this database yet (the SQL file hasn't been run). */
+const notInstalled = (error: { code?: string }) => error.code === "PGRST202" || error.code === "42883" || error.code === "42P01";
+
+/** Anyone on the trip: the current 30-minute link (a fresh one when it's missing or nearly expired). */
+export async function getGolfTripJoinLink(tripId: string, origin: string):
+  Promise<{ status: "ok"; link: JoinLink } | { status: "signed-out" | "not-found" | "unavailable" }> {
+  const current = await getCurrentProfile();
+  const profileId = tripProfileId(current);
+  if (current.status === "signed-out" || !profileId) return { status: "signed-out" };
+  if (!isGolfTripId(tripId)) return { status: "not-found" };
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("golf_trip_join_code", { p_profile: profileId, p_trip: tripId, p_new_code: newJoinCode() });
+  if (error) {
+    if (notInstalled(error)) return { status: "unavailable" };
+    throw failure("golf_trip_join_code", error);
+  }
+  const link = joinLinkFromJson(data, origin);
+  return link ? { status: "ok", link } : { status: "not-found" };
+}
+
+/** Organizer only: a brand-new link; the old one stops working. */
+export async function resetGolfTripJoinLink(tripId: string, origin: string):
+  Promise<{ status: "ok"; link: JoinLink } | { status: "signed-out" | "forbidden" | "not-found" | "unavailable" }> {
+  const current = await getCurrentProfile();
+  const profileId = tripProfileId(current);
+  if (current.status === "signed-out" || !profileId) return { status: "signed-out" };
+  if (!isGolfTripId(tripId)) return { status: "not-found" };
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("reset_golf_trip_join_code", { p_profile: profileId, p_trip: tripId, p_new_code: newJoinCode() });
+  if (error) {
+    if (notInstalled(error)) return { status: "unavailable" };
+    if (error.code === "42501") return { status: "forbidden" };
+    throw failure("reset_golf_trip_join_code", error);
+  }
+  const link = joinLinkFromJson(data, origin);
+  return link ? { status: "ok", link } : { status: "not-found" };
+}
+
+/** What the join page shows (signed in or not). Null for an unknown/replaced link or when the SQL isn't installed. */
+export async function getGolfTripJoinPreview(code: string): Promise<JoinPreview | null> {
+  const current = await getCurrentProfile();
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip_join_preview", { p_profile: tripProfileId(current), p_code: code });
+  if (error) {
+    if (!notInstalled(error)) console.error("get_golf_trip_join_preview failed:", error.message);
+    return null;
+  }
+  return joinPreviewFromJson(data);
+}
+
+/** The signed-in person joins through the link. A verified account with no profile yet gets one first. */
+export async function joinGolfTripByCode(code: string, caller?: CurrentProfile): Promise<JoinResult | { status: "signed-out" | "no-profile" }> {
+  const current = caller ?? await getCurrentProfile();
+  if (current.status === "signed-out") return { status: "signed-out" };
+  let profileId = tripProfileId(current);
+  if (!profileId) {
+    const initialized = await initializeProfile(current.account.id);
+    if (initialized.status !== "ok") return { status: "no-profile" };
+    profileId = current.account.id;
+  }
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("join_golf_trip_by_code", { p_profile: profileId, p_code: code });
+  if (error) {
+    if (notInstalled(error)) return { status: "not_found" };
+    throw failure("join_golf_trip_by_code", error);
+  }
+  return joinResultFromJson(data);
 }

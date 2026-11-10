@@ -10,6 +10,9 @@ import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
 
+/** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
+const AUTHDEV_ORIGIN = "http://localhost:3002";
+
 /** Discover existing static dev routes. No duplicate page implementation or dynamic ids. */
 export function simulatorPages(): SimulatorPage[] {
   const pages: SimulatorPage[] = [];
@@ -51,9 +54,33 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Authentication: every account screen, numbered in signup order (placeholders until each is designed).
   AUTH_SCREENS.forEach(([slug, label], index) => pages.push({ id: "auth-" + slug, path: "/dev/auth/" + slug, label: `${index + 1}. ${label}`, group: "Authentication", fixtures: false, conditions: [] }));
-  // Live V2 Auth: the REAL sign-up / onboarding routes (not previews), against this server's own Supabase project. Listed
-  // only where those routes exist (MAROON_V2_ONBOARDING=on); each screen moves on by itself inside the phone.
-  if (onboardingEnabled()) {
+  // Profile Photo: each state of the photo step (pick -> Move and scale -> round result), so the cropper can be designed.
+  const birthday = pages.find(page => page.id === "auth-age-check");
+  if (birthday) birthday.conditions = [
+    { id: "birthday-empty", label: "No birthday yet", state: { birthdayStage: "empty" } },
+    { id: "birthday-calendar", label: "Calendar open", state: { birthdayStage: "calendar" } },
+    { id: "birthday-picked", label: "Birthday picked", state: { birthdayStage: "picked" } },
+  ];
+  const photo = pages.find(page => page.id === "auth-photo");
+  if (photo) photo.conditions = [
+    { id: "photo-empty", label: "No photo yet", state: { photoStage: "empty" } },
+    { id: "photo-ios-menu", label: "iPhone: choose source", state: { photoStage: "ios-menu" } },
+    { id: "photo-ios-library", label: "iPhone: photo library", state: { photoStage: "ios-library" } },
+    { id: "photo-android", label: "Android: photo picker", state: { photoStage: "android-picker" } },
+    { id: "photo-crop", label: "Move and scale (sample photo)", state: { photoStage: "crop" } },
+    { id: "photo-chosen", label: "Photo chosen", state: { photoStage: "chosen" } },
+  ];
+  // Live V2 Auth (dev project): the REAL sign-up / onboarding screens, served by the MM-Website-authdev workspace
+  // (http://localhost:3002, maroon-auth-dev) and shown in this phone. Only where V2 is off here, so a server connected to
+  // another Supabase project never runs these screens itself.
+  if (!onboardingEnabled()) {
+    for (const [path, label] of [["/start", "Welcome"], ["/start/sign-up", "Sign up (real)"], ["/start/log-in", "Log in (real)"],
+      ["/start/forgot", "Forgot password (real)"], ["/onboarding", "Carry on setup"], ["/account/status", "Account status"]]) {
+      pages.push({ id: "authdev-v2" + path.replaceAll("/", "-"), path, origin: AUTHDEV_ORIGIN, label, group: "Live V2 Auth (dev project)", fixtures: false, conditions: [] });
+    }
+  } else {
+    // Live V2 Auth: the REAL sign-up / onboarding routes (not previews), against this server's own Supabase project. Listed
+    // only where those routes exist (MAROON_V2_ONBOARDING=on); each screen moves on by itself inside the phone.
     for (const [path, label] of [["/start", "Welcome"], ["/start/sign-up", "Sign up (real)"], ["/start/log-in", "Log in (real)"],
       ["/start/forgot", "Forgot password (real)"], ["/onboarding", "Carry on setup"], ["/account/status", "Account status"]]) {
       pages.push({ id: "live-v2" + path.replaceAll("/", "-"), path, label, group: "Live V2 Auth", fixtures: false, conditions: [] });
@@ -62,12 +89,30 @@ export function simulatorPages(): SimulatorPage[] {
   for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
+  // Trip Builder: the first-time Learn screen and the full tour.
+  pages.push({ id: "/golf-trips/new/learn", path: "/golf-trips/new/learn", label: "Learn about Golf Trips", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
+  pages.push({ id: "/golf-trips/new/tour", path: "/golf-trips/new/tour", label: "Golf Trips tour", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
+  pages.push({ id: "trip-tips", path: "/dev/trip-builder/tips", label: "Trip home tips (coach marks)", fixtures: false, group: "Golf Trip Onboarding", conditions: [
+    { id: "tips-organizer", label: "Organizer, first visit", state: { tripBuilderStage: "tips-organizer" } },
+    { id: "tips-member", label: "Member, first visit", state: { tripBuilderStage: "tips-member" } },
+    { id: "tips-seen", label: "Already seen", state: { tripBuilderStage: "tips-seen" } },
+  ] });
+  pages.push({ id: "trip-ready", path: "/dev/trip-builder/ready", label: "Your trip is ready + invite", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
+  // Trip Builder: the shareable link's "Join this trip" page, in every state.
+  pages.push({ id: "trip-join-link", path: "/dev/trip-builder/join", label: "Join this trip", fixtures: false, group: "Golf Trip Onboarding", conditions: [
+    { id: "join-signed-out", label: "Signed out", state: { tripBuilderStage: "join-signed-out" } },
+    { id: "join-open", label: "Signed in, not on trip", state: { tripBuilderStage: "join-open" } },
+    { id: "join-member", label: "Already on trip", state: { tripBuilderStage: "join-member" } },
+    { id: "join-expired", label: "Link expired (30 min)", state: { tripBuilderStage: "join-expired" } },
+    { id: "join-invalid", label: "Link not working", state: { tripBuilderStage: "join-invalid" } },
+  ] });
   // Dynamic setup route has a real, fixed Golf Trip branch.
   pages.push({ id: "trip-setup", path: "/tournaments/create/golf-trip", label: "Golf Trip setup", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
-  const steps = ["", "players", "golf", "courses", "format", "lodging", "flights", "transportation", "review"];
-  for (const step of steps.slice(1)) {
+  // Trip Builder steps (Flights, Transportation and Review are no longer in the flow, owner 2026-11-03).
+  const stepLabels: Record<string, string> = { dates: "Dates + travel", players: "People + competing", teams: "Team structure", golf: "Where are you playing", courses: "Courses", format: "Formats", lodging: "Lodging + Create" };
+  for (const step of Object.keys(stepLabels)) {
     const path = "/golf-trips/new/" + step;
-    if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label: step[0].toUpperCase() + step.slice(1), fixtures: false });
+    if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label: stepLabels[step], fixtures: false });
   }
   for (const page of pages) {
     page.group ??= page.path.startsWith("/golf-trips/new") ? "Golf Trip Onboarding" : page.path.startsWith("/dev/tournament") || page.path === "/golf-trips/trip/settings" || page.path === "/dev/gps" ? "Golf Trip Active" : page.path.startsWith("/dev/play") ? "Tournament Active" : ["/login", "/login/email", "/signup", "/new-user"].includes(page.path) ? "Authentication" : "Public / Marketing";
@@ -165,6 +210,26 @@ export function simulatorPages(): SimulatorPage[] {
   // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
   const importTrip = pages.find(page => page.path === "/dev/import-trip");
   if (importTrip) Object.assign(importTrip, { label: "Import past trip (sample)", group: "Golf Trip Active", conditions: [] });
+  // Golf Trip Active → Home: the after-visit rating prompt ("How was yesterday?", phase 4 of the Venue places plan).
+  const tripHome = pages.find(page => page.id === "/dev/tournament");
+  if (tripHome) tripHome.conditions = [
+    ...(tripHome.conditions ?? []),
+    { id: "rating-off", label: "Rating prompt · hidden", state: { ratingStage: "off" } },
+    { id: "rating-prompt", label: "Rating prompt · How was yesterday?", state: { ratingStage: "prompt" } },
+    { id: "rating-one", label: "Rating prompt · one place rated", state: { ratingStage: "one" } },
+    { id: "rating-done", label: "Rating prompt · thank you", state: { ratingStage: "done" } },
+  ];
+  // Golf Trip Active → Venue: the place-recommendation states (project_specs.md "Venue tab → Places recommendations").
+  const venue = pages.find(page => page.id === "trip-Venue");
+  if (venue) venue.conditions = [
+    ...(venue.conditions ?? []),
+    { id: "venue-list", label: "Places list", state: { venueStage: "list" } },
+    { id: "venue-loading", label: "Loading places", state: { venueStage: "loading" } },
+    { id: "venue-category", label: "Category picked (Bars & Breweries)", state: { venueStage: "category" } },
+    { id: "venue-saved", label: "Place saved + added to itinerary", state: { venueStage: "saved" } },
+    { id: "venue-empty", label: "No places found", state: { venueStage: "empty" } },
+    { id: "venue-no-destination", label: "No destination set", state: { venueStage: "no-destination" } },
+  ];
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [
@@ -189,7 +254,7 @@ export function simulatorPages(): SimulatorPage[] {
   if (requests) Object.assign(requests, { label: "Link requests (dev)", group: "Profile", conditions: signedInAs() });
   // Keep the sample profile first in its group, then the live account, then link requests.
   for (const page of [realProfile, requests]) if (page) pages.push(...pages.splice(pages.indexOf(page), 1));
-  const onboardingOrder = ["/tournaments/create/golf-trip", ...steps.map(step => "/golf-trips/new" + (step ? "/" + step : ""))];
+  const onboardingOrder = ["/tournaments/create/golf-trip", "/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
   const reviewGroups = ["Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);

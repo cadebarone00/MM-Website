@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { checkNewPassword, PASSWORD_MAX_BYTES } from "./passwordPolicy.ts";
 import { passwordErrorMessage } from "./passwordErrors.ts";
 
-test("12 characters minimum; passphrases with spaces welcome; no forced character classes", () => {
-  assert.equal(checkNewPassword("short pass").ok, false);
-  assert.equal(checkNewPassword("elevenchars").ok, false);
-  assert.equal(checkNewPassword("twelvechars!").ok, true);
+test("8 characters minimum; passphrases with spaces welcome; no forced character classes", () => {
+  assert.equal(checkNewPassword("short").ok, false);
+  assert.equal(checkNewPassword("seven77").ok, false);
+  assert.equal(checkNewPassword("eight888").ok, true);
   assert.equal(checkNewPassword("correct horse battery staple").ok, true);
   assert.equal(checkNewPassword("ünïcödé pässwörd").ok, true, "counted in characters, not bytes");
 });

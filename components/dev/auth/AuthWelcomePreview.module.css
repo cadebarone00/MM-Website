@@ -1,12 +1,21 @@
 /* All-maroon entry screens: the Welcome fork (logo + Sign up / Log in), then the Sign up and Log in pages. */
 .page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:0 24px calc(32px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
-/* Welcome: the M fills the middle of the screen, the two buttons sit near the bottom. */
-.fork{justify-content:space-between}
-.forkLogo{flex:1;display:grid;place-items:center;width:140px;max-height:60svh}
+/* Welcome: the M with Sign up / Log in right under it, centred together, over the same gold glow from the bottom as
+   Email confirmed (AuthLinkResultPreview.module.css). Owner tweaks 2026-11-02 (exact offsets, so nothing else moves):
+   the buttons sit 20px above centre and span the middle 60% of the screen (200-360px); the M sits 80px above centre
+   and is drawn 180px wide, the same size as the Email confirmed M (140px x 1.2857; scaled, so the buttons don't move). */
+.fork{justify-content:center;background:radial-gradient(120% 60% at 50% 110%,rgba(201,168,110,.22),transparent 70%),#240001}
+.forkLogo{display:grid;place-items:center;width:140px;margin-bottom:32px;transform:translateY(-80px) scale(1.2857)}
 .forkLogo svg{height:auto!important}
-.forkButtons{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.forkButtons{width:60vw;min-width:200px;max-width:360px;display:flex;flex-direction:column;gap:12px;transform:translateY(-20px)}
 /* Sign up / Log in: the app already pads the page by the safe area + 1svh (globals.css), so the logo lands ~11.5% down. */
 .logo{width:96px;height:80px;margin:calc(9.2svh - env(safe-area-inset-top,0px)) 0 22px}
+/* Sign up (first sign-up step): the small M + progress line of the later steps (AuthNamePreview.module.css: 12+36+16 M,
+   4 line, 28 below = 96px), full width at their 20px gutter; the bottom margin keeps the title exactly where it sat under
+   the big logo above (9.2svh + 80 + 22). */
+/* Owner tweak 2026-11-02: the Sign up title 10px higher; the email box and buttons stay put. */
+.signUpTitle{transform:translateY(-10px)}
+.stepTop{display:flex;flex-direction:column;align-self:stretch;margin:0 -4px calc(9.2svh - env(safe-area-inset-top,0px) + 6px)}
 .title{margin:0 0 18px;font-size:28px;line-height:1.2;text-align:center}
 .form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
 .input{box-sizing:border-box;width:100%;height:48px;padding:0 16px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 17px var(--font-barlow),sans-serif}
@@ -17,7 +26,7 @@
 .primary:disabled{background:rgba(251,248,241,.1);color:rgba(251,248,241,.35);cursor:not-allowed}
 .secondary{border:1px solid #c9a86e;background:transparent;color:#c9a86e}
 .secondary:hover{background:rgba(201,168,110,.1)}
-.or{margin:10px 0;color:#e1cec4;font-size:15px}
+.or{margin:10px 0;color:#e1cec4;font-size:15px;text-align:center}
 .provider{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:transparent;color:#fbf8f1;font:600 17px var(--font-barlow),sans-serif;text-decoration:none}
 .provider:hover{background:rgba(201,168,110,.1)}
 .icon{width:20px;height:20px;flex:none}

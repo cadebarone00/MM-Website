@@ -10,7 +10,7 @@ const CODE_LENGTH = 6;
 /** DEV ONLY: Authentication screen "Verification code" (signup step, with the progress bar) and, with other props, the
  * forgot-password "Enter Code To Reset" screen. Six boxes fed by one hidden input, so typing, pasting and the phone's
  * "From Mail" code suggestion all work. Not wired to /api/auth/verify-code yet. */
-export function AuthCodePreview({ title = "Email Verification", nextHref = "/dev/auth/password", progress = true }:
+export function AuthCodePreview({ title = "Email Verification", nextHref = "/dev/auth/name-username", progress = true }:
   { title?: string; nextHref?: string; progress?: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState("");

@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/internal/trip-push",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/internal/account-deletions",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }

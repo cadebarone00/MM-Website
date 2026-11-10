@@ -1,7 +1,12 @@
 // Pending accounts Phase 6: browser end-to-end tests of the REAL sign-up / onboarding screens (/start/*, /onboarding/*),
 // in Chromium at phone size, against a Next dev server pointed at the ISOLATED local Supabase stack (never a hosted one).
-//   AUTH_LOCAL_STACK=main node scripts/auth-local/setup.mjs
-//   AUTH_LOCAL_STACK=main node scripts/auth-local/onboarding-browser.mjs
+//   AUTH_LOCAL_STACK=gate node scripts/auth-local/setup.mjs
+//   AUTH_LOCAL_STACK=gate node scripts/auth-local/onboarding-browser.mjs
+// Runs on the gate stack (Before User Created hook on, supabase/signup_gate.sql + signup_gate_birthday_after.sql). Sign-up
+// order (owner decision 2026-11-02, birthday AFTER the account is made): Welcome -> Sign up -> Create password -> code ->
+// Name -> Birthday -> Photo -> Settings -> Finish. Under 13 at Birthday -> the account is closed and cleaned up.
+// Registration is opened ('open') for the run and closed again afterwards. "Pre-gate" accounts (e.g. existing Google /
+// Apple users) are simulated by back-dating the login; they follow the same Name -> Birthday order.
 // Three server runs on port 3999 (the stack's site URL), each with its own build folder under out/:
 //   A. MAROON_V2_ONBOARDING unset            → every new screen and the code API are 404; the dev previews still work.
 //   B. onboarding on + MAROON_ACCOUNT_ENFORCEMENT=on → full flows, resume, under-13, reset, link fallback, Finish failure.
@@ -40,9 +45,16 @@ async function step(name, fn) {
 }
 
 // === Stack preparation (isolated stack only) ===
+if (stack.name !== "gate") throw new Error("Run on the gate stack (AUTH_LOCAL_STACK=gate): it has the sign-up hook on.");
 psql("supabase/account_activation.sql");
 psql("supabase/auth_code_attempts.sql");
+const modeBefore = sql("select mode from public.registration_settings");
+sql("update public.registration_settings set mode = 'open'");
+/** A login made BEFORE the sign-up gate (existing accounts): it keeps the onboarding Birthday step. */
+const preGate = (id) => sql(`update auth.users set created_at = (select enforced_since from public.registration_settings) - interval '1 day' where id = ${q(id)}`);
 const switchBefore = sql("select activation_enabled from public.account_activation_settings");
+// Put the legal versions back as they were afterwards, so other suites on this stack see their own starting state.
+const legalBefore = sql("select coalesce(json_agg(json_build_object('document', document, 'current_version', current_version)), '[]') from public.legal_document_versions");
 const setActivation = (on) => sql(`update public.account_activation_settings set activation_enabled = ${on}`);
 sql(`insert into public.legal_document_versions (document, current_version) values ('terms', 'local-test'), ('privacy', 'local-test')
   on conflict (document) do update set current_version = excluded.current_version`);
@@ -118,6 +130,9 @@ async function withServer(name, extraEnv, fn) {
   console.log(`\n=== Server ${name} ===`);
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (/SUPABASE|MAROON_/i.test(key)) delete env[key];
+  // Set (not just delete): Next.js would otherwise fill these from this folder's .env files (found 2026-11-02: the
+  // authdev .env.development.local turned V2 on for the "off" server). Next never overrides a variable already set.
+  Object.assign(env, { MAROON_V2_ONBOARDING: "", MAROON_ACCOUNT_ENFORCEMENT: "" });
   Object.assign(env, { NEXT_BUILD_OUTPUT: `out/next-onboarding-e2e-${name}`, NEXT_TELEMETRY_DISABLED: "1",
     SUPABASE_URL: API, SUPABASE_ANON_KEY: status.ANON_KEY, SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
     NEXT_PUBLIC_SUPABASE_URL: API, NEXT_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY, ...extraEnv });
@@ -158,14 +173,14 @@ async function waitPath(page, pathname) { await page.waitForURL((url) => url.pat
 async function signUpToCode(page, email, password) {
   await page.goto(`${ORIGIN}/start`);
   await page.getByRole("link", { name: "Sign up" }).click();
-  await waitPath(page, "/start/sign-up");
+  await waitPath(page, "/start/sign-up"); // the email comes first; the birthday is asked after Name
   await page.getByLabel("Email").fill(email);
   const sentAt = Date.now() - 1000;
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await waitPath(page, "/start/password");
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await waitPath(page, "/start/verify");
   return latestCode(email, SIGNUP_MAIL, sentAt);
 }
@@ -175,33 +190,41 @@ async function typeCode(page, code) {
   await input.fill(code);
   await page.getByRole("button", { name: "Verify" }).click();
 }
-async function nameStep(page, first, last) {
+/** Name + username. Birthday is always next (2026-11-02). */
+async function nameStep(page, first, last, next = "/onboarding/birthday") {
   await waitPath(page, "/onboarding/name");
   await page.getByLabel("First Name").fill(first);
   await page.getByLabel("Last Name").fill(last);
   await page.getByLabel("Username").fill(`${first}${run}`.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30));
-  await page.getByRole("button", { name: "Continue" }).click();
-  await waitPath(page, "/onboarding/birthday");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await waitPath(page, next);
 }
+/** Width of the progress bar on the current screen (style="width: …"). */
+const progressOf = (page) => page.locator("[class*=progress] span").first().evaluate((el) => el.style.width);
 async function birthdayStep(page, year) {
   await page.getByRole("button", { name: "Pick your birthday" }).click();
-  await page.getByLabel("Year").selectOption(String(year));
+  // Month / Year sheet (2026-11-02): tap the month name, roll the Year wheel to the year, Done.
+  await page.getByRole("button", { name: /Choose month and year/ }).click();
+  await page.getByRole("listbox", { name: "Year" }).getByRole("option", { name: String(year), exact: true }).click();
+  await page.waitForTimeout(700); // the wheel settles, then picks the row in the band
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   await page.locator(`button[aria-label$="15 January ${year}"]`).click();
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Set", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
 }
 
 // =====================================================================================================================
 await withServer("A-off", {}, async (browser) => {
   const { page, context } = await phone(browser);
-  for (const route of ["/start", "/start/sign-up", "/start/verify", "/onboarding", "/onboarding/name", "/onboarding/created"]) {
+  for (const route of ["/start", "/start/birthday", "/start/sign-up", "/start/verify", "/onboarding", "/onboarding/name", "/onboarding/created"]) {
     const response = await context.request.get(ORIGIN + route, { maxRedirects: 0, timeout: 180000 });
     check(`flag off: ${route} -> 404`, response.status() === 404, String(response.status()));
   }
   const api = await context.request.post(`${ORIGIN}/api/auth/verify-code`, { data: { email: addr("off"), code: "123456", type: "signup" }, timeout: 180000 });
   check("flag off: POST /api/auth/verify-code -> 404", api.status() === 404);
   await page.goto(`${ORIGIN}/dev/auth/verification-code`);
-  check("flag off: the dev preview still renders", await page.getByRole("heading", { name: "Email Verification" }).isVisible());
+  const heading = await page.getByRole("heading", { name: "Email Verification" }).waitFor({ timeout: 120000 }).then(() => true, () => false);
+  check("flag off: the dev preview still renders", heading);
 });
 
 setActivation(true);
@@ -210,8 +233,10 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
   const ann = { email: addr("ann"), password: "browser-pass-ann-1" };
   const { page, context } = await phone(browser);
   await step("full sign-up flow", async () => {
+    const old = await context.request.get(`${ORIGIN}/start/birthday`, { maxRedirects: 0 });
+    check("the old birthday-first address forwards to Sign up", old.status() === 307 && old.headers().location?.endsWith("/start/sign-up"), `${old.status()} ${old.headers().location}`);
     const { code } = await signUpToCode(page, ann.email, ann.password);
-    check("sign-up -> password -> code screen; account exists unverified", !!accountRow(ann.email) && !accountRow(ann.email).confirmed);
+    check("Welcome -> sign-up -> password -> code screen; account exists unverified", !!accountRow(ann.email) && !accountRow(ann.email).confirmed);
     await typeCode(page, wrong(code));
     await page.getByRole("alert").filter({ hasText: "wrong or has expired" }).waitFor();
     check("wrong code: message shown, still on the code screen, not verified", path(page) === "/start/verify" && !accountRow(ann.email).confirmed);
@@ -219,17 +244,25 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(page, "/start/confirmed");
     check("right code -> Email confirmed", await page.getByRole("heading", { name: "Email confirmed" }).isVisible() && accountRow(ann.email).confirmed);
     check("Terms + Privacy recorded after verification", sql(`select count(*) from public.terms_acceptances where account_id = ${q(accountRow(ann.email).id)}`) === "2");
-    await page.getByRole("link", { name: "Continue" }).click();
+    check("no birthday stored yet (it comes after Name)",
+      sql(`select count(*) from public.account_birthdates where account_id = ${q(accountRow(ann.email).id)}`) === "0");
+    await page.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(page, "Ann", "Browser");
-    check("name + username saved", accountRow(ann.email).username !== "");
+    check("name + username saved -> Birthday next", accountRow(ann.email).username !== "");
+    check("Birthday screen: progress 5 of 8 (62.5%)", (await progressOf(page)) === "62.5%", await progressOf(page));
+    await birthdayStep(page, 1995);
+    await waitPath(page, "/onboarding/photo");
+    check("13+ birthday saved once -> Photo", sql(`select count(*) from public.account_birthdates where account_id = ${q(accountRow(ann.email).id)}`) === "1");
     // Enforcement: a Pending account can't reach Play; it's sent to its step.
     await page.goto(`${ORIGIN}/`);
-    await waitPath(page, "/onboarding/birthday");
-    check("Pending -> Play is refused and sent to the next step (birthday)", true);
+    await waitPath(page, "/onboarding/settings");
+    check("Pending -> Play is refused and sent to the next required step (Settings; Photo is optional)", true);
     const skip = await context.request.get(`${ORIGIN}/onboarding/created`, { maxRedirects: 0 });
-    check("Profile Created before Finish -> redirected", skip.status() === 307 && skip.headers().location?.endsWith("/onboarding/birthday"), `${skip.status()} ${skip.headers().location}`);
+    check("Profile Created before Finish -> redirected", skip.status() === 307 && skip.headers().location?.endsWith("/onboarding/settings"), `${skip.status()} ${skip.headers().location}`);
     const back = await context.request.get(`${ORIGIN}/onboarding/name`, { maxRedirects: 0 });
-    check("going back to a saved step bounces forward", back.status() === 307 && back.headers().location?.endsWith("/onboarding/birthday"));
+    check("going back to a saved step bounces forward", back.status() === 307 && back.headers().location?.endsWith("/onboarding/settings"));
+    const late = await context.request.get(`${ORIGIN}/onboarding/birthday`, { maxRedirects: 0 });
+    check("the Birthday screen is not offered again once saved", late.status() === 307 && !late.headers().location?.endsWith("/onboarding/birthday"), `${late.status()} ${late.headers().location}`);
     const api = await context.request.get(`${ORIGIN}/api/golf-trips`, { maxRedirects: 0 });
     check("Pending -> golf API refused (403 finish_onboarding)", api.status() === 403, String(api.status()));
   });
@@ -240,15 +273,13 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await other.page.getByLabel("Email").fill(ann.email);
     await other.page.getByLabel("Password", { exact: true }).fill(ann.password);
     await other.page.getByRole("button", { name: "Log in" }).click();
-    await waitPath(other.page, "/onboarding/birthday");
-    check("log in elsewhere -> resumes at Birthday (from saved data)", true);
+    await waitPath(other.page, "/onboarding/settings");
+    check("log in elsewhere -> resumes at the next required step (Settings, from saved data)", true);
     await other.context.close();
   });
 
-  await step("birthday, photo, settings, Finish", async () => {
-    await birthdayStep(page, 1995);
-    await waitPath(page, "/onboarding/photo");
-    check("13+ birthday saved -> Photo", sql(`select count(*) from public.account_birthdates where account_id = ${q(accountRow(ann.email).id)}`) === "1");
+  await step("photo, settings, Finish", async () => {
+    await page.goto(`${ORIGIN}/onboarding/photo`); // the optional step is still offered
     await page.getByRole("button", { name: "Skip for now" }).click();
     await waitPath(page, "/onboarding/settings");
     // Finish while the switch is off: recoverable message, nothing lost.
@@ -314,21 +345,23 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
   await context.close();
 
   // --- Under 13 ---
-  await step("under-13", async () => {
+  await step("under-13 (birthday after Name: the account is never finalized)", async () => {
     const kid = { email: addr("kid"), password: "browser-pass-kid-1" };
     const { page: p, context: c } = await phone(browser);
     const { code } = await signUpToCode(p, kid.email, kid.password);
     await typeCode(p, code);
     await waitPath(p, "/start/confirmed");
-    await p.getByRole("link", { name: "Continue" }).click();
+    await p.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(p, "Kid", "Browser");
+    const kidId = accountRow(kid.email).id;
     await birthdayStep(p, new Date().getUTCFullYear() - 5);
     await waitPath(p, "/account/status");
-    check("under 13 -> eligibility message", await p.getByRole("heading", { name: "This account can't use The Maroon" }).isVisible());
-    check("never activated; marked ineligible (or removed)", !accountRow(kid.email)?.activated
-      && (sql(`select count(*) from public.account_eligibility e join auth.users u on u.id = e.account_id where u.email = ${q(kid.email)}`) === "1" || !accountRow(kid.email)));
-    const after = await c.request.get(`${ORIGIN}/onboarding`, { maxRedirects: 0 });
-    check("this browser is signed out", after.status() === 307 && after.headers().location?.endsWith("/start/log-in"));
+    check("under 13 at Birthday -> status page", true);
+    check("never activated", sql(`select count(*) from public.profiles where id = ${q(kidId)} and activated_at is not null`) === "0");
+    const left = sql(`select count(*) from auth.users where id = ${q(kidId)}`);
+    check("login removed (or locked for review)", left === "0" || sql(`select count(*) from public.account_eligibility where account_id = ${q(kidId)}`) !== "0", `logins left ${left}`);
+    const back = await c.request.get(`${ORIGIN}/onboarding`, { maxRedirects: 0 });
+    check("signed out: onboarding sends to Log in", back.status() === 307 && back.headers().location?.endsWith("/start/log-in"), `${back.status()} ${back.headers().location}`);
     await c.close();
   });
 
@@ -390,7 +423,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await p.goto(fresh.link ?? first.link);
     await waitPath(p, "/start/confirmed");
     check("email link -> Email confirmed, verified", await p.getByRole("heading", { name: "Email confirmed" }).isVisible() && accountRow(fay.email).confirmed);
-    await p.getByRole("link", { name: "Continue" }).click();
+    await p.getByRole("link", { name: "Continue", exact: true }).click();
     await waitPath(p, "/onboarding/name");
     check("…and onboarding carries on at Name", true);
     await c.close();
@@ -415,21 +448,30 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
   const providersOn = await providerSettings();
   await step("provider buttons", async () => {
     const { page: p, context: c } = await phone(browser);
-    for (const route of ["/start/sign-up", "/start/log-in"]) {
-      await p.goto(`${ORIGIN}${route}`);
-      const google = await p.getByRole("button", { name: "Continue with Google" }).count();
-      const apple = await p.getByRole("button", { name: "Continue with Apple" }).count();
-      check(`${route}: Google / Apple buttons ${providersOn ? "shown (switched on in this stack)" : "hidden (not configured)"}`,
-        providersOn ? google === 1 && apple === 1 : google === 0 && apple === 0, `${google}/${apple}`);
-    }
+    // G4 beta: new accounts are email only, so Sign up never offers Google / Apple; Log in shows them when switched on.
+    await p.goto(`${ORIGIN}/start/sign-up`);
+    const signUpButtons = await p.getByRole("button", { name: /Continue with (Google|Apple)/ }).count();
+    check("/start/sign-up: no Google / Apple buttons (new accounts are email only in the beta)", signUpButtons === 0, String(signUpButtons));
+    await p.goto(`${ORIGIN}/start/log-in`);
+    const google = await p.getByRole("button", { name: "Continue with Google" }).count();
+    const apple = await p.getByRole("button", { name: "Continue with Apple" }).count();
+    check(`/start/log-in: Google / Apple buttons ${providersOn ? "shown (switched on in this stack)" : "hidden (not configured)"}`,
+      providersOn ? google === 1 && apple === 1 : google === 0 && apple === 0, `${google}/${apple}`);
     if (providersOn) {
-      // The trip to Google / Apple is intercepted: the "provider" sends the person back cancelled, as a real one would.
-      for (const [name, host] of [["Google", "https://accounts.google.com/**"], ["Apple", "https://appleid.apple.com/**"]]) {
-        await c.route(host, (route) => {
-          const state = new URL(route.request().url()).searchParams.get("state") ?? "";
-          return route.fulfill({ status: 302, headers: { location: `${API}/auth/v1/callback?error=access_denied&error_description=cancelled&state=${encodeURIComponent(state)}` } });
+      // Nothing goes to Google / Apple. Chromium only lets a test intercept the FIRST request of a redirect chain, so the
+      // button's own POST /api/auth/oauth is intercepted: it runs for real (PKCE secret cookie and all), Supabase's
+      // authorize step is then followed by hand to read the provider `state`, and the "provider" answers cancelled
+      // through Supabase's own callback — the same return trip a real cancel takes.
+      for (const name of ["Google", "Apple"]) {
+        const host = `${ORIGIN}/api/auth/oauth`;
+        await c.route(host, async (route) => {
+          const started = await route.fetch({ maxRedirects: 0 });
+          const authorize = started.headers().location ?? "";
+          const toProvider = (await c.request.get(authorize, { maxRedirects: 0 })).headers().location ?? "";
+          const state = new URL(toProvider).searchParams.get("state") ?? "";
+          return route.fulfill({ response: started, headers: { ...started.headers(), location: `${API}/auth/v1/callback?error=access_denied&error_description=cancelled&state=${encodeURIComponent(state)}` } });
         });
-        await p.goto(`${ORIGIN}/start/sign-up`);
+        await p.goto(`${ORIGIN}/start/log-in`);
         await p.getByRole("button", { name: `Continue with ${name}` }).click();
         await waitPath(p, "/start/log-in");
         check(`${name} cancelled -> back on Log in with a calm message, no session`, await p.getByText("Sign-in was cancelled.").isVisible()
@@ -440,8 +482,27 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await c.close();
   });
 
-  await step("new Google account: skips code + password, name prefilled but editable, Terms at Finish", async () => {
+  await step("NEW Google-style login made around the sign-up gate: still has to give its birthday", async () => {
+    // Real Google / Apple sign-up is refused by the hook (new accounts are email only). A login made around it (admin
+    // API, like these stand-ins) gets no shortcut: Name, then the same Birthday step (13+) before anything else.
+    const nova = await providerAccount("nova", "google", { full_name: "Nova Newgate" });
+    const { page: p, context: c } = await phone(browser);
+    await logIn(p, nova);
+    await waitPath(p, "/onboarding/name");
+    await p.getByLabel("First Name").fill("Nova");
+    await p.getByLabel("Last Name").fill("Newgate");
+    await p.getByLabel("Username").fill(`nova${run}`.slice(0, 30));
+    await p.getByRole("button", { name: "Continue", exact: true }).click();
+    await waitPath(p, "/onboarding/birthday");
+    await p.goto(`${ORIGIN}/`);
+    await waitPath(p, "/onboarding/birthday");
+    check("…Name -> Birthday; Play is refused and sent back to Birthday until birthday + Finish", true);
+    await c.close();
+  });
+
+  await step("pre-gate Google account: skips code + password, name prefilled but editable, Birthday after Name, Terms at Finish", async () => {
     const gale = await providerAccount("gale", "google", { given_name: "Gale", family_name: "Googler", full_name: "Gale Googler" });
+    preGate(gale.id);
     const { page: p, context: c } = await phone(browser);
     await logIn(p, gale);
     await waitPath(p, "/onboarding/name");
@@ -450,9 +511,10 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     check("nothing saved just by signing in", sql(`select coalesce(display_name, '<none>') from public.profiles where id = ${q(gale.id)}`) === "<none>");
     await p.getByLabel("First Name").fill("Gail");
     await p.getByLabel("Username").fill(`gail${run}`.slice(0, 30));
-    await p.getByRole("button", { name: "Continue" }).click();
+    await p.getByRole("button", { name: "Continue", exact: true }).click();
     await waitPath(p, "/onboarding/birthday");
     check("the edited name is what's saved", sql(`select display_name from public.profiles where id = ${q(gale.id)}`) === "Gail Googler");
+    check("Birthday after Name: progress 5 of 8 (62.5%)", (await progressOf(p)) === "62.5%", await progressOf(p));
     await birthdayStep(p, 1992);
     await waitPath(p, "/onboarding/photo");
     await p.getByRole("button", { name: "Skip for now" }).click();
@@ -471,14 +533,15 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await back.context.close();
   });
 
-  await step("new Apple account (Hide My Email): prefill, resume across devices", async () => {
+  await step("pre-gate Apple account (Hide My Email): prefill, resume across devices", async () => {
     const andy = await providerAccount("andy", "apple", { full_name: "Andy Apple" }, `andy-${run}@privaterelay.appleid.com`);
+    preGate(andy.id);
     const first = await phone(browser);
     await logIn(first.page, andy);
     await waitPath(first.page, "/onboarding/name");
     check("Apple relay-address account -> Name, prefilled from Apple's full name", await first.page.getByLabel("First Name").inputValue() === "Andy" && await first.page.getByLabel("Last Name").inputValue() === "Apple");
     await first.page.getByLabel("Username").fill(`andy${run}`.slice(0, 30));
-    await first.page.getByRole("button", { name: "Continue" }).click();
+    await first.page.getByRole("button", { name: "Continue", exact: true }).click();
     await waitPath(first.page, "/onboarding/birthday");
     await first.context.close();
     const second = await phone(browser);
@@ -489,18 +552,23 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await second.context.close();
   });
 
-  await step("Apple sign-in without a name, legacy and restricted accounts", async () => {
+  await step("Apple sign-in without a name", async () => {
     const quiet = await providerAccount("quiet", "apple", {});
+    preGate(quiet.id);
     let x = await phone(browser);
     await logIn(x.page, quiet);
     await waitPath(x.page, "/onboarding/name");
     check("no name from Apple -> empty fields", await x.page.getByLabel("First Name").inputValue() === "" && await x.page.getByLabel("Last Name").inputValue() === "");
     await x.context.close();
+  });
 
+  await step("legacy account without a birthday", async () => {
     const vet = await providerAccount("vet", "google", { full_name: "Old Vet" });
+    preGate(vet.id);
+    sql(`select public.initialize_my_profile(${q(vet.id)})`);
     sql(`update public.profiles set display_name = 'Vet Original', username = ${q(`vet${run}`.slice(0, 30))} where id = ${q(vet.id)}`);
     setActivatedAt(vet.id, "now()");
-    x = await phone(browser);
+    const x = await phone(browser);
     await logIn(x.page, vet);
     await waitPath(x.page, "/onboarding/birthday");
     check("legacy account without a birthday -> Birthday", true);
@@ -508,8 +576,14 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await waitPath(x.page, "/");
     check("…then straight to Play; the existing name was never replaced by the provider's", sql(`select display_name from public.profiles where id = ${q(vet.id)}`) === "Vet Original");
     await x.context.close();
+  });
+
+  await step("restricted account", async () => {
+    let x;
 
     const held = await providerAccount("held", "google", { full_name: "Held Review" });
+    preGate(held.id);
+    sql(`select public.initialize_my_profile(${q(held.id)})`);
     sql(`update public.profiles set display_name = 'Held Review', username = ${q(`held${run}`.slice(0, 30))} where id = ${q(held.id)}`);
     setActivatedAt(held.id, "now()");
     sql(`insert into public.account_eligibility (account_id, status, reason) values (${q(held.id)}, 'review', 'manual')`);
@@ -528,7 +602,7 @@ await withServer("C-unenforced", { MAROON_V2_ONBOARDING: "on" }, async (browser)
     const { code } = await signUpToCode(page, cy.email, cy.password);
     await typeCode(page, code);
     await waitPath(page, "/start/confirmed");
-    await page.getByRole("link", { name: "Continue" }).click();
+    await page.getByRole("link", { name: "Continue", exact: true }).click();
     await nameStep(page, "Cy", "Browser");
     await birthdayStep(page, 1990);
     await waitPath(page, "/onboarding/photo");
@@ -555,6 +629,9 @@ await withServer("C-unenforced", { MAROON_V2_ONBOARDING: "on" }, async (browser)
 });
 
 setActivation(switchBefore === "t");
+sql(`update public.registration_settings set mode = ${q(modeBefore)}`);
+sql(`delete from public.legal_document_versions; insert into public.legal_document_versions (document, current_version)
+  select document, current_version from json_to_recordset(${q(legalBefore)}::json) as v(document text, current_version text)`);
 writeFileSync("tsconfig.json", originalTsconfig);
 writeFileSync("next-env.d.ts", originalNextEnv);
 console.log(`\n${passed} passed, ${failed} failed.`);

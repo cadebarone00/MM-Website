@@ -15,7 +15,7 @@ export type ProfilePreview = (typeof PROFILE_PREVIEWS)[number];
 /** The parts of my sample profile Settings and Edit profile can change. */
 export interface SampleProfileEdits { displayName: string; username: string; bio: string; photoUrl: string | null; visibility: RoundsVisibility }
 export const DEFAULT_SAMPLE_PROFILE: SampleProfileEdits = {
-  displayName: "Sample Golfer", username: "samplegolfer", bio: "Weekend golfer chasing a single-digit handicap.", photoUrl: null, visibility: "private",
+  displayName: "Sample Golfer", username: "samplegolfer", bio: "Weekend golfer chasing a single-digit handicap. Dallas based, always down for 36 on a Saturday. Fades everything, buys the first round.", photoUrl: null, visibility: "private",
 };
 export const SAMPLE_FRIENDS = 6;
 

@@ -44,3 +44,10 @@ test("a Content team invite link survives login; lookalikes don't", () => {
   assert.equal(withReturnTo("/login", link), `/login?next=${encodeURIComponent(link)}`);
   for (const value of ["/join-team/short", "/join-team/", "//evil.example/join-team/abcdefghijklmnopqrstuvwxyzABCDEF012345", "/join-team/abcdefghijklmnopqrstuvwxyzABCDEF012345/extra", "/join-team/../abcdefghijklmnopqrstuvwxyzABCDEF012345"]) assert.equal(authReturnPath(value), null, value);
 });
+
+test("a Golf Trip join link survives login / signup; lookalikes don't", () => {
+  const link = "/golf-trips/join/abcdefghijklmnopqrstuvwxyzABCDEF";
+  assert.equal(authReturnPath(link), link);
+  assert.equal(withReturnTo("/signup", link), `/signup?next=${encodeURIComponent(link)}`);
+  for (const value of ["/golf-trips/join/short", "/golf-trips/join/", "//evil.example/golf-trips/join/abcdefghijklmnopqrstuvwxyzABCDEF", "/golf-trips/join/abcdefghijklmnopqrstuvwxyzABCDEF/extra", "/golf-trips/join/abcdefghijklmnopqrstuvwxyzABCDEF?x=1", "/golf-trips/join/../abcdefghijklmnopqrstuvwxyzABCDEF"]) assert.equal(authReturnPath(value), null, value);
+});

@@ -1,6 +1,6 @@
 /* Full-screen post page: a sports-site article in the app's maroon / cream / gold. Sits above the tab bar (z 100) while open. */
 .page{position:fixed;inset:0;z-index:150;overflow-y:auto;overscroll-behavior:contain;background:#fffdf8;color:var(--color-maroon-950);-webkit-overflow-scrolling:touch}
-.top{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:var(--color-maroon-950);color:#fffdf8}
+.top{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--app-icon-top,0px) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:var(--color-maroon-950);color:#fffdf8}
 .back{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px 0 8px;border:1px solid #b99c6b77;border-radius:999px;background:transparent;color:#fffdf8;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
 .back:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
 .brand{flex:1;text-align:center;font:500 18px var(--font-spectral),Georgia,serif;letter-spacing:-.02em}

@@ -27,9 +27,13 @@ test("screens are strictly forward and Profile Created needs Active", () => {
   assert.equal(onboardingRedirect("created", "ineligible"), "/account/status");
 });
 
-test("progress bar follows the real order", () => {
+test("progress bar follows the real order (birthday after Name, 2026-11-02)", () => {
   assert.equal(progressWidth("sign-up"), "12.5%");
+  assert.equal(progressWidth("password"), "25%");
   assert.equal(progressWidth("verify"), "37.5%");
+  assert.equal(progressWidth("name"), "50%");
+  assert.equal(progressWidth("birthday"), "62.5%");
+  assert.equal(progressWidth("photo"), "75%");
   assert.equal(progressWidth("created"), "100%");
 });
 

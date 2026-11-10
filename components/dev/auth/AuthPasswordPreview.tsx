@@ -9,7 +9,7 @@ import styles from "./AuthPasswordPreview.module.css";
 
 /** DEV ONLY: Authentication screen "Create password" (signup step, with the progress bar) and, with other props,
  * "Reset password" (after the forgot-password code). Same rules as signup (lib/auth/passwordPolicy.ts); nothing is saved. */
-export function AuthPasswordPreview({ title = "Create a password", nextHref = "/dev/auth/name-username", buttonLabel = "Continue", progress = true }:
+export function AuthPasswordPreview({ title = "Create a password", nextHref = "/dev/auth/verification-code", buttonLabel = "Continue", progress = true }:
   { title?: string; nextHref?: string; buttonLabel?: string; progress?: boolean }) {
   const router = useRouter();
   const [password, setPassword] = useState("");

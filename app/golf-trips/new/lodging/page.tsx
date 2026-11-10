@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
-import { ConnectAccounts } from "@/components/platform/ConnectAccounts";
-import { GolfTripChoiceStep } from "@/components/platform/GolfTripChoiceStep";
 import { SetupSheet } from "@/components/platform/SetupSheet";
+import { TripLodgingStep } from "@/components/platform/tripBuilder/TripLodgingStep";
+import { TRIP_BUILDER_STEPS } from "@/lib/platform/tripBuilderSteps";
 
-export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
+export const metadata: Metadata = { title: "Trip Builder | The Maroon" };
 
-/**
- * Golf Trip questionnaire, step 6 (Lodging). Yes offers to connect a booking account (not wired up yet);
- * No / Not sure yet will explain how to add it later (built later). Nothing is saved to the database yet.
- */
+/** Trip Builder, last step: where are you staying? Then Create Trip. */
 export default function GolfTripLodgingPage() {
-  return <SetupSheet label="Lodging">
-    <GolfTripChoiceStep question="Do you know where you're staying?" name="knowsLodging"
-      nextHref="/golf-trips/new/flights" backHref="/golf-trips/new/format" answers={{
-        yes: <ConnectAccounts note="Connect your reservation so your stay shows up on the trip."
-          providers={["Hotel", "Airbnb", "VRBO"]} />,
-      }} />
+  return <SetupSheet label="Where are you staying?" wizardStep={TRIP_BUILDER_STEPS.indexOf("lodging") + 1}>
+    <TripLodgingStep />
   </SetupSheet>;
 }

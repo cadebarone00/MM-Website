@@ -241,3 +241,30 @@ test("Join a Trip reads the trip id from a pasted Trip ID or trip link", () => {
   assert.equal(tripIdFromJoinInput("https://themaroon.com/golf-trips/new"), null);
   assert.equal(tripIdFromJoinInput(`https://themaroon.com/golf-trips/${id}extra`), null);
 });
+
+// --- Trip Builder (2026-11-03): skipped steps and the new group answers ---------------------------------------
+const BUILDER = {
+  requestId: "6f1c2a52-8a3e-4c4e-9d55-0d3c8a1b2c3d", tripName: "Bandon 2027", destination: "Bandon, OR",
+  startDate: "2027-10-14", endDate: "2027-10-17", yourName: "Cade", yourEmail: "cade@example.com",
+};
+
+test("Trip Builder: only basics + dates, everything else skipped → a valid trip with no rounds", () => {
+  const p = payload({ ...BUILDER, golfSkipped: "1", golfDays: "0" });
+  assert.deepEqual(p.rounds, []);
+  assert.equal(p.golfDays, 0);
+  assert.deepEqual([p.includesTournament, p.lodgingPlan, p.flightPlan, p.transportationPlan], ["undecided", "undecided", "undecided", "undecided"]);
+});
+
+test("Trip Builder: travelMode and competing fill the plan answers", () => {
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", travelMode: "flying" }).flightPlan, "yes");
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", travelMode: "driving" }).flightPlan, "no");
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", travelMode: "mix" }).flightPlan, "undecided");
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", competing: "yes" }).includesTournament, "yes");
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", competing: "no" }).includesTournament, "no");
+  assert.equal(payload({ ...BUILDER, golfSkipped: "1", knowsLodging: "yes" }).lodgingPlan, "yes");
+});
+
+test("Trip Builder: dates are still required, and golf can't be 0 days unless it was skipped", () => {
+  assert.ok(fields({ ...BUILDER, startDate: "", endDate: "", golfSkipped: "1" }).includes("dates"));
+  assert.ok(fields({ ...BUILDER, golfDays: "0" }).includes("golfDays"));
+});

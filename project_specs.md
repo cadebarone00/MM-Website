@@ -3670,6 +3670,30 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
 - Invitations: Pending + enforcement on → held (membership at Finish), as before; no invitation expiry exists in the
   schema (a link lasts until accepted, declined or replaced). Tournament invitation routes are unchanged (cookie only).
 
+### Phase 7C — web Google / Apple sign-in joins the onboarding lifecycle (built 2026-10-29; awaiting review)
+- **Routing** (only with `MAROON_V2_ONBOARDING=on`; off = unchanged, `/profile`): after Google / Apple the callback sends
+  the person to `/onboarding`, which routes by lifecycle — Pending → next required step (Name for a new account),
+  Active → Play, Active without birthday → Birthday, Ineligible / restricted / closed → `/account/status`, unknown →
+  `/account/status`. An allow-listed return page (invite / dashboard) still wins. A sign-in started on the `/start`
+  screens (`onboarding=1`) returns cancel / failure to `/start/log-in?error=…` (fixed words only).
+- **Screens:** `/start/sign-up` and `/start/log-in` show "or" + Continue with Google / Apple only for providers switched
+  on in Supabase (unchanged rule); same styles as the Sign up design. Provider accounts skip Verification Code, Email
+  Confirmed and Create password; Name, Birthday (13+), Settings (privacy) and Finish are still required.
+- **Name:** Google's given / family name or Apple's first-sign-in full name only PREFILLS the Name screen (editable);
+  nothing is written to the profile until the person saves, and the Name step only saves an incomplete profile, so an
+  existing name is never replaced.
+- **Terms:** provider accounts have no code step, so the current Terms / Privacy are accepted on Settings at Finish
+  (the existing "terms" step). Final legal texts remain a launch blocker.
+- **Identity:** one profile per Supabase account (`initialize_my_profile`, idempotent; profile id = account id).
+  Matching names never merge. Apple Hide My Email = its own account unless linked while signed in (Phase 7D).
+  Supabase's automatic linking of a provider login to an existing account with the same VERIFIED email (decision D1)
+  can only be exercised with real provider credentials — open risk to verify: an unverified email/password account
+  for the same address must not be taken over.
+- **Fix found while testing:** onboarding steps no longer call `router.refresh()` after moving on; the refresh of the
+  finished step raced the move (Birthday could jump to Settings and skip Photo).
+- **Local tests only:** `AUTH_LOCAL_PROVIDERS=on node scripts/auth-local/setup.mjs` switches Google + Apple on with dummy
+  local credentials; the browser test intercepts Supabase's authorize step (nothing reaches Google / Apple).
+
 ## Feature: Play page ribbon content — admin-posted Explore, Courses, Equipment, Teaching & News (spec 2026-10-29; database, server and uploads built 2026-10-30 on `cam/explore-content`, NOT live)
 
 **Build status (2026-10-30).** Built and tested locally: `supabase/ribbon_content.sql`, `/api/content/*`, `/join-team/[token]`, R2 uploads. `supabase/ribbon_content.sql` has NOT been run on any real database, so production keeps showing built-in content (the Play page falls back when the tables can't be read). Still to do: run it on `maroon-auth-dev` and test signed in end to end, get Cade's OK, then production. Changes from the plan below:
@@ -4057,3 +4081,198 @@ Hole-by-hole cards also show par, putts, fairways and greens, as on a live trip.
 - **Bad entries refused:** 5 putts on a 4, a fairway on a par 3, a par of 9.
 - **Older trips:** imported trips without stats still open and work.
 - **Tests:** typecheck, lint and the full test suite pass, and the flow is clicked through in the simulator at phone width.
+
+## Account retirement and legacy testing (decisions approved 2026-10-30; PREPARED FOR REVIEW, nothing run)
+
+**What it does / who it affects.** V2 starts with **zero legacy logins**: everyone, including organizers and past
+players, registers again. Every independent Maroon Masters record stays in production. Legacy golf data (trips, player
+rounds, scores, account relationships) is kept only in an isolated LOCAL test copy. Nothing reconnects old records to new
+accounts automatically; owner and organizer powers return only after a fresh sign-up and an explicit grant.
+
+**Approved decisions:** (1) local Docker copy `maroon-legacy`, not `maroon-auth-dev`; (2) production is on the Free plan
+(no Supabase backups: our dump is the only one); (3) public Maroon archive names kept in the local copy; (4) profile photos
+kept in the local copy; (5) V1 registration stays open until the approved cutover; (6) no production reset until V2
+authentication is fully built and tested; (7) tester allowlist and strict 13+ enforced at the Supabase / server boundary,
+including direct API and OAuth; (8) encrypted backups kept until the owner explicitly approves deleting them.
+
+**Documents:** `docs/account-retirement-architecture-2026-10-30.md` (data classification, sequence, checklists, gates,
+risks, local setup) and `docs/v2-auth-enforcement-spec-2026-10-30.md` (hook, birthday-first, OAuth limits, tester
+activation, bypass tests). `docs/account-reset-plan-2026-10-30.md` keeps the scripts' background; its sequencing is
+superseded.
+
+**Data, in four places:**
+- *Production, permanently kept:* archived scorecards (159 rounds), shot videos, career archive / stats, edition rosters /
+  teams / rounds, live scoring, handicap rounds, broadcast, player records (13), The Maroon tournament and its 11
+  editions and players, course library, settings. Only account links are emptied.
+- *Production, removed at the reset:* 16 logins and their Supabase login data, 14 profiles, 162 personal player-round
+  copies, 1 golf trip, 2 shared rounds, personal scoring, code tournaments, customer tournaments, MM coin, account-only
+  rows, profile photos; typed-in emails on kept records emptied (S7, owner confirms).
+- *Local copy:* everything restored from the backup, sanitized (test emails `legacy-NN@legacy.invalid`, one test password,
+  no real passwords / tokens / sessions / OAuth / phones / push endpoints, webhooks off). Private account names,
+  usernames, bios and typed-in trip names anonymized (G4 approval, 2026-10-30); public Maroon archive names and profile
+  photos (local only) kept.
+- *Encrypted backups (outside Git and synced folders):* the full production dump plus Storage files, kept until approved.
+
+**Built for review (2026-10-30, local tests only):** `scripts/legacy-local/` (guard, stack, backup-storage, verify-backup,
+restore-local, sanitize, rehearse-reset, start-app, history snapshot, unit tests); `scripts/backup-database.ts` now
+requires `MAROON_BACKUP_DIR` and the production project. Draft corrections: Part 1 S2 deletes only personal scoring
+groups and stops on tournament ones; Part 2's allowed list names `profile_friend_requests`; the re-grant takes `owner` or
+`organizer`.
+
+**G4 (approved 2026-10-30) built LOCALLY, nothing hosted:** sign-up gate (`supabase/signup_gate.sql`): Supabase Auth
+Before User Created hook refuses any new login without a single-use 13+ age pass bound to its email, refuses non-allowlisted
+emails in `testers` mode and every non-email provider (no Apple / Google sign-up in the beta); a profile trigger stops any
+login made around the hook from getting a profile. Birthday-first screens and `POST /api/auth/age-check`; under 13 stores
+nothing. Testers activate without recording Terms acceptance (`tester_activations`); Pending profiles are hidden from search.
+V1 player invites closed while V2 is on. Local results: 51 / 51 bypass checks, 52 / 52 onboarding checks. Confirmed platform
+limit: Supabase's admin API skips the hook (mitigated as above). Details and hosted steps:
+`docs/v2-auth-enforcement-spec-2026-10-30.md` section 11.
+
+**Done (this preparation) when:** the owner approves the architecture and the enforcement spec. **Done (whole feature)
+when:** V2 enforcement bypass tests pass; the local copy is restored, sanitized and rehearsed; production is reset with
+Maroon history counts unchanged and zero legacy logins; the owner and each organizer are re-granted after fresh sign-up.
+## Vercel Hobby cron blocker — tester-preview branch (approved 2026-10-30; branch `v2-tester-preview`, local only)
+
+**Problem.** Every deployment since 2026-10-09 (production and preview) failed before building: *"Hobby accounts are limited
+to daily cron jobs. This cron expression (`* * * * *`) would run more than once per day."* `vercel.json` scheduled
+`/api/internal/trip-push` every minute (added `03748a87`) and `/api/internal/account-deletions` every 10 minutes (added
+`84d11d4f`). Production still serves the 2026-10-08 deployment (`8f6d17c3`). The owner chose not to upgrade Vercel for this.
+
+**Production protection (checked before editing, 2026-10-30).** Vercel project setting `autoAssignCustomDomains` is
+`false` (the manual-promotion step of `docs/deploy-gate-2026-10-19.md`): a successful `main` build gets only its own
+`…vercel.app` address; `themaroon.site` changes only when someone presses **Promote**. `main` is not changed by this work.
+
+**Change (this branch only; nothing merged, pushed or deployed).**
+- `vercel.json`: `trip-push` entry removed; `account-deletions` runs once a day, `0 9 * * *` (09:00 UTC; Hobby fires it
+  any time in that hour). Vercel runs cron jobs for **production** deployments only, so previews never run either job;
+  they only have to pass the schedule check.
+- Both route implementations are unchanged.
+- Push opt-in can't promise alerts nobody sends: `tripPushDeliveryEnabled()` (`lib/platform/tripPush.ts`) requires the
+  push keys, `CRON_SECRET` **and** `TRIP_PUSH_DELIVERY=on`. Without it the Round alerts panel shows "Push alerts are not
+  available yet." with the button disabled, and `POST /api/golf-trips/[tripId]/push` refuses to save (503). Turning
+  alerts off (`DELETE`) still works. `TRIP_PUSH_DELIVERY` is set nowhere; set it only after a per-minute scheduler
+  (e.g. Supabase Cron + `pg_net`) calls `/api/internal/trip-push` with the cron secret.
+- Account-deletion safeguards are unchanged: deletion still runs in the request (block everywhere, sessions signed out,
+  database → Storage → login); the daily job only finishes interrupted deletions, under-13 cleanups and late files.
+
+**Tests.** `lib/platform/tripPush.test.ts`: the switch (each missing piece, wrong values) and `vercel.json` (only
+`account-deletions`, every schedule once a day). Full unit suite, TypeScript and lint run on the branch.
+
+**Not done / next.** Push branch and run the protected preview (owner approval); per-minute scheduler for web alerts
+(only if web alerts are wanted before native push); native push (APNs/FCM) belongs to the notifications work; mobile
+authentication API audit is a separate future phase.
+
+---
+
+## Sign-up order: birthday AFTER account creation (owner decision 2026-11-02, replaces "birthday first" of 2026-10-30) — APPROVED + BUILT
+
+**Why.** The owner wants sign-up to feel like a normal app: create the account first, birthday afterwards. Under 13 →
+the process stops and the account is never finalized. This reverses owner decision 4 of 2026-10-30 (birthday first);
+the owner was told the trade-off (an under-13's email/password is briefly held before their age is known).
+
+**New order.** Welcome → Sign up (email) → Create password → 6-digit code → Name → **Birthday** → Finish.
+- 13+ → Finish → Active account (testers activate as today).
+- Under 13 → the existing Pending-accounts Phase 4 path: account becomes Ineligible, signed out everywhere, its login and
+  data removed by the cleanup (daily job retries any interrupted cleanup). No profile is ever made Active.
+
+**What changes.**
+- `supabase/signup_gate.sql` (new re-runnable file, e.g. `signup_gate_birthday_after.sql`): the Before User Created
+  hook keeps **closed / testers allowlist / email-only**, but no longer requires an age pass. The two age-pass triggers
+  (`require_age_pass_for_profile`, `guard_post_gate_birthdate`) are dropped so the onboarding Birthday step
+  (`set_my_birthdate`, write-once, 13+) is how every new account gives its birthday. `age_passes` table kept (unused).
+- `app/start/[screen]/page.tsx`: Sign up / Create password no longer redirect to Birthday; Welcome goes to Sign up.
+- `app/api/auth/signup/route.ts`: no age pass required. `/api/auth/age-check` and the start Birthday screen retired.
+- The onboarding Birthday screen after Name (already built, Phase 6) becomes the birthday step for everyone.
+- Tests: update gate regression + onboarding regression + unit tests to the new order; run on the local gate stack.
+
+**Not changing.** Tester allowlist, email-only sign-up, 13+ rule, under-13 cleanup, admin re-grant, production data.
+
+**Done =** on the local stack: a tester signs up → code → name → birthday 13+ → Active; an under-13 birthday → signed out
+and the login removed; a non-allowlisted email is refused; all suites green. Then owner runs the SQL on production and
+the code is deployed + promoted (production uses manual promotion: `autoAssignCustomDomains` is false).
+
+**Built 2026-11-02.** `supabase/signup_gate_birthday_after.sql` (run on production 2026-11-02); `/start/birthday` now forwards
+to Sign up; Name → Birthday → Photo; `/api/auth/age-check` answers 410 retired. Tests on the local gate stack: unit
+1803/1803, `scripts/auth-local/signup-birthday-after-regression.mts` 27/27, `onboarding-browser.mjs` 81/81, tsc + eslint
+clean, `next build` passes. `signup-gate-regression.mts` still tests the old birthday-first locks (superseded).
+
+### Round: Trip Builder — golf trip setup wizard + optional tutorial (spec 2026-11-03, approved 2026-11-03)
+
+**What.** Rebuild Golf Trip creation as "Trip Builder": Welcome → first-time Learn screen (phone-in-phone, 3 swipes,
+optional 5–7 slide tutorial) → name + destination → dates + group travel → people + competing (team mini-wizard) →
+rounds + courses → competition formats (suggested setups + Make your own) → lodging → "Your trip is ready" (Email
+confirmed look) → invite pop-up with native share → trip home with first-visit coach marks. Players moves to Settings →
+General with the invite link at the top (organizer-only edits). New simple "Join this trip" sign-up page reached from the
+trip link.
+
+**Who.** Organizers creating a trip; invited friends joining from a shared link.
+
+**Stack / data.** Existing Next.js + Supabase. New SQL (trip-wide join link + join function) written by Claude, run by the
+owner. Tour/tips "seen" remembered per account.
+
+**Done =** see the full design: `docs/superpowers/specs/2026-11-03-trip-builder-design.md`.
+
+---
+
+## Venue tab → Places recommendations (owner decision 2026-11-02) — APPROVED (phase 1 = simulator design)
+
+**What it is.** The Golf Trip's Venue tab becomes a place-recommendation list (reference: a "Find a Place" list screen —
+search bar, round category pictures, big place cards). It is NOT a map: every place has **Open in Maps** (Apple Maps on
+iPhone, Google Maps on Android / web — a plain link, no API cost) for directions, hours and reviews, and **Add to
+itinerary** so the group can plan it. Goal: a recommendation platform that feeds itineraries, not a maps replacement.
+
+**Data: free, and our own database grows over time (Untappd-style).**
+- Base data: **OpenStreetMap** (free, ODbL — may be stored permanently with visible "© OpenStreetMap contributors"
+  credit). Fetched through the public Overpass API once per destination area + category, then stored in OUR database
+  and reused by every trip to that area (re-fetched at most every ~30 days). Never called from phones directly.
+- Our layer (the long-term value): every save (heart), add-to-itinerary and later rating/check-in by our users is stored
+  against the place, and ranks it ("Added by 4 trips", "Your group saved this", organizer's picks). Organizers/users can
+  add a place OSM doesn't have. No Google Places / Foursquare in this version (paid; may add photos on tap later).
+- Trip location: the trip's saved destination coordinates; without them the tab asks the organizer to set a destination.
+
+**Screens (Venue tab, maroon/cream app style).**
+1. Top: the trip destination in a search-bar pill ("Scottsdale, AZ"); tap = search places by name within the area.
+2. "What are you looking for?" — round category pictures: Food · Bars & Breweries · Golf · Coffee · Things to do.
+3. Place cards: picture area (category artwork until we have real photos), heart (save), name, address, distance from
+   the trip venue, one detail line (cuisine / type), our badge ("Added by N trips" / "Your group saved this"), buttons
+   **Add to itinerary** and **Open in Maps**.
+4. Simulator conditionals (Golf Trip Active → Venue): Loading · Places list · Category picked · Place saved / added ·
+   No places found · No destination set.
+
+**Phases.** (1) Design in the dev simulator with sample places (no data/API) → owner signs off on the look.
+(2) Database tables (`places`, `place_area_fetches`, `place_saves`, `place_trip_adds`) + server-side OSM fetch/cache.
+(3) Add to itinerary + rankings from our users. Each phase approved separately; SQL is run by the owner.
+
+**Phase 4 — after-visit ratings (approved 2026-11-02).** The first app open the day AFTER an itinerary plan: a
+slide-up "How was yesterday?" listing the places you went, a 1-10 rating each (Skip allowed; asked once per place).
+Each place keeps its average + count; avg 8+ from at least 5 ratings = "Ranked highly by Maroon users" badge and a
+higher spot for the next trip to that area. Designed first in the simulator (Golf Trip Home conditionals).
+
+**Data source change (owner decision 2026-11-03, option 3) — APPROVED ("as long as it's free").** The free public OpenStreetMap
+(Overpass) servers proved unreliable (at capacity / timing out on almost every attempt during testing), so places come
+from **Overture Maps Places** instead: a free, openly licensed dataset (~60M+ places; Amazon / Meta / Microsoft /
+TomTom-backed Overture Maps Foundation; open licences that allow storing). Tested 2026-11-03: one ~15 km area reads in
+~7 s straight from Overture's public files on Amazon storage — no server to be "busy". Each place has name, address,
+website, phone, category, a confidence score and open / closed status.
+- **Where it runs:** a free daily **GitHub Actions** job (Python + DuckDB, no paid service): reads the areas of upcoming
+  trips from our database, reads each area from Overture's newest release, keeps our five categories, drops closed
+  places and low-confidence ones (< 0.7), and stores them (source 'overture') in our `places` table. Trips get their
+  places within a day of being created (the job can also be run by hand from GitHub at any time).
+- **Category mapping:** Food = restaurant, casual eatery, fast food, food court · Bars & Breweries = bar, brewery,
+  winery, distillery, nightlife · Coffee = coffee shop, cafe · Golf = golf course + anything golf (driving ranges, golf
+  shops) · Things to do = museum, aquarium, zoo, amusement / gaming / music / theatre venues, trails, national parks.
+- **Credit** on the Venue tab: "Places data © Overture Maps Foundation".
+- **Removed:** the Overpass lookups (app route + Vercel daily job). The app route only reads our database.
+- **One-time setup by the owner:** two secrets in GitHub (Settings → Secrets → Actions): the Supabase URL and the
+  service-role key, so the job can write places. Free (GitHub's included Actions minutes).
+
+**Done (phase 1) =** the new Venue tab in the simulator with every conditional, Open in Maps links working, owner
+approval of the look. Nothing live changes until phases 2–3.
+
+**Built 2026-11-03 (uncommitted, on main alongside the other agent's work).** Plan: `docs/superpowers/plans/2026-11-03-trip-builder.md`.
+New: `supabase/golf_trip_join_links.sql` (**NOT run in production** — owner runs it), join page `/golf-trips/join/<code>`,
+join-link API, invite link card at the top of Settings → General → Players, Trip Builder steps (basics, dates, players,
+teams, golf, courses, format, lodging → Create → Your trip is ready → invite pop-up), Learn screen + tour, coach marks.
+Dev previews: `/dev/trip-builder/join`, `/dev/trip-builder/ready`, `/dev/trip-builder/tips`. `@capacitor/share` 8.0.3
+added (`npx cap sync` not run). The Maroon photo goes at `public/images/the-maroon.jpg` (then set `MAROON_PHOTO`).
+

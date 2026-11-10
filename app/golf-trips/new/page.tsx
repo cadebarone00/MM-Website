@@ -1,34 +1,22 @@
-import { DatePicker } from "@/components/platform/DatePicker";
 import type { Metadata } from "next";
 import { SetupSheet } from "@/components/platform/SetupSheet";
 import { SetupStepForm } from "@/components/platform/SetupStepForm";
 import { DestinationSearch } from "@/components/platform/DestinationSearch";
-import { PlayerCountSlider } from "@/components/platform/PlayerCountSlider";
+import { TRIP_BUILDER_STEPS } from "@/lib/platform/tripBuilderSteps";
 import styles from "@/components/platform/CreateTournament.module.css";
 
-export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
+export const metadata: Metadata = { title: "Trip Builder | The Maroon" };
 
-/** Golf Trip questionnaire, step 1 (Trip Basics): name, destination, dates and how many are going. You (the signed-in profile) are the organizer. */
+/** Trip Builder, step 1: the trip's name and where it is. Both required. You (the signed-in profile) are the organizer. */
 export default function NewGolfTripPage() {
-  return <SetupSheet label="Trip Basics" tall>
-    <SetupStepForm nextHref="/golf-trips/new/golf" backHref="/tournaments/create/golf-trip">
+  return <SetupSheet label="What's the trip?" wizardStep={TRIP_BUILDER_STEPS.indexOf("basics") + 1}>
+    <SetupStepForm step="basics">
       <div className={styles.fields}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Trip Name</span>
           <input className={styles.input} type="text" name="tripName" placeholder="Maroon Masters 2027" autoComplete="off" required />
         </label>
         <DestinationSearch />
-        <div className={styles.fieldRow}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Start Date</span>
-            <DatePicker className={styles.input} name="startDate" required />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>End Date</span>
-            <DatePicker className={styles.input} name="endDate" required />
-          </label>
-        </div>
-        <PlayerCountSlider />
       </div>
     </SetupStepForm>
   </SetupSheet>;

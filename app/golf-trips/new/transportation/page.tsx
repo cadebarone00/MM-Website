@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Create a Golf Trip | The Maroon" };
  * Nothing is saved to the database yet.
  */
 export default function GolfTripTransportationPage() {
-  return <SetupSheet label="Transportation">
+  return <SetupSheet label="Transportation" wizardStep={7}>
     <GolfTripChoiceStep question="Do you know how you're getting around?" name="knowsTransportation"
       nextHref="/golf-trips/new/review" backHref="/golf-trips/new/flights" answers={{
         yes: <ConnectAccounts note="Connect your rental car so it shows up on the trip."

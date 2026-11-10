@@ -26,7 +26,8 @@ const text = (value: unknown, max = 200): value is string => typeof value === "s
 const int = (value: unknown, min = 0, max = 64): value is number => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 const mapOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Object.values(value).every(check);
 const setOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Array.isArray(value.$set) && value.$set.every(check);
-const formatNames = ["Singles", "Fourball", "Alternate Shot", "Chapman", "Scramble", "Shamble", "Stroke Play", "Stableford"];
+export const FORMAT_NAMES = ["Singles", "Fourball", "Alternate Shot", "Chapman", "Scramble", "Shamble", "Stroke Play", "Stableford"] as const;
+const formatNames: readonly string[] = FORMAT_NAMES;
 const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5) && ["rankMinutes","putForwardMinutes","responseMinutes"].every(key=>value[key]===undefined || int(value[key],1,120));
 const roundFormat = (value: unknown) => object(value) && int(value.players) && typeof value.pointsPerMatch === "number" && value.pointsPerMatch >= 0 && value.pointsPerMatch <= 1000 && ["Match Play", "Stroke Play"].includes(String(value.matchType)) && typeof value.nassau === "boolean" && ["Gross", "Net", "Both"].includes(String(value.scoring)) && formatNames.includes(String(value.format));
 const tees = (value: unknown) => object(value) && (value.tee === null || text(value.tee)) && typeof value.perHole === "boolean" && mapOf(value.holeTees, entry => text(entry));

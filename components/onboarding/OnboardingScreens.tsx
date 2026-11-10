@@ -43,6 +43,8 @@ export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFir
     setServerError(null);
     const sent = await send("/api/account/profile", { displayName: `${first.trim()} ${last.trim()}`.trim(), username });
     if (sent.json.ok !== true) { setServerError(errorOf(sent)); setBusy(false); return; }
+    // Birthday comes right after Name (owner decision 2026-11-02). An account that already has its birthday is sent on
+    // to its real step by the Birthday page (lib/account/onboardingRoutes.ts), so nobody repeats or skips a step.
     router.replace(ONBOARDING.birthday);
   }
 
@@ -65,7 +67,11 @@ export function NameScreen({ initialFirst = "", initialLast = "" }: { initialFir
   </main>;
 }
 
-/** Birthday → POST /api/account/birthday (saved once). Under 13: the server signs this browser out → status page. */
+/**
+ * Birthday → POST /api/account/birthday (saved once), the step after Name (owner decision 2026-11-02: birthday after the
+ * account is made). 13+ → Photo. Under 13: the server closes the account, signs this browser out and cleans the login up
+ * → status page; the account is never activated.
+ */
 export function BirthdayScreen() {
   const router = useRouter();
   const [birthday, setBirthday] = useState(""); // YYYY-MM-DD

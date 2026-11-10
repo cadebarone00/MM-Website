@@ -25,8 +25,12 @@ export default async function StartScreenPage({ params, searchParams }: {
   const { screen } = await params;
   if (!START_SCREENS.includes(screen as StartScreen)) notFound();
   const query = await searchParams;
+  // Birthday comes AFTER the account is made (owner decision 2026-11-02): it is the onboarding step after Name
+  // (/onboarding/birthday). The old birthday-first screen only forwards to Sign up now.
   switch (screen as StartScreen) {
-    case "sign-up": return <SignUpScreen providers={await enabledOAuthProviders()} />;
+    case "birthday": redirect(START.signUp);
+    // No Apple / Google on Sign up during the beta (owner decision 2026-10-30): new accounts are email only.
+    case "sign-up": return <SignUpScreen providers={[]} />;
     case "password": return <PasswordScreen kind="create" />;
     case "verify": return <CodeScreen kind="signup" />;
     case "confirmed": {

@@ -1,0 +1,9 @@
+/* Coach marks: a dim layer, a gold ring around the button, and a gold bubble with the tip. */
+.layer{position:fixed;inset:0;z-index:500}
+.ring{position:fixed;border:2px solid #c9a86e;border-radius:12px;box-shadow:0 0 0 9999px rgba(36,0,1,.6);pointer-events:none}
+.bubble{position:fixed;box-sizing:border-box;width:260px;min-height:108px;padding:12px 14px;border-radius:14px;background:#c9a86e;color:#240001;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.text{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif}
+.row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.count{font:600 12px var(--font-barlow),sans-serif;opacity:.75}
+.button{height:34px;padding:0 16px;border:0;border-radius:10px;background:#240001;color:#fbf8f1;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.button:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}

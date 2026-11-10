@@ -22,6 +22,9 @@ export const SIMULATOR_DEVICES = [
   { id: "custom", label: "Custom viewport", width: 402, height: 874, top: 0, bottom: 0 },
 ] as const;
 
+/** Trip Builder preview stages (simulator Conditionals). */
+export const TRIP_BUILDER_STAGES = ["join-signed-out", "join-open", "join-member", "join-expired", "join-invalid", "tour-first", "tour-seen", "tips-organizer", "tips-member", "tips-seen"] as const;
+
 export const SIMULATOR_SOURCES = [
   { id: "maroon", label: "Real development golf trip data" },
   { id: "mock", label: "Mock golf trip data" },
@@ -31,7 +34,9 @@ export const SIMULATOR_SOURCES = [
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
 export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };
-export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean };
+export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean;
+  /** Another LOCAL development server that serves this page (e.g. http://localhost:3002). No simulator bridge reaches it. */
+  origin?: string };
 export const SIMULATOR_STATES = [
   { id: "competition", label: "Trip / tournament status", kind: "select", options: [["source", "From data source"], ["yes", "Competitive trip"], ["no", "Social golf trip"]] },
   { id: "format", label: "Golf format", kind: "format" },
@@ -86,6 +91,16 @@ export type SimulatorState = {
   brandStage?: "drawing" | "finished" | "reduced";
   brandDuration?: number;
   brandReplay?: number;
+  /** Authentication → Profile Photo: No photo yet / phone picker look-alikes / Move and scale (cropper on a sample) / Photo chosen. Unset = "empty". */
+  photoStage?: "empty" | "crop" | "chosen" | "ios-menu" | "ios-library" | "android-picker";
+  /** Trip Builder dev previews (join page states, tips, tour). Unset = each preview's first state. */
+  tripBuilderStage?: (typeof TRIP_BUILDER_STAGES)[number];
+  /** Golf Trip → Venue (place recommendations design): which state shows. Unset = "list". */
+  venueStage?: "list" | "loading" | "category" | "saved" | "empty" | "no-destination";
+  /** Golf Trip → Home: the "How was yesterday?" after-visit rating prompt. Unset = "off". */
+  ratingStage?: "off" | "prompt" | "one" | "done";
+  /** Authentication → Birthday: boxes empty / the shared calendar open / a birthday filled in. Unset = "empty". */
+  birthdayStage?: "empty" | "calendar" | "picked";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
 };
@@ -189,6 +204,11 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
+  if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
+  if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;
+  if (state.birthdayStage !== undefined && !["empty", "calendar", "picked"].includes(String(state.birthdayStage))) return null;
+  if (state.tripBuilderStage !== undefined && !(TRIP_BUILDER_STAGES as readonly unknown[]).includes(state.tripBuilderStage)) return null;
+  if (state.photoStage !== undefined && !["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"].includes(String(state.photoStage))) return null;
   if (state.brandReplay !== undefined && (typeof state.brandReplay !== "number" || !Number.isSafeInteger(state.brandReplay) || state.brandReplay < 0)) return null;
   if (state.playerCount !== null && (typeof state.playerCount !== "number" || !Number.isInteger(state.playerCount) || state.playerCount < 1 || state.playerCount > 64)) return null;
   for (const key of ["tripLength", "tripDay"] as const) if(state[key]!==undefined && (typeof state[key]!=="number" || !Number.isInteger(state[key]) || state[key]<1 || state[key]>14)) return null;

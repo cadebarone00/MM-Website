@@ -7,7 +7,7 @@ import type { OnboardingStep } from "./onboardingApi";
 import { authReturnPath } from "@/lib/auth/returnTo";
 
 export const START = {
-  welcome: "/start", signUp: "/start/sign-up", password: "/start/password", verify: "/start/verify", confirmed: "/start/confirmed",
+  welcome: "/start", birthday: "/start/birthday", signUp: "/start/sign-up", password: "/start/password", verify: "/start/verify", confirmed: "/start/confirmed",
   logIn: "/start/log-in", forgot: "/start/forgot", resetCode: "/start/reset-code", resetPassword: "/start/reset-password",
 } as const;
 export const ONBOARDING = {
@@ -17,8 +17,8 @@ export const ONBOARDING = {
 export const PLAY = "/";
 export const STATUS = "/account/status";
 
-export type StartScreen = "sign-up" | "password" | "verify" | "confirmed" | "log-in" | "forgot" | "reset-code" | "reset-password";
-export const START_SCREENS: StartScreen[] = ["sign-up", "password", "verify", "confirmed", "log-in", "forgot", "reset-code", "reset-password"];
+export type StartScreen = "birthday" | "sign-up" | "password" | "verify" | "confirmed" | "log-in" | "forgot" | "reset-code" | "reset-password";
+export const START_SCREENS: StartScreen[] = ["birthday", "sign-up", "password", "verify", "confirmed", "log-in", "forgot", "reset-code", "reset-password"];
 export type OnboardingScreen = "name" | "birthday" | "photo" | "settings" | "created";
 export const ONBOARDING_SCREENS: OnboardingScreen[] = ["name", "birthday", "photo", "settings", "created"];
 
@@ -55,8 +55,10 @@ export function onboardingRedirect(screen: OnboardingScreen, step: OnboardingSte
 }
 
 /** Progress bar on the email sign-up screens, in the order they really come (password before the code: decision D1). */
+// Birthday comes after Name (owner decision 2026-11-02: the account is made first, like a normal app).
 const PROGRESS = ["sign-up", "password", "verify", "name", "birthday", "photo", "settings", "created"] as const;
-export const progressWidth = (screen: (typeof PROGRESS)[number]) => `${((PROGRESS.indexOf(screen) + 1) / PROGRESS.length) * 100}%`;
+export type ProgressScreen = (typeof PROGRESS)[number];
+export const progressWidth = (screen: ProgressScreen) => `${((PROGRESS.indexOf(screen) + 1) / PROGRESS.length) * 100}%`;
 
 /** Finish's "missing" list → which screen to fix, in plain words. */
 export function finishProblem(code: string | undefined, error: string | undefined, missing: string[] | undefined): string {

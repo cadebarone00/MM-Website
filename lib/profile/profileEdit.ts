@@ -7,7 +7,21 @@
 export const USERNAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.]{2,29}$/;
 export const USERNAME_RULE = "3–30 letters, numbers, _ or . — starting with a letter or number.";
 export const NAME_MAX = 60;
-export const BIO_MAX = 1000;
+/** Bio: at most 3 lines (owner rule 2026-11-02) in a column 90% of the header wide, in the 13px condensed label font.
+ *  150 characters (like Instagram) fits 3 lines of real writing (capitals, emoji) even on a 360px-wide phone, measured
+ *  in the simulator; at most 3 typed lines. The database still allows up to 1000 (supabase/profile_v1.sql), so older bios stay valid. */
+export const BIO_MAX = 150;
+export const BIO_MAX_LINES = 3;
+/** Keeps a bio being typed to 3 lines and BIO_MAX characters (extra line breaks are dropped). */
+export function limitBio(text: string): string {
+  const lines = text.split("\n");
+  return (lines.length > BIO_MAX_LINES ? `${lines.slice(0, BIO_MAX_LINES).join("\n")}${lines.slice(BIO_MAX_LINES).join(" ")}` : text).slice(0, BIO_MAX);
+}
+export function bioProblem(bio: string): string | null {
+  if (bio.length > BIO_MAX) return `Bios are ${BIO_MAX} characters at most.`;
+  if (bio.split("\n").length > BIO_MAX_LINES) return `Bios are ${BIO_MAX_LINES} lines at most.`;
+  return null;
+}
 
 export interface ProfileSetupInput { displayName: string; username: string }
 export interface ProfileEditInput { displayName?: string; username?: string; bio?: string }
@@ -55,7 +69,9 @@ export function profileEditFromBody(body: unknown): { ok: true; input: ProfileEd
     input.username = username;
   }
   if (r.bio !== undefined) {
-    if (typeof r.bio !== "string" || r.bio.length > BIO_MAX) return { ok: false, field: "bio", error: `Bios are ${BIO_MAX} characters at most.` };
+    if (typeof r.bio !== "string") return { ok: false, field: "bio", error: `Bios are ${BIO_MAX} characters at most.` };
+    const problem = bioProblem(r.bio.trim());
+    if (problem) return { ok: false, field: "bio", error: problem };
     input.bio = r.bio.trim();
   }
   if (!Object.keys(input).length) return { ok: false, field: "body", error: "Nothing to save." };

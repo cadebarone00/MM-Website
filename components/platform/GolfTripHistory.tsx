@@ -1,6 +1,7 @@
 "use client";
 
 import { DatePicker } from "@/components/platform/DatePicker";
+import { DateRangePicker } from "@/components/platform/DateRangePicker";
 
 
 import { useState } from "react";
@@ -126,9 +127,13 @@ function AddPastTrip({ tripPlayers, onCancel, onSave }: {
     <h2 className={tripStyles.eventsHeading}>Add past trip</h2>
     <label className={styles.field}>Trip name<input className={styles.input} value={name} maxLength={100} placeholder="e.g. Desert Classic" onChange={(event) => setName(event.target.value)} /></label>
     <div className={styles.dateFields}>
-      <label className={styles.field}>Arrival<DatePicker className={styles.input} value={arrival} max={today}
-        onChange={(event) => { setArrival(event.target.value); if (!departure || departure < event.target.value) setDeparture(event.target.value); }} /></label>
-      <label className={styles.field}>Departure<DatePicker className={styles.input} value={departure} min={arrival || undefined} onChange={(event) => setDeparture(event.target.value)} /></label>
+      {/* One calendar picks both arrival and departure (owner request 2026-11-02). */}
+      <DateRangePicker start={arrival} end={departure} max={today} startLabel="Arrival" endLabel="Departure" className={styles.input}
+        onChange={(first, last) => { setArrival(first); setDeparture(last); }}
+        fields={(startInput, endInput) => <>
+          <label className={styles.field}>Arrival{startInput}</label>
+          <label className={styles.field}>Departure{endInput}</label>
+        </>} />
     </div>
     <label className={styles.field}>Where<input className={styles.input} value={place} maxLength={100} placeholder="City, state" onChange={(event) => setPlace(event.target.value)} /></label>
     {tripPlayers.length > 0 && <div className={styles.field}>Players

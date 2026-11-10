@@ -23,7 +23,7 @@ function withQuery(path: string, values: Record<string, string | null>): string 
 export function legacyAuthRedirect(route: LegacyAuthRoute, query: Query, { signedIn }: { signedIn: boolean }): string | null {
   const next = authReturnPath(query.next);
   switch (route) {
-    case "/signup": return START.signUp;
+    case "/signup": return START.signUp; // birthday comes after the account is made (2026-11-02)
     case "/login":
     case "/login/email":
       return withQuery(START.logIn, { next, error: oauthErrorMessage(query.error) ? query.error as string : null });

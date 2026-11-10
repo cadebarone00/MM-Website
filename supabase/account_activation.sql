@@ -360,8 +360,15 @@ declare
   v_result jsonb;
   v_outcome text;
   v_invitations jsonb := '[]'::jsonb;
+  v_tester boolean := false;
 begin
-  if not coalesce((select activation_enabled from account_activation_settings where id), false) then
+  -- G4 (2026-10-30): an allowlisted tester in registration mode 'testers' (supabase/signup_gate.sql) may be activated
+  -- before the switch is on and before final Terms / Privacy exist. No acceptance is recorded for them: a
+  -- tester_activations row says so, and they accept the real documents at launch. Every other requirement still applies.
+  if to_regprocedure('public.signup_tester_preview(uuid)') is not null then
+    execute 'select public.signup_tester_preview($1)' into v_tester using p_account;
+  end if;
+  if not v_tester and not coalesce((select activation_enabled from account_activation_settings where id), false) then
     raise exception 'Activation is not enabled yet.' using errcode = '55000';
   end if;
   select confirmed_at into v_confirmed from auth.users where id = p_account;
@@ -395,6 +402,7 @@ begin
     v_missing := array_append(v_missing, 'username');
   end if;
   foreach v_doc in array array['terms', 'privacy'] loop
+    exit when v_tester;  -- testers: no Terms requirement and nothing recorded (see above)
     select current_version into v_version from legal_document_versions where document = v_doc;
     if v_version is null then
       v_missing := array_append(v_missing, v_doc || '_not_configured');
@@ -411,6 +419,9 @@ begin
 
   perform set_config('maroon.activation', 'on', true);
   update profiles set activated_at = now() where id = p_account;
+  if v_tester then
+    execute 'insert into public.tester_activations (account_id) values ($1) on conflict (account_id) do nothing' using p_account;
+  end if;
   perform set_config('maroon.activation', 'off', true);
 
   for v_held in select * from pending_invitations where account_id = p_account and processed_at is null order by created_at for update loop

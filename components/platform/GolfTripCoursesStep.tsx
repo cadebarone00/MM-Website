@@ -16,7 +16,7 @@ export function GolfTripCoursesStep() {
   const draft = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
   const rounds = useMemo(() => plannedRounds(parseGolfTripDraft(draft)), [draft]);
 
-  return <SetupStepForm nextHref="/golf-trips/new/format" backHref="/golf-trips/new/golf">
+  return <SetupStepForm step="courses" skip={{}}>
     <div className={styles.fields}>
       <div>
         <h2 className={styles.sectionTitle}>Do you know where you&apos;re playing?</h2>

@@ -5,6 +5,9 @@
 const STACKS = {
   test: { project: "maroon-auth-test", ports: "55", workdir: "out/auth-local" },
   main: { project: "maroon-auth-main", ports: "56", workdir: "out/auth-local-main" },
+  // G4 sign-up gate (2026-10-30): its own stack with supabase/signup_gate.sql and the Before User Created hook switched
+  // on (setup.mjs), so the shared stacks' suites, which sign up without an age pass, keep working. 57xxx is maroon-legacy.
+  gate: { project: "maroon-auth-gate", ports: "58", workdir: "out/auth-local-gate" },
 };
 
 export function authLocalStack() {

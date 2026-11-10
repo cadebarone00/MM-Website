@@ -2,7 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createECDH,createPublicKey,verify} from 'node:crypto';
 import {encryptPush,vapidAuthorization} from './webPushTransport.ts';
-import {pushEndpointAllowed,pushSubscriptionFrom} from './tripPush.ts';
+import {readFileSync} from 'node:fs';
+import {pushEndpointAllowed,pushSubscriptionFrom,tripPushDeliveryEnabled} from './tripPush.ts';
 test('RFC 8291 published encryption example matches byte-for-byte',()=>{
  const encrypted=encryptPush({endpoint:'https://fcm.googleapis.com/test',keys:{p256dh:'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4',auth:'BTBZMqHH6r4Tts7J_aSIgg'}},'When I grow up, I want to be a watermelon',{
  privateKey:Buffer.from('yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw','base64url'),salt:Buffer.from('DGv6ra1nlYgDCS1FRnbzlw','base64url')});
@@ -19,4 +20,23 @@ test('VAPID JWT verifies as ES256 and is scoped to the push provider',()=>{
 test('push destinations refuse SSRF, credentials, alternate ports and lookalike providers',()=>{
  for(const bad of ['http://fcm.googleapis.com/x','https://localhost/x','https://127.0.0.1/x','https://fcm.googleapis.com.evil.com/x','https://u:p@fcm.googleapis.com/x','https://fcm.googleapis.com:8443/x']) assert.equal(pushEndpointAllowed(bad),false,bad);
  assert.ok(pushEndpointAllowed('https://web.push.apple.com/x'));assert.equal(pushSubscriptionFrom({endpoint:'https://fcm.googleapis.com/x',keys:{p256dh:'bad',auth:'bad'}}),null);
+});
+test('alerts are offered only when keys, job secret AND a delivery scheduler are all present',()=>{
+ const ready={WEB_PUSH_VAPID_PRIVATE_KEY:'k',NEXT_PUBLIC_WEB_PUSH_VAPID_KEY:'p',WEB_PUSH_VAPID_SUBJECT:'mailto:ops@example.com',CRON_SECRET:'s',TRIP_PUSH_DELIVERY:'on'};
+ assert.equal(tripPushDeliveryEnabled(ready),true);
+ // Keys + secret alone (the account-deletion job keeps CRON_SECRET set) must not promise alerts nobody sends.
+ assert.equal(tripPushDeliveryEnabled({...ready,TRIP_PUSH_DELIVERY:undefined}),false);
+ for(const value of ['true','1','ON','yes']) assert.equal(tripPushDeliveryEnabled({...ready,TRIP_PUSH_DELIVERY:value}),false,value);
+ for(const key of ['WEB_PUSH_VAPID_PRIVATE_KEY','NEXT_PUBLIC_WEB_PUSH_VAPID_KEY','WEB_PUSH_VAPID_SUBJECT','CRON_SECRET'] as const) assert.equal(tripPushDeliveryEnabled({...ready,[key]:''}),false,key);
+});
+test('vercel.json only schedules jobs Vercel Hobby accepts (at most once a day) and no longer schedules trip-push',()=>{
+ const {crons}=JSON.parse(readFileSync(new URL('../../vercel.json',import.meta.url),'utf8')) as {crons:{path:string;schedule:string}[]};
+ assert.deepEqual(crons.map(c=>c.path),['/api/internal/account-deletions']);
+ for(const {path,schedule} of crons) {
+  const [minute,hour,...rest]=schedule.split(' ');
+  // One fixed minute and one fixed hour = once a day; day, month and weekday may stay "*".
+  assert.equal(rest.length,3,path);assert.match(minute,/^\d{1,2}$/,path);assert.match(hour,/^\d{1,2}$/,path);
+  assert.ok(Number(minute)<60 && Number(hour)<24,path);
+  assert.ok(rest.every(field=>field==='*'||/^\d{1,2}$/.test(field)),path);
+ }
 });

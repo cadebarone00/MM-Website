@@ -1,0 +1,11 @@
+{
+  "_comment": "Phase 0 production numbers as reported by the owner on 2026-10-30 (the CSVs are not in the repository). Copy to a file OUTSIDE Git, re-check every number against the inspection CSV taken in the same window as the backup, and pass it to restore-local.mjs --expected. archived_scorecard_rounds is assumed to be the '159 archived scorecard rounds': confirm from the CSV.",
+  "auth.users": 16,
+  "profiles": 14,
+  "player_rounds": 162,
+  "golf_trips": 1,
+  "shared_rounds": 2,
+  "player_slots": 13,
+  "tournament_editions": 11,
+  "archived_scorecard_rounds": 159
+}

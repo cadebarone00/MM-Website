@@ -57,13 +57,9 @@ import { setInAppScoring as setDeviceInAppScoring, useInAppScoring } from "@/lib
 import { useRoundRsvps } from "@/lib/platform/roundRsvp";
 import { savePredictSettings as saveDevicePredictSettings, usePredictSettings, type PredictSettings } from "@/lib/platform/predictSetting";
 
-const GENERAL_CARDS = ["Scorecard View", ...Array.from({ length: 5 }, () => "Place holder")];
-// Individual and Team competition are separate boxes; each opens the competition page for just that type.
-const ORGANIZER_SECTIONS = [
-  { title: "Overview", cards: ["Players", "Golf Schedule", "Games", "Player Scoring"] },
-  { title: "Competition", cards: ["Individual Competition", "Team Competition", "Skins", "Match Selection", "Predict"] },
-  { title: "History", cards: ["History", "Delete Trip"] },
-];
+import { GENERAL_CARDS, LIVE_GENERAL_CARDS, ORGANIZER_SECTIONS } from "@/lib/platform/tripSettingsSections";
+import { TripInviteLinkCard } from "./TripInviteLinkCard";
+import { TIPS_SEEN_KEY, clearSeen } from "@/lib/platform/tripTour";
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -112,7 +108,7 @@ const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 /** Reference layout with local game scoring settings in the site's maroon palette. */
 export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name }: {
   scheduleBaseDate?: string; organizerName?: string;
-  livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string };
+  livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string; tripId?: string; profileId?: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
   pastTrips?: PastTrip[];
@@ -168,6 +164,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const roundRsvps = useRoundRsvps(dataKey);
   const [scoringFieldsOff, setScoringFieldsOff] = usePersistedState<Set<string>>(persist, "scoringFieldsOff", new Set());
   // Players: the expected count can't drop below the players who already joined; open spots show as "Player N".
+  // Players is in General for everyone now; only the organizer can change it.
+  const playersReadOnly = !!livePanels && !livePanels.isOrganizer;
   const [playerTotal, setPlayerTotal] = usePersistedState(persist, "playerTotal", () => Math.min(MAX_PLAYERS, Math.max(1, playerCount, players.length)));
   const [removedPlayers, setRemovedPlayers] = usePersistedState<Set<string>>(persist, "removedPlayers", () => new Set());
   const joinedPlayers = players.map((name, index) => ({ name, key: `${index}:${name}` })).filter(player => !removedPlayers.has(player.key));
@@ -593,7 +591,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     const settingsView = matchDraftRoomOpen ? "match-draft-room" : matchesOpen ? "match-selection" : predictOpen ? "predict" : skinsOpen ? "skins" : historyOpen ? "history" : scorecardViewOpen ? "scorecard-view" : playerScoringOpen ? "player-scoring" : playersOpen ? "players" : roundsOpen ? "schedule" : competitionOpen ? selectedRoundId ? `round-${selectedRoundId}` : competitionSection === "Format" ? "competition-rounds" : "competition" : gamesOpen ? expandedGameId ? `game-${expandedGameId}` : "games" : placeholder ? `placeholder-${placeholder}` : section === "General" ? "player" : "organizer";
     reportNavigation({ tab: "Home", settingsView }, rounds.map(({ id, number }) => ({ id, number })));
   }, [reportNavigation, matchDraftRoomOpen, matchesOpen, predictOpen, skinsOpen, historyOpen, scorecardViewOpen, playerScoringOpen, playersOpen, roundsOpen, competitionOpen, competitionSection, gamesOpen, expandedGameId, placeholder, section, selectedRoundId, rounds]);
-  const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: livePanels ? ["Scorecard View"] : GENERAL_CARDS }];
+  const cardSections = section === "Organizer" ? ORGANIZER_SECTIONS : [{ title: null, cards: livePanels ? LIVE_GENERAL_CARDS : GENERAL_CARDS }];
   // Steps back one level (the back arrow goes through tryGoBack below).
   const goBack = () => {
     if (scorecardPlayer !== null) setScorecardPlayer(null);
@@ -1468,13 +1466,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
       })()}
 
       {playersOpen && <div className={styles.competition}>
+        {/* Trip Builder: the invite link at the very top, for everyone; only the organizer can edit the rest. */}
+        <TripInviteLinkCard tripId={livePanels?.tripId ?? null} tripName={tripName} canReset={!livePanels || livePanels.isOrganizer} />
         <section className={leaderboardStyles.match} aria-label="Players">
             <div className={leaderboardStyles.lineupHeader} role="group" aria-label="Number of players">
               <h2 className={leaderboardStyles.headerTitle}>Players</h2>
               <div className={`${styles.typeChoice} ${styles.stepper}`}>
-                <button type="button" aria-label="Fewer players" disabled={playerTotal <= Math.max(1, joinedPlayers.length)} onClick={() => setPlayerTotal(count => Math.max(1, joinedPlayers.length, count - 1))}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
+                <button type="button" aria-label="Fewer players" disabled={playersReadOnly || playerTotal <= Math.max(1, joinedPlayers.length)} onClick={() => setPlayerTotal(count => Math.max(1, joinedPlayers.length, count - 1))}><Minus size={14} strokeWidth={2.5} aria-hidden /></button>
                 <span aria-live="polite">{playerTotal}</span>
-                <button type="button" aria-label="More players" disabled={playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
+                <button type="button" aria-label="More players" disabled={playersReadOnly || playerTotal >= MAX_PLAYERS} onClick={() => setPlayerTotal(count => count + 1)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
               </div>
             </div>
             {livePanels ? livePanels.members : <TripPlayerRoles key={simulator?.state.playerRoleViewer ?? simulator?.state.viewAs ?? "default"}
@@ -1619,13 +1619,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         </div> : cardSections.map(group => <section key={group.title ?? "General"} aria-label={group.title ?? "General settings"}>
           {group.title && <h2 className={styles.settingsSectionHeading}>{group.title}</h2>}
           <div className={styles.grid}>
-        {section === "General" && livePanels && livePanels.members}
         {group.cards.map((title, index) => {
           if (title === "Delete Trip") return <Link key={index} href={livePanels?.deleteHref ?? "/dev/tournament/delete-trip"} className={`${styles.card} ${styles.cardButton}`}><h2>Delete Trip</h2></Link>;
           if (title === "Individual Competition" || title === "Team Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
             onClick={() => { setOverviewType(title === "Team Competition" ? "team" : "individual"); setCompetitionSection("Overview"); setCompetitionOpen(true); }}>
             <h2>{title.replace("Competition", "Comp")}</h2>
           </button>;
+          if (title === "Watch the Golf Trips tour") return <Link key={index} href={`/golf-trips/new/tour?back=${encodeURIComponent(backHref)}`} className={`${styles.card} ${styles.cardButton}`}><h2>{title}</h2></Link>;
+          if (title === "Show tips again") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
+            onClick={() => { clearSeen(TIPS_SEEN_KEY, livePanels?.profileId ?? "guest"); window.location.assign(backHref); }}><h2>{title}</h2></button>;
           if (title === "Players") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setPlayersOpen(true)}>
             <h2>{title}</h2>
           </button>;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHost } from "@/lib/portal/requireHost";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 
 /**
  * Admin invites an old Maroon player by the email on their player slot (Accounts V2).
@@ -13,6 +14,13 @@ import { getPlayerDisplayName } from "@/lib/data/players";
  * existing account (docs/auth-local-reproduction-2026-10-16.md S10). A failed step is fixed by sending the invite again.
  */
 export async function POST(request: Request) {
+  // G4 (2026-10-30): with V2 onboarding on this route is closed. inviteUserByEmail goes through Supabase's admin API,
+  // which does NOT run the Before User Created hook (supabase/signup_gate.sql; proven by signup-gate-regression.mts B8),
+  // so it would create a login that skipped the birthday step, and it would link a new account to a legacy player
+  // record (owner decision: nothing reconnects automatically). Everyone registers through V2 sign-up instead.
+  if (onboardingEnabled()) {
+    return NextResponse.json({ ok: false, error: "Player invitations are closed. Players sign up themselves." }, { status: 410 });
+  }
   const host = await requireHost();
   if (!host) {
     return NextResponse.json({ ok: false, error: "Not authorized." }, { status: 401 });
