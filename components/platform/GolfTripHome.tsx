@@ -989,7 +989,7 @@ function FlightsCard({ flights }: { flights?: TripFlights }) {
  * Info tab, banking-app style (layout only, made-up numbers): a maroon top saying "Your trip to {destination}", a swipeable
  * row of two cards with a dot for each (the filled dot follows the swipe), then the upcoming trip and planned rounds. It runs edge to edge and down to the bottom of the screen.
  */
-function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary }: {
+function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, isOrganizer, momentumEvents, settingsHref, flights, weather, itinerary, travel, tripNow, liveRound, rounds, afterRound, onOpenItinerary, players = [] }: {
   draftScope: string; teamNames?: string[]; draft: GolfTripDraft; settingsHref: string; draftPlayers: import("./TripDraftRoom").DraftRoomPlayer[];
   /** Momentum: the team draft (its Draftboard) and the round highlights, for this trip. */
   teamDraft?: TeamDraft; momentumEvents: MomentumEvent[];
@@ -999,6 +999,8 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
   liveRound?: ItineraryItem; onOpenItinerary: () => void;
   /** For the Mom section's next-round reminder. */
   rounds?: MomRound[]; afterRound?: number;
+  /** Everyone who's joined the trip (the Golf leaderboard's players): name, then @username. */
+  players?: GolfMatchPreview["leaderboard"][number]["golfer"][];
 }) {
   const destination = draft.destination;
   const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
@@ -1047,8 +1049,25 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
       <h2 id="home-feed-heading" className={styles.accountHeading}>Feed</h2>
       <TripFeed key={draftScope} />
     </section>
+    <section className={styles.homePlayers} aria-labelledby="home-players-heading">
+      <h2 id="home-players-heading" className={styles.accountHeading}>Players</h2>
+      {players.length
+        ? <ul className={styles.homePlayerList}>
+          {players.map(player => <li key={player.name} className={styles.homePlayer}>
+            <span className={styles.homePlayerBadge} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : playerInitials(player.name)}</span>
+            <span className={styles.homePlayerWho}>
+              <span className={styles.homePlayerName}>{player.name}</span>
+              <span className={styles.homePlayerUsername}>{player.username ? `@${player.username}` : "\u00a0"}</span>
+            </span>
+          </li>)}
+        </ul>
+        : <p className={styles.homePlayersEmpty}>Players show up here as they join the trip.</p>}
+    </section>
   </div>;
 }
+
+/** "Tiger Woods" → "TW" (a player with no profile photo). */
+const playerInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]!.toUpperCase()).join("") || "?";
 
 /** "Jan 7 – Jan 10, 2026": the year once, on the second date (on both if the trip crosses a year); one date if only one is set. */
 function dateRangeLabel(start: string | undefined, end: string | undefined): string {

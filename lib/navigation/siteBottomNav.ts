@@ -20,8 +20,10 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
   return false;
 }
 
-/** The dev profile preview's screens wear the same chrome (header, background) as the real screens they preview. */
-const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit" };
+/** Dev preview screens wear the same chrome (header, background) as the real screens they preview. The coach marks
+ *  preview is the real Golf Trip home, so it gets the trip home's chrome (no big site header). */
+const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit",
+  "/dev/trip-builder/tips": "/golf-trips/preview" };
 export function chromePathname(pathname: string): string {
   return DEV_PROFILE_PREVIEW[pathname] ?? pathname;
 }

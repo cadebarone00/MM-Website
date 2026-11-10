@@ -28,6 +28,7 @@ test("dev profile preview pages wear the real screens' chrome", () => {
   assert.equal(chromePathname("/dev/profile/edit"), "/profile/edit");
   assert.equal(chromePathname("/dev/profile/requests"), "/dev/profile/requests");
   assert.equal(chromePathname("/profile"), "/profile");
+  assert.equal(chromePathname("/dev/trip-builder/tips"), "/golf-trips/preview");
   assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/profile"), "/dev/profile");
   assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/golf-trips"), "/golf-trips");
   assert.equal(siteBottomNavTabHref("/settings", "/profile"), "/profile");

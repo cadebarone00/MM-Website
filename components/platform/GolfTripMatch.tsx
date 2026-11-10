@@ -242,7 +242,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: 
           return <Fragment key={golfer.name}>{golfer.name === lineBefore && <li className={styles.cutLine} role="separator">{cut!.label}</li>}<li className={rowClass}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
-              <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} />
+              <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} showTee={false} showUsername />
             </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
             <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
@@ -924,14 +924,16 @@ function TeamStatsSheet({ match, initialTeam, stats, onClose }: { match: GolfMat
   </dialog>, document.body);
 }
 
-function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true }:
-  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean; showTee?: boolean }) {
+function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true, showUsername = false }:
+  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean; showTee?: boolean; showUsername?: boolean }) {
   return <div className={`${styles.golfer} ${styles[align]}`}>
     <span className={styles.golferName}>{golfer.name}</span>
     {(showHcp || showThru) && <span className={styles.golferMeta}>
       {showHcp && <span className={styles.hcp}>HCP {golfer.hcp}</span>}{showHcp && showThru && " • "}{showThru && golfer.thru}
     </span>}
     {showTee && (golfer.teeTime || golfer.course) && <span className={styles.tee}>{golfer.teeTime} {golfer.course && <span className={styles.course}>@ {golfer.course}</span>}</span>}
+    {/* The leaderboard's second line: their @username (sample players have none, so the line stays, empty, and every row is one height). */}
+    {showUsername && <span className={styles.tee}>{golfer.username ? `@${golfer.username}` : "\u00a0"}</span>}
   </div>;
 }
 

@@ -1,13 +1,16 @@
 /* Learn screen + tour: dark maroon, phone on top, the copy and buttons under it. Fixed layout: nothing moves between pages. */
 .page{--tour-bg:#240001;position:fixed;inset:0;z-index:200;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;padding:16px 20px calc(20px + env(safe-area-inset-bottom));background:radial-gradient(120% 60% at 50% 110%,rgba(201,168,110,.22),transparent 70%),#240001;color:#fbf8f1;overflow:hidden}
 .phoneArea{flex:0 0 auto;display:flex;justify-content:center;touch-action:pan-y}
-.copy{flex:0 0 auto;height:92px;margin-top:-40px;position:relative;text-align:center}
+.copy{flex:0 0 auto;height:92px;margin-top:-40px;position:relative;z-index:10;text-align:center}
 .title{margin:0;font:500 24px/1.2 var(--font-spectral),Georgia,serif}
 .body{margin:6px auto 0;max-width:340px;height:40px;overflow:hidden;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:8px}
 .dot{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:#c9a86e;opacity:.35;cursor:pointer}
 .dotOn{opacity:1}
 .actions{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+/* Learn screen only: the buttons sit right under the copy instead of pinned to the bottom (the copy box keeps ~17px of
+   empty space where the dots used to be, so pull up into it). */
+.learnActions{margin-top:-15px}
 .primary{display:flex;align-items:center;justify-content:center;width:100%;max-width:420px;height:50px;border:0;border-radius:12px;background:#c9a86e;color:#240001;font:700 17px var(--font-barlow),sans-serif;text-decoration:none;cursor:pointer}
 .primary:focus-visible,.skip:focus-visible,.dot:focus-visible{outline:2px solid #fbf8f1;outline-offset:3px}
 .skip{height:22px;padding:0;border:0;background:none;color:#e1cec4;font:600 14px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}

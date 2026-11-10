@@ -177,7 +177,7 @@
    then a light page; the account cards sit across the line between the two. */
 .account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
   padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
-  background:linear-gradient(var(--lm-bg-240001) 120px,#f7f8f7 120px);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+  background:var(--lm-bg-240001);color:#111;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 .account p{margin:0}
 .account button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
@@ -202,7 +202,7 @@
 .accountDots{display:flex;justify-content:center;gap:6px;margin-top:12px}
 .accountDots span{width:6px;height:6px;border-radius:50%;background:#cfd3d1}
 .accountDots .accountDotActive{background:#8b918e}
-.accountHeading{margin-top:28px !important;padding:0 16px;font-size:18px;font-weight:700;color:#111}
+.accountHeading{margin-top:28px !important;padding:0 16px;font-size:18px;font-weight:700;color:var(--lm-ink-fbf8f1)}
 .accountTools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding:0 16px}
 .accountTool{min-height:80px;padding:14px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px;font-weight:600}
 @media(min-width:593px){.account{margin-inline:0;border-radius:20px 20px 0 0;overflow:hidden}}
@@ -343,6 +343,18 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 
 
 .homeFeed{flex:1;min-height:160px}
+/* Home → Players: everyone who's joined, like the Golf leaderboard's rows but tighter — a small cream badge (photo or
+   initials), the name, and @username under it. Every row is one height (an empty username line is kept). */
+.homePlayers{padding:0 16px 8px}
+.homePlayers .accountHeading{padding:0}
+.homePlayerList{margin:10px 0 0;padding:0;list-style:none}
+.homePlayer{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
+.homePlayerBadge{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;overflow:hidden;background:#fbf8f1;color:var(--color-maroon-900);font:800 11px/1 var(--font-spectral),Georgia,serif}
+.homePlayerBadge img{width:100%;height:100%;object-fit:cover}
+.homePlayerWho{display:flex;flex-direction:column;gap:1px;min-width:0}
+.homePlayerName{font:700 15px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.homePlayerUsername{font:500 12px/1.25 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.homePlayersEmpty{margin-top:8px !important;font:500 13px/1.4 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
 .predictBack{display:grid;place-items:center;width:36px;height:36px;margin:0 0 8px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:50%;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);color:var(--lm-ink-dcc495);cursor:pointer}
 /* Team points open on the tournament box: the board grows to fit it and pushes the leaderboard down. */
 .golfTop:has([data-points-open]){height:auto;min-height:var(--golf-board-height)}
