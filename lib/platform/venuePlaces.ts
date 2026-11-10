@@ -33,13 +33,19 @@ export function withRatings(place: Pick<Place, "ratingAverage" | "ratingCount">,
   const total = (place.ratingAverage ?? 0) * (place.ratingCount ?? 0) + valid.reduce((sum, r) => sum + r, 0);
   return { ratingAverage: count ? Math.round((total / count) * 10) / 10 : 0, ratingCount: count };
 }
-/** "Yesterday" for the prompt: the plans whose day was the day before `today` (YYYY-MM-DD) and that I haven't rated. */
-export function placesToRate<T extends { placeId?: string; startsAt: string }>(plans: T[], today: string, rated: string[]): T[] {
-  const day = new Date(`${today}T12:00:00Z`); day.setUTCDate(day.getUTCDate() - 1);
-  const yesterday = day.toISOString().slice(0, 10);
+/** How many days back the prompt still asks about a visit (so a missed day isn't lost). */
+export const RATE_WITHIN_DAYS = 3;
+/**
+ * The prompt's places: plans at a place whose day was 1..`withinDays` days before `today` (YYYY-MM-DD; never today, the
+ * visit may not have happened yet), newest first, each place once, minus ones already rated or skipped (`done`).
+ */
+export function placesToRate<T extends { placeId?: string; startsAt: string }>(plans: T[], today: string, done: string[], withinDays = 1): T[] {
+  const dayBefore = (n: number) => { const d = new Date(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+  const earliest = dayBefore(withinDays), latest = dayBefore(1);
   const seen = new Set<string>();
-  return plans.filter((plan) => {
-    if (!plan.placeId || plan.startsAt.slice(0, 10) !== yesterday || rated.includes(plan.placeId) || seen.has(plan.placeId)) return false;
+  return [...plans].sort((a, b) => b.startsAt.localeCompare(a.startsAt)).filter((plan) => {
+    const day = plan.startsAt.slice(0, 10);
+    if (!plan.placeId || day < earliest || day > latest || done.includes(plan.placeId) || seen.has(plan.placeId)) return false;
     seen.add(plan.placeId);
     return true;
   });

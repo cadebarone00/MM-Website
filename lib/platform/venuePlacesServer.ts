@@ -48,3 +48,29 @@ export async function recordPlaceAdd(profileId: string, tripId: string, placeId:
   const { error } = await createSupabaseServiceRoleClient().rpc("record_place_trip_add", { p_profile: profileId, p_trip: tripId, p_place: placeId });
   return !error ? "ok" : error.code === "P0002" ? "not-found" : "unavailable";
 }
+
+/** Phase 4: places this member already rated or skipped on this trip (the "How was yesterday?" prompt leaves them out). */
+export async function placesDone(profileId: string, tripId: string): Promise<string[] | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("my_place_rating_status", { p_profile: profileId, p_trip: tripId });
+  return error ? null : Array.isArray(data) ? data.filter((id): id is string => typeof id === "string") : [];
+}
+
+export type RatingAnswer = { placeId: string; rating: number; visitedOn: string };
+/** Keeps only well-formed answers: a place id, a whole 1-10 rating and a real YYYY-MM-DD day (at most 50 in all). */
+export function ratingAnswers(body: unknown): { ratings: RatingAnswer[]; skips: string[] } | null {
+  const record = (body && typeof body === "object" ? body : {}) as { ratings?: unknown; skips?: unknown };
+  if (!Array.isArray(record.ratings) || (record.skips !== undefined && !Array.isArray(record.skips))) return null;
+  const ratings = record.ratings.filter((r): r is RatingAnswer => !!r && typeof r === "object" && isUuid(String((r as RatingAnswer).placeId))
+    && Number.isInteger((r as RatingAnswer).rating) && (r as RatingAnswer).rating >= 1 && (r as RatingAnswer).rating <= 10
+    && /^\d{4}-\d{2}-\d{2}$/.test(String((r as RatingAnswer).visitedOn)) && Number.isFinite(Date.parse(`${(r as RatingAnswer).visitedOn}T12:00:00Z`)))
+    .map(({ placeId, rating, visitedOn }) => ({ placeId, rating, visitedOn }));
+  const skips = ((record.skips ?? []) as unknown[]).filter((id): id is string => typeof id === "string" && isUuid(id));
+  if (ratings.length + skips.length === 0 || ratings.length + skips.length > 50) return null;
+  return { ratings, skips };
+}
+
+/** Phase 4: store one prompt's ratings and skips. Returns how many ratings were new, or null if it couldn't be saved. */
+export async function submitRatings(profileId: string, tripId: string, answers: { ratings: RatingAnswer[]; skips: string[] }): Promise<number | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("submit_place_ratings", { p_profile: profileId, p_trip: tripId, p_ratings: answers.ratings, p_skips: answers.skips });
+  return error ? null : Number(data) || 0;
+}

@@ -149,7 +149,7 @@ function TravelForm({ kind, item, initial, onSave, onCancel, onBack }: {
 
   function save(invite: boolean) {
     const raw: TravelDetails = { airline: fields.airline, flightNumber: fields.flightNumber, from: fields.from, to: fields.to, rideType: fields.rideType,
-      place: fields.place, seats: fields.seats.trim() === "" ? undefined : Number(fields.seats), name: fields.name, note: fields.note };
+      place: fields.place, seats: fields.seats.trim() === "" ? undefined : Number(fields.seats), name: fields.name, note: fields.note , placeId: d.placeId };
     const endsAt = fields.endsAt || undefined;
     const found = checkTravelInput(kind, raw, fields.startsAt, endsAt);
     setProblems(found);
@@ -213,16 +213,16 @@ function TravelForm({ kind, item, initial, onSave, onCancel, onBack }: {
  * the day and time are left. Saved like any other plan (Save = just me, Save & Invite = then pick who); `onAdded` runs
  * once it's on the itinerary, so the Venue card can say "Added" and the place counts the trip.
  */
-export function GolfTripAddPlace({ travel, name, address, onChange, onAdded, onClose }: {
-  travel: TripTravel; name: string; address?: string; onChange: (change: MyTravelChange) => void; onAdded: () => void; onClose: () => void;
+export function GolfTripAddPlace({ travel, placeId, name, address, onChange, onAdded, onClose }: {
+  travel: TripTravel; placeId: string; name: string; address?: string; onChange: (change: MyTravelChange) => void; onAdded: () => void; onClose: () => void;
 }) {
   const [inviting, setInviting] = useState<string | null>(null);
   if (inviting) return <InvitePeople travel={travel} itemId={inviting} onClose={onClose}
     onSend={(memberIds) => { onChange({ type: "invite", id: inviting, memberIds }); onClose(); }} />;
-  return <TravelForm kind="other" initial={{ name, place: address }} onCancel={onClose}
+  return <TravelForm kind="other" initial={{ name, place: address, placeId }} onCancel={onClose}
     onSave={(details, startsAt, endsAt, invite) => {
       const id = `tr-${crypto.randomUUID()}`;
-      onChange({ type: "add", item: { id, kind: "other", details, startsAt, endsAt, joinPolicy: "none" } });
+      onChange({ type: "add", item: { id, kind: "other", details: { ...details, placeId }, startsAt, endsAt, joinPolicy: "none" } });
       onAdded();
       if (invite) setInviting(id); else onClose();
     }} />;

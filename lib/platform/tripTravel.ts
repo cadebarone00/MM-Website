@@ -26,6 +26,8 @@ export interface TravelDetails {
   seats?: number;
   /** lodging, dining, other, tee time */
   name?: string;
+  /** other / dining made from Venue → Add to itinerary: the place (our places table), so it can be rated after. */
+  placeId?: string;
   place?: string;
   note?: string;
 }
@@ -190,5 +192,6 @@ export function cleanDetails(kind: TravelKind, details: TravelDetails): TravelDe
   const text = (value?: string) => value?.trim() || undefined;
   if (kind === "flight") return { airline: text(details.airline), flightNumber: text(details.flightNumber)?.toUpperCase().replace(/\s+/, ""), from: text(details.from)?.toUpperCase(), to: text(details.to)?.toUpperCase() };
   if (kind === "ride") return { rideType: details.rideType ?? "driving", from: text(details.from), to: text(details.to), place: text(details.place), seats: details.seats };
-  return { name: text(details.name), place: text(details.place), note: text(details.note) };
+  const placeId = details.placeId && /^[0-9a-f-]{36}$/i.test(details.placeId) ? details.placeId : undefined;
+  return { name: text(details.name), place: text(details.place), note: text(details.note), ...(placeId ? { placeId } : {}) };
 }

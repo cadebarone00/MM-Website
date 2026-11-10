@@ -84,13 +84,23 @@ create unique index if not exists place_ratings_once_idx on public.place_ratings
   where profile_id is not null and golf_trip_id is not null;
 create index if not exists place_ratings_place_idx on public.place_ratings (place_id);
 
+-- Phase 4: places a person chose to Skip in the "How was yesterday?" prompt (never asked about again for that trip).
+create table if not exists public.place_rating_skips (
+  place_id uuid not null references public.places(id) on delete cascade,
+  golf_trip_id uuid not null references public.golf_trips(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (place_id, golf_trip_id, profile_id)
+);
+
 alter table public.places enable row level security;
+alter table public.place_rating_skips enable row level security;
 alter table public.place_area_fetches enable row level security;
 alter table public.place_saves enable row level security;
 alter table public.place_trip_adds enable row level security;
 alter table public.place_ratings enable row level security;
-revoke all on public.places, public.place_area_fetches, public.place_saves, public.place_trip_adds, public.place_ratings
-  from public, anon, authenticated;
+revoke all on public.places, public.place_area_fetches, public.place_saves, public.place_trip_adds, public.place_ratings,
+  public.place_rating_skips from public, anon, authenticated;
 
 -- When an area + category was last looked up (null = never).
 create or replace function public.place_area_fetched_at(p_area text, p_category text)
@@ -202,17 +212,63 @@ begin
 end;
 $$;
 
+-- Phase 4: the places this member already rated or skipped on this trip (the prompt leaves them out).
+create or replace function public.my_place_rating_status(p_profile uuid, p_trip uuid)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(distinct x.place_id), '[]'::jsonb) from (
+    select place_id from place_ratings where profile_id = p_profile and golf_trip_id = p_trip
+    union select place_id from place_rating_skips where profile_id = p_profile and golf_trip_id = p_trip
+  ) x;
+$$;
+
+-- Phase 4: save one prompt's answers. p_ratings = [{ placeId, rating 1-10, visitedOn 'YYYY-MM-DD' }], p_skips = [placeId].
+-- Members only; each place rated once per person and trip (a repeat is ignored); bad entries are skipped. Returns how
+-- many ratings were stored.
+create or replace function public.submit_place_ratings(p_profile uuid, p_trip uuid, p_ratings jsonb, p_skips jsonb default '[]'::jsonb)
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_count integer := 0; v_item jsonb; v_rows integer;
+begin
+  if not exists (select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.profile_id = p_profile and m.invitation_status = 'accepted') then
+    raise exception 'Not found.' using errcode = 'P0002';
+  end if;
+  if jsonb_typeof(p_ratings) <> 'array' or jsonb_typeof(p_skips) <> 'array' or jsonb_array_length(p_ratings) + jsonb_array_length(p_skips) > 50 then
+    raise exception 'Too many answers.' using errcode = '22023';
+  end if;
+  for v_item in select value from jsonb_array_elements(p_ratings) loop
+    begin
+      insert into place_ratings (place_id, golf_trip_id, profile_id, rating, visited_on)
+      select (v_item ->> 'placeId')::uuid, p_trip, p_profile, (v_item ->> 'rating')::integer, (v_item ->> 'visitedOn')::date
+      where exists (select 1 from places where id = (v_item ->> 'placeId')::uuid)
+      on conflict (place_id, profile_id, golf_trip_id) where profile_id is not null and golf_trip_id is not null do nothing;
+      get diagnostics v_rows = row_count;
+      v_count := v_count + v_rows;
+    exception when check_violation or invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then
+      null;
+    end;
+  end loop;
+  insert into place_rating_skips (place_id, golf_trip_id, profile_id)
+  select p.id, p_trip, p_profile from places p
+  where p.id::text in (select jsonb_array_elements_text(p_skips))
+  on conflict do nothing;
+  return v_count;
+end;
+$$;
+
 revoke all on function public.place_area_fetched_at(text, text), public.store_places(text, text, text, jsonb),
   public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text),
-  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid) from public, anon, authenticated;
+  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid),
+  public.my_place_rating_status(uuid, uuid), public.submit_place_ratings(uuid, uuid, jsonb, jsonb) from public, anon, authenticated;
 grant execute on function public.place_area_fetched_at(text, text), public.store_places(text, text, text, jsonb),
   public.place_areas_to_import(), public.list_trip_places(uuid, uuid, text, text),
-  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid) to service_role;
+  public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid),
+  public.my_place_rating_status(uuid, uuid), public.submit_place_ratings(uuid, uuid, jsonb, jsonb) to service_role;
 
 commit;
 
 -- Undo (development only):
---   drop function public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid);
+--   drop function public.set_place_save(uuid, uuid, uuid, boolean), public.record_place_trip_add(uuid, uuid, uuid),
+--     public.my_place_rating_status(uuid, uuid), public.submit_place_ratings(uuid, uuid, jsonb, jsonb);
+--   drop table public.place_rating_skips;
 --   drop function public.list_trip_places(uuid, uuid, text, text), public.store_places(text, text, text, jsonb),
 --     public.place_areas_to_import(), public.place_area_fetched_at(text, text);
 --   drop table public.place_ratings, public.place_trip_adds, public.place_saves, public.place_area_fetches, public.places;

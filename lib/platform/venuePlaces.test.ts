@@ -49,6 +49,8 @@ test("the prompt asks about yesterday's places only, once each", () => {
     { placeId: "b", startsAt: "2027-04-22T08:00" }, { placeId: "c", startsAt: "2027-04-23T09:00" },
     { startsAt: "2027-04-22T10:00" }, { placeId: "d", startsAt: "2027-04-22T12:00" },
   ];
-  assert.deepEqual(placesToRate(plans, "2027-04-23", ["d"]).map((p) => p.placeId), ["a", "b"]);
-  assert.deepEqual(placesToRate(plans, "2027-04-25", []), []);
+  assert.deepEqual(placesToRate(plans, "2027-04-23", ["d"]).map((p) => p.placeId), ["a", "b"], "newest first, each place once");
+  assert.deepEqual(placesToRate(plans, "2027-04-25", []), [], "too long ago for a 1-day window");
+  assert.deepEqual(placesToRate(plans, "2027-04-25", ["b"], 3).map((p) => p.placeId), ["c", "a", "d"], "3-day window; skipped / rated left out");
+  assert.deepEqual(placesToRate(plans, "2027-04-23", [], 3).map((p) => p.placeId), ["a", "d", "b"], "never today's plans");
 });
