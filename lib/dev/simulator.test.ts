@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, TRIP_BUILDER_STAGES, type SimulatorPage } from "./simulator";
+import { HOME_COMPETITION_STAGES, HOME_MOMENTUM_STAGES, HOME_OVERVIEW_STAGES, HOME_PLAYERS_STAGES, HOME_UPCOMING_STAGES, daysAfter, samplePlayers, sampleUpcoming } from "./homeSections";
 import { randomMockTrip, simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
 import { palmSprings2026 } from "@/lib/data/2026-palm-springs";
@@ -296,4 +297,25 @@ test("Trip Builder preview stages survive the frame boundary; unknown stages are
   }
   assert.ok(TRIP_BUILDER_STAGES.includes("join-expired"));
   for (const invalid of ["open", "", 1]) assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, tripBuilderStage: invalid } }), null);
+});
+
+test("Golf Trip Home section conditionals survive simulator validation; unknown stages are dropped", () => {
+  const stages = { homeOverview: HOME_OVERVIEW_STAGES, homeMomentum: HOME_MOMENTUM_STAGES, homeUpcoming: HOME_UPCOMING_STAGES, homeCompetition: HOME_COMPETITION_STAGES, homePlayers: HOME_PLAYERS_STAGES } as const;
+  for (const [key, values] of Object.entries(stages)) {
+    for (const value of values) {
+      const state = { ...DEFAULT_SIMULATOR_STATE, [key]: value };
+      assert.equal(parseSimulatorConfig({ source: "maroon", state })?.state[key as keyof typeof state], value);
+    }
+    assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, [key]: "bogus" } }), null);
+  }
+});
+
+test("Home section samples: Upcoming boxes are timed on the trip day; photos only in the photos state", () => {
+  const live = sampleUpcoming("live", "2027-04-22T10:00");
+  assert.deepEqual(live.map(box => box.status), ["LIVE", "NEXT"]);
+  assert.equal(live[0].item.startsAt.slice(0, 10), "2027-04-22");
+  assert.deepEqual(sampleUpcoming("next", "2027-04-22T10:00").map(box => box.status), ["NEXT", "UPCOMING"]);
+  assert.equal(daysAfter("2027-12-31", 1), "2028-01-01");
+  assert.ok(samplePlayers(false).every(player => !player.avatarUrl));
+  assert.ok(samplePlayers(true).some(player => player.avatarUrl) && samplePlayers(true).some(player => !player.avatarUrl));
 });

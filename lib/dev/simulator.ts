@@ -6,6 +6,7 @@ import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 import { ALL_NOTIFICATION_PREVIEWS, type NotificationPreview } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
+import { HOME_COMPETITION_STAGES, HOME_MOMENTUM_STAGES, HOME_OVERVIEW_STAGES, HOME_PLAYERS_STAGES, HOME_UPCOMING_STAGES, type HomeCompetitionStage, type HomeMomentumStage, type HomeOverviewStage, type HomePlayersStage, type HomeUpcomingStage } from "./homeSections";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
 // Dimensions/provenance and browser-emulation limits: docs/dev-simulator-review.md.
@@ -33,7 +34,9 @@ export const SIMULATOR_SOURCES = [
   { id: "masters", label: "The Maroon Masters (official)" },
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
-export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };
+export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean;
+  /** A heading the panel shows above this card when it starts a new group (e.g. Golf Trip → Home's sections). */
+  section?: string };
 export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean;
   /** Another LOCAL development server that serves this page (e.g. http://localhost:3002). No simulator bridge reaches it. */
   origin?: string };
@@ -99,6 +102,13 @@ export type SimulatorState = {
   venueStage?: "list" | "loading" | "category" | "saved" | "empty" | "no-destination";
   /** Golf Trip → Home: the "How was yesterday?" after-visit rating prompt. Unset = "off". */
   ratingStage?: "off" | "prompt" | "one" | "done";
+  /** Golf Trip → Home sections (lib/dev/homeSections.ts). Unset = that section shows the trip's own data. */
+  homeOverview?: HomeOverviewStage;
+  homeMomentum?: HomeMomentumStage;
+  homeUpcoming?: HomeUpcomingStage;
+  /** none = "No competition"; empty = competition, nothing scheduled yet. The draft cards use dualDraftMomentum / matchDraftPreview. */
+  homeCompetition?: HomeCompetitionStage;
+  homePlayers?: HomePlayersStage;
   /** Authentication → Birthday: boxes empty / the shared calendar open / a birthday filled in. Unset = "empty". */
   birthdayStage?: "empty" | "calendar" | "picked";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
@@ -206,6 +216,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;
+  for (const [key, allowed] of [["homeOverview", HOME_OVERVIEW_STAGES], ["homeMomentum", HOME_MOMENTUM_STAGES], ["homeUpcoming", HOME_UPCOMING_STAGES], ["homeCompetition", HOME_COMPETITION_STAGES], ["homePlayers", HOME_PLAYERS_STAGES]] as const)
+    if (state[key] !== undefined && !(allowed as readonly unknown[]).includes(state[key])) return null;
   if (state.birthdayStage !== undefined && !["empty", "calendar", "picked"].includes(String(state.birthdayStage))) return null;
   if (state.tripBuilderStage !== undefined && !(TRIP_BUILDER_STAGES as readonly unknown[]).includes(state.tripBuilderStage)) return null;
   if (state.photoStage !== undefined && !["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"].includes(String(state.photoStage))) return null;

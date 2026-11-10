@@ -21,6 +21,9 @@
 .workspace{grid-template-columns:var(--groups-width) var(--pages-width) var(--conditions-width) minmax(var(--preview-min-width),1fr) 230px;min-width:0;gap:12px;height:100dvh}
 .shell{overflow-x:auto}.controls{padding:20px 16px 30px;border-inline:1px solid var(--studio-line)}
 .cards{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+/* A group heading inside the Conditionals list (e.g. Golf Trip → Home: Whole trip, Overview, Momentum, …). */
+.conditionSection{margin:14px 0 0;font:700 10px/1.2 system-ui,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#8b7280}
+.conditionSection:first-child{margin-top:0}
 .card{width:100%;text-align:left;padding:10px 12px;border:1px solid #dfe2e8;border-radius:8px;background:#fafbfc;color:#424956;font:12px/1.5 system-ui,sans-serif;cursor:pointer}
 .card:hover{border-color:#a66679;background:#faf4f6}.card[aria-pressed=true]{border-color:var(--brand-751830);background:#f5e9ed;color:var(--brand-670f24);box-shadow:inset 3px 0 var(--brand-751830);font-weight:650}
 .card small{display:block;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,monospace;color:#828895;margin-top:4px}

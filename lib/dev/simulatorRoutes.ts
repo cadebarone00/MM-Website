@@ -3,7 +3,7 @@ import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
-import { SIMULATOR_SOURCES, type SimulatorPage } from "./simulator";
+import { SIMULATOR_SOURCES, type SimulatorConditional, type SimulatorPage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { AUTH_SCREENS } from "./authScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
@@ -208,14 +208,55 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
   // Golf Trip Active → Home: the after-visit rating prompt ("How was yesterday?", phase 4 of the Venue places plan).
+  // Home's Conditionals are grouped under headings: the whole trip first, then each Home section top to bottom.
   const tripHome = pages.find(page => page.id === "/dev/tournament");
-  if (tripHome) tripHome.conditions = [
-    ...(tripHome.conditions ?? []),
-    { id: "rating-off", label: "Rating prompt · hidden", state: { ratingStage: "off" } },
-    { id: "rating-prompt", label: "Rating prompt · How was yesterday?", state: { ratingStage: "prompt" } },
-    { id: "rating-one", label: "Rating prompt · one place rated", state: { ratingStage: "one" } },
-    { id: "rating-done", label: "Rating prompt · thank you", state: { ratingStage: "done" } },
-  ];
+  if (tripHome) {
+    const isDraft = (id: string) => id === "dual-draft-momentum" || id === "home-draft-configured" || id.startsWith("home-match-draft-");
+    const existing = tripHome.conditions ?? [];
+    const section = (name: string, conditions: SimulatorConditional[]) => conditions.map(condition => ({ ...condition, section: name }));
+    tripHome.conditions = [
+      ...section("Whole trip", existing.filter(condition => !isDraft(condition.id))),
+      ...section("Overview", [
+        { id: "home-overview-source", label: "From trip data", state: { homeOverview: "source" } },
+        { id: "home-overview-normal", label: "Normal (destination, dates, weather)", state: { homeOverview: "normal" } },
+        { id: "home-overview-weather-loading", label: "Weather loading", state: { homeOverview: "weather-loading" } },
+        { id: "home-overview-no-destination", label: "No destination (no weather)", state: { homeOverview: "no-destination" } },
+        { id: "home-overview-no-dates", label: "No dates yet", state: { homeOverview: "no-dates" } },
+      ]),
+      ...section("Momentum", [
+        { id: "home-momentum-source", label: "From trip data", state: { homeMomentum: "source" } },
+        { id: "home-momentum-highlights", label: "Highlights rotating", state: { homeMomentum: "highlights" } },
+        { id: "home-momentum-arrival", label: "Countdown to arrival", state: { homeMomentum: "arrival" } },
+        { id: "home-momentum-next-round", label: "Next round", state: { homeMomentum: "next-round" } },
+        { id: "home-momentum-empty", label: "Nothing yet", state: { homeMomentum: "empty" } },
+      ]),
+      ...section("Upcoming", [
+        { id: "home-upcoming-source", label: "From trip data", state: { homeUpcoming: "source" } },
+        { id: "home-upcoming-live", label: "Live / Now + Next", state: { homeUpcoming: "live" } },
+        { id: "home-upcoming-next", label: "Next + Upcoming", state: { homeUpcoming: "next" } },
+        { id: "home-upcoming-none", label: "Nothing else coming up", state: { homeUpcoming: "none" } },
+        { id: "home-upcoming-flights", label: "No itinerary (Flights card)", state: { homeUpcoming: "flights" } },
+      ]),
+      ...section("Competition", [
+        { id: "home-competition-source", label: "From trip data", state: { homeCompetition: "source", dualDraftMomentum: false, matchDraftPreview: "off" } },
+        { id: "home-competition-none", label: "No competition", state: { homeCompetition: "none", dualDraftMomentum: false, matchDraftPreview: "off" } },
+        { id: "home-competition-empty", label: "Competition, nothing scheduled", state: { homeCompetition: "empty", dualDraftMomentum: false, matchDraftPreview: "off" } },
+        ...existing.filter(condition => isDraft(condition.id)).map(condition => ({ ...condition, state: { ...condition.state, homeCompetition: "source" as const } })),
+      ]),
+      ...section("Players", [
+        { id: "home-players-source", label: "From trip data", state: { homePlayers: "source" } },
+        { id: "home-players-none", label: "No players yet", state: { homePlayers: "none" } },
+        { id: "home-players-list", label: "Players list", state: { homePlayers: "list" } },
+        { id: "home-players-photos", label: "Some players with profile photos", state: { homePlayers: "photos" } },
+      ]),
+      ...section("Rating prompt", [
+        { id: "rating-off", label: "Rating prompt · hidden", state: { ratingStage: "off" } },
+        { id: "rating-prompt", label: "Rating prompt · How was yesterday?", state: { ratingStage: "prompt" } },
+        { id: "rating-one", label: "Rating prompt · one place rated", state: { ratingStage: "one" } },
+        { id: "rating-done", label: "Rating prompt · thank you", state: { ratingStage: "done" } },
+      ]),
+    ];
+  }
   // Golf Trip Active → Venue: the place-recommendation states (project_specs.md "Venue tab → Places recommendations").
   const venue = pages.find(page => page.id === "trip-Venue");
   if (venue) venue.conditions = [

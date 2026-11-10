@@ -43,8 +43,10 @@ const subscribeReminders = (change: () => void) => {
 };
 
 /** Existing team draft and next match draft occupy separate Home cards. */
-export function TripDraftWidget({ draft, startAt, editHref, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"] }: {
+export function TripDraftWidget({ draft, startAt, editHref, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"], fallback = null }: {
   draft?: TeamDraft; startAt?: string; editHref?: string; players?: DraftRoomPlayer[]; scope?: string; rounds?: MomRound[]; playedThrough?: number; teamNames?: string[];
+  /** Shown instead when there is no team draft or match draft card. */
+  fallback?: ReactNode;
 }) {
   const seconds = useSyncExternalStore(subscribe, nowSeconds, () => null);
   const simulator = useSimulator();
@@ -84,6 +86,7 @@ export function TripDraftWidget({ draft, startAt, editHref, players = [], scope 
   return <>
     {board && team && <section className={styles.draftWidget} aria-label="Upcoming team draft"><DraftStrip draft={team} board={board} now={now} editHref={editHref} players={players}/></section>}
     {!board && teamsReady && next && <section className={styles.draftWidget} aria-label="Upcoming match draft"><DraftStrip draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course+" - "+next.format+" - "+next.type} onOpen={()=>setOpenRound(next.key)}/></section>}
+    {!board && !(teamsReady && next) && fallback}
     {openRound && <TripMatchDraftRoom modal rounds={matchRounds} players={matchPlayers} initialRound={openRound} teamNames={names} canEdit={!!editHref && !saved?.readOnly && teamsReady && !board} onClose={()=>setOpenRound(null)}/>}
   </>;
 }

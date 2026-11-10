@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { TripFeed } from "./TripFeed";
+import { TripFeedTab } from "./TripFeedTab";
 import { GolfTripTitle } from "./GolfTripTitle";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, Bell, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Settings, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
@@ -37,6 +37,8 @@ import { placesToRate, RATE_WITHIN_DAYS } from "@/lib/platform/venuePlaces";
 import { ItineraryDetailSheet } from "./ItineraryDetailSheet";
 import { shortPlace } from "@/lib/platform/placeLabel";
 import { MomSection } from "./MomSection";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
+import { SAMPLE_DATE_RANGE, SAMPLE_DESTINATION, SAMPLE_HIGHLIGHTS, SAMPLE_WEATHER, daysAfter, forcedStage, sampleNextRound, samplePlayers, sampleUpcoming } from "@/lib/dev/homeSections";
 import type { MomRound } from "@/lib/platform/momNotifications";
 import { TeamDraftNotice, TripMomentum, TripDraftWidget } from "./TripMomentum";
 import type { MomentumEvent } from "@/lib/platform/tripPush";
@@ -44,6 +46,7 @@ import type { TeamDraft } from "@/lib/platform/teamDraft";
 import { useTripMomentum, type TripAlertScope } from "./useTripMomentum";
 import { GolfTripNotifications } from "./GolfTripNotifications";
 import { getPlayerDisplayName } from "@/lib/data/players";
+import { MaroonMark } from "@/components/brand/MaroonMark";
 import styles from "./GolfTripHome.module.css";
 import { GolfTripPredict } from "./GolfTripPredict";
 import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
@@ -1002,13 +1005,27 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
   /** Everyone who's joined the trip (the Golf leaderboard's players): name, then @username. */
   players?: GolfMatchPreview["leaderboard"][number]["golfer"][];
 }) {
-  const destination = draft.destination;
-  const tripDateRange = dateRangeLabel(draft.startDate, draft.endDate);
+  // Dev simulator only: each Home section can be forced into one of its states (Conditionals, lib/dev/homeSections.ts).
+  const simulator = useSimulator();
+  const sim = process.env.NODE_ENV === "development" ? simulator?.state : undefined;
+  const overview = forcedStage(sim?.homeOverview), momentum = forcedStage(sim?.homeMomentum), upcoming = forcedStage(sim?.homeUpcoming), competition = forcedStage(sim?.homeCompetition), playerStage = forcedStage(sim?.homePlayers);
+  const destination = overview === "no-destination" ? undefined : overview ? draft.destination || SAMPLE_DESTINATION : draft.destination;
+  const realDateRange = dateRangeLabel(draft.startDate, draft.endDate);
+  const tripDateRange = overview === "no-dates" ? "" : overview ? realDateRange || SAMPLE_DATE_RANGE : realDateRange;
+  const shownWeather = overview === "no-destination" ? undefined : overview === "weather-loading" ? WEATHER_NEVER : overview ? weather ?? WEATHER_SAMPLE : weather;
+  const shownPlayers: { name: string; avatarUrl?: string | null; username?: string | null }[] = playerStage === "none" ? [] : playerStage ? samplePlayers(playerStage === "photos") : players;
   // Two boxes with a status top right: LIVE (a golf round in play) or NOW (anything else happening), then NEXT; with nothing
   // happening, NEXT then UPCOMING. "now" is read once, when Home opens (or comes from the dev trip clock).
   const [deviceNow] = useState(() => localNow(new Date()));
   const now = tripNow?.slice(0, 16) ?? deviceNow;
-  const boxes = itinerary ? homeBoxes(itinerary, now, liveRound) : [];
+  const shownItinerary = upcoming === "flights" ? undefined : upcoming ? itinerary ?? [] : itinerary;
+  const boxes = upcoming === "live" || upcoming === "next" ? sampleUpcoming(upcoming, now) : upcoming === "none" ? [] : itinerary ? homeBoxes(itinerary, now, liveRound) : [];
+  const today = now.slice(0, 10);
+  const momFallback = momentum === "empty" ? null
+    : momentum === "arrival" ? <MomSection arrivalDay={daysAfter(today, 30)} plans={[]} startAt={tripNow} />
+    : momentum === "next-round" ? <MomSection arrivalDay={daysAfter(today, -1)} plans={[]} startAt={tripNow} rounds={sampleNextRound(today)} afterRound={0} />
+    : <MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} />;
+  const competitionNote = <p className={styles.homePlayersEmpty}>{competition === "none" || (!competition && draft.includesTournament !== "yes") ? "No competition" : "Team drafts, matches and skins will show here."}</p>;
   return <div className={styles.account}>
     {/* Maroon head: the heading + weather, then the Mom section; the boxes below overlap its bottom edge. */}
     <div className={styles.accountHead}>
@@ -1020,22 +1037,20 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
         {tripDateRange && <p className={styles.accountDates}>{tripDateRange}</p>}
       </div>
       {/* Right 35%: quick weather at the destination (only when the trip has a weather lookup). */}
-      {weather && <Suspense fallback={<div className={styles.quickWeather} role="status"><span className={styles.quickTemp}>—°</span><span className={styles.quickCondition}>Loading weather…</span></div>}>
-        <QuickWeather weather={weather} />
+      {shownWeather && <Suspense fallback={<div className={styles.quickWeather} role="status"><span className={styles.quickTemp}>—°</span><span className={styles.quickCondition}>Loading weather…</span></div>}>
+        <QuickWeather weather={shownWeather} />
       </Suspense>}
     </div>
     {/* Momentum (between the heading and the boxes): round highlights during the trip,
         otherwise Mom — my live notifications, a countdown to arrival day, or the next round. */}
     <div className={styles.momSlot}>
-      <TripMomentum events={momentumEvents}
-        fallback={<MomSection travel={travel} arrivalDay={draft.startDate} plans={itinerary ?? []} startAt={tripNow} rounds={rounds} afterRound={afterRound} />} />
+      <TripMomentum events={momentum === "highlights" ? SAMPLE_HIGHLIGHTS : momentum ? [] : momentumEvents} fallback={momFallback} />
     </div>
     </div>
-    {/* Two boxes, one over the other, 5% in from each side: LIVE / NOW then NEXT, or NEXT then UPCOMING (status top right).
+    {/* Upcoming: two boxes, one over the other, 5% in from each side: LIVE / NOW then NEXT, or NEXT then UPCOMING (status top right).
         Tap one to open Info → Itinerary. Trips without an itinerary keep the Flights card. */}
     <div className={styles.liveBoxes}>
-      <TripDraftWidget scope={draftScope} rounds={draft.includesTournament === "yes" ? rounds : []} playedThrough={afterRound} teamNames={teamNames} players={draftPlayers} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} />
-      {itinerary
+      {shownItinerary
         ? boxes.length
           ? boxes.map(({ status, item }) => <ItineraryCard key={item.id} status={status} item={item} onOpen={onOpenItinerary} />)
           : <button type="button" className={`${styles.accountCard} ${styles.itineraryCard}`} onClick={onOpenItinerary}>
@@ -1045,19 +1060,25 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
           </button>
         : <FlightsCard flights={flights} />}
     </div>
-    <section className={styles.homeFeed} aria-labelledby="home-feed-heading">
-      <h2 id="home-feed-heading" className={styles.accountHeading}>Feed</h2>
-      <TripFeed key={draftScope} />
+    {/* Feed: a tab on the right edge (above Pick'ems) that grows into a full-screen Feed. */}
+    <TripFeedTab scope={draftScope} />
+    {/* Competition: the team draft / match draft cards (moved out of Upcoming), later skins etc. Nothing yet → one short line. */}
+    <section className={styles.homePlayers} aria-labelledby="home-competition-heading">
+      <h2 id="home-competition-heading" className={styles.accountHeading}>Competition</h2>
+      <div className={styles.homeCompetition}>
+        {competition ? competitionNote
+          : <TripDraftWidget scope={draftScope} rounds={draft.includesTournament === "yes" ? rounds : []} playedThrough={afterRound} teamNames={teamNames} players={draftPlayers} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} fallback={competitionNote} />}
+      </div>
     </section>
     <section className={styles.homePlayers} aria-labelledby="home-players-heading">
       <h2 id="home-players-heading" className={styles.accountHeading}>Players</h2>
-      {players.length
+      {shownPlayers.length
         ? <ul className={styles.homePlayerList}>
-          {players.map(player => <li key={player.name} className={styles.homePlayer}>
-            <span className={styles.homePlayerBadge} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : playerInitials(player.name)}</span>
+          {shownPlayers.map(player => <li key={player.name} className={styles.homePlayer}>
+            <span className={styles.homePlayerBadge} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.homePlayerMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
             <span className={styles.homePlayerWho}>
               <span className={styles.homePlayerName}>{player.name}</span>
-              <span className={styles.homePlayerUsername}>{player.username ? `@${player.username}` : "\u00a0"}</span>
+              <span className={styles.homePlayerUsername}>@{player.username || placeholderUsername(player.name)}</span>
             </span>
           </li>)}
         </ul>
@@ -1066,8 +1087,17 @@ function InfoAccount({ draftScope, teamNames, draft, draftPlayers, teamDraft, is
   </div>;
 }
 
-/** "Tiger Woods" → "TW" (a player with no profile photo). */
-const playerInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]!.toUpperCase()).join("") || "?";
+/** Dev simulator weather: still loading (never settles) / a sample forecast. Made once so React's use() sees the same promise. */
+const WEATHER_NEVER = new Promise<TripWeather>(() => {});
+const WEATHER_SAMPLE = Promise.resolve(SAMPLE_WEATHER);
+
+/** Placeholder until real usernames exist: "Tiger Woods" → "tigerwoods37". The number comes from the name, so it's the same every time. */
+function placeholderUsername(name: string): string {
+  const base = name.toLowerCase().replace(/[^a-z0-9]/g, "") || "player";
+  let hash = 0;
+  for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) % 997;
+  return `${base}${(hash % 90) + 10}`;
+}
 
 /** "Jan 7 – Jan 10, 2026": the year once, on the second date (on both if the trip crosses a year); one date if only one is set. */
 function dateRangeLabel(start: string | undefined, end: string | undefined): string {

@@ -347,10 +347,13 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
    initials), the name, and @username under it. Every row is one height (an empty username line is kept). */
 .homePlayers{padding:0 16px 8px}
 .homePlayers .accountHeading{padding:0}
+.homeCompetition{display:grid;gap:10px;margin-top:10px}
+.homeCompetition .homePlayersEmpty{margin-top:-2px !important}
 .homePlayerList{margin:10px 0 0;padding:0;list-style:none}
 .homePlayer{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .homePlayerBadge{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;overflow:hidden;background:#fbf8f1;color:var(--color-maroon-900);font:800 11px/1 var(--font-spectral),Georgia,serif}
 .homePlayerBadge img{width:100%;height:100%;object-fit:cover}
+.homePlayerMark{display:block;width:72%;height:72%}
 .homePlayerWho{display:flex;flex-direction:column;gap:1px;min-width:0}
 .homePlayerName{font:700 15px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .homePlayerUsername{font:500 12px/1.25 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
