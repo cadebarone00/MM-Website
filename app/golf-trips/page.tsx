@@ -7,6 +7,7 @@ import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from
 import { getUserGolfTrips } from "@/lib/platform/golfTripsServer";
 import { GolfTripJoin } from "@/components/platform/GolfTripJoin";
 import { SignInRequiredLink } from "@/components/platform/SignInRequiredLink";
+import { PastTripImport } from "@/components/platform/PastTripImport";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Golf Trips | The Maroon" };
@@ -50,7 +51,7 @@ export default async function GolfTripsPage() {
               <span className={styles.rowText}><span className={styles.rowName}>No upcoming trip yet</span></span>
               <span className={styles.rowValue}>Start <Plus size={16} strokeWidth={2.5} aria-hidden="true" /></span>
             </Link>} />
-          <TripSection id="past-trips" heading="Past Trips" trips={past} icon={Flag}
+          <TripSection id="past-trips" heading="Past Trips" trips={past} icon={Flag} action={<PastTripImport />}
             empty={<div className={styles.row}>
               <span className={styles.iconBox} aria-hidden="true"><Flag size={18} strokeWidth={2} /></span>
               <span className={styles.rowText}><span className={styles.rowName}>No past trips yet</span></span>
@@ -73,9 +74,10 @@ export default async function GolfTripsPage() {
 }
 
 /** One "accounts"-style group: a small caps heading, then a white card of rows (or one empty row). */
-function TripSection({ id, heading, trips, icon: Icon, empty }: { id: string; heading: string; trips: GolfTripSummary[]; icon: LucideIcon; empty: ReactNode }) {
+/** `action`: a button beside the heading (Past Trips → Import past trip). */
+function TripSection({ id, heading, trips, icon: Icon, empty, action }: { id: string; heading: string; trips: GolfTripSummary[]; icon: LucideIcon; empty: ReactNode; action?: ReactNode }) {
   return <section aria-labelledby={id}>
-    <h2 id={id} className={styles.heading}>{heading}</h2>
+    <div className={styles.headingRow}><h2 id={id} className={styles.heading}>{heading}</h2>{action}</div>
     <div className={styles.card}>
       {trips.length > 0
         ? <ul className={styles.tripList}>

@@ -5,7 +5,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { SavedGolfTripHome } from "@/components/platform/SavedGolfTripHome";
 import { golfTripUrl, savedTripAsDraft } from "@/lib/platform/golfTripCreate";
-import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
+import { getGolfTrip, getImportedTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
+import { ImportedGolfTripHome } from "@/components/platform/ImportedGolfTripHome";
+import { importedTripView } from "@/lib/platform/importedTripPresentation";
 import { getScorecardCorrections, loadLiveTripScoring, loadPlayedTripRound } from "@/lib/platform/tripScoringServer";
 import { flightSummary } from "@/lib/platform/golfTripFlights";
 
@@ -24,6 +26,12 @@ export default async function SavedGolfTripPage({ params, searchParams }: { para
   const view = await getGolfTrip(tripId);
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
+
+  // Imported past trip (Golf Trips → Import past trip): its results, read only. Nothing to score or plan.
+  const imported = view.trip.trip.imported ? await getImportedTrip(tripId, view.viewer.profileId) : null;
+  if (imported) return <ImportedGolfTripHome savedTrip={view.trip} view={importedTripView(imported.trip, view.trip.members)}
+    editing={imported.revision > 0 ? { imported: imported.trip, revision: imported.revision, memberId: view.viewer.memberId, organizer: view.viewer.isOrganizer,
+      endpoint: `/api/golf-trips/${tripId}/imported-results` } : undefined} />;
 
   // Weather is turned off: the app will use the phone's own weather (e.g. Apple Weather on iOS) instead of the
   // National Weather Service. Without a `weather` prop, Home shows no Weather card and no quick weather.

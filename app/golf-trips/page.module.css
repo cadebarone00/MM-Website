@@ -136,6 +136,10 @@
   color: color-mix(in srgb,var(--color-maroon-800) 80%,transparent);
 }
 
+/* A heading with a button on its right (Past Trips → Import past trip). */
+.headingRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 20px 0 8px; }
+.headingRow .heading { margin: 0 4px; }
+
 .card { overflow: hidden; }
 .tripList { margin: 0; padding: 0; list-style: none; }
 .tripList li + li .row { border-top: 1px solid color-mix(in srgb,var(--color-maroon-800) 7.1%,transparent); }

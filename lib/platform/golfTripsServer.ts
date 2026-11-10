@@ -8,6 +8,7 @@ import { membersForViewer } from "./golfTripMembers.ts";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
 import { profilePhotoUrl } from "@/lib/profile/profilePhoto";
+import { importedTripFromJson, type ImportedTrip } from "./pastTripImport.ts";
 
 /**
  * Server-side Golf Trips (supabase/golf_trips.sql, golf_trip_invitations.sql). The golfer is the signed-in
@@ -57,6 +58,20 @@ export async function withMemberPhotos(members: SavedGolfTrip["members"], viewer
     photos.set(row.id, row.id === viewerId || row.rounds_visibility === "public" ? profilePhotoUrl(row.avatar_path) : null);
   }
   return members.map((m) => (m.profileId && photos.get(m.profileId) ? { ...m, avatarUrl: photos.get(m.profileId) } : m));
+}
+
+/** An imported trip's results (supabase/golf_trip_import.sql) and their revision (golf_trip_import_edits.sql; 0 before
+ *  that file is run, when results can't be fixed yet) for a member of it; null for anyone else or a trip that wasn't imported. */
+export async function getImportedTrip(tripId: string, profileId: string): Promise<{ trip: ImportedTrip; revision: number } | null> {
+  if (!isGolfTripId(tripId)) return null;
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip_imported_results", { p_profile: profileId, p_trip: tripId });
+  if (error) {
+    console.error("get_golf_trip_imported_results failed:", error.message);
+    return null;
+  }
+  const withRevision = data && typeof data === "object" && "revision" in data ? data as { results: unknown; revision: unknown } : null;
+  const trip = importedTripFromJson(withRevision ? withRevision.results : data);
+  return trip ? { trip, revision: withRevision && Number.isInteger(withRevision.revision) ? withRevision.revision as number : 0 } : null;
 }
 
 export type MyGolfTripFlights =

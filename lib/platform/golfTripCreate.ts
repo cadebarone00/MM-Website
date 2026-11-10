@@ -164,6 +164,8 @@ export interface SavedGolfTrip {
     latitude?: number | null; longitude?: number | null; external_place_id?: string | null;
     /** The read-only watch code (supabase/watch_codes.sql); missing before that file is run. */
     watch_code?: string | null;
+    /** Made by Golf Trips → Import past trip (supabase/golf_trip_import.sql); missing before that file is run. */
+    imported?: boolean;
   };
   /** username: only for members who accepted with a real profile (their /profile link); absent / null otherwise.
    *  avatarUrl: their profile photo, added by the server (golfTripsServer) when the viewer may see it; absent / null otherwise. */

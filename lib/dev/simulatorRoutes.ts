@@ -162,6 +162,9 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
     { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
+  // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
+  const importTrip = pages.find(page => page.path === "/dev/import-trip");
+  if (importTrip) Object.assign(importTrip, { label: "Import past trip (sample)", group: "Golf Trip Active", conditions: [] });
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [
