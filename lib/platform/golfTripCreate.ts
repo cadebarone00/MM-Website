@@ -132,7 +132,7 @@ export function golfTripPayloadFromBody(body: unknown):
 }
 
 /** The picked place's id and coordinates, or all null when any is missing, malformed or out of range (never an error). */
-function destinationPlace(placeId: string, latitudeText: string, longitudeText: string):
+export function destinationPlace(placeId: string, latitudeText: string, longitudeText: string):
   Pick<CreateGolfTripPayload, "latitude" | "longitude" | "externalPlaceId"> {
   const latitude = latitudeText ? Number(latitudeText) : NaN;
   const longitude = longitudeText ? Number(longitudeText) : NaN;

@@ -2,10 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { GENERAL_CARDS, LIVE_GENERAL_CARDS, ORGANIZER_SECTIONS } from "./tripSettingsSections.ts";
 
-test("Players is the first General card for everyone, and no longer under Organizer", () => {
-  assert.equal(GENERAL_CARDS[0], "Players");
-  assert.equal(LIVE_GENERAL_CARDS[0], "Players");
-  assert.equal(ORGANIZER_SECTIONS.some(group => (group.cards as readonly string[]).includes("Players")), false);
+test("General Settings then Players lead the General cards for everyone, and neither is under Organizer", () => {
+  for (const cards of [GENERAL_CARDS, LIVE_GENERAL_CARDS]) assert.deepEqual(cards.slice(0, 2), ["General Settings", "Players"]);
+  for (const card of ["General Settings", "Players"]) assert.equal(ORGANIZER_SECTIONS.some(group => (group.cards as readonly string[]).includes(card)), false);
 });
 
 test("the General grid keeps its size (6 boxes in the preview)", () => {

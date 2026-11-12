@@ -4197,3 +4197,24 @@ accepting the pretend server (the real one stays the default).
 
 **Done looks like:** each mock setup runs start → finish in the simulator; switching controller changes the phone; a
 wrong-person pick shows ❌-proof ("refused") and a correct one ✅; browser-checked; tests/lint/types clean.
+
+## Trip Settings → General → General Settings: the trip's basics in one place (owner request 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted; supabase/golf_trip_details.sql RUN in prod 2026-11-12)
+
+**Owner answers:** (a) Trip Name / Destination / Travel are changeable (new `update_golf_trip_details` + PATCH `/api/golf-trips/<id>/details`); (b) Travel included.
+
+**What it is:** The General Settings box (top left of Trip Settings → General) opens one page with the trip's basics from Trip Builder. **Everyone on the trip can open and see it. Only the organizer can change anything**; for players every control is shown but locked.
+
+**Sections on the page (top to bottom):**
+1. **Trip:** Trip Name and Destination (the same search used in Trip Builder step 1).
+2. **Dates:** Arrival and Departure (the same date picker). These **move here from Organizer → Golf Schedule**; Golf Schedule keeps "Golf on Arrival Day" / "Golf on Departure Day" and shows the dates as plain text.
+3. **Players:** the player amount (− / + stepper). It **moves here from General → Players**. The Players page then just shows "X of Y joined" (Y = this number); no stepper there. Same limits as today: can't go below the number already joined, max stays the same.
+4. **Golf Schedule:** a simple list the organizer can fill in any time: Round N, the course, and the date (one row per round, + Add Round). It writes to the **same rounds** as Organizer → Golf Schedule, so the two always match; tee times, groups and the rest stay only in Organizer → Golf Schedule.
+5. **Travel (suggested from Trip Builder):** "How's everyone getting there?" — Flying / Driving / A mix.
+
+**Not moved here:** "Are you all competing?", team structure and formats (already in Organizer → Competition); lodging (already on the Venue tab).
+
+**Where it's saved:** dates, player amount and rounds already save with the trip's settings (`/api/golf-trips/<id>/setup`), so no database change. **Trip Name, Destination and Travel are stored on the trip itself (travel as its flight plan answer) and nothing can change them after the trip is made yet**: editing them needs a new save route and probably a SQL change (OPEN QUESTION below).
+
+**Done looks like:** organizer can change each item on General Settings and it shows the same everywhere it's used (Golf Schedule, Players, trip Home); a player sees every item but can't change it; dev preview and saved trips both work; type check + tests pass; checked in the browser.
+
+**Open questions for the owner:** (a) Should Trip Name / Destination / Travel be editable now (needs a database change), or shown read-only for this step? (b) Include the Travel section, yes or no?
