@@ -1,0 +1,81 @@
+/* Trip Home → the Big Board: one gold-outlined box, dark maroon with the gold light coming from the top.
+   Fixed height in every state: top half 92px, a hairline, bottom half (plan 74px + title row 36px). */
+.board{box-sizing:border-box;display:flex;flex-direction:column;margin:23px 16px 0; /* 23px: the trip heading sits centered between the tabs and the board */ border:1px solid rgba(201,168,110,.6);border-radius:16px;overflow:hidden;color:#fbf8f1;
+  background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:0 10px 28px color-mix(in srgb,#000 35%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
+
+.top{box-sizing:border-box;height:92px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.top > *{margin:0}
+.divider{height:1px;margin:0 14px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.45),transparent)}
+
+/* Scores */
+.score{display:flex;flex-direction:column;justify-content:center;gap:6px;height:100%;padding:0 14px}
+.teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px}
+.team{display:flex;flex-direction:column;gap:2px;min-width:0}
+.teamRight{align-items:flex-end;text-align:right}
+.teamName{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#e3d3c7}
+.points{font:700 28px/1 var(--font-spectral),Georgia,serif;color:#fff5df}
+.toWin{display:flex;flex-direction:column;align-items:center;gap:2px;font:700 16px/1 var(--font-spectral),Georgia,serif;color:#edcf91}
+.toWin small{font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;color:#d4bfa9}
+.leader{display:flex;align-items:baseline;gap:10px;min-width:0}
+.leaderLabel{flex:none;font:700 10px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#edcf91}
+.leaderName{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 18px/1.2 var(--font-spectral),Georgia,serif}
+.thru{margin-left:6px;font:600 11px/1 var(--font-spectral),Georgia,serif;color:#d4bfa9}
+.line{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 12px/1.3 var(--font-spectral),Georgia,serif;color:#e3d3c7;animation:lineIn .5s ease-out}
+.line b{color:#edcf91;font-weight:700}
+@keyframes lineIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Upcoming: only this bottom half scrolls — sideways, one plan per page (plan 74px + its title row 36px), snapping. */
+.bottom{position:relative;height:110px}
+.track{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.page{flex:0 0 100%;display:flex;flex-direction:column;scroll-snap-align:start;min-width:0}
+.slide{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:4px;width:100%;height:74px;padding:0 14px;border:0;background:transparent;color:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.slide:focus-visible{outline:2px solid #edcf91;outline-offset:-4px;border-radius:12px}
+.title{box-sizing:border-box;height:36px;padding:0 48px 4px;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 15px/1.2 var(--font-spectral),Georgia,serif;color:#fff5df}
+.arrow{position:absolute;bottom:6px;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:color-mix(in srgb,#fbf8f1 8%,transparent);color:#edcf91;cursor:pointer}
+.arrowLeft{left:6px}
+.arrowRight{right:6px}
+.arrow:disabled{opacity:.3;cursor:default}
+.arrow:focus-visible{outline:2px solid #edcf91;outline-offset:1px}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Dots under the board: one per plan, the current one long and gold. The row always keeps its height. */
+.dots{display:flex;justify-content:center;align-items:center;gap:6px;height:16px;margin:8px 16px 0}
+.dot{width:6px;height:6px;padding:0;border:0;border-radius:3px;background:color-mix(in srgb,#fbf8f1 28%,transparent);cursor:pointer;transition:width .25s,background-color .25s}
+.dot[aria-selected=true]{width:18px;background:#edcf91}
+.dot:focus-visible{outline:2px solid #edcf91;outline-offset:2px}
+
+/* Team & Individual: a fading line down the middle — team score condensed on the left, the individual Top 5 on the right. */
+.split{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:12px;height:100%;box-sizing:border-box;padding:8px 14px}
+.splitLine{background:linear-gradient(transparent,rgba(201,168,110,.5),transparent)}
+.splitTeam{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+.splitRow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.splitRow .teamName{font-size:11px}
+.splitPoints{flex:none;font:700 20px/1 var(--font-spectral),Georgia,serif;color:#fff5df}
+.splitToWin{font:700 13px/1.2 var(--font-spectral),Georgia,serif;color:#edcf91}
+.splitToWin small{font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;color:#d4bfa9}
+.splitTeam .line{font-size:11px}
+.topFive{display:flex;flex-direction:column;justify-content:center;gap:2px;margin:0;padding:0;list-style:none;min-width:0}
+.topFive li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:6px;align-items:baseline}
+.topPlace{font:700 9px/1.3 var(--font-barlow),sans-serif;letter-spacing:.06em;color:#edcf91}
+.topName{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 12px/1.3 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.topTotal{font:700 12px/1.3 var(--font-spectral),Georgia,serif;color:#fff5df}
+
+/* Inside a plan (built on Trip Home): kind + status on one row, then when, then details. */
+.slideHead{display:flex;align-items:center;justify-content:space-between;gap:10px;font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#d4bfa9}
+.slideKind{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.slideStatus{display:inline-flex;align-items:center;gap:6px;flex:none;color:#edcf91}
+.slideStatus[data-live=true]{color:#ff6b6b}
+.slideStatus[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 0 3px rgba(255,107,107,.2)}
+.slideWhen{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 16px/1.2 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.slideDetail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 12px/1.2 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,#fbf8f1 65%,transparent)}
+
+@media(prefers-reduced-motion:reduce){.line{animation:none}.dot{transition:none}}
+
+/* Split score area: teams side by side; target below both. */
+.splitTeam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:center;gap:4px 8px}
+.splitRow{flex-direction:column;align-items:flex-start;gap:3px}
+.splitRow:nth-child(2){align-items:flex-end;text-align:right}
+.splitRow .teamName{max-width:100%}
+.splitToWin{grid-column:1/-1;justify-self:center;margin-top:3px}
+.splitTeam .line{grid-column:1/-1}

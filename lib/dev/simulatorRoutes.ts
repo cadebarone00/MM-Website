@@ -9,6 +9,8 @@ import { AUTH_SCREENS } from "./authScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
+import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAGE_COUNTS, TEAM_DRAFT_TYPES } from "./draftSim";
+import { teamDraftSize } from "@/lib/platform/teamDraft";
 
 /** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
 const AUTHDEV_ORIGIN = "http://localhost:3002";
@@ -214,8 +216,11 @@ export function simulatorPages(): SimulatorPage[] {
     const isDraft = (id: string) => id === "dual-draft-momentum" || id === "home-draft-configured" || id.startsWith("home-match-draft-");
     const existing = tripHome.conditions ?? [];
     const section = (name: string, conditions: SimulatorConditional[]) => conditions.map(condition => ({ ...condition, section: name }));
-    tripHome.conditions = [
-      ...section("Whole trip", existing.filter(condition => !isDraft(condition.id))),
+    // Home keeps the whole-trip conditionals; each thing on Home gets its own page under it, with its own conditionals.
+    tripHome.conditions = section("Whole trip", existing.filter(condition => !isDraft(condition.id)));
+    const sub = (slug: string, label: string, conditions: SimulatorConditional[]) => pages.splice(pages.indexOf(tripHome) + 1 + pages.filter(page => page.parentId === tripHome.id).length, 0,
+      { ...tripHome, id: "home-" + slug, label, parentId: tripHome.id, section: undefined, navigation: { tab: "Home" }, conditions });
+    sub("overview", "Overview", [
       ...section("Overview", [
         { id: "home-overview-source", label: "From trip data", state: { homeOverview: "source" } },
         { id: "home-overview-normal", label: "Normal (destination, dates, weather)", state: { homeOverview: "normal" } },
@@ -223,39 +228,64 @@ export function simulatorPages(): SimulatorPage[] {
         { id: "home-overview-no-destination", label: "No destination (no weather)", state: { homeOverview: "no-destination" } },
         { id: "home-overview-no-dates", label: "No dates yet", state: { homeOverview: "no-dates" } },
       ]),
-      ...section("Momentum", [
+    ]);
+    sub("big-board", "Big Board", [
+      ...section("Big Board · top", [
         { id: "home-momentum-source", label: "From trip data", state: { homeMomentum: "source" } },
+        { id: "home-momentum-team-scores", label: "Team scores + highlights", state: { homeMomentum: "team-scores" } },
+        { id: "home-momentum-split", label: "Team + Top 5 split (Team & Individual)", state: { homeMomentum: "split" } },
+        { id: "home-momentum-leader", label: "Individual leader + highlights", state: { homeMomentum: "leader" } },
         { id: "home-momentum-highlights", label: "Highlights rotating", state: { homeMomentum: "highlights" } },
         { id: "home-momentum-arrival", label: "Countdown to arrival", state: { homeMomentum: "arrival" } },
         { id: "home-momentum-next-round", label: "Next round", state: { homeMomentum: "next-round" } },
         { id: "home-momentum-empty", label: "Nothing yet", state: { homeMomentum: "empty" } },
       ]),
-      ...section("Upcoming", [
+      ...section("Big Board · upcoming", [
         { id: "home-upcoming-source", label: "From trip data", state: { homeUpcoming: "source" } },
-        { id: "home-upcoming-live", label: "Live / Now + Next", state: { homeUpcoming: "live" } },
-        { id: "home-upcoming-next", label: "Next + Upcoming", state: { homeUpcoming: "next" } },
+        { id: "home-upcoming-live", label: "Live round, then 4 more plans", state: { homeUpcoming: "live" } },
+        { id: "home-upcoming-next", label: "Next, then 3 more plans", state: { homeUpcoming: "next" } },
         { id: "home-upcoming-none", label: "Nothing else coming up", state: { homeUpcoming: "none" } },
-        { id: "home-upcoming-flights", label: "No itinerary (Flights card)", state: { homeUpcoming: "flights" } },
+        { id: "home-upcoming-flights", label: "No itinerary (Flights slide)", state: { homeUpcoming: "flights" } },
       ]),
-      ...section("Competition", [
-        { id: "home-competition-source", label: "From trip data", state: { homeCompetition: "source", dualDraftMomentum: false, matchDraftPreview: "off" } },
-        { id: "home-competition-none", label: "No competition", state: { homeCompetition: "none", dualDraftMomentum: false, matchDraftPreview: "off" } },
-        { id: "home-competition-empty", label: "Competition, nothing scheduled", state: { homeCompetition: "empty", dualDraftMomentum: false, matchDraftPreview: "off" } },
-        ...existing.filter(condition => isDraft(condition.id)).map(condition => ({ ...condition, state: { ...condition.state, homeCompetition: "source" as const } })),
+    ]);
+    sub("team-draft", "Team Draft", teamDraftConditions());
+    // Team Draft → one room page per team type; its "start here" sample opens the room.
+    const teamDraftPage = pages.find(page => page.id === "home-team-draft")!;
+    pages.splice(pages.indexOf(teamDraftPage) + 1, 0, ...TEAM_DRAFT_TYPES.map(type => ({ ...teamDraftPage, id: "home-team-draft-" + type.toLowerCase().replace(/\s+/g, "-"),
+      label: type + " room", parentId: teamDraftPage.id, conditions: teamDraftConditions(type) })));
+    sub("match-selection", "Match Selection", matchSelectionConditions());
+    sub("invite", "Invite players", [
+      ...section("Invite players", [
+        { id: "home-invite-source", label: "From trip data", state: { homeInvite: "source" } },
+        { id: "home-invite-ready", label: "Link ready", state: { homeInvite: "ready" } },
+        { id: "home-invite-loading", label: "Getting the link", state: { homeInvite: "loading" } },
+        { id: "home-invite-copied", label: "Link copied", state: { homeInvite: "copied" } },
+        { id: "home-invite-off", label: "Invite links switched off", state: { homeInvite: "off" } },
       ]),
+    ]);
+    sub("players", "Players", [
       ...section("Players", [
         { id: "home-players-source", label: "From trip data", state: { homePlayers: "source" } },
         { id: "home-players-none", label: "No players yet", state: { homePlayers: "none" } },
         { id: "home-players-list", label: "Players list", state: { homePlayers: "list" } },
         { id: "home-players-photos", label: "Some players with profile photos", state: { homePlayers: "photos" } },
       ]),
+    ]);
+    sub("competition", "Competition", [
+      ...section("Competition", [
+        { id: "home-competition-source", label: "From trip data", state: { homeCompetition: "source", dualDraftMomentum: false, matchDraftPreview: "off" } },
+        { id: "home-competition-none", label: "No competition", state: { homeCompetition: "none", dualDraftMomentum: false, matchDraftPreview: "off" } },
+        { id: "home-competition-empty", label: "Sample summary", state: { homeCompetition: "empty", dualDraftMomentum: false, matchDraftPreview: "off" } },
+      ]),
+    ]);
+    sub("rating", "Rating prompt", [
       ...section("Rating prompt", [
         { id: "rating-off", label: "Rating prompt · hidden", state: { ratingStage: "off" } },
         { id: "rating-prompt", label: "Rating prompt · How was yesterday?", state: { ratingStage: "prompt" } },
         { id: "rating-one", label: "Rating prompt · one place rated", state: { ratingStage: "one" } },
         { id: "rating-done", label: "Rating prompt · thank you", state: { ratingStage: "done" } },
       ]),
-    ];
+    ]);
   }
   // Golf Trip Active → Venue: the place-recommendation states (project_specs.md "Venue tab → Places recommendations").
   const venue = pages.find(page => page.id === "trip-Venue");
@@ -298,6 +328,58 @@ export function simulatorPages(): SimulatorPage[] {
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);
   groupOrder.splice(groupOrder.indexOf("Golf Trip Active") + 1, 0, "Golf Trip Onboarding");
   return pages.sort((a, b) => a.group !== b.group ? groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group) : a.group === "Golf Trip Onboarding" ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
+}
+
+/**
+ * Home → Team Draft: every way the team draft can be set up (lib/dev/draftSim.ts). Each one turns the sample on. With a
+ * team type (the room pages), every conditional keeps that type and the sample opens the room.
+ */
+function teamDraftConditions(type?: (typeof TEAM_DRAFT_TYPES)[number]): SimulatorConditional[] {
+  const team = (id: string, label: string, section: string, state: NonNullable<SimulatorConditional["state"]>) =>
+    ({ id: "team-draft-" + id, label, section, state: { draftSim: "team" as const, ...(type ? { teamDraftType: type } : {}), ...state } });
+  return [
+    { id: "team-draft-source", label: "From trip data", section: "Show", state: { draftSim: "off" } },
+    type ? team("sample", `Sample ${type} draft, room open (start here)`, "Show", { ...DRAFT_SIM_DEFAULTS, teamDraftType: type, teamDraftPlayers: type === "3-Ball" ? 12 : 8, draftRoom: "open" })
+      : team("sample", "Sample team draft (start here)", "Show", { ...DRAFT_SIM_DEFAULTS }),
+    ...(type ? [] : TEAM_DRAFT_TYPES.map(item => team("type-" + item.toLowerCase().replace(/\s+/g, "-"), item, "Team type", { teamDraftType: item }))),
+    team("captains", "Captain's Picks", "Draft type", { teamDraftMethod: "Captain's Picks" }),
+    team("duck-race", "Duck Race", "Draft type", { teamDraftMethod: "Duck Race" }),
+    team("snake", "Snake (A, B, B, A…)", "Draft order", { teamDraftOrder: "Snake" }),
+    team("straight", "Straight (A, B, A, B…)", "Draft order", { teamDraftOrder: "Straight" }),
+    ...TEAM_DRAFT_PAGE_COUNTS[type ?? "2 Teams"].map(count => {
+      const size = teamDraftSize(type), over = size ? count % size : 0;
+      return team("players-" + count, `${count} players` + (size ? ` (${Math.floor(count / size)} teams${over ? `, ${over} left over` : ""})` : count % 2 ? " (odd number)" : ""), "Players", { teamDraftPlayers: count });
+    }),
+    team("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
+    team("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
+    team("when-reached", "Draft time reached", "When", { draftWhen: "reached" }),
+    team("picked-none", "No one picked yet", "Teams", { teamDraftPicked: "none" }),
+    team("picked-half", "Half the players picked", "Teams", { teamDraftPicked: "half" }),
+    team("picked-all", "Everyone picked", "Teams", { teamDraftPicked: "all" }),
+    team("room-closed", "Draft Room closed", "Draft Room", { draftRoom: "closed" }),
+    team("room-open", "Draft Room open", "Draft Room", { draftRoom: "open" }),
+  ];
+}
+
+/** Home → Match Selection: every way a round's match selection can be set up (lib/dev/draftSim.ts). */
+function matchSelectionConditions(): SimulatorConditional[] {
+  const match = (id: string, label: string, section: string, state: NonNullable<SimulatorConditional["state"]>) =>
+    ({ id: "match-sel-" + id, label, section, state: { draftSim: "match" as const, ...state } });
+  return [
+    { id: "match-sel-source", label: "From trip data", section: "Show", state: { draftSim: "off" } },
+    match("sample", "Sample match selection (start here)", "Show", { ...DRAFT_SIM_DEFAULTS }),
+    ...MATCH_SEL_TYPES.map(type => match("type-" + type.toLowerCase(), type, "Type", { matchSelType: type })),
+    match("singles", "Singles (1 v 1)", "Format", { matchSelFormat: "singles" }),
+    match("pairs", "Pairs (2 v 2)", "Format", { matchSelFormat: "pairs" }),
+    ...MATCH_SEL_PER_TEAM.map(size => match("size-" + size, size === "5v4" ? "Uneven teams (5 v 4)" : size + " players per team", "Players per team", { matchSelPerTeam: size })),
+    match("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
+    match("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
+    match("when-reached", "Start time reached", "When", { draftWhen: "reached" }),
+    match("open-round", "Round not played yet", "Round", { matchSelLocked: false }),
+    match("locked", "Round already played (locked)", "Round", { matchSelLocked: true }),
+    match("room-closed", "Match Room closed", "Match Room", { draftRoom: "closed" }),
+    match("room-open", "Match Room open", "Match Room", { draftRoom: "open" }),
+  ];
 }
 
 /** "Signed in as <mock account>" conditions for the player-rounds preview. */

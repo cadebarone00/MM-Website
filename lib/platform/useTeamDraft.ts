@@ -1,0 +1,83 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { TeamDraftResponse } from "./teamDraftPicks";
+
+/** Backup refresh while the room is open (also how it stays current where Realtime isn't configured). */
+const POLL_MS = 10_000;
+const REALTIME = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+export type LiveTeamDraft = {
+  data: TeamDraftResponse | null;
+  /** Why it couldn't load or save (shown in the room), or "". */
+  message: string;
+  busy: boolean;
+  start: () => Promise<void>;
+  pick: (profileId: string) => Promise<void>;
+};
+
+/**
+ * A saved trip's Team Draft, live (project_specs.md "Team Draft: picks are saved and final"). Loads it through
+ * /api/golf-trips/[tripId]/team-draft, reloads when Supabase Realtime says a pick landed (or the draft started / finished),
+ * on returning to the tab, and every 10 seconds as a backup. `tripId` null = not a saved trip (nothing loads).
+ */
+export function useTeamDraft(tripId: string | null, open: boolean): LiveTeamDraft {
+  const [data, setData] = useState<TeamDraftResponse | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const latest = useRef(0);
+
+  const refresh = useCallback(async () => {
+    if (!tripId) return;
+    const ask = ++latest.current;
+    try {
+      const response = await fetch(`/api/golf-trips/${tripId}/team-draft`, { cache: "no-store" });
+      const body = await response.json();
+      if (ask !== latest.current) return; // a newer answer is on its way
+      if (!response.ok) { setMessage(body.error || "Couldn't load the draft."); return; }
+      setData(body as TeamDraftResponse);
+      setMessage("");
+    } catch { if (ask === latest.current) setMessage("No connection. The draft will update when you're back online."); }
+  }, [tripId]);
+
+  useEffect(() => {
+    if (!tripId || !open) return;
+    let timer = 0;
+    const soon = () => { window.clearTimeout(timer); timer = window.setTimeout(() => void refresh(), 200); };
+    soon();
+    const supabase = REALTIME ? createSupabaseBrowserClient() : null;
+    const channel = supabase?.channel(`trip-team-draft-${tripId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_trip_team_draft_picks", filter: `golf_trip_id=eq.${tripId}` }, soon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_trip_team_draft", filter: `golf_trip_id=eq.${tripId}` }, soon)
+      .subscribe();
+    const poll = window.setInterval(() => void refresh(), POLL_MS);
+    const visible = () => { if (document.visibilityState === "visible") soon(); };
+    document.addEventListener("visibilitychange", visible);
+    window.addEventListener("online", soon);
+    return () => {
+      window.clearTimeout(timer); window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", visible); window.removeEventListener("online", soon);
+      if (channel) void supabase?.removeChannel(channel);
+    };
+  }, [tripId, open, refresh]);
+
+  const send = useCallback(async (payload: Record<string, unknown>) => {
+    if (!tripId) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/golf-trips/${tripId}/team-draft`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const body = await response.json();
+      latest.current++; // this answer is newer than any reload still in flight
+      if (response.ok) { setData(body as TeamDraftResponse); setMessage(""); }
+      else { setMessage(body.error || "Couldn't save the pick."); void refresh(); }
+    } catch { setMessage("No connection. That pick wasn't saved — try again."); }
+    finally { setBusy(false); }
+  }, [tripId, refresh]);
+
+  return {
+    data, message, busy,
+    start: () => send({ action: "start" }),
+    pick: (profileId: string) => send({ action: "pick", player: profileId, pickNumber: (data?.draft.picks.length ?? 0) + 1 }),
+  };
+}

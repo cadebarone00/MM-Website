@@ -45,6 +45,8 @@ import gamesStyles from "./GolfTripGames.module.css";
 import { samplePastTrips, type PastTrip } from "@/lib/platform/golfTripHistory";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import { GolfTripPredictSettings } from "./GolfTripPredictSettings";
+import { GolfTripNotifications } from "./GolfTripNotifications";
+import { TeamDraftNotice } from "./TripMomentum";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import { SCORING_VIEWS, setScoringView, useScoringView } from "@/lib/platform/scoringViewPreference";
 import { useGolfTripCompetitionPreview } from "./GolfTripCompetitionPreviewProvider";
@@ -106,8 +108,10 @@ const PLAYER_SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens i
 const GAME_LOOKUP = [...GAME_GROUPS.Individual, ...GAME_GROUPS.Matches];
 
 /** Reference layout with local game scoring settings in the site's maroon palette. */
-export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name }: {
+export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament", playerCount = 0, players = [], tripRounds, pastTrips: tripHistory, dataKey = "default", persistenceScope, scoringTripId, competitionSetup, livePanels, scheduleBaseDate, organizerName = devAccount(DEFAULT_DEV_ACCOUNT).name, playerIds }: {
   scheduleBaseDate?: string; organizerName?: string;
+  /** Saved trips: each player's account (same order as `players`), so Team Draft captains are saved by account. */
+  playerIds?: string[];
   livePanels?: { members: ReactNode; scorecards: ReactNode; scoring: ReactNode; isOrganizer: boolean; deleteHref: string; tripId?: string; profileId?: string };
   tripName: string; backHref?: string; playerCount?: number; players?: string[];
   /** The chosen trip's past trips; without them, the samples. */
@@ -127,6 +131,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const setPlayerStats = (on: boolean) => savedSetup ? savedSetup.write("playerStats", on) : setDevicePlayerStats(on);
   const setInAppScoring = (on: boolean) => savedSetup ? savedSetup.write("inAppScoring", on) : setDeviceInAppScoring(on);
   const savePredictSettings = (settings: PredictSettings) => savedSetup ? savedSetup.write("predictSettings", settings) : saveDevicePredictSettings(settings);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [section, setSection] = useState("General");
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [competitionSection, setCompetitionSection] = useState("Overview");
@@ -234,6 +239,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const [draftTime, setDraftTime] = usePersistedState(persist, "draftTime", "");
   const [draftOrder, setDraftOrder] = usePersistedState<DraftOrder>(persist, "draftType", "Snake");
   const [draftMethod, setDraftMethod] = usePersistedState<DraftMethod>(persist, "draftMethod", "Captain's Picks");
+  // Team Draft captains (Captain's Picks): team number → the captain's account on a saved trip (the "index:name" key in dev).
+  const [draftCaptains, setDraftCaptains] = usePersistedState<Record<string, string>>(persist, "draftCaptains", {});
   // Home's Draftboard follows these (team type, how teams are picked, the draft's date, time and order).
   const shareTeamDraft = sharedCompetition?.setTeamDraft;
   useEffect(() => {
@@ -657,12 +664,22 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
     teamTotalChoice, unevenTeams, unevenSizes, teamTie });
   const teamsSection = (): Partial<SettingsValues> => ({ teamSelection, teamPicks, teamNames, teamColors });
 
+  if (notificationsOpen) return <main className={styles.page}><div className={styles.content}>
+    <header className={styles.competitionHeader}>
+      <button type="button" className={styles.close} aria-label="Back to settings" onClick={() => setNotificationsOpen(false)}><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></button>
+      <h1>Notifications</h1>
+    </header>
+    <TeamDraftNotice tripKey={dataKey} draft={{ teamType: competitionType.team, selection: teamSelection, date: draftDate, time: draftTime, type: draftOrder, method: draftMethod }} />
+    <GolfTripNotifications scope={livePanels?.tripId && livePanels.profileId ? { tripId: livePanels.tripId, profileId: livePanels.profileId, isOrganizer: livePanels.isOrganizer } : undefined} />
+  </div></main>;
+
+  const canManageDraft = !savedSetup?.readOnly && (livePanels?.isOrganizer ?? (simulator?.state.playerRoleViewer === undefined || simulator.state.playerRoleViewer === "organizer"));
   if (matchDraftRoomOpen) {
     const method = simulator?.state.matchDraftPreview;
     if (process.env.NODE_ENV === "development" && method && method !== "off") {
       const sourcePlayers = (submittedTeams ?? teamSplit).slice(0,2).flatMap((team,index)=>team.map(player=>({id:String(player),name:playerName(player),team:index===0?"A" as const:"B" as const})));
       const fixture = matchDraftPreviewData(sourcePlayers,rounds.map(round=>round.course),undefined,method);
-      return <TripMatchDraftRoom key={method} rounds={fixture.rounds} players={fixture.players} initialRound={"preview-"+method} onClose={()=>{setMatchDraftRoomOpen(false);setMatchesOpen(true);}} />;
+      return <TripMatchDraftRoom canEdit={canManageDraft} key={method} rounds={fixture.rounds} players={fixture.players} initialRound={"preview-"+method} onClose={()=>{setMatchDraftRoomOpen(false);setMatchesOpen(true);}} />;
     }
     const draftRounds = Array.from({ length: golfDayCount }, (_, day) => Array.from({ length: roundsPerDay[day] ?? 1 }, (_, slot) => scheduleSlot(day, slot))).flat()
       .filter(round => round.course !== "Course TBD" && (compRounds[round.key] ?? true) && roundMatchSelection(round.key)?.method === "Match Draft")
@@ -675,7 +692,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
         return { ...round, format: settings.format, rankMinutes:choice.rankMinutes, putForwardMinutes:choice.putForwardMinutes, responseMinutes:choice.responseMinutes, matches: roundMatches(settings), perSide: playersPerSide(settings.format), locked: playState(round.key, round.number).started, type: choice.draftType ?? "Not selected", when: `${date ? golfDateLabel(date) : "Date not set"} · ${time ? clockLabel(time) : "Time not set"}` };
       });
     const draftPlayers = (submittedTeams ?? teamSplit).slice(0,2).flatMap((team, index) => team.map(player => ({ id: String(player), name: playerName(player), team: index === 0 ? "A" as const : "B" as const })));
-    return <TripMatchDraftRoom rounds={draftRounds} canEdit={!savedSetup?.readOnly} teamNames={teamLabels} players={draftPlayers} initialRound={matchDraftRoomRound} onClose={() => { setMatchDraftRoomOpen(false); setMatchesOpen(true); }} />;
+    return <TripMatchDraftRoom rounds={draftRounds} canEdit={canManageDraft} teamNames={teamLabels} players={draftPlayers} initialRound={matchDraftRoomRound} onClose={() => { setMatchDraftRoomOpen(false); setMatchesOpen(true); }} />;
   }
 
   return <main className={`${styles.page} ${competitionOpen || gamesOpen || roundsOpen || playersOpen || playerScoringOpen || scorecardViewOpen || historyOpen || predictOpen || skinsOpen || matchesOpen || scorecardOpen ? styles.competitionPage : ""}`}>
@@ -847,6 +864,20 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                           {DRAFT_ORDERS.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={draftOrder === option} onClick={() => setDraftOrder(option)}>{option}</button>)}
                         </div>
                         <p className={styles.statNote}>{draftOrder === "Snake" ? "Snake: the pick order flips every round (A, B, then B, A...), so no team always picks first." : "Straight: the same pick order every round (A, B, then A, B...)."}</p>
+                        {/* Captains: one per team. They start on their team and make its picks in the draft (the organizer can pick for any team). */}
+                        <span className={styles.typeHeading}>Captains</span>
+                        {teamLabels.map((teamLabel, team) => {
+                          const idFor = (player: { key: string }) => playerIds?.[Number(player.key.slice(0, player.key.indexOf(":")))] || player.key;
+                          return <label key={team} className={styles.totalPlayers}>
+                            <span className={styles.typeHeading}>{teamLabel}</span>
+                            <select className={styles.draftInput} aria-label={`${teamLabel} captain`} value={draftCaptains[String(team)] ?? ""}
+                              onChange={event => { const value = event.target.value; setDraftCaptains(current => { const next = { ...current }; if (value) next[String(team)] = value; else delete next[String(team)]; return next; }); }}>
+                              <option value="">Choose a captain</option>
+                              {joinedPlayers.map(player => <option key={player.key} value={idFor(player)} disabled={Object.entries(draftCaptains).some(([other, id]) => id === idFor(player) && other !== String(team))}>{player.name}</option>)}
+                            </select>
+                          </label>;
+                        })}
+                        <p className={styles.statNote}>Captains start on their team and make its picks in the Draft Room. The organizer can pick for any team.</p>
                       </>}
                     </div>}
                     {/* Submit teams lights up once every player is on a team; after submitting it becomes Undo & Change. Draft: the draft sets the teams. */}
@@ -1620,6 +1651,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
           {group.title && <h2 className={styles.settingsSectionHeading}>{group.title}</h2>}
           <div className={styles.grid}>
         {group.cards.map((title, index) => {
+          if (title === "Notifications") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`} onClick={() => setNotificationsOpen(true)}><h2>Notifications</h2></button>;
           if (title === "Delete Trip") return <Link key={index} href={livePanels?.deleteHref ?? "/dev/tournament/delete-trip"} className={`${styles.card} ${styles.cardButton}`}><h2>Delete Trip</h2></Link>;
           if (title === "Individual Competition" || title === "Team Competition") return <button key={index} type="button" className={`${styles.card} ${styles.cardButton}`}
             onClick={() => { setOverviewType(title === "Team Competition" ? "team" : "individual"); setCompetitionSection("Overview"); setCompetitionOpen(true); }}>

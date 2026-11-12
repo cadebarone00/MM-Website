@@ -18,3 +18,8 @@ test("everyone can replay the tour and the tips from General", () => {
     assert.ok(cards.includes("Show tips again"));
   }
 });
+
+test("all members can reach Notifications in General settings", () => {
+  for (const cards of [GENERAL_CARDS, LIVE_GENERAL_CARDS]) assert.ok(cards.includes("Notifications"));
+  assert.equal(ORGANIZER_SECTIONS.some(group => group.cards.includes("Notifications")), false);
+});

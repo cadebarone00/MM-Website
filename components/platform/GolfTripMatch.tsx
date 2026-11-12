@@ -28,6 +28,7 @@ import { hasHoleScores, matchCard, winCurve, winNow, withHoleStandings, type Mat
 import { usePredictSettings } from "@/lib/platform/predictSetting";
 import { shapeForToPar } from "@/lib/golf/holeResult";
 import { teamPoints } from "@/lib/platform/teamPoints";
+import { shownUsername } from "@/lib/platform/playerUsername";
 import { usePlayerStats } from "@/lib/platform/playerStatsSetting";
 import { skinsCount } from "@/lib/platform/tripSkins";
 
@@ -54,14 +55,6 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   const original = fullMatch.matches.filter(pairing => (pairing.round ?? fullMatch.round) === viewRound);
   const [opened, setOpened] = useState<number | null>(null);
   // Predict on: each match's chance to win right now (Predict's model with the holes played; a finished match is certain).
-  const predictOn = usePredictSettings().on;
-  const chances = useMemo(() => !predictOn ? [] : original.map((pairing) => {
-    const net = matchScoring(fullMatch) === "Net";
-    if (hasHoleScores(fullMatch, pairing)) { const now = winNow(fullMatch, matchCard(fullMatch, pairing, net)); return now ? now.left + now.halved / 2 : 0.5; }
-    const left = normalizeCompetitor(pairing.left), standing = net ? pairing.net : pairing.gross;
-    const status = matchStatus({ thru: left.thru ?? left.golfers[0]?.thru, standing, result: pairing.result });
-    return matchWinPct(standing, status.kind === "thru" ? status.holes : status.kind === "final" ? 18 : 0, status.kind === "final") / 100;
-  }), [predictOn, original, fullMatch]);
   // Gross only: gross, no control. Net only: net, "Net Scoring". Both: the GROSS / NET switch.
   const scoring = matchScoring(match);
   const showNet = scoring === "Net" || (scoring === "Both" && net);
@@ -75,29 +68,15 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   return <div className={`${styles.match} ${styles.matchesList}`}>
     {shownRound === undefined && <RoundNav round={viewRound} current={fullMatch.round} count={fullMatch.roundCount} onRound={setViewRound} />}
     <div className={styles.matchListHeading}>
-      {teamNames && <div className={styles.teamNames}><span>{teamNames[0]}</span><span>{teamNames[1]}</span></div>}
+      {/* No MAROON / WHITE row here any more (owner 2026-11-10): the board above already names the teams. */}
       {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
     </div>
     <ul className={`${styles.lineup} ${shownRound === undefined ? styles.swipeArea : ""}`} {...(shownRound === undefined ? swipe : {})}>
-      {match.matches.map((m, i) => {
-        const standing = showNet ? m.net : m.gross;
-        const leftComp = normalizeCompetitor(m.left);
-        const rightComp = m.right ? normalizeCompetitor(m.right) : undefined;
-        const status = pairingStatus(leftComp, rightComp, standing, m.result, roundStarted && viewRound === fullMatch.round);
-        // Before the match starts, no lead fill.
-        const shown = status.kind === "tee" ? null : standing;
-        return <li key={i} className={`${styles.pairing} ${styles.pairingTap}`} role="button" tabIndex={0} aria-label={`Open match ${numberOffset + i + 1}`}
-          onClick={() => setOpened(i)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpened(i); } }}>
-          <MatchSide competitor={leftComp} side="left" standing={shown} score={sideScore(status, shown, "left")} />
-          {/* The middle: the match number in gold over its status (TEE TIME, THRU), no box. */}
-          <span className={styles.matchCenter}>
-            <span className={styles.matchNumber}>Match {numberOffset + i + 1}</span>
-            <MatchStatus status={status} plain />
-          </span>
-          {rightComp && <MatchSide competitor={rightComp} side="right" standing={shown} score={sideScore(status, shown, "right")} />}
-          {predictOn && chances[i] !== undefined && <WinLine left={chances[i]} />}
-        </li>;
-      })}
+      {match.matches.map((m, i) => <li key={i} className={styles.matchBoardRow}>
+        {/* "Match 28" sits inside the box, above THRU (owner 2026-11-10); tapping it still opens the match. */}
+        <GolfMatchup match={match} compact featured={i} net={showNet} roundStarted={roundStarted && viewRound === fullMatch.round}
+          label={<button type="button" className={styles.matchBoardOpen} aria-label={`Open match ${numberOffset + i + 1}`} onClick={() => setOpened(i)}>Match {numberOffset + i + 1}</button>} />
+      </li>)}
       {/* No matches set for this round yet: the same row, with placeholders. */}
       {!match.matches.length && <MatchDraftStatus scope={draftScope} round={viewRound} />}
     </ul>
@@ -225,7 +204,8 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: 
       <div className={styles.leaderboardListHeading}>
         {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
       <div className={`${rowClass} ${styles.columns}`} aria-hidden>
-        <span className={styles.columnPlayer} />
+        <span className={styles.columnPosition}>POS</span>
+        <span className={styles.columnPlayer}>Player</span>
         {showNet && <span>HCP</span>}
         <span className={styles.columnLabel}>{isStableford ? "PTS" : "TOT"}</span>
         {skins && <span className={styles.columnLabel}>SKINS</span>}
@@ -242,6 +222,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: 
           return <Fragment key={golfer.name}>{golfer.name === lineBefore && <li className={styles.cutLine} role="separator">{cut!.label}</li>}<li className={rowClass}>
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
+              <span className={styles.leaderboardAvatar} aria-hidden="true">{golfer.avatarUrl ? <img src={golfer.avatarUrl} alt="" /> : initials(golfer.name)}</span>
               <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} showTee={false} showUsername />
             </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
@@ -326,7 +307,7 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
     dialog.style.transition = "translate 200ms ease-out";
     dialog.style.translate = "0 0";
   };
-  return createPortal(<dialog ref={dialogRef} className={styles.leaderboardScoreSheet} aria-label={name + " public trip profile"} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientY < r.top || event.clientX < r.left || event.clientX > r.right) onClose(); } }}>
+  return createPortal(<dialog ref={dialogRef} className={`${styles.leaderboardScoreSheet} ${styles.playerProfileSheet}`} aria-label={name + " public trip profile"} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientY < r.top || event.clientX < r.left || event.clientX > r.right) onClose(); } }}>
     <div className={styles.playerTripProfileHeader} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
       <span className={styles.playerTripProfileHandle} data-handle aria-hidden><span className={styles.scoreSheetHandle} /></span>
       {/* Photo on the left (initials when there's none), a hair cut off by the top, the left edge and the line below; name to its right. */}
@@ -463,8 +444,10 @@ export function MatchNav({ match, count, onMatch, offset = 0 }: { match: number;
   return <StepNav name="Match" label={`Match ${offset + match}`} value={match} count={count} onValue={onMatch} />;
 }
 
-export function GolfMatchup({ match, compact = false, below, swipe, featured = 0, roundStarted = false }: {
-  match: GolfMatchPreview; compact?: boolean; below?: ReactNode; swipe?: ReturnType<typeof useSwipe>;
+export function GolfMatchup({ match, compact = false, below, swipe, featured = 0, roundStarted = false, net = false, label }: {
+  match: GolfMatchPreview; compact?: boolean; below?: ReactNode; swipe?: ReturnType<typeof useSwipe>; net?: boolean;
+  /** Shown in the box's middle, above THRU (the Matches list puts "Match 28" here). */
+  label?: ReactNode;
   /** Which of the round's matches the box shows (0-based). */
   featured?: number;
   /** The organizer has begun this round: THRU rather than the tee time. */
@@ -477,7 +460,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
   const pairing: GolfMatchPairing | undefined = match.matches[featured];
   const leftComp = pairing ? normalizeCompetitor(pairing.left) : undefined;
   const rightComp = pairing?.right ? normalizeCompetitor(pairing.right) : leftComp;
-  const gross = pairing?.gross ?? null;
+  const gross = (net ? pairing?.net : pairing?.gross) ?? null;
   // The box is about the chosen match: its own win chances and stats when the data has them; otherwise win chances from
   // its standing and no stats yet ("—"). Without any match, the competition's two sides.
   const status = pairing && leftComp ? pairingStatus(leftComp, pairing.right ? rightComp : undefined, gross, pairing.result, roundStarted) : null;
@@ -485,7 +468,7 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
   const shown = status?.kind === "tee" ? null : gross;
   const leftPct = status ? matchWinPct(gross, status.kind === "thru" ? status.holes : status.kind === "final" ? 18 : 0, status.kind === "final") : left.winPct;
   const blank = (side: GolfMatchSide, name: string, winPct: number): GolfMatchSide => ({ ...side, name, winPct, fairwayPct: "—", greenPct: "—", putts: "—", score: "—" });
-  const [boxLeft, boxRight] = pairing?.sides ?? (pairing && leftComp
+  const [boxLeft, boxRight] = pairing?.sides?.map((side, index) => net ? { ...side, winPct: index === 0 ? leftPct : 100 - leftPct } : side) ?? (pairing && leftComp
     ? [blank(left, leftComp.name ?? left.name, leftPct), blank(right, rightComp?.name ?? right.name, 100 - leftPct)]
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
@@ -494,12 +477,12 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
       <div className={styles.teams}>
         {leftComp ? <>
           <PlayerSide competitor={leftComp} align="left" standing={shown} score={status ? sideScore(status, shown, "left") : ""} />
-          <span className={styles.boxStatus}>{status && <MatchStatus status={status} plain />}</span>
+          <span className={`${styles.boxStatus} ${label ? styles.boxStatusLabelled : ""}`}>{label}{status && <MatchStatus status={status} plain />}</span>
           {rightComp && <PlayerSide competitor={rightComp} align="right" standing={shown} score={status ? sideScore(status, shown, "right") : ""} />}
         </> : <>
           {/* No match set yet: the same box with placeholders. */}
           <div className={`${styles.side} ${styles.left}`}><p className={styles.teamName}>TBD</p></div>
-          <span className={styles.boxStatus}><span className={`${styles.status} ${styles.statusPlain}`} aria-label="Not set yet">—</span></span>
+          <span className={`${styles.boxStatus} ${label ? styles.boxStatusLabelled : ""}`}>{label}<span className={`${styles.status} ${styles.statusPlain}`} aria-label="Not set yet">—</span></span>
           <div className={`${styles.side} ${styles.right}`}><p className={styles.teamName}>TBD</p></div>
         </>}
       </div>
@@ -566,7 +549,7 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
   const team = teamPoints(match);
   return <div className={styles.matchup} data-points-open={pointsOpen || undefined}>
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined}>
-      <div className={`${styles.summaryTeams} ${styles.summaryTap}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
+      <div className={`${styles.summaryTeams} ${styles.summaryTap} ${styles.teamStripeSummary}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
         {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
@@ -932,8 +915,8 @@ function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true
       {showHcp && <span className={styles.hcp}>HCP {golfer.hcp}</span>}{showHcp && showThru && " • "}{showThru && golfer.thru}
     </span>}
     {showTee && (golfer.teeTime || golfer.course) && <span className={styles.tee}>{golfer.teeTime} {golfer.course && <span className={styles.course}>@ {golfer.course}</span>}</span>}
-    {/* The leaderboard's second line: their @username (sample players have none, so the line stays, empty, and every row is one height). */}
-    {showUsername && <span className={styles.tee}>{golfer.username ? `@${golfer.username}` : "\u00a0"}</span>}
+    {/* The leaderboard's second line: their @username (a made-up one until real usernames exist, same as Trip Home's Players). */}
+    {showUsername && <span className={styles.tee}>{shownUsername(golfer.name, golfer.username)}</span>}
   </div>;
 }
 

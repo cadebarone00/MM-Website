@@ -13,6 +13,34 @@ export interface TripGame { key: string; round: number; config: GameConfig; play
   /** The round's saved pars (saved trips); unset = the shown round's pars. */
   pars?: number[] | null }
 
+/** Resolve only this game's own round; unavailable history stays unavailable. */
+export function tripGameRound(match: GolfMatchPreview, game: TripGame): GolfMatchPreview {
+  if (match.round === game.round) return game.pars?.length ? { ...match, par: game.pars } : match;
+  const snapshot = match.roundStandings?.find((r) => r.round === game.round && (r.standingsRound === undefined || r.standingsRound === game.round));
+  return { ...match, round: game.round, par: game.pars?.length ? game.pars : snapshot?.par ?? [], leaderboard: snapshot?.leaderboard ?? [] };
+}
+
+/** Score-derived display state; this performs no payment settlement. */
+export function tripGameSettled(match: GolfMatchPreview, game: TripGame): boolean {
+  if (!game.players.length || (!game.started && gameDef(game.config.id).teams && game.config.id !== "vegas")) return false;
+  const round = tripGameRound(match, game);
+  const holes = round.par.length;
+  const completeScores = holes > 0 && gameStrokes(round, game).every((row) => row.length === holes && row.every((score) => typeof score === "number" && Number.isFinite(score) && score > 0));
+  if (!completeScores) return false;
+  return round.par.every((_, hole) => {
+    const pick = game.inputs[hole];
+    if (game.config.id === "wolf") return pick?.wolfPartner !== undefined;
+    if (game.config.id === "daytona") return pick?.daytona !== undefined;
+    if (game.config.id === "bbb") return pick?.bbb?.bingo !== undefined && pick.bbb.bango !== undefined && pick.bbb.bongo !== undefined;
+    if (game.config.id === "snake") return game.players.every(name => round.leaderboard.find(r => r.golfer.name === name)?.putts?.[hole] != null);
+    if (game.config.id === "vegas") {
+      const teams = teamsOn(game, hole);
+      return teams.filter(t => t === 0).length === 2 && teams.filter(t => t === 1).length === 2;
+    }
+    return true;
+  });
+}
+
 /** Who I am on the trip: the signed-in player (matched by name), else the first player of the first match. */
 export function meOn(match: GolfMatchPreview, signedInName?: string | null): string | undefined {
   const want = signedInName?.trim().toLowerCase();

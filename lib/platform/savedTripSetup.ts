@@ -15,10 +15,10 @@ export const setupDecode = (_key: string, value: unknown) => value && typeof val
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export const datePlus = (date: string, days: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const dayDifference = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000);
-const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings gameRounds skinsScoring".split(" "));
+const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod draftCaptains submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings gameRounds skinsScoring".split(" "));
 const bools = new Set("teamChoiceSaved unevenTeams skinsOn matchPerRound golfOnArrival golfOnDeparture playerStats inAppScoring".split(" "));
 const arrays = new Set("pastTrips teamNames teamColors unevenSizes".split(" "));
-const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings gameRounds".split(" "));
+const records = new Set("draftCaptains scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings gameRounds".split(" "));
 const enums: Record<string, readonly unknown[]> = {
   skinsScoring: ["Gross", "Net"], teamTie: ["Retain", "Teams Tie", "Playoff"], teamSelection: [null, "Manual", "Draft", "Random"], draftType: ["Snake", "Straight"], draftMethod: ["Captain's Picks", "Duck Race"],
 };
@@ -82,6 +82,8 @@ export function validSetup(value: unknown): value is SetupValues {
     if (key === "dayCount" && (Number(item) < 1 || Number(item) > 31)) return false;
     if (key === "arrivalShift" && Math.abs(Number(item)) > 3660) return false;
     if (key === "localCompetitionType" && (!object(item) || ![null, "Stroke Play", "Points Based"].includes(item.individual as never) || ![null, "2 Teams", "Pairs", "3-Ball", "4-Ball"].includes(item.team as never))) return false;
+    // Team Draft captains: team number ("0" = Team A) → the captain's account (profile id).
+    if (key === "draftCaptains" && !Object.entries(item as SetupValues).every(([team, id]) => /^([0-9]|[1-5][0-9]|6[0-3])$/.test(team) && typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) return false;
     if (key === "submittedTeams" && item !== null && (!Array.isArray(item) || !item.every(team => Array.isArray(team) && team.every(player => Number.isInteger(player) && player >= 0 && player < 64)))) return false;
     if (key === "teamTotalChoice" && item !== null && (!Number.isInteger(item) || Number(item) < 1 || Number(item) > 64)) return false;
     if (key === "roundsPerDay" && !Object.entries(item as SetupValues).every(([day, count]) => /^-?\d+$/.test(day) && [0, 1, 2].includes(count as number))) return false;

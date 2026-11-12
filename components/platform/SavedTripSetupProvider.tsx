@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { setupDecode, setupEncode, type SetupValues, type TripSetupSnapshot } from "@/lib/platform/savedTripSetup";
 
-type Context = { values: SetupValues; write: (field: string, value: unknown) => void; available: boolean; readOnly: boolean };
+type Context = { tripId: string; values: SetupValues; write: (field: string, value: unknown) => void; available: boolean; readOnly: boolean };
 const SavedSetupContext = createContext<Context | null>(null);
 export const useSavedTripSetup = () => useContext(SavedSetupContext);
 
@@ -45,7 +45,7 @@ export function SavedTripSetupProvider({ tripId, snapshot, editable, children }:
     window.addEventListener("beforeunload", leave);
     return () => window.removeEventListener("beforeunload", leave);
   }, []);
-  return <SavedSetupContext.Provider value={{ values, write, available: snapshot.available, readOnly: !editable || blocked.current }}>
+  return <SavedSetupContext.Provider value={{ tripId, values, write, available: snapshot.available, readOnly: !editable || blocked.current }}>
     {editable && status && <div role={blocked.current ? "alert" : "status"} style={{ padding: "8px 16px", background: "var(--color-maroon-900)", color: "#dcc495" }}>{status}{blocked.current && <button type="button" onClick={() => location.reload()}>Reload settings</button>}</div>}
     {children}
   </SavedSetupContext.Provider>;

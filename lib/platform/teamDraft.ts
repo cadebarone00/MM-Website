@@ -44,3 +44,38 @@ export function draftBoard(draft: TeamDraft | undefined, now: string | null): { 
   if (now && Date.parse(`${now}Z`) >= Date.parse(`${target}Z`)) return null;
   return { when: draftWhenLabel(draft.date, draft.time), target };
 }
+
+/** Players per team for a team type: Pairs 2, 3-Ball 3, 4-Ball 4; null = 2 Teams (no fixed size). */
+export function teamDraftSize(teamType: string | null | undefined): number | null {
+  return ({ Pairs: 2, "3-Ball": 3, "4-Ball": 4 } as Record<string, number>)[teamType ?? ""] ?? null;
+}
+
+/** How many teams the draft fills: players ÷ team size, rounded down (same rule as Settings); 2 for 2 Teams. */
+export function teamDraftTeamCount(teamType: string | null | undefined, players: number): number {
+  const size = teamDraftSize(teamType);
+  return size ? Math.max(1, Math.floor(players / size)) : 2;
+}
+
+/** "Team A", "Team B", … "Team P" for team 0, 1, … 15. */
+export const teamLetter = (team: number) => String.fromCharCode(65 + team);
+
+/**
+ * Whose pick it is (team index), or null when every team is full. `counts` = players on each team now; `start` = players
+ * each team began with (its captain); `capacity` = team size (Infinity for 2 Teams). Picks go A → last team each round;
+ * Snake turns around every other round, Straight doesn't. Full teams are skipped. Players already on a team count as picks.
+ */
+export function teamDraftTurn(order: "Snake" | "Straight", counts: number[], start: number[], capacity: number): number | null {
+  const teams = counts.length;
+  if (!teams || counts.every(count => count >= capacity)) return null;
+  const teamAt = (step: number) => { const round = Math.floor(step / teams), place = step % teams; return order === "Snake" && round % 2 ? teams - 1 - place : place; };
+  const made = Math.max(0, counts.reduce((sum, count) => sum + count, 0) - start.reduce((sum, count) => sum + count, 0));
+  // Replay the picks made so far (skipping teams that would already be full), then find the next team with room.
+  const replay = [...start];
+  let step = 0;
+  for (let done = 0; done < made && step < made * teams + teams * 2; step++) {
+    const team = teamAt(step);
+    if (replay[team] < capacity) { replay[team]++; done++; }
+  }
+  for (let look = 0; look < teams * 2; look++, step++) if (counts[teamAt(step)] < capacity) return teamAt(step);
+  return counts.findIndex(count => count < capacity);
+}

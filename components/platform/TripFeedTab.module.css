@@ -10,9 +10,9 @@
 /* The full-screen Feed: dramatic maroon with the gold glow at the TOP. Closed, it's clipped down to exactly the tab;
    open, the clip grows to the whole screen. */
 .sheet{position:fixed;inset:0;z-index:110;isolation:isolate;display:flex;flex-direction:column;background:#240001;color:#fbf8f1;overflow:hidden;
-  clip-path:inset(calc(100% - var(--tab-bottom) - var(--tab-h)) 0 var(--tab-bottom) calc(100% - var(--tab-w)) round 16px 0 0 16px);
+  clip-path:circle(0 at calc(100% - 38px) 70px);
   visibility:hidden;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s .5s}
-.sheet[data-open]{clip-path:inset(0 0 0 0 round 0);visibility:visible;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.sheet[data-open]{clip-path:circle(150vmax at calc(100% - 38px) 70px);visibility:visible;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s}
 /* The glow lights up once the screen has grown. */
 .sheet::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 55% at 50% -12%,rgba(201,168,110,.3),transparent 70%);opacity:0;transition:opacity .2s}
 .sheet[data-open]::before{opacity:1;transition:opacity .5s .2s}
