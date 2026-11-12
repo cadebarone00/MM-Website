@@ -74,6 +74,16 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "maroon-live-directory-mock", name: "Public Maroon Live directory mock", scopeRevision: 1,
+    scope: "Remove login/profile lookup from /tap-in and show fictional trip-name/location list only. Development website previews cover 0/1/3/12 entries on desktop/mobile. Explicit public access classification covers directory/code pages; existing authenticated TV/display API stays guarded. No saved-trip discovery, real destination publication, new vendor, persistence, analytics, payments, media or fake watch links. Real public listing consent/visibility/minimization, retention, security, UGC/provider/minors and professional release review remain review_required before connecting saved trips. Review: docs/maroon-live-directory-review.md.",
+    attentionCategories: ["privacy", "personal-data", "security", "ugc", "organizer-responsibility", "retention", "account-deletion", "intellectual-property", "minors", "platform-rules", "legal-review"],
+  },
+  {
+    id: "trip-round-robin", name: "Home competition sections and round robin", scopeRevision: 1,
+    scope: "Persistent applicable Team Draft/Match Selection headings; organizer-configured single-leg round robin for individuals or complete assigned team sides, byes, manual match outcomes and derived W-L-T/percentage standings. Bounded roster-bound results reuse organizer-only revision-checked saved setup; development reuses local setup storage. No new SQL, automatic scorecard inference, canonical tee-time mutation, public result sharing, vendor, payments, prizes or release. Existing A/B draft rooms remain separate. Privacy, roster visibility, organizer UGC authority, access, retention/deletion, IP/provider/minors and professional review remain review_required. Review: docs/round-robin-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "organizer-responsibility", "intellectual-property", "minors", "platform-rules", "audit-logging", "legal-review"],
+  },
+  {
     id: "trip-tap-in-links", name: "Public trip Tap In links", scopeRevision: 2,
     scope: "An always-visible Home Tap In box below the Big Board offers a public link and Copy/Share; full rosters independently hide player invites. A branded spectator entrance displays accepted-player count and loaded round above existing read-only golf boards. Sharing of the existing saved watch-code capability at /tap-in/code. Public browser/web-app access reuses the no-sign-in watch reader, accepts no membership writes, narrows setup/scoring DTOs and derives selected-round stats from submitted complete cards with confirmed pars. No new token, SQL, revocation, native association or installed-app handler. Anyone with the link can reshare it. Legacy watch routes and signed-in founding-tournament TV remain. Privacy, names/public-photo sharing, UGC, access, retention, token lifecycle and native/provider/professional follow-ups remain review_required. Review: docs/tap-in-trip-links-review.md.",
     attentionCategories: ["privacy", "personal-data", "user-accounts", "ugc", "security", "retention", "account-deletion", "intellectual-property", "media-rights", "third-party-golf-content", "organizer-responsibility", "minors", "platform-rules", "audit-logging", "legal-review"],

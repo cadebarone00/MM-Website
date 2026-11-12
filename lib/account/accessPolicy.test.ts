@@ -6,6 +6,13 @@ import { accessDecision, classifyPath, enforcementEnabled, STATUS_PAGE, type Acc
 
 // Pending accounts Phase 5: the access policy table and decisions.
 
+test("Maroon Live directory and watch links are public while authenticated display data stays protected", () => {
+  assert.equal(classifyPath("/tap-in").category, "public");
+  assert.equal(classifyPath("/tap-in/W4K9PZ").category, "public");
+  assert.equal(classifyPath("/api/tap-in/display").category, "active");
+  assert.equal(classifyPath("/golf-trips/private-trip").category, "active");
+});
+
 /** Every file named `name` under `dir` (skipping dev-only folders). */
 function files(dir: string, name: string): string[] {
   const out: string[] = [];
@@ -42,7 +49,7 @@ test("the protected inventory: Play, golf, tournaments, rounds, social, admin ar
     ["/", "GET"], ["/play/x-t/x-y", "GET"], ["/golf-trips", "GET"], ["/golf-trips/x-tripId/settings", "GET"], ["/golf-trips/new/review", "GET"],
     ["/tournaments", "GET"], ["/tournaments/code/new", "GET"], ["/tournaments/x-t/x-y/preview", "GET"], ["/rounds/new", "GET"],
     ["/profile", "GET"], ["/profile/x-username", "GET"], ["/profile/search", "GET"], ["/profile/friends", "GET"], ["/pickems", "GET"],
-    ["/tap-in", "GET"], ["/dashboard", "GET"], ["/admin/tournament-access", "GET"],
+    ["/dashboard", "GET"], ["/admin/tournament-access", "GET"],
     ["/api/golf-trips", "POST"], ["/api/golf-trips/x-tripId/scoring/submit", "POST"], ["/api/golf-trips/x-tripId/members", "POST"],
     ["/api/code-tournaments/join", "POST"], ["/api/code-tournaments/x-token", "GET"], ["/api/rounds/shared", "POST"], ["/api/rounds/personal", "POST"],
     ["/api/profile/friends", "POST"], ["/api/profile/search", "GET"], ["/api/account/search", "GET"], ["/api/platform/tournaments", "POST"],

@@ -69,7 +69,7 @@ const GAME_GROUPS = {
   Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
 } as const;
 const COMPETITION_TYPES = [
-  { key: "individual", title: "Individual", options: ["Stroke Play", "Stableford"] },
+  { key: "individual", title: "Individual", options: ["Stroke Play", "Stableford", "Match Play"] },
   { key: "team", title: "Team", options: ["2 Teams", "Pairs", "3-Ball", "4-Ball"] },
 ] as const;
 // Team Selection (Competition → Team): the ways players get put on teams.
@@ -82,7 +82,7 @@ type DraftMethod = (typeof DRAFT_METHODS)[number];
 const MAX_DAYS = 14;
 // Match Selection (Organizer): how a round's matches are made — the organizer enters them (Manual) or a Match Draft makes
 // them (Response, Ranks or Randomized) at a set time. Set for every round at once, or (Select per round) round by round.
-const MATCH_METHODS = ["Manual", "Match Draft"] as const;
+const MATCH_METHODS = ["Manual", "Match Draft", "Round Robin"] as const;
 const MATCH_DRAFT_TYPES = ["Response", "Ranks", "Randomized"] as const;
 type MatchSelection = MatchDraftTiming & { method: (typeof MATCH_METHODS)[number] | null; draftType: (typeof MATCH_DRAFT_TYPES)[number] | null; date: string; time: string };
 const NO_MATCH_SELECTION: MatchSelection = { method: null, draftType: null, date: "", time: "" };
@@ -1240,7 +1240,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
             </button>
           </div>
           <fieldset className={styles.compLock} disabled={matchPerRound || anyPlayStarted} aria-label="All rounds">
-            {([["Manual selection", "Manual"], ["Match Draft", "Match Draft"]] as const).map(([label, method]) => {
+            {([["Manual selection", "Manual"], ["Match Draft", "Match Draft"], ["Round Robin", "Round Robin"]] as const).map(([label, method]) => {
               const on = allRoundsMatch.method === method;
               return <div key={method} className={styles.totalPlayers}>
                 <span className={styles.typeHeading}>{label}</span>
@@ -1250,6 +1250,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 </button>
               </div>;
             })}
+            {allRoundsMatch.method === "Round Robin" && <p className={styles.statNote}>Every side meets every other once, with byes when needed. View the schedule and W-L-T standings under Match Selection on Home. Applies to match-play competition rounds; stroke-play rounds do not create matches.</p>}
             {allRoundsMatch.method === "Match Draft" && <div className={styles.teamSelection} role="group" aria-label="Match draft type">
               <span className={styles.typeHeading}>Draft type</span>
               <div className={styles.teamSelectionChoices}>
@@ -1319,6 +1320,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                 {MATCH_METHODS.map(option => <button key={option} type="button" className={styles.typeChoice} aria-pressed={choice.method === option} onClick={() => choose({ method: option })}>{option}</button>)}
               </div>
             </div>
+            {choice.method === "Round Robin" && <p className={styles.statNote}>This match-play round participates in the round robin. Home shows rotating opponents and standings; the organizer records wins, losses and ties.</p>}
             {choice.method === "Manual" && <p className={styles.statNote}>You&apos;ll enter each match yourself: who plays who, and in which tee time.</p>}
             {choice.method === "Match Draft" && <div className={styles.draftSettings} role="group" aria-label="Match draft settings">
               <span className={styles.typeHeading}>Draft type</span>

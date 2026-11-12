@@ -325,3 +325,10 @@ test("Home → Team Draft / Match Selection conditionals: known draft sample val
  assert.ok(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,draftSim:"match",matchSelType:"Ranks",matchSelPerTeam:"5v4",matchSelLocked:true}}));
  assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,draftSim:"match",matchSelPerTeam:"3"}}),null);
 });
+
+test("Mock draft conditionals: known setups and controllers only",()=>{
+ assert.ok(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraft:"pairs-7",mockDraftViewer:"captain-2"}}));
+ assert.ok(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraft:"off",mockDraftViewer:"organizer"}}));
+ assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraft:"nope"}}),null);
+ assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraftViewer:"captain-z"}}),null);
+});

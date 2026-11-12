@@ -302,7 +302,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .statusTag[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.2)}
 /* Home head: always the same height on every trip (no jumping): the heading at the top, then a fixed slot for the Mom
    section (a notification line, the countdown, or empty) near the bottom; the Live / Upcoming boxes overlap its bottom 31px. */
-.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:10px;background:var(--lm-bg-240001);box-shadow:0 25px 0 var(--lm-bg-240001)}
+.accountHead{box-sizing:border-box;display:flex;flex-direction:column;height:auto;padding-bottom:2px;background:var(--lm-bg-240001);box-shadow:0 25px 0 var(--lm-bg-240001)}
 .accountHead .accountTop{flex:none}
 /* Momentum has a taller, borderless slot below the heading; content remains centered. */
 .momSlot{box-sizing:border-box;flex:none;min-height:89px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;margin-top:10px;text-align:center}
@@ -441,3 +441,10 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .tripTitleFeed{grid-column:3;grid-row:1;justify-self:end}
 
 .homeTapInDescription{margin-top:6px !important;font:500 12px/1.4 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
+/* Teams (Home's Players once teams are set): each team's name is a small gold label, not a heading. */
+.homeTeam{margin-top:14px}
+.homeTeam .homePlayerList{margin-top:4px}
+.homeTeamName{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0;font:700 14px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495)}
+.homeTeamName span:last-child{font-variant-numeric:tabular-nums;font-size:13px}
+/* After the team draft (teams set) with no Match Selection coming up, the draft area has nothing in it: hide it. */
+.homeDraft:has(.homeCompetition:empty){display:none}

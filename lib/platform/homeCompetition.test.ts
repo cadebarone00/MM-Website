@@ -16,6 +16,13 @@ test("no competition: nothing to summarize", () => {
   assert.equal(homeCompetitionSummary({ types: { individual: null, team: null }, rounds }), null);
 });
 
+test("round-robin record standings never claim a two-team points target", () => {
+  const summary = homeCompetitionSummary({ types: { individual: null, team: "Pairs" }, rounds, scoring, recordStandings: true });
+  assert.equal(summary?.recordStandings, true);
+  assert.equal(summary?.totalPoints, null);
+  assert.equal(summary?.toWin, null);
+});
+
 test("team & individual: type, formats, days, rounds, points and what wins", () => {
   const summary = homeCompetitionSummary({ types: { individual: "Stroke Play", team: "2 Teams" }, rounds, scoring });
   assert.ok(summary);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GolfTripHeader } from "./GolfTripHeader";
 import { TripTapInInvite } from "./TripTapInInvite";
 import { homeRosterFull } from "@/lib/platform/tapIn";
+import { homeMatchRounds } from "@/lib/platform/homeDraft";
 import { TripHomeRoster } from "./TripHomeRoster";
 import { homeTeamRoster } from "@/lib/platform/homeRoster";
 import type { MatchDraftPlayer } from "@/lib/platform/matchDraft";
@@ -985,7 +986,7 @@ function InfoAccount({ tripId, tapInCode, spectator = false, match, viewerName, 
   const savedSetup = useSavedTripSetup();
   const justCreatedVersion = useJustCreatedVersion();
   const setup = savedSetup?.values ?? (draftScope === "empty" ? readJustCreatedAll(justCreatedVersion) : devSetup);
-  const baseSummary = summaryTypes ? homeCompetitionSummary({ types: summaryTypes, scoring: match?.roundScoring,
+  const baseSummary = summaryTypes ? homeCompetitionSummary({ types: summaryTypes, scoring: match?.roundScoring, recordStandings: homeMatchRounds({ ...setup, localCompetitionType: summaryTypes }, rounds ?? [], draftPlayers.length).some(round => round.method === "Round Robin"),
     rounds: plannedRounds(draft).map(round => { const planned = rounds?.find(r => r.number === round.number); return { number: round.number, dayNumber: round.dayNumber, format: planned?.format, course: planned?.course }; }) }) : null;
   // Your team: Settings' teams (submitted, or the organizer's picks); with 2 Teams and none saved yet, the roster's A / B split.
   const rosterNames = draftPlayers.map(player => player.name);
@@ -993,8 +994,8 @@ function InfoAccount({ tripId, tapInCode, spectator = false, match, viewerName, 
   const rosterGroups = draftPlayers.some(player => player.team) ? (["A", "B"] as const).map(side => draftPlayers.flatMap((player, index) => player.team === side ? [index] : [])) : null;
   const competitionSummary = baseSummary && { ...baseSummary, yourTeam: yourTeam({ teamFormat: baseSummary.teamFormat, me: viewerName, players: rosterNames,
     groups: savedGroups ?? (baseSummary.teamFormat === "2 Teams" ? rosterGroups : null), teamNames: (setup.teamNames as string[] | undefined) ?? teamNames }) };
-  // Draft section: only with a team competition (the simulator's draft previews force it on so the boards can be designed).
-  const showDraft = competition !== "none" && (!!competitionTypes?.team || (process.env.NODE_ENV === "development" && (!!sim?.dualDraftMomentum || (!!sim?.draftSim && sim.draftSim !== "off"))));
+  // Each configured competition decides whether its persistent Home sections apply.
+  const showDraft = competition !== "none" && (!!competitionTypes?.team || !!competitionTypes?.individual || (process.env.NODE_ENV === "development" && (!!sim?.dualDraftMomentum || (!!sim?.draftSim && sim.draftSim !== "off") || (!!sim?.mockDraft && sim.mockDraft !== "off"))));
   const rosterKey = JSON.stringify([draftScope, draftPlayers, rosterPlayers, setup, teamDraft, sim]);
   const [completedTeams, setCompletedTeams] = useState<{ key: string; players: MatchDraftPlayer[] } | null>(null);
   const localTeams = completedTeams?.key === rosterKey ? completedTeams.players : null;
@@ -1043,7 +1044,7 @@ function InfoAccount({ tripId, tapInCode, spectator = false, match, viewerName, 
     {!spectator && <TripTapInInvite code={tapInCode} name={draft.tripName || "Your Golf Trip"} />}
     {showDraft && <section className={`${styles.homePlayers} ${styles.homeDraft}`} aria-label="Drafts">
       <div className={styles.homeCompetition}>
-        <TripDraftWidget onTeamsComplete={players => setCompletedTeams({ key: rosterKey, players })} headingClassName={styles.accountHeading} scope={draftScope} rounds={draft.includesTournament === "yes" ? rounds : []} playedThrough={afterRound} teamNames={teamNames} players={draftPlayers.map(player => { const roster = rosterPlayers.find(other => other.name === player.name); return { ...player, avatarUrl: player.avatarUrl ?? roster?.avatarUrl, username: player.username ?? roster?.username }; })} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} fallback={<p className={styles.homePlayersEmpty}>No drafts coming up</p>} />
+        <TripDraftWidget competitionTypes={competitionTypes} onTeamsComplete={players => setCompletedTeams({ key: rosterKey, players })} headingClassName={styles.accountHeading} scope={draftScope} rounds={draft.includesTournament === "yes" ? rounds : []} playedThrough={afterRound} teamNames={teamNames} players={draftPlayers.map(player => { const roster = rosterPlayers.find(other => other.name === player.name); return { ...player, avatarUrl: player.avatarUrl ?? roster?.avatarUrl, username: player.username ?? roster?.username }; })} draft={teamDraft} startAt={tripNow} editHref={isOrganizer ? settingsHref : undefined} fallback={homeTeams ? null : <p className={styles.homePlayersEmpty}>No drafts coming up</p>} />
       </div>
     </section>}
     <TripHomeRoster players={teamRosterPlayers} teams={homeTeams} allotted={allotted}

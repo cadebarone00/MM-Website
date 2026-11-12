@@ -4,8 +4,10 @@
  * is allowed. The Draft Room and the server route both use it, so they always agree. Pure: no React, no database.
  *
  * A drafted player belongs to that team for good: there is no undo and no moving. Captains sit in spot 1 of their team.
+ * Everyone ends up on a team and every team is the same size (teamCountError): a draft with the wrong number of players
+ * can't start.
  */
-import { teamDraftSize, teamDraftTeamCount, teamDraftTurn } from "./teamDraft.ts";
+import { teamCountError, teamDraftCapacity, teamDraftTeamCount, teamDraftTurn } from "./teamDraft.ts";
 
 /** A trip member who can be drafted (accepted, signed-in account), in the trip's member order. */
 export type DraftMember = { profileId: string; name: string; avatarUrl?: string | null; username?: string | null };
@@ -17,8 +19,10 @@ export type DraftCaptains = Record<string, string>;
 
 export type DraftBoard = {
   teamCount: number;
-  /** Players per team (Infinity for 2 Teams). */
+  /** Players per team (half the players for 2 Teams). */
   capacity: number;
+  /** Why this many players can't be drafted into equal teams (null = fine). */
+  countError: string | null;
   /** Profile ids per team: captain first, then picks in the order they were made. */
   teams: string[][];
   available: string[];
@@ -43,7 +47,8 @@ export function draftCaptainsFor(captains: DraftCaptains | undefined, members: D
 
 export function draftBoardFor(members: DraftMember[], captains: DraftCaptains | undefined, settings: DraftSettings, picks: DraftPick[]): DraftBoard {
   const teamCount = teamDraftTeamCount(settings.teamType, members.length);
-  const capacity = teamDraftSize(settings.teamType) ?? Infinity;
+  const capacity = teamDraftCapacity(settings.teamType, members.length);
+  const countError = teamCountError(settings.teamType, members.length);
   const captainIds = draftCaptainsFor(captains, members, teamCount);
   const ordered = [...picks].sort((a, b) => a.pickNumber - b.pickNumber);
   const teams = captainIds.map((captain, team) => [...(captain ? [captain] : []), ...ordered.filter(pick => pick.team === team).map(pick => pick.profileId)]);
@@ -51,7 +56,7 @@ export function draftBoardFor(members: DraftMember[], captains: DraftCaptains | 
   const available = members.map(member => member.profileId).filter(id => !taken.has(id));
   const start = captainIds.map(captain => captain ? 1 : 0);
   const turn = available.length ? teamDraftTurn(settings.order, teams.map(team => team.length), start, capacity) : null;
-  return { teamCount, capacity, teams, available, turn, done: turn === null, missingCaptains: captainIds.flatMap((captain, team) => captain ? [] : [team]) };
+  return { teamCount, capacity, teams, available, turn, done: turn === null, countError, missingCaptains: captainIds.flatMap((captain, team) => captain ? [] : [team]) };
 }
 
 /**
@@ -62,6 +67,7 @@ export function draftPickError(board: DraftBoard, captains: DraftCaptains | unde
   viewer: string; isOrganizer: boolean; started: boolean; completed: boolean; settings: DraftSettings; player: string; pickNumber: number; picksSoFar: number;
 }): string | null {
   if (input.settings.method !== "Captain's Picks") return "This draft type doesn't use picks.";
+  if (board.countError) return board.countError;
   if (input.completed || board.done || board.turn === null) return "The draft is over.";
   if (!input.started) return "The draft hasn't started yet.";
   if (board.missingCaptains.length) return "Every team needs a captain first (Settings → Players).";

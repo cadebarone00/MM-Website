@@ -7,6 +7,7 @@ import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 import { ALL_NOTIFICATION_PREVIEWS, type NotificationPreview } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
 import { validDraftSim, type DraftSimState } from "./draftSim";
+import { MOCK_DRAFT_PRESET_IDS, validMockViewer, type MockDraftPresetId, type MockViewer } from "./mockDraft";
 import { HOME_COMPETITION_STAGES, HOME_INVITE_STAGES, HOME_MOMENTUM_STAGES, HOME_OVERVIEW_STAGES, HOME_PLAYERS_STAGES, HOME_UPCOMING_STAGES, type HomeCompetitionStage, type HomeInviteStage, type HomeMomentumStage, type HomeOverviewStage, type HomePlayersStage, type HomeUpcomingStage } from "./homeSections";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
@@ -115,6 +116,9 @@ export type SimulatorState = {
   birthdayStage?: "empty" | "calendar" | "picked";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
+  /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
+  mockDraft?: MockDraftPresetId | "off";
+  mockDraftViewer?: MockViewer;
   /** Home → Team Draft / Match Selection sub-pages: the draft sample shown (lib/dev/draftSim.ts). */
 } & DraftSimState;
 export const COMPETITION_SETUPS = [["none", "No competition"], ["individual", "Individual only"], ["team", "Match only"], ["both", "Individual + match"]] as const;
@@ -211,6 +215,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.matchDraftPreview !== undefined && !["off", "Response", "Ranks", "Randomized"].includes(String(state.matchDraftPreview))) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
   if (!validDraftSim(state)) return null;
+  if (state.mockDraft !== undefined && state.mockDraft !== "off" && !MOCK_DRAFT_PRESET_IDS.includes(state.mockDraft as MockDraftPresetId)) return null;
+  if (state.mockDraftViewer !== undefined && !validMockViewer(state.mockDraftViewer)) return null;
   if (state.notificationPreview !== undefined && !ALL_NOTIFICATION_PREVIEWS.includes(String(state.notificationPreview))) return null;
   if (state.wallpaper !== undefined && !["default", "dark", "light"].includes(String(state.wallpaper))) return null;
   if (state.highlightSim !== undefined && !parseHighlightSim(state.highlightSim)) return null;

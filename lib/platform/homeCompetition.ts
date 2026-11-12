@@ -20,6 +20,8 @@ export type HomeCompetitionSummary = {
   /** Team points across every competition round, and what wins it (more than half); null without team points. */
   totalPoints: number | null;
   toWin: number | null;
+  /** A separate record-based league has no two-team points target. */
+  recordStandings?: boolean;
 };
 
 /** "3-Ball" → "3 Ball" (how the owner says it); everything else as saved. */
@@ -33,16 +35,18 @@ export function homeCompetitionSummary(input: {
   types: { individual: string | null; team: string | null };
   rounds: { number: number; dayNumber: number; format?: string; course?: string }[];
   scoring?: RoundScoring[];
+  recordStandings?: boolean;
 }): HomeCompetitionSummary | null {
   const { individual, team } = input.types;
   if (!individual && !team) return null;
   const type = individual && team ? "Team & Individual" : team ? "Team" : "Individual";
   const days = new Set(input.rounds.map(round => round.dayNumber)).size;
   const rounds = input.rounds.map(round => ({ number: round.number, format: round.format?.trim() || "Format not set", course: round.course?.trim() || "Course TBD" }));
-  const total = team ? (input.scoring ?? []).reduce((sum, round) => sum + (round.pointsAvailable ?? 0), 0) : 0;
+  const total = team && !input.recordStandings ? (input.scoring ?? []).reduce((sum, round) => sum + (round.pointsAvailable ?? 0), 0) : 0;
   return {
     type, teamFormat: team ? teamFormatLabel(team) : null, individualFormat: individual ?? null, days, rounds,
     totalPoints: total > 0 ? total : null, toWin: total > 0 ? total / 2 + 0.5 : null,
+    ...(input.recordStandings ? { recordStandings: true } : {}),
   };
 }
 

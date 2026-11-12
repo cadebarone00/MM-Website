@@ -4158,7 +4158,9 @@ on the clock".
 picked player can't be picked again, complete writes teams); browser check with two signed-in phones in the local dev
 stack; simulator still works; lint/types clean.
 
-## Dev simulator: Mock Draft + Mock Match Selection test runs (owner request 2026-11-12) — AWAITING APPROVAL
+## Dev simulator: Mock Draft + Mock Match Selection test runs (owner request 2026-11-12) — APPROVED; Mock draft BUILT 2026-11-12 (uncommitted); Mock match selection waits for the Match Selection rebuild
+
+**As built:** `lib/dev/mockDraft.ts` (+ tests), `components/dev/MockDraftPanel.tsx`, page `home-team-draft-mock`, state `mockDraft` / `mockDraftViewer`; the Draft Room's saved-draft helper (`useTeamDraft`) takes an optional pretend server (`TeamDraftTransport`).
 
 **What it does / who uses it.** Dev only (the owner, in `/dev`). Run a whole draft from start to finish inside the phone,
 switching who is holding the phone, with a **test panel just left of the iPhone / Android screen** that says who is in
@@ -4218,3 +4220,24 @@ wrong-person pick shows ❌-proof ("refused") and a correct one ✅; browser-che
 **Done looks like:** organizer can change each item on General Settings and it shows the same everywhere it's used (Golf Schedule, Players, trip Home); a player sees every item but can't change it; dev preview and saved trips both work; type check + tests pass; checked in the browser.
 
 **Open questions for the owner:** (a) Should Trip Name / Destination / Travel be editable now (needs a database change), or shown read-only for this step? (b) Include the Travel section, yes or no?
+
+## Team sizes: everyone on a team, every team the same size (owner rule 2026-11-12) — AWAITING APPROVAL
+
+**Rule:** in a team competition everyone is on a team and every team has the same number of players. So the number of
+players must be: **2 Teams → even** · **Pairs → a multiple of 2** · **3-Ball → a multiple of 3** · **4-Ball → a multiple of 4**.
+No leftovers, no uneven teams.
+
+**Changes:**
+1. **Draft rules** (`lib/platform/teamDraftPicks.ts`, used by the server, the room and the mock draft): if the trip's
+   players don't fit the rule, the draft can't start — the room says e.g. "Pairs needs players in multiples of 2 (you have
+   7). Add or remove a player first." 2 Teams fills both teams to exactly half. The "leftover players" behaviour goes away.
+2. **Settings → Team Competition:** the **Add Sub/Uneven Teams** switch is removed (teams can't be different sizes). When
+   the trip's player count doesn't fit the chosen team type, a plain note shows under it (same wording as above).
+3. **Simulator + Mock draft:** the odd / leftover setups become "can't start" checks (7 players · 2 Teams, 7 · Pairs,
+   10 · 3-Ball, 10 · 4-Ball) — the Draft Room must refuse and say why. Home → Players' "one left over" conditional becomes
+   "Wrong number of players (can't draft)".
+
+**Not changed:** individual (non-team) competitions; trips already saved with uneven teams keep their saved teams.
+
+**Done looks like:** tests for the rule (each type, good and bad counts); mock draft + simulator conditionals show the
+refusal; Settings note and no uneven switch; lint/types clean; browser-checked.

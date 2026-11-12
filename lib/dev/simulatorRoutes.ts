@@ -11,6 +11,7 @@ import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
 import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
 import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAGE_COUNTS, TEAM_DRAFT_TYPES } from "./draftSim";
 import { teamDraftSize } from "@/lib/platform/teamDraft";
+import { MOCK_DRAFT_PRESETS } from "./mockDraft";
 
 /** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
 const AUTHDEV_ORIGIN = "http://localhost:3002";
@@ -33,6 +34,7 @@ export function simulatorPages(): SimulatorPage[] {
   pages.push(
     { id: "website-desktop", path: "/dev-website", label: "Landing page", group: "Website desktop", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
     { id: "website-mobile", path: "/dev-website", label: "Landing page", group: "Website mobile", fixtures: false, viewport: "mobile", standalone: true, conditions: [] },
+    ...(["desktop", "mobile"] as const).flatMap(viewport => [0, 1, 3, 12].map(count => ({ id: `website-live-${viewport}-${count}`, path: `/dev-website?view=live&trips=${count}`, label: `The Maroon Live / ${count} ${count === 1 ? "trip" : "trips"}`, group: viewport === "desktop" ? "Website desktop" : "Website mobile", fixtures: false, viewport, standalone: true, conditions: [] }))),
   );
   const brandStudio = pages.find(page => page.path === "/dev/brand");
   if (brandStudio) Object.assign(brandStudio, { group: "App Launch", label: "Logo studio", conditions: [] });
@@ -253,6 +255,12 @@ export function simulatorPages(): SimulatorPage[] {
     const teamDraftPage = pages.find(page => page.id === "home-team-draft")!;
     pages.splice(pages.indexOf(teamDraftPage) + 1, 0, ...TEAM_DRAFT_TYPES.map(type => ({ ...teamDraftPage, id: "home-team-draft-" + type.toLowerCase().replace(/\s+/g, "-"),
       label: type + " room", parentId: teamDraftPage.id, conditions: teamDraftConditions(type) })));
+    // Team Draft → Mock draft (test run): run a whole saved draft against a pretend server, with the test panel beside the
+    // phone (who's in control, what to do next, checks, log). Each conditional = one setup; picking one starts it fresh.
+    pages.splice(pages.indexOf(teamDraftPage) + 1 + TEAM_DRAFT_TYPES.length, 0, { ...teamDraftPage, id: "home-team-draft-mock", label: "Mock draft (test run)", parentId: teamDraftPage.id, conditions: [
+      { id: "mock-draft-off", label: "Off (trip data)", section: "Setup", state: { mockDraft: "off" } },
+      ...MOCK_DRAFT_PRESETS.map(preset => ({ id: "mock-draft-" + preset.id, label: preset.label, section: "Setup", state: { mockDraft: preset.id, draftSim: "off" as const, mockDraftViewer: "organizer" as const } })),
+    ] });
     sub("match-selection", "Match Selection", matchSelectionConditions());
     sub("invite", "Invite players", [
       ...section("Invite players", [
@@ -269,6 +277,15 @@ export function simulatorPages(): SimulatorPage[] {
         { id: "home-players-none", label: "No players yet", state: { homePlayers: "none" } },
         { id: "home-players-list", label: "Players list", state: { homePlayers: "list" } },
         { id: "home-players-photos", label: "Some players with profile photos", state: { homePlayers: "photos" } },
+      ]),
+      // After the team draft: the Team Draft section goes away and Players becomes Teams (gold team names). Each one is a
+      // finished sample draft (lib/dev/draftSim.ts); "Before the draft" and "one left over" should still say Players.
+      ...section("After the team draft", [
+        { id: "home-teams-before", label: "Before the draft (Players + Team Draft)", state: { homePlayers: "source", draftSim: "team", teamDraftType: "2 Teams", teamDraftPlayers: 8, teamDraftPicked: "none", draftWhen: "countdown", draftRoom: "closed" } },
+        ...([["2 Teams", 8, "2 teams of 4"], ["Pairs", 8, "4 pairs"], ["3-Ball", 12, "4 teams of 3"], ["4-Ball", 16, "4 teams of 4"]] as const).map(([type, count, shape]) => (
+          { id: "home-teams-" + type.toLowerCase().replace(/\s+/g, "-"), label: `After the draft · ${type} (${shape})`, state: { homePlayers: "source" as const, draftSim: "team" as const, teamDraftType: type, teamDraftPlayers: count, teamDraftPicked: "all" as const, draftWhen: "reached" as const, draftRoom: "closed" as const } })),
+        { id: "home-teams-leftover", label: "After the draft · Pairs, one left over (stays Players)", state: { homePlayers: "source", draftSim: "team", teamDraftType: "Pairs", teamDraftPlayers: 7, teamDraftPicked: "all", draftWhen: "reached", draftRoom: "closed" } },
+        { id: "home-teams-off", label: "Back to trip data", state: { homePlayers: "source", draftSim: "off" } },
       ]),
     ]);
     sub("competition", "Competition", [

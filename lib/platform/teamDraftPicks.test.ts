@@ -26,10 +26,29 @@ test("the draft is done when nobody is left (2 Teams) or every team is full (Pai
   const all = ["c", "d", "e", "f", "g", "h"].map((id, i) => pick(i + 1, id, [0, 1, 1, 0, 0, 1][i]));
   assert.equal(draftBoardFor(members, { 0: "a", 1: "b" }, snake, all).done, true);
   const pairs: DraftSettings = { ...snake, teamType: "Pairs" };
-  const seven = members.slice(0, 7);
-  const board = draftBoardFor(seven, { 0: "a", 1: "b", 2: "c" }, pairs, [pick(1, "d", 0), pick(2, "e", 1), pick(3, "f", 2)]);
+  const six = members.slice(0, 6);
+  const board = draftBoardFor(six, { 0: "a", 1: "b", 2: "c" }, pairs, [pick(1, "d", 0), pick(2, "e", 1), pick(3, "f", 2)]);
   assert.equal(board.done, true);
-  assert.deepEqual(board.available, ["g"], "the 7th player is left over");
+  assert.deepEqual(board.available, [], "everyone is on a team");
+});
+
+test("equal teams only: the wrong number of players can't be drafted (owner rule)", async () => {
+  const { teamCountError } = await import("./teamDraft.ts");
+  assert.equal(teamCountError("2 Teams", 8), null);
+  assert.match(teamCountError("2 Teams", 7)!, /even number of players \(you have 7\)/);
+  assert.equal(teamCountError("Pairs", 8), null);
+  assert.match(teamCountError("Pairs", 7)!, /multiples of 2/);
+  assert.equal(teamCountError("3-Ball", 12), null);
+  assert.match(teamCountError("3-Ball", 10)!, /multiples of 3/);
+  assert.equal(teamCountError("4-Ball", 16), null);
+  assert.match(teamCountError("4-Ball", 10)!, /multiples of 4/);
+  assert.match(teamCountError("4-Ball", 4)!, /at least 8 players/);
+  const seven = members.slice(0, 7);
+  const board = draftBoardFor(seven, { 0: "a", 1: "b", 2: "c" }, { ...snake, teamType: "Pairs" }, []);
+  assert.match(board.countError!, /Pairs needs players in multiples of 2 \(you have 7\)/);
+  assert.equal(draftPickError(board, { 0: "a", 1: "b", 2: "c" }, seven, { ...ok, player: "d", pickNumber: 1 }), board.countError, "no picks with the wrong count");
+  // 2 Teams fills each team to exactly half.
+  assert.equal(draftBoardFor(members, { 0: "a", 1: "b" }, snake, []).capacity, 4);
 });
 
 test("captains must be real, different members; missing ones are reported", () => {

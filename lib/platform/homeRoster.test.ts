@@ -21,3 +21,9 @@ test("plain roster sorts by first name without mutating the supplied players", (
   assert.equal(players[0].name, "Zoe Adams");
   assert.deepEqual(homeTeamRoster({ ...base, teamNames: [] })!.map(t => t.name), ["Team 1", "Team 2"]);
 });
+
+test("Pairs / 3-Ball / 4-Ball: any number of complete teams shows as teams", () => {
+  const four = homeTeamRoster({ ...base, groups: [[0], [1], [2], [3]], teamNames: ["A", "B", "C", "D"] });
+  assert.deepEqual(four?.map(team => team.name), ["A", "B", "C", "D"]);
+  assert.equal(homeTeamRoster({ ...base, groups: [[0, 1, 2, 3]] }), null, "one team isn't a team competition");
+});

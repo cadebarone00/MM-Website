@@ -50,6 +50,27 @@ export function teamDraftSize(teamType: string | null | undefined): number | nul
   return ({ Pairs: 2, "3-Ball": 3, "4-Ball": 4 } as Record<string, number>)[teamType ?? ""] ?? null;
 }
 
+/**
+ * Owner rule (2026-11-12): everyone is on a team and every team is the same size. So the players must be: 2 Teams → an
+ * even number; Pairs → a multiple of 2; 3-Ball → a multiple of 3; 4-Ball → a multiple of 4 — and at least two teams.
+ * Returns what's wrong in plain words, or null when the count works.
+ */
+export function teamCountError(teamType: string | null | undefined, players: number): string | null {
+  const type = teamType || "2 Teams";
+  const size = teamDraftSize(type);
+  const step = size ?? 2;
+  if (players % step !== 0) return size
+    ? `${type} needs players in multiples of ${size} (you have ${players}). Add or remove a player first.`
+    : `2 Teams needs an even number of players (you have ${players}). Add or remove a player first.`;
+  if (players < step * 2) return `${type} needs at least ${step * 2} players (you have ${players}).`;
+  return null;
+}
+
+/** Players per team: the team size, or half the players for 2 Teams (Infinity while the count doesn't work). */
+export function teamDraftCapacity(teamType: string | null | undefined, players: number): number {
+  return teamDraftSize(teamType) ?? (players % 2 === 0 && players > 0 ? players / 2 : Infinity);
+}
+
 /** How many teams the draft fills: players ÷ team size, rounded down (same rule as Settings); 2 for 2 Teams. */
 export function teamDraftTeamCount(teamType: string | null | undefined, players: number): number {
   const size = teamDraftSize(teamType);

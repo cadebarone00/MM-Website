@@ -43,3 +43,12 @@ test("match cards need a course and a configured format", () => {
  assert.equal(matchDraftRounds(setup, [{ number: 1, date: "2027-04-22", course: "Course TBD", format: "Singles" }], 8).length, 0);
  assert.equal(matchDraftRounds(setup, [{ number: 1, date: "2027-04-22", course: "Course", format: "Singles" }], 8).length, 1);
 });
+
+test("stroke-play scrambles and zero-capacity rounds never create match drafts", () => {
+ const round = { number: 1, date: "2027-04-22", course: "Course", format: "Scramble" };
+ const comp = { players: 8, format: "Scramble", matchType: "Stroke Play", nassau: false, pointsPerMatch: 1, scoring: "Gross" };
+ const setup = { allRoundsMatch: { method: "Match Draft" }, compFormats: { "0-0": comp } };
+ assert.deepEqual(matchDraftRounds(setup, [round], 8), []);
+ assert.deepEqual(matchDraftRounds({ ...setup, compFormats: { "0-0": { ...comp, players: 1, matchType: "Match Play" } } }, [round], 1), []);
+ assert.deepEqual(matchDraftRounds({ allRoundsMatch: { method: "Match Draft" } }, [{ ...round, format: "Stroke Play" }], 8), []);
+});

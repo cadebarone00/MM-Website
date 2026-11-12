@@ -1,0 +1,17 @@
+.board{padding-bottom:14px;color:#fbf8f1;font-family:var(--font-spectral),Georgia,serif}
+.board h3{margin:0 0 8px;text-align:center;color:#dcc495;font-size:20px}
+.note{margin:10px 0;color:#d4bfa9;font-size:12px;line-height:1.5}
+.tableWrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:10px 5px;border-bottom:1px solid #dcc49533;text-align:right;font-variant-numeric:tabular-nums}
+.table th:first-child{text-align:left;overflow-wrap:anywhere}
+.table thead{color:#dcc495;font-family:var(--font-barlow),Arial,sans-serif;font-size:11px}
+.rank{display:inline-block;min-width:20px;margin-right:6px;color:#dcc495}
+.rotation{margin-top:18px;padding-top:12px;border-top:1px solid #dcc49555}
+.rotation h4{margin:0 0 8px;color:#dcc495;font-size:14px;overflow-wrap:anywhere}
+.match{display:flex;flex-direction:column;gap:7px;padding:10px 0;font-size:14px;overflow-wrap:anywhere}
+.versus{padding:0 4px;color:#d4bfa9;font-size:12px}
+.result{display:flex;align-items:center;gap:10px;color:#d4bfa9;font-size:12px}
+.result select{width:100%;min-width:0;max-width:280px;min-height:36px;border:1px solid #dcc49566;border-radius:8px;padding:6px;background:#350001;color:#fbf8f1;font:inherit}
+.result select:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.outcome{color:#dcc495;font-size:12px}

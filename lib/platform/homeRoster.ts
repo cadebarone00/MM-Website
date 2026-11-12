@@ -13,7 +13,8 @@ export function homeTeamRoster(input: {
   groups: number[][] | null; teamNames?: string[];
 }): HomeRosterTeam[] | null {
   const { players, assignmentNames, groups } = input;
-  if (!input.teamCompetition || !players.length || groups?.length !== 2 || groups.some(group => !group.length)) return null;
+  // Any number of teams (2 Teams, Pairs, 3-Ball, 4-Ball), as long as every player is on exactly one.
+  if (!input.teamCompetition || !players.length || !groups || groups.length < 2 || groups.some(group => !group.length)) return null;
   const indexes = groups.flat();
   if (indexes.length !== assignmentNames.length || new Set(indexes).size !== assignmentNames.length
     || indexes.some(index => !Number.isInteger(index) || index < 0 || index >= assignmentNames.length)) return null;

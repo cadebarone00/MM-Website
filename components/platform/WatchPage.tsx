@@ -12,7 +12,6 @@ import type { SpectatorTrip, WatchView } from "@/lib/platform/watchView";
 import homeStyles from "./GolfTripHome.module.css";
 import styles from "./CodeTournament.module.css";
 import tapStyles from "./TripTapIn.module.css";
-import { TapInIcon } from "./TapInIcon";
 
 /** How often a watched trip checks for new scores (a watched tournament refreshes itself). */
 const POLL_MS = 10_000;
@@ -55,7 +54,7 @@ function SpectatorTrip({ trip, problem }: { trip: SpectatorTrip; problem: string
     <div className={tapStyles.spectator}>
       <header className={tapStyles.masthead}>
         <p className={tapStyles.brand}>The Maroon</p>
-        <span className={tapStyles.pill}><TapInIcon size={20} />Tap In</span>
+        <span className={tapStyles.pill}>The Maroon Live</span>
         <h1 className={tapStyles.tripName}>{savedTrip.trip.name}</h1>
         <p className={tapStyles.summary}>{savedTrip.members.length} players{scoring ? ` / Round ${scoring.roundNumber}` : ""}</p>
         <p className={tapStyles.following}>Follow the scores. Know the story.</p>

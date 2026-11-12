@@ -15,6 +15,7 @@ export function TripHomeCompetition({ summary }: { summary: HomeCompetitionSumma
     ...(summary.individualFormat ? [["Individual", summary.individualFormat] as [string, string]] : []),
     ["Days", String(summary.days)],
     ["Rounds", String(summary.rounds.length)],
+    ...(summary.recordStandings ? [["Round robin standings", "W-L-T / winning percentage"] as [string, string]] : []),
   ];
   return <section className={styles.card} aria-label="Competition details">
     <dl className={styles.facts}>

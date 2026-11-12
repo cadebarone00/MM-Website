@@ -4,7 +4,7 @@ import { WatchPage } from "@/components/platform/WatchPage";
 import { tapInPath } from "@/lib/platform/tapIn";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Tap In | The Maroon", robots: { index: false, follow: false }, referrer: "no-referrer" };
+export const metadata: Metadata = { title: "The Maroon Live", robots: { index: false, follow: false }, referrer: "no-referrer" };
 
 /** Public, read-only trip/tournament access through the existing watch-code boundary. */
 export default async function TripTapInPage({ params }: { params: Promise<{ code: string }> }) {
