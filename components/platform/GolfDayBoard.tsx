@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useId, useRef, useSyncExternalStore, type PointerEvent, type ReactNode } from "react";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { golfDayAssignment, golfDayDateLabel, golfDayMatchNames, golfDayRounds, golfDaySummary } from "@/lib/platform/golfDay";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
@@ -9,11 +9,28 @@ import styles from "./GolfDayBoard.module.css";
 import { shownUsername } from "@/lib/platform/playerUsername";
 import { courseOverviewName } from "@/lib/platform/courseShortName";
 
+/**
+ * Tucked or open is remembered on this device (owner 2026-11-13): leave Golf (Home, Venue, …) and come back, or reload,
+ * and the board is how you left it.
+ */
+const COLLAPSED_KEY = "golfDayBoardCollapsed";
+const collapsedListeners = new Set<() => void>();
+let collapsedMemory: boolean | null = null;
+const readCollapsed = () => { try { return localStorage.getItem(COLLAPSED_KEY) === "1"; } catch { return false; } };
+const collapsedSnapshot = () => (collapsedMemory ??= readCollapsed());
+const subscribeCollapsed = (listener: () => void) => { collapsedListeners.add(listener); return () => { collapsedListeners.delete(listener); }; };
+const storeCollapsed = (value: boolean) => {
+  collapsedMemory = value;
+  try { localStorage.setItem(COLLAPSED_KEY, value ? "1" : "0"); } catch { /* private mode: kept for this visit only */ }
+  collapsedListeners.forEach((listener) => listener());
+};
+
 export function GolfDayBoard({ match, schedule, viewerName, structure, spectator, sittingOut, roundRsvps, children }: {
   match?: GolfMatchPreview; schedule?: GolfTripDraft; viewerName?: string | null; structure: CompetitionStructure;
   spectator?: boolean; sittingOut?: boolean; roundRsvps?: Record<number, Record<string, string>>; children: (handle: ReactNode) => ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useSyncExternalStore(subscribeCollapsed, collapsedSnapshot, () => false);
+  const setCollapsed = (next: boolean | ((value: boolean) => boolean)) => storeCollapsed(typeof next === "function" ? next(collapsedSnapshot()) : next);
   const detailsId = useId();
   const drag = useRef<{ id: number; y: number } | null>(null);
   const dragged = useRef(false);

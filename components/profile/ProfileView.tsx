@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Search, Settings } from "lucide-react";
+import { Link as LinkIcon, Pencil, Search, Settings } from "lucide-react";
+import { ProfileAvatar } from "./ProfileAvatar";
+import { linkLabel } from "@/lib/profile/profileEdit";
 import { FriendRequestBadge } from "./FriendRequestBadge";
 import { FriendToggle } from "./FriendToggle";
 import type { Relation } from "@/lib/profile/friendRequestsServer";
@@ -65,11 +67,12 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
               photo's height, the name and the @username just under it (smaller, gold), both left-aligned, then Friends · Rounds · Handicap
               (every round on the profile, friends from golf trips, the handicap index from all counting rounds). */}
           <div className="flex items-center gap-5">
-            <span className="flex h-[86px] w-[86px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream-50 font-condensed text-[28px] font-bold text-maroon-900 shadow-[0_0_0_3px_var(--color-gold-300)]">
-              {identity.avatarSrc
-                ? <Image src={identity.avatarSrc} alt="" width={86} height={86} unoptimized className="h-full w-full object-cover" />
-                : identity.initials}
-            </span>
+            {/* The photo; no photo = the avatar (initials, Golf pull-down board style — owner rule 2026-11-13). */}
+            {identity.avatarSrc
+              ? <span className="flex h-[86px] w-[86px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream-50 shadow-[0_0_0_3px_var(--color-gold-300)]">
+                <Image src={identity.avatarSrc} alt="" width={86} height={86} unoptimized className="h-full w-full object-cover" />
+              </span>
+              : <ProfileAvatar name={identity.displayName || identity.username} size={86} />}
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-left font-serif text-[18px] font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
               <p className="mt-0.5 truncate text-left text-[13px] font-semibold leading-tight text-gold-300">@{identity.username}</p>
@@ -87,6 +90,14 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
           </div>
           {/* Under the photo row: the bio (small, never more than 3 lines, stopping 10% short of the right edge, in the same font and size as the Friends / Rounds / Handicap labels). */}
           {identity.bio && <p className="mt-3 line-clamp-3 max-w-[90%] whitespace-pre-line font-condensed text-[13px] leading-snug text-cream-50/85">{identity.bio}</p>}
+          {/* Edit profile → Links (up to 5), under the bio; the read model leaves them out of someone else's Private profile. */}
+          {identity.links.length > 0 && <ul className="mt-2 flex max-w-[90%] flex-wrap gap-x-3 gap-y-1" aria-label="Links">
+            {identity.links.map((link) => <li key={link.url} className="min-w-0">
+              <a href={link.url} target="_blank" rel="noopener noreferrer nofollow ugc" className="flex min-w-0 items-center gap-1 font-condensed text-[13px] font-semibold text-gold-300 hover:underline">
+                <LinkIcon size={12} aria-hidden="true" className="shrink-0" /><span className="truncate">{link.title}</span><span className="sr-only"> ({linkLabel(link.url)})</span>
+              </a>
+            </li>)}
+          </ul>}
         </div>
         {!isPrivate && <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
           {TABS.map((t) => (

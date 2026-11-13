@@ -19,7 +19,6 @@ import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import { BoardSlideBody, TripBigBoard, type BoardSlide } from "./TripBigBoard";
 import { bigBoardScore, upcomingSlides } from "@/lib/platform/bigBoard";
 import { GolfDayBoard } from "./GolfDayBoard";
-import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
@@ -63,6 +62,7 @@ import { getPlayerDisplayName } from "@/lib/data/players";
 import styles from "./GolfTripHome.module.css";
 import { GolfTripPredict } from "./GolfTripPredict";
 import { tripSetupFromPreview } from "@/lib/platform/predictFromPreview";
+import { useTripMarkets } from "@/lib/platform/useTripMarkets";
 import { usePredictSettings } from "@/lib/platform/predictSetting";
 
 import { GOLF_TRIP_TABS as TABS, golfSections, type CompetitionStructure, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
@@ -455,10 +455,24 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
   // Spectators (watch code): no Games or Predict.
   const sections = golfSections(structure, playerStats || spectator)
     .filter(section => (!spectator || section.id !== "Games") && !(structure.team && !structure.individual && section.id === "Overview"))
-    .map(section => section.id === "Competition" ? { ...section, label: "Leaderboard" } : section);
-  // Organizer → Predict off: no Predict button and no Predict sheet.
+    .map(section => section.id === "Competition" ? { ...section, label: "Board" } : section);
+  // Organizer → Predict off: no Predict section.
   const predictOn = usePredictSettings().on;
   const predictSetup = useMemo(() => previewMatch && predictOn && !spectator ? tripSetupFromPreview(previewMatch, structure) : null, [previewMatch, structure, predictOn, spectator]);
+  // Main leaderboard's odds line (owner 2026-11-13): each player's chance of winning the individual competition, from the same model
+  // and seed as Predict's Winners tab (so the numbers match) — net for Net, lowest gross total for Gross.
+  // Worked out ONCE in the background (useTripMarkets) and shared with the Predict tab, so neither freezes the screen.
+  const marketSetup = useMemo(() => predictSetup ?? (previewMatch && structure.individual ? tripSetupFromPreview(previewMatch, structure) : null), [predictSetup, previewMatch, structure]);
+  const markets = useTripMarkets(marketSetup);
+  const winChances = useMemo(() => {
+    if (!previewMatch || !structure.individual) return undefined;
+    if (!markets) return "loading" as const;
+    const chances = (bet: "individualWinner" | "lowTotal") => {
+      const market = markets.find(m => m.bet === bet);
+      return new Map(market?.kind === "outcomes" ? market.outcomes.map(o => [o.label, o.chance] as const) : []);
+    };
+    return { net: chances("individualWinner"), gross: chances("lowTotal") };
+  }, [previewMatch, structure, markets]);
   // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
   const noComp = !structure.individual && !structure.team;
   // Individual only: the same box, split — the round on the left, the leaderboard's top 5 on the right.
@@ -477,7 +491,7 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
   if (selection.navigation !== navigation) setSelection({ navigation, active: requested });
   const selectedActive = selection.navigation === navigation ? selection.active : requested;
   const predictActive = availableSlides[selectedActive] === "Predict";
-  const active = predictActive ? 0 : selectedActive;
+  const active = selectedActive;
   const setActive = (active: number) => setSelection({ navigation, active });
   // Games and Stats sit outside the swipe strip (like Games always has); the strip holds Leaderboard / Matches.
   const offStrip = (id: string | undefined) => id === "Games" || id === "Stats" || id === "Predict";
@@ -524,31 +538,38 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
     <GolfDayBoard match={sourceMatch} structure={structure} schedule={schedule} roundRsvps={rsvps} viewerName={savedGames?.group.find(player => player.profileId === savedGames.meId)?.name ?? signedInName} spectator={spectator}
       sittingOut={!!sourceMatch && (rsvps[sourceMatch.round]?.[savedGames?.group.find(player => player.profileId === savedGames.meId)?.name ?? signedInName ?? ""] === "out")} >
-    {handle => <div className={`${styles.tabs} ${styles.sectionTabs} ${styles.golfBoardTabs}`} role="tablist" aria-label="Golf sections">
-      {[...sections, ...(predictSetup && !noComp ? [{ id: "Predict" as const, label: "Predict" }] : [])].filter(({ id }) => !(structure.individual && structure.team && id === "Competition")).map(({ id, label }) => {
-        const index = availableSlides.indexOf(id);
-        const selected = id === "Predict" ? predictActive : !predictActive && (active === index || (id === "Overview" && structure.individual && structure.team && golfSection === "Competition"));
-        return <Fragment key={id}><button type="button" role="tab" aria-selected={selected}
-          className={`${styles.tab} ${selected ? styles.tabActive : ""}`} onClick={() => goTo(selected && id !== "Predict" ? active : index)}>{label}</button>
-          {(id === "Games" || id === "Overview" && !sections.some(section => section.id === "Games")) && handle}
-        </Fragment>;
-      })}
-    </div>}
+    {handle => {
+      // Board · Games · Stats · Predict (owner 2026-11-13): the same sliding bubble pill as Team / Indi, for however many sections
+      // this trip has. The glowing box slides to the picked one. The board's drag handle sits outside the pill so it stays put.
+      const golfTabs = [...sections, ...(predictSetup && !noComp ? [{ id: "Predict" as const, label: "Predict" }] : [])].filter(({ id }) => !(structure.individual && structure.team && id === "Competition"));
+      const isSelected = (id: (typeof golfTabs)[number]["id"]) => id === "Predict" ? predictActive : !predictActive && (active === availableSlides.indexOf(id) || (id === "Overview" && structure.individual && structure.team && golfSection === "Competition"));
+      const picked = golfTabs.findIndex(({ id }) => isSelected(id));
+      return <>
+        <div className={`${styles.slidingSelector} ${styles.golfSectionSelector}`} data-none={picked < 0} style={{ "--count": golfTabs.length, "--index": Math.max(picked, 0) } as CSSProperties} role="tablist" aria-label="Golf sections">
+          {golfTabs.map(({ id, label }) => {
+            const index = availableSlides.indexOf(id);
+            const selected = isSelected(id);
+            return <button key={id} type="button" role="tab" aria-selected={selected} className={`${styles.tab} ${selected ? styles.tabActive : ""}`} onClick={() => goTo(selected && id !== "Predict" ? active : index)}>{label}</button>;
+          })}
+        </div>
+        {handle}
+      </>;
+    }}
     </GolfDayBoard>
 
     {/* Team/Indi keeps the same standalone navigation board above either view. */}
-    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={styles.slidingSelector} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
+    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.slidingSelector} ${styles.underlineSelector}`} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
       <button type="button" className={`${styles.tab} ${golfSection === "Competition" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Competition"} onClick={() => goTo(availableSlides.indexOf("Competition"))}>Team</button>
       <button type="button" className={`${styles.tab} ${golfSection === "Overview" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Overview"} onClick={() => goTo(availableSlides.indexOf("Overview"))}>Indi</button>
     </div></div>}
     {previewMatch && structure.team && golfSection === "Competition" && !predictActive && <div className={styles.golfTop}>
       <div className={styles.golfTopSize}>
-        <GolfTournamentSummary match={previewMatch} tripStats={tripStats} onPredict={predictSetup ? () => goTo(availableSlides.indexOf("Predict")) : undefined} />
+        <GolfTournamentSummary match={previewMatch} tripStats={tripStats}  />
       </div>
     </div>}
     {/* The board: a summary for the section — the whole tournament on Overview, the round being played on Competition,
         games (placeholder) on Games. All three share one grid cell so nothing below moves when it switches. */}
-    {/* Stats has the space to itself; Predict overlays the leaderboard. */}
+    {/* Stats and Predict each have the space to themselves. */}
     {/* Rounds (owner 2026-11-10): a pill per round number instead of the date / course / round / format header; the
         picked round's course and format sit under the pills. */}
     {previewMatch && golfSection === "Competition" && !predictActive && rounds.length > 0 && <div className={styles.roundPicker}>
@@ -572,41 +593,19 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
         {name === "Overview"
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
-          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} tripStats={tripStats} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} tripStats={tripStats} winChances={winChances} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
           : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} matchOffset={matchOffset} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>
     <div role="tabpanel" aria-label="Games" hidden={!gamesActive || statsActive || predictActive}>
-      {previewMatch ? <GolfTripGames match={previewMatch} rounds={rounds.map(round => round.number)} signedInName={signedInName} saved={savedGames} organizerGames={organizerGames} /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
+      {previewMatch ? <GolfTripGames match={previewMatch} rounds={rounds.map(round => round.number)} roundInfo={rounds.map(round => ({ number: round.number, date: round.date, course: schedule?.['round' + round.number + 'Course'] || undefined }))} signedInName={signedInName} saved={savedGames} organizerGames={organizerGames} /> : <Card title="Games"><Empty>Golf games are coming soon</Empty></Card>}
     </div>
     {/* Stats (only while Player Stats is on): the trip's stats from the scorecards players have recorded. */}
     {sections.some(({ id }) => id === "Stats") && <div role="tabpanel" aria-label="Stats" hidden={!statsActive}>
       {tripStats ? <Card title={spectator ? "Round Stats" : "Trip Stats"}><GolfTripStats stats={tripStats} changes={scoreChanges} /></Card> : <Card title="Stats"><Empty>Stats will show here once players record rounds</Empty></Card>}
     </div>}
-    {predictSetup && !noComp && predictActive && <PredictSheet onClose={() => goTo(0)}><GolfTripPredict setup={predictSetup} /></PredictSheet>}
+    {predictSetup && !noComp && predictActive && <div role="tabpanel" aria-label="Predict"><GolfTripPredict markets={markets} /></div>}
   </>;
-}
-
-function PredictSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    dialog.showModal();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { dialog.close(); document.body.style.overflow = overflow; };
-  }, []);
-  // The Wallet sheet: its own header (Wallet, coins, In play, Profit/Loss) comes from GolfTripPredict; tap outside or
-  // press Escape to close.
-  return createPortal(<dialog ref={dialogRef} className={styles.predictSheet} aria-label="Wallet" onCancel={onClose}
-    onClick={event => {
-      if (event.target !== event.currentTarget) return;
-      const rect = event.currentTarget.getBoundingClientRect();
-      if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) onClose();
-    }}>
-    {children}
-  </dialog>, document.body);
 }
 
 type EventLine = { icon: LucideIcon; text: string };

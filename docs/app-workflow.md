@@ -6,6 +6,12 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-13 - Word-sized Golf navigation underline (presentation only; implemented locally, not deployed).** The selected Leaderboard/Games/Stats/Predict underline is now centered under the label and measures 70% of that word width, replacing the fixed 30px line. Existing gold glow and equal-width navigation buttons remain. Section 22 updated; workflow paths unchanged.
+
+**2026-11-13 - Predict as a Golf page (implemented locally, not deployed).** Predict now replaces the lower Golf content beneath the shared overview/navigation, like Games and Stats, instead of opening a modal Wallet slide-up over the leaderboard. Removed the team leaderboard Predict button and spread its two stat groups across the available row. Existing Predict eligibility, organizer settings, wallet, predictions and storage remain unchanged. Section 22 and Mermaid annotation updated; overview paths and renderer mappings unchanged.
+
+**2026-11-13 - Deeper team leaderboard color header (presentation only; implemented locally, not deployed).** Extended the team board color strip from 8px to 40px to contain the team names. Split TO and WIN across the center color boundary with the points-to-win number underneath; team scores remain below the colored header. Section 22 updated; team totals, target calculation and workflow paths unchanged.
+
 **2026-11-13 - Matching team and match stat styling (presentation only; implemented locally, not deployed).** Team leaderboard PPG/FWY/GIR now uses the Matches FWY-through-Score treatment: open background, a fading rule between labels and values, and the same 15px label/value spacing. Removed the tinted rounded stat panels; team stat dialogs, placeholder values and Predict remain unchanged. Section 22 updated; no data or workflow paths changed.
 
 **2026-11-13 - Slimmer Golf selectors (presentation only; implemented locally, not deployed).** Reduced Team/Indi and Games Active/Settled selector height from 46px to 40px by shortening their shared buttons from 36px to 30px. The outlined glow, rounded corners, text size and sliding behavior remain. Section 22 updated; workflow paths unchanged.
@@ -670,6 +676,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  %% Predict uses an inline Golf section; its old Wallet slide-up and team board entry are removed.
   %% Personal Golf board blends into page, extends 10px per side and retains softer 28px bottom curves.
   %% Team/Indi and Games Active/Settled share a sliding gold bubble selector below the overview.
   %% Personal Golf board: open top and sides, no enclosing shadow, rounded bottom outline retained.
@@ -1223,6 +1230,12 @@ The separate test-season controls operate on a designated database season. This 
 **Collapsible Golf overview (2026-11-12):** The GolfDayBoard details slide fully closed through the tiny handle at the bottom center of its navigation, 3px above the board edge. Expanded content has 2px top padding plus the 8px Golf-body offset, matching the personal row's 10px lower divider buffer; content keeps 10px bottom padding, with no divider between rounds and the navigation close below the final round; collapsing still removes its full height. There is no extra separator above the section-navigation row in either expanded or collapsed state; the trip-tab divider remains above the tucked view. The four section labels are 13.5px, gold and centered in equal-width slots, with a centered 30px glowing gold underline for the selected item and no bubble; only this navigation row remains when collapsed. A tap/keyboard activation toggles; an upward/downward drag over 20px closes/opens it. The existing section navigation stays visible and functional, hidden details leave the accessibility tree, reduced motion disables transitions, and state is component-local rather than saved.
 
 **Golf overview pull lip (2026-11-13):** The overview pull control is a 32px-wide, 10px-high rounded lip extending 9px below the bottom outline, with a centered 12px grip line. A 10px bottom margin gives following content room. Tap, keyboard and vertical drag still expand or collapse the overview in every Golf section.
+
+**Golf navigation underline (2026-11-13):** The selected label has a centered glowing underline sized to 70% of its rendered word width. Equal-width buttons and navigation behavior remain unchanged.
+
+**Predict section (2026-11-13):** Eligible players open Predict from the shared Golf navigation. It renders its existing wallet and prediction content as an inline tab panel, with ordinary page scrolling and no overview-blocking modal. Leaderboard content and Team/Indi controls are hidden while Predict is selected. The team leaderboard has no Predict button; its two stat groups share the row. Organizer-off, noncompetitive and spectator restrictions remain unchanged. Presentation scope review: existing data, audience, permissions, vendors, retention and coin behavior are unchanged; unresolved Predict legal/platform/payment questions remain review_required under the existing compliance framework, with no release authorization implied.
+
+**Team leaderboard color header (2026-11-13):** The 50/50 team color band is 40px tall and contains both team names using their configured contrast colors. TO sits on the left color and WIN on the right, with the existing points-to-win target beneath; team scores remain below the band.
 
 **Team summary stats styling (2026-11-13):** PPG/FWY/GIR beside Predict matches the open Matches FWY/GREEN/PUTTS/SCORE styling, with a fading horizontal separator and 15px label/value gap instead of tinted rounded panels. Existing team stat buttons still open the same dialog; displayed values and data sources are unchanged.
 

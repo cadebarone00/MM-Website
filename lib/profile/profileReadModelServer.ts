@@ -1,4 +1,5 @@
 import { profilePhotoUrl } from "./profilePhoto";
+import { getProfileLinks } from "./profileEditServer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getPlayerSlug } from "@/lib/data/players";
 import { getCatalogTournament, getSeasonCatalog } from "@/lib/data/seasonCatalog";
@@ -37,6 +38,8 @@ async function subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null> 
     id: text(row.id), displayName: text(row.display_name), username: text(row.username), createdAt: text(row.created_at) || null,
     legacyMaroonPlayerSlug: text(row.player_slug) || null, roundsVisibility: row.rounds_visibility === "public" ? "public" : "private",
     bio: text(row.bio) || null, avatarUrl: profilePhotoUrl(text(row.avatar_path) || null),
+    // buildProfileReadModel drops them for someone else's Private profile.
+    links: await getProfileLinks(subjectId) ?? [],
   };
 }
 

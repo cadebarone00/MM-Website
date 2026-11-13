@@ -3,7 +3,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { updateSampleProfile, useSampleProfile } from "@/components/dev/useSampleProfile";
-import { ProfileForm } from "@/components/profile/ProfileForm";
+import { EditProfileScreen } from "@/components/profile/EditProfileScreen";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { PhotoSetting } from "@/components/settings/PhotoSetting";
 import { PrivacySetting } from "@/components/settings/PrivacySetting";
@@ -11,7 +11,7 @@ import { ProfileFieldsSetting } from "@/components/settings/ProfileFieldsSetting
 import { SettingsScreen } from "@/components/settings/SettingsScreen";
 import { SAMPLE_FRIENDS, sampleProfileReadModel } from "@/lib/dev/sampleProfile";
 import { initialsFor } from "@/lib/profile/myProfile";
-import { profileEditFromBody } from "@/lib/profile/profileEdit";
+import { profileEditFromBody, profileLinksFromBody } from "@/lib/profile/profileEdit";
 import styles from "@/components/settings/Settings.module.css";
 
 /**
@@ -34,7 +34,7 @@ export function DevProfilePreview() {
 }
 
 /** The same checks the real save route makes (the database's username checks aren't simulated). */
-function checked(body: Record<string, string>) {
+function checked(body: Record<string, unknown>) {
   const result = profileEditFromBody(body);
   if (!result.ok) throw new Error(result.error);
   return result.input;
@@ -62,7 +62,13 @@ export function DevSettingsPreview() {
 
 export function DevEditProfilePreview() {
   const mine = useSampleProfile();
-  return <ProfileForm key={`${mine.displayName}|${mine.username}|${mine.bio}`} mode="edit" doneHref="/dev/profile"
-    initial={{ displayName: mine.displayName, username: mine.username, bio: mine.bio }}
-    onSave={async (body) => { updateSampleProfile(checked(body)); }} />;
+  return <EditProfileScreen key={`${mine.displayName}|${mine.username}|${mine.bio}|${mine.gender}|${mine.links.length}|${mine.visibility}`} backHref="/dev/profile"
+    initial={{ displayName: mine.displayName, username: mine.username, bio: mine.bio, bioAvailable: true, gender: mine.gender, genderAvailable: true,
+      links: mine.links, linksAvailable: true, photoUrl: mine.photoUrl, photoAvailable: true, visibility: mine.visibility }}
+    savers={{
+      async profile(body) { updateSampleProfile(checked(body)); },
+      async photo(file) { const photoUrl = file ? await readPhoto(file) : null; updateSampleProfile({ photoUrl }); return photoUrl; },
+      async links(list) { const result = profileLinksFromBody({ links: list }); if (!result.ok) throw new Error(result.error); updateSampleProfile({ links: result.links }); return result.links; },
+      async visibility(visibility) { updateSampleProfile({ visibility }); },
+    }} />;
 }

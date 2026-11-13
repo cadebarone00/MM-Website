@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { profileEditFromBody, profileHref, profileSetupFromBody, usernameProblem } from "./profileEdit";
+import { linkLabel, normalizeLinkUrl, profileEditFromBody, profileHref, profileLinksFromBody, profileLinksFromRows, profileSetupFromBody, usernameProblem } from "./profileEdit";
 
 test("finish setup needs a name and a username in the right shape", () => {
   assert.deepEqual(profileSetupFromBody({ displayName: " Sam ", username: " samfresh ", playerSlug: "x" }), { ok: true, input: { displayName: "Sam", username: "samfresh" } });
@@ -34,4 +34,28 @@ test("bio: 3 lines and 150 characters at most; typing past that is trimmed", asy
   assert.match(String(bioProblem("1\n2\n3\n4")), /3 lines/);
   assert.equal(limitBio("1\n2\n3\n4\n5"), "1\n2\n34 5");
   assert.equal(limitBio("x".repeat(200)).length, 150);
+});
+
+test("edit takes gender (Man / Woman / Prefer not to say, or empty to clear) and refuses anything else", () => {
+  assert.deepEqual(profileEditFromBody({ gender: "woman" }), { ok: true, input: { gender: "woman" } });
+  assert.deepEqual(profileEditFromBody({ gender: "" }), { ok: true, input: { gender: "" } });
+  for (const gender of ["robot", "Man", null, 3]) {
+    const r = profileEditFromBody({ gender });
+    assert.equal(!r.ok && r.field, "gender", String(gender));
+  }
+});
+
+test("links: up to 5, title + https address; bare addresses get https://, http and other schemes are refused", () => {
+  assert.equal(normalizeLinkUrl(" instagram.com/me "), "https://instagram.com/me");
+  assert.equal(normalizeLinkUrl("https://x.com"), "https://x.com");
+  assert.deepEqual(profileLinksFromBody({ links: [{ title: " IG ", url: "instagram.com/me" }] }), { ok: true, links: [{ title: "IG", url: "https://instagram.com/me" }] });
+  assert.deepEqual(profileLinksFromBody({ links: [] }), { ok: true, links: [] });
+  for (const body of [null, { links: "x" }, { links: [{ title: "A" }] }, { links: [{ title: "", url: "a.com" }] }, { links: [{ title: "A", url: "http://a.com" }] },
+    { links: [{ title: "A", url: "javascript:alert(1)" }] }, { links: [{ title: "x".repeat(41), url: "a.com" }] }, { links: [{ title: "A", url: "has space.com" }] },
+    { links: Array.from({ length: 6 }, (_, i) => ({ title: `L${i}`, url: `${i}.com` })) }]) {
+    assert.equal(profileLinksFromBody(body).ok, false, JSON.stringify(body));
+  }
+  // Read back: anything malformed is dropped, never shown.
+  assert.deepEqual(profileLinksFromRows([{ title: "A", url: "https://a.com" }, { title: "B", url: "javascript:x" }, null]), [{ title: "A", url: "https://a.com" }]);
+  assert.equal(linkLabel("https://a.com/"), "a.com");
 });

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Coins, X } from "lucide-react";
-import { BET_CATEGORIES, betDef, priceTrip, type BetCategory, type Market, type PlayerLine, type TripSetup } from "@/lib/platform/predictBets";
+import { BET_CATEGORIES, betDef, type BetCategory, type Market, type PlayerLine } from "@/lib/platform/predictBets";
 import { STAT_LABELS, type StatKey } from "@/lib/platform/predictStats";
 import { usePredictSettings } from "@/lib/platform/predictSetting";
 import { Wheel } from "./Wheel";
@@ -49,10 +49,12 @@ function poolsFor(market: Market): Pool[] {
 
 const readBook = (): Book | null => { try { return JSON.parse(localStorage.getItem(BOOK_KEY) ?? "null"); } catch { return null; } };
 
-export function GolfTripPredict({ setup }: { setup: TripSetup }) {
+/** `markets`: the trip's odds, worked out once in the background by Home (useTripMarkets) and shared with the leaderboard's
+ *  win-odds line. null = still being worked out (the Wallet shows, the numbers fill in a moment later). */
+export function GolfTripPredict({ markets: ready }: { markets: Market[] | null }) {
   const settings = usePredictSettings();
-  // The model's odds with the live scores: re-run whenever scores change (4,000 simulated trips takes a moment).
-  const markets = useMemo(() => priceTrip(setup, 4000, 7), [setup]);
+  const loading = ready === null;
+  const markets = useMemo(() => ready ?? [], [ready]);
   const shown = markets.filter((m) => !settings.off.includes(m.bet));
   const pools = useMemo(() => new Map(markets.flatMap(poolsFor).map((p) => [p.key, p])), [markets]);
   const [book, setBook] = useState<Book>({ balance: STARTING_COINS, positions: [] });
@@ -94,8 +96,8 @@ export function GolfTripPredict({ setup }: { setup: TripSetup }) {
         <b className={styles.walletCoins} aria-label={`${coins(book.balance)} Maroon Coins`}><Coins size={16} aria-hidden="true" />{coins(book.balance)}</b>
       </div>
       <dl className={styles.walletStats}>
-        <div><dt>In play</dt><dd>{coins(invested)}</dd></div>
-        <div><dt>Profit/Loss</dt><dd className={profit >= 0 ? styles.up : styles.down}>{profit >= 0 ? "+" : ""}{coins(profit)}</dd></div>
+        <div><dt>In play</dt><dd>{loading ? "…" : coins(invested)}</dd></div>
+        <div><dt>Profit/Loss</dt>{loading ? <dd>…</dd> : <dd className={profit >= 0 ? styles.up : styles.down}>{profit >= 0 ? "+" : ""}{coins(profit)}</dd>}</div>
       </dl>
     </header>
 
@@ -106,7 +108,8 @@ export function GolfTripPredict({ setup }: { setup: TripSetup }) {
     <div className={styles.cards}>
       {shown.filter((m) => betDef(m.bet).category === tab && !(m.bet === "teamSpread" && shown.some((x) => x.bet === "teamWinner"))).map((m) =>
         <MarketCard key={m.bet} market={m} spread={m.bet === "teamWinner" ? shown.find((x) => x.bet === "teamSpread") : undefined} pools={pools} priceOf={priceOf} onPick={(pool, outcome) => setTrade({ pool, outcome })} />)}
-      {!shown.some((m) => betDef(m.bet).category === tab) && <p className={styles.empty}>No {tab.toLowerCase()} bets are on for this trip.</p>}
+      {loading && <p className={styles.empty} role="status">Working out the odds…</p>}
+      {!loading && !shown.some((m) => betDef(m.bet).category === tab) && <p className={styles.empty}>No {tab.toLowerCase()} bets are on for this trip.</p>}
     </div>
 
     {open.length > 0 && <section className={styles.positions} aria-label="My positions">

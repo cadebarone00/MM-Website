@@ -135,7 +135,10 @@ function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatc
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
 /** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
-export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView;
+export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, winChances }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView;
+  /** Each player's chance (0–1) of winning the trip's individual competition, by name — net and gross (Predict's model). When given,
+   *  it replaces the @username line under each name. "loading" = still being worked out: the line's space is kept, empty. */
+  winChances?: { net: Map<string, number>; gross: Map<string, number> } | "loading";
   /** Tournaments by code: a cut line under the players making it (by name), labelled; `out`: the cut is past, so those
    *  missing it show CUT for a place. */
   cut?: { missed: ReadonlySet<string>; label: string; out: boolean } }) {
@@ -202,7 +205,15 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: 
   return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
     <div>
       <div className={styles.leaderboardListHeading}>
-        {scoring !== "Gross" && <div className={styles.matchScoringControl}><ScoringControl scoring={scoring} net={net} onNet={setNet} /></div>}
+        {/* Gross/Net (owner 2026-11-13): centered over the score columns (TOT → TDY), in the Team/Indi sliding style. It spans the
+            last columns, so it stays put when Net adds the HCP column. */}
+        {scoring !== "Gross" && <div className={`${rowClass} ${styles.scoringRow}`}><div className={`${styles.scoringSlot} ${skins ? styles.scoringSlotSkins : ""}`}>
+          {scoring === "Net" ? <ScoringControl scoring={scoring} net={net} onNet={setNet} />
+            : <div className={`${homeStyles.slidingSelector} ${styles.scoringSlider}`} data-second={net} role="group" aria-label="Scoring">
+              <button type="button" className={`${homeStyles.tab} ${!net ? homeStyles.tabActive : ""}`} aria-pressed={!net} onClick={() => setNet(false)}>Gross</button>
+              <button type="button" className={`${homeStyles.tab} ${net ? homeStyles.tabActive : ""}`} aria-pressed={net} onClick={() => setNet(true)}>Net</button>
+            </div>}
+        </div></div>}
       <div className={`${rowClass} ${styles.columns}`} aria-hidden>
         <span className={styles.columnPosition}>POS</span>
         <span className={styles.columnPlayer}>Player</span>
@@ -223,7 +234,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut }: 
             <span className={styles.rank}>{position}</span>
             <button type="button" className={styles.playerCardTrigger} onClick={() => setSelectedPlayer(golfer.name)} aria-haspopup="dialog" aria-label={golfer.name + " public trip profile"}>
               <span className={styles.leaderboardAvatar} aria-hidden="true">{golfer.avatarUrl ? <img src={golfer.avatarUrl} alt="" /> : initials(golfer.name)}</span>
-              <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} showTee={false} showUsername />
+              <Golfer golfer={golfer} align="left" showThru={false} showHcp={false} showTee={false} showUsername chance={winChances === "loading" ? null : winChances ? (showNet ? winChances.net : winChances.gross).get(golfer.name) ?? 0 : undefined} />
             </button>
             {showNet && <span className={styles.number} aria-label={`Handicap ${golfer.hcp}`}>{golfer.hcp}</span>}
             <span className={styles.number} data-par={isStableford ? undefined : parColor(totDisplay)} aria-label={`Total ${totDisplay}`}>{totDisplay}</span>
@@ -536,7 +547,7 @@ export function GolfRoundHeader({ match, competitive = true, today, previousDisa
  * Top box on Overview: the whole tournament at a glance — both teams with their overall score (names in the top
  * corners), the win % bar and team stats. Same box as the round matchup card on Competition.
  */
-export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: GolfMatchPreview; onPredict?: () => void; tripStats?: TripStatsView }) {
+export function GolfTournamentSummary({ match, tripStats }: { match: GolfMatchPreview; tripStats?: TripStatsView }) {
   const [left, right] = match.sides;
   // Tapping the team boxes drops down every player's match points, best first (owner request 2026-10-15).
   // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
@@ -562,16 +573,16 @@ export function GolfTournamentSummary({ match, onPredict, tripStats }: { match: 
         </div>)}
         {/* Between the teams, like THRU on the Matches box: the points needed to win (half the points up for grabs, plus ½). */}
         <span className={`${styles.status} ${styles.statusPlain} ${styles.summaryToWin}`} aria-label="Points to win">
-          <small>TO WIN</small>{team ? halves(team.available / 2 + 0.5) : "—"}
+          <small className={styles.toWinSplit}><span>TO</span><span>WIN</span></small>{team ? halves(team.available / 2 + 0.5) : "—"}
         </span>
       </div>
       {(predictOn || showStats) && <div className={styles.stats}>
         {predictOn && <WinBar left={left.winPct} right={right.winPct} />}
         {/* Predict off (Organizer → Predict): no button; the team stats stay where they are. */}
         {/* Player Stats off: no team stats; the Predict button (if on) stays in the middle. */}
-        {(showStats || onPredict) && <div className={styles.predictRow} data-stats-off={!showStats || undefined}>
+        {showStats && <div className={`${styles.predictRow} ${styles.teamStatsRow}`}>
           {showStats ? <SummaryStats align="left" team={left.name} onOpen={() => setStatsTeam(0)} /> : <span aria-hidden />}
-          {onPredict ? <button type="button" className={styles.predictPill} onClick={onPredict}>Predict</button> : <span aria-hidden />}
+          
           {showStats ? <SummaryStats align="right" team={right.name} onOpen={() => setStatsTeam(1)} /> : <span aria-hidden />}
         </div>}
       </div>}
@@ -907,8 +918,11 @@ function TeamStatsSheet({ match, initialTeam, stats, onClose }: { match: GolfMat
   </dialog>, document.body);
 }
 
-function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true, showUsername = false }:
-  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean; showTee?: boolean; showUsername?: boolean }) {
+/** A win chance as a whole %: "<1%" for tiny chances that aren't zero, so nobody alive reads 0%. */
+const winPct = (chance: number) => chance > 0 && chance < 0.005 ? "<1%" : Math.round(chance * 100) + "%";
+
+function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true, showUsername = false, chance }:
+  { golfer: GolfMatchGolfer; align: "left" | "right"; showThru?: boolean; showHcp?: boolean; showTee?: boolean; showUsername?: boolean; chance?: number | null }) {
   return <div className={`${styles.golfer} ${styles[align]}`}>
     <span className={styles.golferName}>{golfer.name}</span>
     {(showHcp || showThru) && <span className={styles.golferMeta}>
@@ -916,7 +930,12 @@ function Golfer({ golfer, align, showThru = true, showHcp = true, showTee = true
     </span>}
     {showTee && (golfer.teeTime || golfer.course) && <span className={styles.tee}>{golfer.teeTime} {golfer.course && <span className={styles.course}>@ {golfer.course}</span>}</span>}
     {/* The leaderboard's second line: their @username (a made-up one until real usernames exist, same as Trip Home's Players). */}
-    {showUsername && <span className={styles.tee}>{shownUsername(golfer.name, golfer.username)}</span>}
+    {showUsername && chance === undefined && <span className={styles.tee}>{shownUsername(golfer.name, golfer.username)}</span>}
+    {/* Main leaderboard (owner 2026-11-13): instead of the @username, a gold line as long as their chance of winning the trip, then the %. */}
+    {showUsername && chance === null && <span className={styles.winOdds} aria-hidden="true" />}
+    {showUsername && typeof chance === "number" && <span className={styles.winOdds} aria-label={`${winPct(chance)} chance to win the trip`}>
+      <span className={styles.winOddsLine} style={{ width: `${Math.max(chance * 100, 1)}%` }} aria-hidden="true" /><span className={styles.winOddsPct} aria-hidden="true">{winPct(chance)}</span>
+    </span>}
   </div>;
 }
 

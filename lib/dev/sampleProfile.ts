@@ -1,4 +1,5 @@
 import type { RoundsVisibility } from "../platform/playerRoundsPrivacy";
+import type { Gender, ProfileLink } from "../profile/profileEdit";
 import { buildProfileReadModel, type ProfileReadModel, type ProfileSubjectRow } from "../profile/profileReadModel";
 import { sampleProfileRounds } from "./sampleProfileRounds";
 
@@ -13,17 +14,18 @@ export const PROFILE_PREVIEWS = ["sample", "few", "none", "public", "private"] a
 export type ProfilePreview = (typeof PROFILE_PREVIEWS)[number];
 
 /** The parts of my sample profile Settings and Edit profile can change. */
-export interface SampleProfileEdits { displayName: string; username: string; bio: string; photoUrl: string | null; visibility: RoundsVisibility }
+export interface SampleProfileEdits { displayName: string; username: string; bio: string; photoUrl: string | null; visibility: RoundsVisibility; gender: Gender | ""; links: ProfileLink[] }
 export const DEFAULT_SAMPLE_PROFILE: SampleProfileEdits = {
   displayName: "Sample Golfer", username: "samplegolfer", bio: "Weekend golfer chasing a single-digit handicap. Dallas based, always down for 36 on a Saturday. Fades everything, buys the first round.", photoUrl: null, visibility: "private",
+  gender: "", links: [{ title: "Instagram", url: "https://instagram.com/samplegolfer" }],
 };
 export const SAMPLE_FRIENDS = 6;
 
 const ME = "00000000-0000-4000-8000-000000000001";
 const ROUNDS: Record<ProfilePreview, number> = { sample: 25, few: 2, none: 0, public: 18, private: 0 };
 const OTHERS: Record<"public" | "private", Omit<ProfileSubjectRow, "createdAt" | "legacyMaroonPlayerSlug" | "avatarUrl">> = {
-  public: { id: "00000000-0000-4000-8000-000000000002", displayName: "Jake Parker", username: "jakeparker", roundsVisibility: "public", bio: "Plays fast, putts slow." },
-  private: { id: "00000000-0000-4000-8000-000000000003", displayName: "Mike Chen", username: "mikechen", roundsVisibility: "private", bio: "Hidden from you: this profile is Private." },
+  public: { id: "00000000-0000-4000-8000-000000000002", displayName: "Jake Parker", username: "jakeparker", roundsVisibility: "public", bio: "Plays fast, putts slow.", links: [{ title: "Website", url: "https://jakeparker.example" }] },
+  private: { id: "00000000-0000-4000-8000-000000000003", displayName: "Mike Chen", username: "mikechen", roundsVisibility: "private", bio: "Hidden from you: this profile is Private.", links: [{ title: "Hidden", url: "https://hidden.example" }] },
 };
 /** The same shape get_profile_history returns. */
 const HISTORY = {
@@ -43,7 +45,7 @@ export function sampleProfileReadModel(preview: ProfilePreview, mine: SampleProf
   const other = preview === "public" || preview === "private" ? OTHERS[preview] : null;
   const subject: ProfileSubjectRow = other
     ? { ...other, createdAt: "2025-02-14T12:00:00Z", legacyMaroonPlayerSlug: null, avatarUrl: null }
-    : { id: ME, displayName: mine.displayName, username: mine.username, createdAt: "2025-04-02T12:00:00Z", legacyMaroonPlayerSlug: null, roundsVisibility: mine.visibility, bio: mine.bio, avatarUrl: mine.photoUrl };
+    : { id: ME, displayName: mine.displayName, username: mine.username, createdAt: "2025-04-02T12:00:00Z", legacyMaroonPlayerSlug: null, roundsVisibility: mine.visibility, bio: mine.bio, avatarUrl: mine.photoUrl, links: mine.links };
   const rounds = sampleProfileRounds(ROUNDS[preview], other ? 2 : 0, other ? 31 : 7);
   return buildProfileReadModel(ME, subject, { history: HISTORY, rounds, legacy: null }, () => false, today);
 }

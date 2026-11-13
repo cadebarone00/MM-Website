@@ -1,3 +1,4 @@
+import type { ProfileLink } from "./profileEdit";
 import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
 import { calculateHandicapIndex } from "../handicap/whs";
 import type { PlayerScorecard, Team, Tournament } from "../data/types";
@@ -51,6 +52,8 @@ export interface LegacyMaroonProfile {
 export interface ProfileIdentityView {
   displayName: string; username: string; initials: string; memberSince: string | null;
   avatarSrc: string | null; bio: string | null; canEditBio: boolean; roundsVisibility: RoundsVisibility;
+  /** Edit profile → Links, under the bio. Empty for someone else's Private profile. */
+  links: ProfileLink[];
 }
 
 /** Stats the modern rounds can honestly support today; null when there are no rounds to count. */
@@ -73,7 +76,7 @@ export interface ProfileReadModel {
 }
 
 /** The subject's own profiles row, as the server reads it (never the email). */
-export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null; /** Settings → Profile photo (profile_photos.sql). */ avatarUrl?: string | null }
+export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null; /** Settings → Profile photo (profile_photos.sql). */ avatarUrl?: string | null; /** Edit profile → Links (profile_edit_v2.sql). */ links?: ProfileLink[] }
 
 export interface ProfileSources {
   subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null>;
@@ -193,7 +196,7 @@ export function buildProfileReadModel(viewerId: ProfileId | null, subject: Profi
     return {
       isOwner, access,
       // The profile photo shows whatever the privacy (owner request 2026-10-26), like the name.
-      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: null, canEditBio: false, roundsVisibility: "private" },
+      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: null, canEditBio: false, roundsVisibility: "private", links: [] },
       rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], legacy: null,
       // Only the counts: rounds played and handicap index (no averages, bests or anything from a round).
       modernStats: totals && { roundsPlayed: totals.roundsPlayed, eighteenHoleRounds: 0, average18: null, best18: null, handicapIndex: totals.handicapIndex, countingRounds: 0 },
@@ -210,7 +213,7 @@ export function buildProfileReadModel(viewerId: ProfileId | null, subject: Profi
     identity: {
       displayName: name, username: subject.username, initials: initialsFor(name), memberSince: memberSinceLabel(subject.createdAt),
       avatarSrc: subject.avatarUrl ?? null, bio: subject.bio?.trim() || null, canEditBio: isOwner,
-      roundsVisibility: subject.roundsVisibility ?? DEFAULT_ROUNDS_VISIBILITY,
+      roundsVisibility: subject.roundsVisibility ?? DEFAULT_ROUNDS_VISIBILITY, links: subject.links ?? [],
     },
     rounds: rounds ? { status: "ok", value: rounds } : { status: "unavailable" },
     // Golf trips are only ever the owner's to see.

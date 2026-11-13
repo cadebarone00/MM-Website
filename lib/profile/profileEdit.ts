@@ -23,9 +23,15 @@ export function bioProblem(bio: string): string | null {
   return null;
 }
 
+/** Gender (supabase/profile_edit_v2.sql): private, only ever shown on your own Edit profile. "" = not set. */
+export const GENDERS = [{ value: "man", label: "Man" }, { value: "woman", label: "Woman" }, { value: "prefer_not_to_say", label: "Prefer not to say" }] as const;
+export type Gender = (typeof GENDERS)[number]["value"];
+export const genderLabel = (gender: Gender | "") => GENDERS.find((g) => g.value === gender)?.label ?? "";
+const isGender = (v: unknown): v is Gender | "" => v === "" || GENDERS.some((g) => g.value === v);
+
 export interface ProfileSetupInput { displayName: string; username: string }
-export interface ProfileEditInput { displayName?: string; username?: string; bio?: string }
-type Problem = { ok: false; field: "displayName" | "username" | "bio" | "body"; error: string };
+export interface ProfileEditInput { displayName?: string; username?: string; bio?: string; gender?: Gender | "" }
+type Problem = { ok: false; field: "displayName" | "username" | "bio" | "gender" | "body"; error: string };
 
 const record = (body: unknown): Record<string, unknown> | null => body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
 
@@ -74,9 +80,57 @@ export function profileEditFromBody(body: unknown): { ok: true; input: ProfileEd
     if (problem) return { ok: false, field: "bio", error: problem };
     input.bio = r.bio.trim();
   }
+  if (r.gender !== undefined) {
+    if (!isGender(r.gender)) return { ok: false, field: "gender", error: "Choose Man, Woman or Prefer not to say." };
+    input.gender = r.gender;
+  }
   if (!Object.keys(input).length) return { ok: false, field: "body", error: "Nothing to save." };
   return { ok: true, input };
 }
+
+/** Profile links (supabase/profile_edit_v2.sql): up to 5, a title + an https:// web address, shown under the bio. */
+export interface ProfileLink { title: string; url: string }
+export const LINKS_MAX = 5;
+export const LINK_TITLE_MAX = 40;
+const LINK_URL = /^https:\/\/[^\s/$.?#][^\s]*$/;
+
+/** What someone typed as a web address → the address saved: "instagram.com/me" gets https:// in front; http:// is refused. */
+export function normalizeLinkUrl(typed: string): string {
+  const url = typed.trim();
+  return /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
+}
+export function linkProblem(link: ProfileLink): string | null {
+  const title = link.title.trim();
+  if (title.length < 1 || title.length > LINK_TITLE_MAX) return `Each link needs a title of 1–${LINK_TITLE_MAX} characters.`;
+  if (!LINK_URL.test(link.url) || link.url.length > 300) return "Links must be web addresses starting with https://";
+  return null;
+}
+/** PUT /api/account/links body { links: [{ title, url }] } → the cleaned list, or the first problem. */
+export function profileLinksFromBody(body: unknown): { ok: true; links: ProfileLink[] } | { ok: false; error: string } {
+  const list = record(body)?.links;
+  if (!Array.isArray(list)) return { ok: false, error: "Links must be a list." };
+  if (list.length > LINKS_MAX) return { ok: false, error: `You can add up to ${LINKS_MAX} links.` };
+  const links: ProfileLink[] = [];
+  for (const item of list) {
+    const r = record(item);
+    if (!r || typeof r.title !== "string" || typeof r.url !== "string") return { ok: false, error: "Each link needs a title and a web address." };
+    const link = { title: r.title.trim(), url: normalizeLinkUrl(r.url) };
+    const problem = linkProblem(link);
+    if (problem) return { ok: false, error: problem };
+    links.push(link);
+  }
+  return { ok: true, links };
+}
+/** Saved links read back from the database (anything malformed is skipped, never shown). */
+export function profileLinksFromRows(rows: unknown): ProfileLink[] {
+  return (Array.isArray(rows) ? rows : []).flatMap((row) => {
+    const r = record(row);
+    if (!r || typeof r.title !== "string" || typeof r.url !== "string") return [];
+    return linkProblem({ title: r.title, url: r.url }) ? [] : [{ title: r.title, url: r.url }];
+  }).slice(0, LINKS_MAX);
+}
+/** The address without https:// and a trailing slash, for showing under the bio. */
+export const linkLabel = (url: string) => url.replace(/^https:\/\//, "").replace(/\/$/, "");
 
 /** /profile/<username> for a claimed profile's username; null when there's no username to link (never link otherwise). */
 export function profileHref(username: string | null | undefined): string | null {

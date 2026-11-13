@@ -4286,3 +4286,51 @@ No leftovers, no uneven teams.
 
 **Done looks like:** tests for the rule (each type, good and bad counts); mock draft + simulator conditionals show the
 refusal; Settings note and no uneven switch; lint/types clean; browser-checked.
+
+## Edit profile — Instagram-style screen (owner request 2026-11-13) — SPEC, awaiting final approval
+
+**What it is:** `/profile/edit` (and its dev copy `/dev/profile/edit`) gets the look of Instagram's Edit profile
+(owner screenshot 2026-11-13): back arrow top-left, "Edit profile" title centered, a **Done** button top-right, then
+the photo + avatar at the top, then flat rows with the label on the left and the value on the right, separated by thin lines.
+Who uses it: any signed-in golfer editing their own profile. Mobile first.
+
+**Top of the screen:** two circles side by side — your **photo** (or initials) and your **avatar** — with
+"Edit picture or avatar" underneath. Tapping it opens a small sheet: Change photo / Remove photo (the same upload Settings
+already uses, `/api/account/photo`). The avatar is automatic (see Avatar below).
+
+**Rows (top to bottom):**
+1. **Name** — type in the row (same rules as today, ≤ 60 characters).
+2. **Username** — type in the row (same rules as today).
+3. **Bio** — type in the row, up to 3 lines / 150 characters (same as today).
+4. **Links** — shows how many links you have and a `>`. Tapping it opens a Links screen: add / edit / remove up to
+   **5 links** (a title + a web address, `https://` only). Links show on your profile under the bio.
+5. **Gender** — shows your choice and a `>`. Choices: Man / Woman / Prefer not to say. **Private: never shown to anyone else.**
+6. **Profile visibility** — Public / Private switch. It's the **same setting** as Settings → Privacy
+   (`profiles.rounds_visibility`), so changing it in either place changes both. Same explanation text.
+
+**Not included (owner said no):** Pronouns, Banners, Reorder grid, AI creator, Public business info / Facebook.
+
+**Saving:** Name / Username / Bio / Gender save together when you tap **Done**. The back arrow leaves without saving
+(asks "Discard changes?" only if you changed something). Photo, Links and Profile visibility save right away when changed
+(like Settings does today).
+
+**Where data is stored (Supabase):**
+- Name, username, bio, photo, visibility: already exist — no change.
+- **Gender:** new column `profiles.gender` (`man` / `woman` / `prefer_not_to_say` / empty). Only the owner can read it.
+- **Links:** new table `profile_links` (profile, title, url, order). Shown to others only when the profile is Public.
+- New SQL file `supabase/profile_edit_v2.sql` — has to be run in production before this works there.
+
+**Settings page:** unchanged (its Profile / Photo / Privacy boxes keep working alongside this screen).
+
+**Done looks like:** the screen matches the screenshot's layout in our colours and font; each row saves and shows the
+saved value after a reload; Links show on the profile; gender never appears to other people; the visibility switch
+matches Settings; dev preview works with the sample profile; simulator conditionals for the states (saving, errors,
+no photo, no links, 5 links max); type check + tests pass; checked in the browser at phone width.
+
+**Avatar (owner answer 2026-11-13):** the avatar is **your initials in a circle** in the Golf tab's pull-down board style
+(`components/platform/GolfDayBoard.module.css` `.avatar`: thin gold ring, faint gold fill, gold Spectral initials). It's made
+automatically from your name — nothing to pick or upload. **The photo shows when you have one; the avatar shows when you don't.**
+This is the avatar style going forward: it becomes one shared `ProfileAvatar` component (photo-or-initials) used on this screen
+and the profile page now; other screens switch to it later, one at a time, when the owner asks.
+So: **no `avatar_key` column** — "Edit picture or avatar" opens Change photo / Remove photo, and the avatar circle updates
+by itself when you change your name.

@@ -13,6 +13,7 @@ import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import { tripGameRound, tripGameSettled, currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
+import { roundDay } from "./GolfTripMatch";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -31,7 +32,7 @@ const withPars = (match: GolfMatchPreview, game: TripGame): GolfMatchPreview =>
 const readGames = (): TripGame[] => { try { return JSON.parse(localStorage.getItem(STORE) ?? "[]"); } catch { return []; } };
 const firstName = (name: string) => name.split(/\s+/)[0];
 
-export function GolfTripGames({ match, rounds, signedInName, saved, organizerGames }: { match: GolfMatchPreview; rounds: number[]; signedInName?: string | null; saved?: SavedGamesContext; organizerGames?: Record<string, GameId[]> }) {
+export function GolfTripGames({ match, rounds, roundInfo, signedInName, saved, organizerGames }: { match: GolfMatchPreview; rounds: number[]; roundInfo?: GameRoundInfo[]; signedInName?: string | null; saved?: SavedGamesContext; organizerGames?: Record<string, GameId[]> }) {
   // Saved trip: me and my group come from the trip; preview: from the shown round.
   const savedMe = saved?.group.find((p) => p.profileId === saved.meId)?.name;
   const me = savedMe ?? meOn(match, signedInName) ?? "You";
@@ -91,19 +92,13 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
       game: { gameType: g.config.id, net: g.config.net, birdiesDouble: g.config.birdiesDouble, ...(g.config.teams ? { teams: g.config.teams } : {}), players: g.players.map(profileOf) } });
   }, [wantedKey, loaded]); // eslint-disable-line react-hooks/exhaustive-deps -- runs when the organizer's list (or what's already made) changes
   const [creating, setCreating] = useState(false);
-  // The sheet's box: top just covers the trip tabs; it runs to the bottom of the screen, over the bottom nav.
-  const [sheetBox, setSheetBox] = useState({ top: 16, bottom: 16 });
-  const openNew = () => {
-    const tabs = document.querySelector("[aria-label='Trip sections']")?.getBoundingClientRect();
-    setSheetBox({ top: Math.max(16, tabs?.top ?? 16), bottom: 0 });
-    setCreating(true);
-  };
+  const openNew = () => setCreating(true);
   const [view, setView] = useState<"Active" | "Settled">("Active");
   const mine = games.filter((g) => g.players.includes(me));
   const visible = mine.filter((game) => tripGameSettled(match, game) === (view === "Settled"));
 
   return <section className={styles.root} aria-label="Games">
-    <div className={homeStyles.slidingSelector} data-second={view === "Settled"} role="group" aria-label="Game status">
+    <div className={`${homeStyles.slidingSelector} ${homeStyles.underlineSelector}`} data-second={view === "Settled"} role="group" aria-label="Game status">
       {(["Active", "Settled"] as const).map((status) => <button key={status} type="button" className={`${homeStyles.tab} ${view === status ? homeStyles.tabActive : ""}`} aria-pressed={view === status} onClick={() => setView(status)}>{status}</button>)}
     </div>
     <header className={styles.gamesHeader}>
@@ -131,7 +126,7 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
         : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={canRemove ? remove : undefined} />;
     })}
     {error && <p className={styles.sheetHint} role="alert">{error}</p>}
-    {creating && <NewGame box={sheetBox} group={group} rounds={rounds.length ? rounds : [match.round]} current={match.round} onClose={() => setCreating(false)}
+    {creating && <NewGame group={group} rounds={rounds.length ? rounds : [match.round]} roundInfo={roundInfo} match={match} onClose={() => setCreating(false)}
       onCreate={(game) => {
         setCreating(false);
         setView("Active");
@@ -223,62 +218,81 @@ function TeamPicks({ names, teams, onChange }: { names: string[]; teams: number[
   </div>;
 }
 
-/** New game: round → players from my group → a game that fits that many. Its options come next, on the game itself. */
-function NewGame({ box, group, rounds, current, onClose, onCreate }: { box: { top: number; bottom: number }; group: string[]; rounds: number[]; current: number; onClose: () => void; onCreate: (game: TripGame) => void }) {
-  const [round, setRound] = useState(rounds.includes(current) ? current : rounds[0]);
+/** One round in the New game picker: its day and course (from the trip schedule). */
+export type GameRoundInfo = { number: number; date?: string; course?: string };
+
+/**
+ * New game (owner request 2026-11-13): shown as the app's maroon pull-up. From the top: the round (day · round over the
+ * course, < > to step, like the Golf tab's course header), the game (same < > stepper), Handicaps and Birdies double
+ * switches side by side, the players from my group, then Set game, which stays dim until a game fits the players picked.
+ */
+function NewGame({ group, rounds, roundInfo, match, onClose, onCreate }: { group: string[]; rounds: number[]; roundInfo?: GameRoundInfo[]; match: GolfMatchPreview; onClose: () => void; onCreate: (game: TripGame) => void }) {
+  const current = match.round;
+  const [roundIndex, setRoundIndex] = useState(Math.max(0, rounds.indexOf(current)));
+  const round = rounds[roundIndex] ?? current;
   const [players, setPlayers] = useState<string[]>(group);
-  const [id, setId] = useState<GameId | null>(null);
+  // -1 = no game picked yet (Set game stays dim until one is).
+  const [gameIndex, setGameIndex] = useState(-1);
   const [info, setInfo] = useState<GameId | null>(null);
   const [net, setNet] = useState(false);
   const [birdiesDouble, setBirdiesDouble] = useState(false);
-  const choices = TRIP_GAMES.filter((game) => game.players.includes(players.length));
-  const toggle = (name: string) => { setId(null); setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name)); };
+  const def = gameIndex >= 0 ? TRIP_GAMES[gameIndex] : null;
+  const fits = Boolean(def && def.players.includes(players.length));
+  const birdiesUsed = !def || def.points;
+  const detail = roundInfo?.find((r) => r.number === round);
+  const date = detail?.date || (round === current ? match.roundDate : "");
+  const course = detail?.course || (round === current ? match.course : "") || "Course TBD";
+  const toggle = (name: string) => setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name));
   const create = () => {
-    if (!id) return;
-    const def = gameDef(id);
-    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: !needsSetup(id),
-      config: { id, net, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
+    if (!def || !fits) return;
+    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: !needsSetup(def.id),
+      config: { id: def.id, net, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
   };
-  return <GolfTripActionSheet label="New game" onClose={onClose} className={styles.gameSheet} style={box}>
+  const sw = (on: boolean, label: string, onClick: () => void, disabled = false) =>
+    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} className={styles.newGameSwitch} onClick={onClick}>
+      <span className={styles.newGameTrack} data-on={on}><span className={styles.newGameThumb} /></span><span>{on ? "On" : "Off"}</span>
+    </button>;
+  return <GolfTripActionSheet label="New game" onClose={onClose} className={`${styles.gameSheet} ${styles.newGameSheet}`} slideUp>
     <div className={styles.sheetBody}>
       <h3 className={styles.sheetTitle}>New game</h3>
-      <div className={styles.sheetSetting}><span>Round</span><div className={`${styles.sheetChoices} ${styles.roundChoices}`}>
-        {rounds.map((r) => <button type="button" key={r} aria-pressed={round === r} onClick={() => setRound(r)}>Round {r}</button>)}
-      </div></div>
+      <div className={styles.stepper} role="group" aria-label="Round">
+        <button type="button" className={styles.stepArrow} aria-label="Previous round" disabled={roundIndex <= 0} onClick={() => setRoundIndex(roundIndex - 1)}><ChevronLeft size={22} aria-hidden /></button>
+        <div className={styles.stepText} aria-live="polite">
+          <p>{date ? `${date === todayIso() ? "(Today) " : ""}${roundDay(date)} · ` : ""}Round {round}</p>
+          <strong title={course}>{course}</strong>
+        </div>
+        <button type="button" className={styles.stepArrow} aria-label="Next round" disabled={roundIndex >= rounds.length - 1} onClick={() => setRoundIndex(roundIndex + 1)}><ChevronRight size={22} aria-hidden /></button>
+      </div>
+      <div className={styles.stepper} role="group" aria-label="Game">
+        <button type="button" className={styles.stepArrow} aria-label="Previous game" disabled={gameIndex <= 0} onClick={() => setGameIndex(gameIndex - 1)}><ChevronLeft size={22} aria-hidden /></button>
+        <div className={styles.stepText} aria-live="polite">
+          <p>Game{def ? ` · ${def.players.join(", ")} players` : ""}</p>
+          <strong>{def ? def.name : "Choose a game"}
+            {def && <button type="button" className={styles.gameInfo} aria-label={`About ${def.name}`} onClick={() => setInfo(def.id)}>i</button>}</strong>
+        </div>
+        <button type="button" className={styles.stepArrow} aria-label="Next game" disabled={gameIndex >= TRIP_GAMES.length - 1} onClick={() => setGameIndex(gameIndex + 1)}><ChevronRight size={22} aria-hidden /></button>
+      </div>
+      <div className={styles.switchRow}>
+        <div className={styles.switchCell}><span>Handicaps</span>{sw(net, "Handicaps", () => setNet(!net))}</div>
+        <div className={styles.switchCell}><span>Birdies double</span>{sw(birdiesUsed && birdiesDouble, "Birdies double", () => setBirdiesDouble(!birdiesDouble), !birdiesUsed)}</div>
+      </div>
       <div className={styles.sheetSetting}><span>Players · your group</span>
         {group.map((name, i) => <label key={name} className={styles.sheetPlayer}>
           <input type="checkbox" checked={players.includes(name)} disabled={i === 0} onChange={() => toggle(name)} />
           <span>{name}{i === 0 && <small>You</small>}</span>
         </label>)}
-      </div>
-      {/* Always on the sheet: handicaps, and birdies double (greyed out for a game that isn't a points game). */}
-      <div className={styles.createOptions}>
-        <div className={styles.sheetSetting}><span>Handicaps</span><div className={styles.sheetChoices}>
-          {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={net === value} onClick={() => setNet(value)}>{value ? "On (net)" : "Off (gross)"}</button>)}
-        </div></div>
-        <div className={styles.sheetSetting}><span>Birdies double points{id && !gameDef(id).points ? " · not used in this game" : ""}</span><div className={styles.sheetChoices}>
-          {[false, true].map((value) => <button type="button" key={String(value)} aria-pressed={birdiesDouble === value} disabled={Boolean(id && !gameDef(id).points)} onClick={() => setBirdiesDouble(value)}>{value ? "On" : "Off"}</button>)}
-        </div></div>
-      </div>
-      <div className={styles.sheetSetting}><span>Game · {players.length} players</span>
-        {choices.length === 0 && <p className={styles.sheetHint}>No games fit {players.length} player{players.length === 1 ? "" : "s"}. Add someone from your group.</p>}
-        <div className={styles.gameGrid}>
-          {choices.map((g) => <div key={g.id} className={styles.gameOption}>
-            <button type="button" className={styles.sheetGame} aria-pressed={id === g.id} onClick={() => setId(g.id)}><strong>{g.name}</strong></button>
-            <button type="button" className={styles.gameInfo} aria-label={`About ${g.name}`} aria-expanded={info === g.id} onClick={() => setInfo(info === g.id ? null : g.id)}>i</button>
-          </div>)}
-        </div>
+        {def && !fits && <p className={styles.sheetHint} role="status">{def.name} is for {def.players.join(", ")} players. You have {players.length}.</p>}
       </div>
     </div>
     {info && <InfoCard title={gameDef(info).name} text={gameDef(info).blurb} onClose={() => setInfo(null)} />}
     <div className={styles.sheetFooter}>
-      {id ? <button type="button" className={styles.createButton} onClick={create}>
-        <span><b>Create {gameDef(id).name}</b><small>{players.length} players · Round {round}</small></span>
-        <span className={styles.createArrow} aria-hidden><ChevronRight size={20} strokeWidth={2.5} /></span>
-      </button> : <p className={styles.createPrompt} role="status">Pick a game above to continue</p>}
+      <button type="button" className={styles.setGame} disabled={!fits} onClick={create}>Set game</button>
     </div>
   </GolfTripActionSheet>;
 }
+
+/** Today as "2027-04-23" in this device's time zone (marks the round being played today). */
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 /** A game's description in a small light card over the screen; tap anywhere outside it to close. */
 export function InfoCard({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
