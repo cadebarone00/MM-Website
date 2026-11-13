@@ -58,7 +58,7 @@ export function TripBigBoard({ score, highlights, momentum, slides }: { score: B
     </section>
     {/* Dots under the board, one per plan (the row keeps its height even with one plan, so nothing below moves). */}
     <div className={styles.dots} role="tablist" aria-label="Upcoming plans">
-      {slides.length > 1 && slides.map((slide, position) => <button key={slide.key} type="button" role="tab" className={styles.dot} aria-selected={position === shown} aria-label={`Plan ${position + 1}: ${slide.title}`} onClick={() => goTo(position)} />)}
+      {slides.map((slide, position) => <button key={slide.key} type="button" role="tab" className={styles.dot} aria-selected={position === shown} aria-label={`Plan ${position + 1}: ${slide.title}`} onClick={() => goTo(position)} />)}
     </div>
   </div>;
 }

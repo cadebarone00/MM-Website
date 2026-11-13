@@ -14,6 +14,7 @@ import { DesignReview } from "./DesignReview";
 import { lightTap } from "@/lib/haptics";
 import { DRAFT_SIM_DEFAULTS } from "@/lib/dev/draftSim";
 import { MockDraftPanel } from "./MockDraftPanel";
+import { MockMatchPanel } from "./MockMatchPanel";
 import styles from "./DevSimulator.module.css";
 
 const initialDevice = SIMULATOR_DEVICES[4];
@@ -70,6 +71,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
   // Home → Team Draft → Mock draft (test run): the test panel sits just left of the phone.
   const mockDraftPreset = selectedPage.id === "home-team-draft-mock" && state.mockDraft && state.mockDraft !== "off" ? state.mockDraft : null;
+  const mockMatchPreset = selectedPage.id === "home-match-selection-mock" && state.mockMatch && state.mockMatch !== "off" ? state.mockMatch : null;
   const conditions = scenarioVisible ? selectedPage.conditions?.filter(condition=>!condition.playerCount && !["competition-source","competitive","social","round-source","scheduled","round-live","round-end-match","round-end-mismatch","round-between","round-complete","dual-draft-momentum","home-draft-configured"].includes(condition.id) && !["home-match-draft-","match-draft-","format-"].some(prefix=>condition.id.startsWith(prefix))) : selectedPage.conditions;
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
@@ -243,7 +245,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
-    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
+    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset || mockMatchPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <form className={styles.cards} action="/dev" method="get">{groups.map(group => <button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage(pages.find(page => (page.group ?? "Other") === group)!.id); }}>{group}</button>)}</form>
@@ -301,6 +303,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       </aside>
       {scenarioVisible && <TripScenarioControls state={state} onChange={changes=>setState(current=>normalizeTripScenario({...current,...changes}))} onReset={()=>{resetDevSetup(devTripScope(config));initializeTripScenario(config);iframe.current?.contentWindow?.location.reload();}}/>}
       {mockDraftPreset && <MockDraftPanel preset={mockDraftPreset} viewer={state.mockDraftViewer ?? "organizer"} onViewer={viewer => setState(current => ({ ...current, mockDraftViewer: viewer }))} />}
+      {mockMatchPreset && <MockMatchPanel preset={mockMatchPreset} viewer={state.mockMatchViewer ?? "organizer"} onViewer={viewer => setState(current => ({ ...current, mockMatchViewer: viewer }))} />}
       <div className={styles.previewColumn}>
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>

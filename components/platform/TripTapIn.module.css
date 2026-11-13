@@ -1,5 +1,10 @@
-.invite{margin:6px 16px 18px;padding:18px 16px;border:1px solid rgba(201,168,110,.45);border-radius:16px;background:radial-gradient(ellipse at top right,rgba(201,168,110,.09),transparent 75%),#240001;color:#fbf8f1}
+.invite{margin:6px var(--page-gutter) 18px;padding:18px 16px;border:1px solid rgba(201,168,110,.45);border-radius:16px;background:radial-gradient(ellipse at top right,rgba(201,168,110,.09),transparent 75%),#240001;color:#fbf8f1}
 .inviteTitle{display:flex;align-items:center;gap:8px;margin:0;font:500 22px/1.2 var(--font-spectral),Georgia,serif;color:#dcc495}
+.inviteHeading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.view{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:32px;padding:0 13px;border:1px solid #dcc49599;border-radius:999px;background:#dcc49514;color:#dcc495;text-decoration:none;font:600 13px/1 var(--font-barlow),Arial,sans-serif;cursor:pointer}
+.view:hover{background:#dcc49526}
+.view:focus-visible{outline:2px solid #dcc495;outline-offset:3px}
+.view:disabled{opacity:.45;cursor:default}
 .description{margin:6px 0 14px;font:400 14px/1.5 var(--font-spectral),Georgia,serif;color:#fbf8f1}
 .spectator{min-height:100svh;background:#240001;color:#fbf8f1}
 .masthead{max-width:560px;margin:0 auto;padding:32px 16px 24px;text-align:center;border-bottom:1px solid rgba(201,168,110,.25)}

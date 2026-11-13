@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
+import { Fragment, Suspense, use, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { GolfTripHeader } from "./GolfTripHeader";
 import { TripTapInInvite } from "./TripTapInInvite";
@@ -517,28 +517,30 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     if (!predictActive && !gamesActive && track && track.clientWidth > 0) setActive(Math.round(track.scrollLeft / track.clientWidth));
   };
 
-  // Order: section pills, optional Indi / Team selector, board, course / round line, then section content.
+  // Order: golf-day navigation, score board, Team / Indi pills, round picker, then section content.
 
   return <>
 
     {/* Golf sections: the words themselves evenly spaced (equal gaps between them and at both ends), since their lengths differ. */}
     <GolfDayBoard match={sourceMatch} structure={structure} schedule={schedule} roundRsvps={rsvps} viewerName={savedGames?.group.find(player => player.profileId === savedGames.meId)?.name ?? signedInName} spectator={spectator}
       sittingOut={!!sourceMatch && (rsvps[sourceMatch.round]?.[savedGames?.group.find(player => player.profileId === savedGames.meId)?.name ?? signedInName ?? ""] === "out")} >
-    <div className={`${styles.tabs} ${styles.sectionTabs} ${styles.golfBoardTabs}`} role="tablist" aria-label="Golf sections">
+    {handle => <div className={`${styles.tabs} ${styles.sectionTabs} ${styles.golfBoardTabs}`} role="tablist" aria-label="Golf sections">
       {[...sections, ...(predictSetup && !noComp ? [{ id: "Predict" as const, label: "Predict" }] : [])].filter(({ id }) => !(structure.individual && structure.team && id === "Competition")).map(({ id, label }) => {
         const index = availableSlides.indexOf(id);
         const selected = id === "Predict" ? predictActive : !predictActive && (active === index || (id === "Overview" && structure.individual && structure.team && golfSection === "Competition"));
-        return <button key={id} type="button" role="tab" aria-selected={selected}
-          className={`${styles.tab} ${selected ? styles.tabActive : ""}`} onClick={() => goTo(selected && id !== "Predict" ? active : index)}>{label}</button>;
+        return <Fragment key={id}><button type="button" role="tab" aria-selected={selected}
+          className={`${styles.tab} ${selected ? styles.tabActive : ""}`} onClick={() => goTo(selected && id !== "Predict" ? active : index)}>{label}</button>
+          {(id === "Games" || id === "Overview" && !sections.some(section => section.id === "Games")) && handle}
+        </Fragment>;
       })}
-    </div>
+    </div>}
     </GolfDayBoard>
-    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={`${styles.tabs} ${styles.tripTabs} ${styles.leaderboardKind}`} role="group" aria-label="Leaderboard type">
+
+    {/* Team/Indi keeps the same standalone navigation board above either view. */}
+    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.tabs} ${styles.tripTabs} ${styles.leaderboardKind}`} role="group" aria-label="Leaderboard type">
       <button type="button" className={`${styles.tab} ${golfSection === "Competition" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Competition"} onClick={() => goTo(availableSlides.indexOf("Competition"))}>Team</button>
       <button type="button" className={`${styles.tab} ${golfSection === "Overview" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Overview"} onClick={() => goTo(availableSlides.indexOf("Overview"))}>Indi</button>
-    </div>}
-    {/* Team leaderboard board (owner, 2026-11-10): back under the Indi / Team selector whenever Team is picked (team-only
-        trips: under the Leaderboard pill) — team points, TO WIN, win %, stats and Predict, in the 166px Golf board. */}
+    </div></div>}
     {previewMatch && structure.team && golfSection === "Competition" && !predictActive && <div className={styles.golfTop}>
       <div className={styles.golfTopSize}>
         <GolfTournamentSummary match={previewMatch} tripStats={tripStats} onPredict={predictSetup ? () => goTo(availableSlides.indexOf("Predict")) : undefined} />
@@ -995,7 +997,7 @@ function InfoAccount({ tripId, tapInCode, spectator = false, match, viewerName, 
   const competitionSummary = baseSummary && { ...baseSummary, yourTeam: yourTeam({ teamFormat: baseSummary.teamFormat, me: viewerName, players: rosterNames,
     groups: savedGroups ?? (baseSummary.teamFormat === "2 Teams" ? rosterGroups : null), teamNames: (setup.teamNames as string[] | undefined) ?? teamNames }) };
   // Each configured competition decides whether its persistent Home sections apply.
-  const showDraft = competition !== "none" && (!!competitionTypes?.team || !!competitionTypes?.individual || (process.env.NODE_ENV === "development" && (!!sim?.dualDraftMomentum || (!!sim?.draftSim && sim.draftSim !== "off") || (!!sim?.mockDraft && sim.mockDraft !== "off"))));
+  const showDraft = competition !== "none" && (!!competitionTypes?.team || !!competitionTypes?.individual || (process.env.NODE_ENV === "development" && (!!sim?.dualDraftMomentum || (!!sim?.draftSim && sim.draftSim !== "off") || (!!sim?.mockDraft && sim.mockDraft !== "off") || (!!sim?.mockMatch && sim.mockMatch !== "off"))));
   const rosterKey = JSON.stringify([draftScope, draftPlayers, rosterPlayers, setup, teamDraft, sim]);
   const [completedTeams, setCompletedTeams] = useState<{ key: string; players: MatchDraftPlayer[] } | null>(null);
   const localTeams = completedTeams?.key === rosterKey ? completedTeams.players : null;

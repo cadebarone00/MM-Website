@@ -12,6 +12,7 @@ import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNoti
 import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAGE_COUNTS, TEAM_DRAFT_TYPES } from "./draftSim";
 import { teamDraftSize } from "@/lib/platform/teamDraft";
 import { MOCK_DRAFT_PRESETS } from "./mockDraft";
+import { MOCK_MATCH_PRESETS } from "./mockMatchSelection";
 
 /** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
 const AUTHDEV_ORIGIN = "http://localhost:3002";
@@ -262,6 +263,13 @@ export function simulatorPages(): SimulatorPage[] {
       ...MOCK_DRAFT_PRESETS.map(preset => ({ id: "mock-draft-" + preset.id, label: preset.label, section: "Setup", state: { mockDraft: preset.id, draftSim: "off" as const, mockDraftViewer: "organizer" as const } })),
     ] });
     sub("match-selection", "Match Selection", matchSelectionConditions());
+    // Match Selection → Mock match selection (test run): a whole saved selection against a pretend server, with the test
+    // panel beside the phone (who's in control, what to do next, checks, log, Jump the clock).
+    const matchPage = pages.find(page => page.id === "home-match-selection")!;
+    pages.splice(pages.indexOf(matchPage) + 1, 0, { ...matchPage, id: "home-match-selection-mock", label: "Mock match selection (test run)", parentId: matchPage.id, conditions: [
+      { id: "mock-match-off", label: "Off (trip data)", section: "Setup", state: { mockMatch: "off" } },
+      ...MOCK_MATCH_PRESETS.map(preset => ({ id: "mock-match-" + preset.id, label: preset.label, section: "Setup", state: { mockMatch: preset.id, mockDraft: "off" as const, draftSim: "off" as const, mockMatchViewer: "organizer" as const } })),
+    ] });
     sub("invite", "Invite players", [
       ...section("Invite players", [
         { id: "home-invite-source", label: "From trip data", state: { homeInvite: "source" } },
@@ -284,7 +292,7 @@ export function simulatorPages(): SimulatorPage[] {
         { id: "home-teams-before", label: "Before the draft (Players + Team Draft)", state: { homePlayers: "source", draftSim: "team", teamDraftType: "2 Teams", teamDraftPlayers: 8, teamDraftPicked: "none", draftWhen: "countdown", draftRoom: "closed" } },
         ...([["2 Teams", 8, "2 teams of 4"], ["Pairs", 8, "4 pairs"], ["3-Ball", 12, "4 teams of 3"], ["4-Ball", 16, "4 teams of 4"]] as const).map(([type, count, shape]) => (
           { id: "home-teams-" + type.toLowerCase().replace(/\s+/g, "-"), label: `After the draft · ${type} (${shape})`, state: { homePlayers: "source" as const, draftSim: "team" as const, teamDraftType: type, teamDraftPlayers: count, teamDraftPicked: "all" as const, draftWhen: "reached" as const, draftRoom: "closed" as const } })),
-        { id: "home-teams-leftover", label: "After the draft · Pairs, one left over (stays Players)", state: { homePlayers: "source", draftSim: "team", teamDraftType: "Pairs", teamDraftPlayers: 7, teamDraftPicked: "all", draftWhen: "reached", draftRoom: "closed" } },
+        { id: "home-teams-leftover", label: "Wrong number · Pairs with 7 (can't draft, stays Players)", state: { homePlayers: "source", draftSim: "team", teamDraftType: "Pairs", teamDraftPlayers: 7, teamDraftPicked: "all", draftWhen: "reached", draftRoom: "closed" } },
         { id: "home-teams-off", label: "Back to trip data", state: { homePlayers: "source", draftSim: "off" } },
       ]),
     ]);
@@ -365,7 +373,8 @@ function teamDraftConditions(type?: (typeof TEAM_DRAFT_TYPES)[number]): Simulato
     team("straight", "Straight (A, B, A, B…)", "Draft order", { teamDraftOrder: "Straight" }),
     ...TEAM_DRAFT_PAGE_COUNTS[type ?? "2 Teams"].map(count => {
       const size = teamDraftSize(type), over = size ? count % size : 0;
-      return team("players-" + count, `${count} players` + (size ? ` (${Math.floor(count / size)} teams${over ? `, ${over} left over` : ""})` : count % 2 ? " (odd number)" : ""), "Players", { teamDraftPlayers: count });
+      // Everyone on a team, equal teams (owner rule): counts that don't fit are there to check the room refuses.
+      return team("players-" + count, `${count} players` + (over || (!size && count % 2) ? " (wrong number — can't draft)" : size ? ` (${count / size} teams)` : ""), "Players", { teamDraftPlayers: count });
     }),
     team("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
     team("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),

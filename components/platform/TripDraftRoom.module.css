@@ -113,3 +113,31 @@
 .peekSheet .matchRound{padding:8px 0}
 /* Saved drafts: one status line under the header (waiting for the start, captains missing, "already made", complete). */
 .liveStatus{flex:none;margin:0;padding:8px 16px;text-align:center;color:var(--lm-ink-f1d69f);font:600 12px/1.4 var(--font-barlow),sans-serif;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent)}
+
+/* Match Selection Room: the VS board right under the header (one row per match: [Team A] VS [Team B]), a slim control
+   bar, then the same Players pull-up as the Team Draft. */
+.vsBoard{flex:1;min-height:0;overflow:auto;box-sizing:border-box;width:100%;max-width:900px;margin:0 auto;padding:10px 14px calc(35dvh + 70px)}
+.vsHead,.vsRow{display:grid;grid-template-columns:44px minmax(0,1fr) 26px minmax(0,1fr);gap:6px;align-items:center}
+.vsHead{padding:2px 0 8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 37.6%,transparent)}
+.vsTeam{font:700 14px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsRow{padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent)}
+.vsRow[data-turn=true] .vsLabel{color:var(--lm-ink-f1d69f)}
+.vsLabel{font:700 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
+.vsVs{text-align:center;font:800 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 70%,transparent)}
+.vsSide{display:grid;gap:5px;min-width:0}
+.vsBox{display:flex;align-items:center;gap:7px;min-height:44px;min-width:0;padding:6px 8px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 22%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 3%,transparent);color:var(--lm-ink-fbf8f1);font:inherit;text-align:left}
+button.vsBox{cursor:pointer}
+.vsBox[data-active=true]{border-color:var(--lm-ink-dcc495);box-shadow:0 0 0 1px color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);background:color-mix(in srgb,var(--lm-ink-dcc495) 7%,transparent)}
+.vsBox[data-target=true]{box-shadow:0 0 0 2px var(--lm-ink-f1d69f)}
+.vsBox[data-filled=true]{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent)}
+.vsBox .rowAvatar{width:22px;height:22px;flex:none}
+.vsWho{display:grid;min-width:0}
+.vsWho strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsWho small{font:500 10px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.vsHidden{font:600 12px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.controlBar{position:absolute;left:0;right:0;bottom:35%;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 14px;background:color-mix(in srgb,var(--lm-bg-240001) 92%,transparent);border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 22%,transparent)}
+.roundSelect{display:flex;align-items:center;gap:6px;min-width:0;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif}
+.roundSelect select{min-width:0;max-width:210px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 43.9%,transparent);border-radius:8px;background:var(--lm-bg-350001);color:var(--lm-ink-fbf8f1);font:12px var(--font-spectral),Georgia,serif}
+.controlButtons{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.clearSpot{margin:10px 0 0;padding:6px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif;cursor:pointer}
+.placedTag{font:500 11px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}

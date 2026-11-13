@@ -4089,24 +4089,69 @@ the Team Draft conditionals (players, order, when, how many picked, room open/cl
 **Done looks like:** all four rooms render and draft correctly in the simulator (order, skipping full teams, ending when
 full), unit tests for the pick order, browser check of each room, existing 2 Teams behaviour unchanged.
 
-### Match Selection room = Team Draft room layout + a VS board (owner request 2026-11-12) — AWAITING APPROVAL
+### Match Selection: rebuilt room, captains, saved and final (owner decisions 2026-11-12) — APPROVED + BUILT 2026-11-13 (uncommitted; golf_trip_match_selection.sql NOT run in prod)
 
-Same set-up as the Team Draft room (components/platform/TripMatchDraftRoom.tsx; rules/timers unchanged):
-- Header: **"Match Selection Room"** centered, countdown under it, draft day over time in the right corner. No player count,
-  no Draft Type / Format rows.
-- **Players** is a pull-up at the bottom (search + All / team filter as today) — owner change 2026-11-12, same in Team Draft.
-- The VS board starts **right under the header line** (team names first). What the room needs to run — the **Round**
-  picker ("Round 2 · Troon North · Singles"), the status line / turn timer, and the action buttons (Start, Submit single /
-  pairing, Randomize groups, Reset) — sits in a slim bar just above the Players pull-up.
-- **The VS board** (instead of team boxes in columns): team names across the top (Team A left, Team B right). One row per
-  match: "Match 1" (Ranks: "Rank 1" with the up/down arrows), **[Team A box] VS [Team B box]**; Pairs (2 v 2) stack two
-  boxes per side. Empty box = "Tap to place"; filled = player name + HCP.
-- **Tapping a box** opens Players filtered to that box's team; tapping a player places them there. Only boxes that can be
-  filled right now are tappable (Ranks: any box during the window; Response: the box whose turn it is; Randomized: none —
-  the Randomize button fills them; locked round: none).
-- Still memory-only; logic changes by the other agent (matchDraft.ts / TripMomentum.tsx) are left alone.
+**As built:** rules `lib/platform/matchSelection.ts` (+ `matchSelectionSetup.ts`, tests), SQL `supabase/golf_trip_match_selection.sql`
+(+ database tests; the round's state lives server-only, phones get only a version number through Realtime so hidden picks
+can't leak), route `app/api/golf-trips/[tripId]/match-selection/route.ts`, `lib/platform/useMatchSelection.ts`, room
+`components/platform/TripMatchDraftRoom.tsx` (rebuilt), pretend server `lib/dev/mockMatchSelection.ts` (also runs simulator
+samples / dev trips), test panel `components/dev/MockMatchPanel.tsx`, setup fields `matchSelectionResults` /
+`completedMatchDrafts`. The organizer sees both teams' picks (they run it); everyone else follows the hiding rules.
 
-Done = all three types + Singles/Pairs + locked work in the simulator (Home → Match Selection), browser check, lint/types clean.
+Replaces the earlier "VS board" plan. Built all at once: the look, the rules, saving, and a Mock match selection test run.
+Round Robin (a schedule, not a selection) is untouched.
+
+**Owner decisions (2026-11-12):** each team's **captain** sets their own team's players (the organizer can step in for
+either team) · **Ranks are hidden** from the other team until locked · **Response groups are shown** to the other team the
+moment they're submitted · everything is **saved and final**, live on every phone.
+
+**The room** (components/platform/TripMatchDraftRoom.tsx) — same look as the Team Draft room:
+- Header: **"Match Selection Room"** centered, countdown under it, the day over the time in the corner.
+- **VS board right under the header line:** team names across the top (small gold, like Home's Teams). One row per match:
+  "Match 1" (Ranks: "Rank 1"), **[Team A box] VS [Team B box]**; Pairs (2 v 2) stack two boxes per side. Empty = "Tap to
+  place"; filled = avatar + name + HCP. Hidden ranks show as "Ranked ✓" (no name) until revealed.
+- A slim bar above the Players pull-up: **Round** picker, whose turn / the timer, and the buttons (Start, Submit, Lock in
+  ranks, Randomize).
+- **Players** pull-up at the bottom: rests 35% up, tap → 85% with the blur; the same player boxes as the Team Draft
+  (avatar, name, stats row, tap → profile). It only lists the team you're placing for.
+- **Tap a box → pick a player** for it. Only boxes the person holding the phone may fill right now are tappable.
+
+**The three types (rules the server enforces):**
+- **Response:** matches go in order; the team that puts forward first alternates each match (A for Match 1, B for Match 2…).
+  The captain on turn places a single / pairing and taps **Submit** — then it's saved and the other team sees it; the other
+  captain responds. Each turn has its timer (Settings: put forward / respond minutes); when it runs out, the empty spots are
+  filled at random from that team's unused players (anything already chosen is kept).
+- **Ranks:** one shared window (Settings: minutes). Each captain ranks their team (rank 1 plays rank 1…) and can change it
+  until they tap **Lock in ranks** or time runs out. The other team can't see them. Both are revealed together when both are
+  locked or the time is up; spots still empty at that point are filled at random from that team's unranked players.
+- **Randomized:** the organizer taps **Randomize** once; the matches are drawn, saved and final.
+- When every match is set, the round's selection is **complete**: the matches are saved with the round and Home's Match
+  Selection card shows "Match selection complete". No undo, no changes.
+- Only rounds set to Match Draft in Settings; a round that's already been played is locked. Teams must be set (the team
+  draft done) first.
+
+**Data (Supabase, new `supabase/golf_trip_match_selection.sql` — to run in production before it works there):**
+- `golf_trip_match_selection`: trip, round key, type, started at, the current deadline, each team's "locked in" time,
+  completed at.
+- `golf_trip_match_selection_spots`: trip, round key, match number, team, spot, the player's account, who placed them, when,
+  and whether it's been submitted/revealed. One player per round once; a spot filled once (Response) — Ranks spots can be
+  changed only by their own captain until locked.
+- Database functions (called only from our server): read (hides the other team's unrevealed spots), start (organizer),
+  place / submit / lock in (captain of that team or organizer, right turn, inside the time), randomize (organizer),
+  catch up timers (fills expired turns at random), finish (saves the matches into the trip setup as
+  `matchSelectionResults[round]` and adds the round to `completedMatchDrafts`). Added to Realtime.
+- Route `/api/golf-trips/[tripId]/match-selection` (GET / POST), same pattern as the team draft.
+
+**Mock match selection (test run):** simulator Home → Match Selection → **Mock match selection (test run)**, test panel
+left of the phone exactly like the Mock draft: **In control** (Organizer · Team A captain · Team B captain · Player), **What to
+do next**, **Checks** (✅/❌), **Log**, buttons (Try a wrong move · Next step automatically · **Jump the clock** · Run to the end ·
+Reset). Setups: Response · Singles 4 v 4 · Response · Pairs 4 v 4 · Ranks · Singles · Ranks · Pairs · Randomized · Response
+with a timed-out turn · Ranks with a timed-out window · Round already played (locked) · Teams not set yet (can't start).
+Checks include: only the right captain can place · the other team can't see unsubmitted Response picks or unlocked Ranks ·
+a player can't be placed twice · timeouts fill only empty spots from that team · results saved when complete.
+
+**Done looks like:** rule tests + database tests (wrong captain, hidden ranks, double placement, timeouts, finish); the
+mock run passes every setup; a two-phone check on the local test database; lint/types clean.
 
 ## Team Draft: picks are saved and final (owner request 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted; SQL run in prod 2026-11-12)
 
@@ -4221,7 +4266,7 @@ wrong-person pick shows ❌-proof ("refused") and a correct one ✅; browser-che
 
 **Open questions for the owner:** (a) Should Trip Name / Destination / Travel be editable now (needs a database change), or shown read-only for this step? (b) Include the Travel section, yes or no?
 
-## Team sizes: everyone on a team, every team the same size (owner rule 2026-11-12) — AWAITING APPROVAL
+## Team sizes: everyone on a team, every team the same size (owner rule 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted)
 
 **Rule:** in a team competition everyone is on a team and every team has the same number of players. So the number of
 players must be: **2 Teams → even** · **Pairs → a multiple of 2** · **3-Ball → a multiple of 3** · **4-Ball → a multiple of 4**.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, Copy, Share2 } from "lucide-react";
 import { tapInPath } from "@/lib/platform/tapIn";
 import styles from "./GolfTripHome.module.css";
@@ -25,7 +26,11 @@ export function TripTapInInvite({ code, name }: { code?: string | null; name: st
     catch (error) { if (!(error instanceof Error && error.name === "AbortError")) setStatus("Couldn't share. Use Copy link."); }
   }
   return <section className={tapStyles.invite} aria-label="The Maroon Live invite">
-    <h2 className={tapStyles.inviteTitle}>The Maroon Live</h2>
+    <div className={tapStyles.inviteHeading}>
+      <h2 className={tapStyles.inviteTitle}>The Maroon Live</h2>
+      {path ? <Link href={path} prefetch={false} className={tapStyles.view} aria-label="View The Maroon Live">View</Link>
+        : <button type="button" className={tapStyles.view} disabled title="The Maroon Live link unavailable">View</button>}
+    </div>
     <p className={tapStyles.description}>Invite your peers to follow along.</p>
     <div className={styles.homeInviteRow}>
       {path ? <a href={path} className={styles.homeInviteLink}>{path}</a> : <span className={styles.homeInviteLink}>The Maroon Live link unavailable</span>}

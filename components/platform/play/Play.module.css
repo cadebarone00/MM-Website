@@ -13,7 +13,7 @@
 .topTitle{margin:0;text-align:center;font:600 15px/1 var(--font-barlow-condensed),sans-serif;letter-spacing:.14em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topTitle span{color:var(--play-accent)}
 
-.screen{max-width:640px;margin:auto;padding:0 16px}
+.screen{max-width:640px;margin:auto;padding:0 var(--page-gutter)}
 .stack{display:grid;gap:22px;padding-top:4px}
 
 /* Identity header */

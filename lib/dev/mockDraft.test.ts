@@ -25,14 +25,17 @@ test("every mock setup runs start → finish and every check passes", () => {
     const end = runToEnd(newMockDraft(id));
     const checks = mockChecks(end);
     assert.deepEqual(checks.filter(check => check.state !== "pass").map(check => check.label), [], id);
-    if (id !== "no-captain") assert.ok(end.draft.completedAt && end.submittedTeams, `${id} finished and saved teams`);
+    if (!["no-captain", "2t-7", "pairs-7", "3ball-10", "4ball-10"].includes(id)) assert.ok(end.draft.completedAt && end.submittedTeams, `${id} finished and saved teams`);
   }
 });
 
-test("captains are set up per team; Pairs with 7 players leaves one unpicked; a missing captain blocks the start", () => {
-  const pairs = runToEnd(newMockDraft("pairs-7"));
-  assert.equal(Object.keys(pairs.captains).length, 3);
-  assert.equal(available(pairs).length, 1);
+test("the wrong number of players can't start (every type); a missing captain blocks the start", () => {
+  for (const id of ["2t-7", "pairs-7", "3ball-10", "4ball-10"] as const) {
+    const refused = mockStart(newMockDraft(id), "organizer");
+    assert.match(refused.error ?? "", /multiples of|even number/, id);
+    assert.equal(refused.store.draft.startedAt, null);
+  }
+  assert.equal(available(runToEnd(newMockDraft("pairs-8"))).length, 0, "everyone ends up on a team");
   const noCaptain = newMockDraft("no-captain");
   assert.equal(mockStart(noCaptain, "organizer").error, "Every team needs a captain first (Settings → Players).");
 });

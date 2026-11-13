@@ -1,11 +1,11 @@
 /* Golf Trip Home: all dark maroon, no top nav. Trip name up top, the 4-tab selector under it, then the cards.
    The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
 .page{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);
-  padding:48px max(16px,calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
+  padding:48px max(var(--page-gutter),calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
 /* Room at the bottom for the Scoring sheet's handle, which sits just above the bottom menu (desktop: at the bottom). */
 .pageWithScoring{padding-bottom:calc(24px + 64px + 5.75rem + env(safe-area-inset-bottom))}
 @media (min-width:1024px){.pageWithScoring{padding-bottom:96px}}
-.header{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px;row-gap:8px;text-align:center}
+.header{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px;row-gap:8px;text-align:center;padding-inline:var(--page-text-shift)}
 /* Chat, notifications and settings share the right side of the trip title row. */
 .headerActions{grid-column:2;grid-row:1;display:flex;align-self:start;justify-self:end;margin-right:-8px}
 .iconButton{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;
@@ -72,7 +72,7 @@
 .overview{display:flex;flex-direction:column;gap:12px}
 /* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
    color can start right at the edge of the screen. */
-@media(max-width:592px){.slides{margin-inline:-16px}.slide{box-sizing:border-box;padding-inline:16px}}
+@media(max-width:592px){.slides{margin-inline:calc(-1 * var(--page-gutter))}.slide{box-sizing:border-box;padding-inline:var(--page-gutter)}}
 /* Venue tab (event-list style): bold section headings with a chevron, then rows of square picture + host, title, time, place. */
 .events{display:flex;flex-direction:column;gap:18px}
 .eventsHeading{display:flex;align-items:center;gap:2px;margin:6px 0 0;font:700 20px/1.2 var(--font-barlow),sans-serif;color:var(--lm-ink-ffffff)}
@@ -98,7 +98,7 @@
 .eventMeta{display:flex;align-items:center;gap:6px;margin:0;font:500 14px/1.3 var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
 .eventMeta svg{flex:0 0 auto}
 .infoSection{display:flex;flex-direction:column;gap:12px}
-.infoHeaderRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.infoHeaderRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;padding-inline:var(--page-text-shift)}
 .infoEntry{position:relative;display:flex;align-items:flex-start;gap:12px;padding:8px 32px 0 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .infoEntry:first-of-type{border-top:0;padding-top:0}
 .entryDelete{position:absolute;top:8px;right:0;display:grid;place-items:center;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 70%,transparent);cursor:pointer}
@@ -180,14 +180,14 @@
 .settingsMessage{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
 /* Info tab (banking-app style): runs to the screen edges and down under the bottom menu. Maroon top with "Your trip to …",
    then a light page; the account cards sit across the line between the two. */
-.account{flex:1;display:flex;flex-direction:column;margin:0 -16px calc(-24px - 5.75rem - env(safe-area-inset-bottom));
+.account{flex:1;display:flex;flex-direction:column;margin:0 calc(-1 * var(--page-gutter)) calc(-24px - 5.75rem - env(safe-area-inset-bottom));
   padding-bottom:calc(24px + 5.75rem + env(safe-area-inset-bottom));
   background:var(--lm-bg-240001);color:#111;font-family:var(--font-spectral),Georgia,serif} /* Home is Spectral; Barlow only for tiny ALL-CAPS labels (owner 2026-11-10) */
 .account p{margin:0}
 /* :where() keeps this weak, so a button's own font (Feed, Copy link, Upload pictures…) wins. */
 :where(.account) button{font-family:inherit;cursor:pointer}
 /* Same height as when it held the old pill row, so the cards below don't move. */
-.accountTop{position:relative;display:flex;align-items:flex-end;padding:0 16px;color:var(--lm-ink-ffffff)}
+.accountTop{position:relative;display:flex;align-items:flex-end;padding:0 var(--page-text-inset);color:var(--lm-ink-ffffff)}
 /* Left 65%: the trip heading; right 35%: quick weather. */
 .accountTitleBlock{position:relative;flex:0 0 65%;min-width:0}
 /* Sized so "Your trip to" and a typical "City, ST" fit in the left 65% (long names wrap). */
@@ -195,7 +195,7 @@
 .accountDestination{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Trip dates ("Jan 7 – Jan 10, 2026") in gold under the location. */
 .accountTop .accountDates{margin:8px 0 0;font:600 15px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495)}
-.accountCards{scroll-padding-inline:16px;display:flex;gap:10px;margin-top:22px;padding:0 16px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.accountCards{scroll-padding-inline:var(--page-gutter);display:flex;gap:10px;margin-top:22px;padding:0 var(--page-gutter) 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .accountCards::-webkit-scrollbar,.accountCard{flex:0 0 82%;box-sizing:border-box;min-height:96px;padding:16px 14px;border-radius:12px;background:#fff;
   box-shadow:0 1px 4px rgba(0,0,0,.12);scroll-snap-align:start}
 /* Info → Flights card: the first account card, a link to the Flights page. */
@@ -208,8 +208,8 @@
 .accountDots{display:flex;justify-content:center;gap:6px;margin-top:12px}
 .accountDots span{width:6px;height:6px;border-radius:50%;background:#cfd3d1}
 .accountDots .accountDotActive{background:#8b918e}
-.accountHeading{margin-top:28px !important;padding:0 16px;font-size:18px;font-weight:700;color:var(--lm-ink-fbf8f1)}
-.accountTools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding:0 16px}
+.accountHeading{margin-top:28px !important;padding:0 var(--page-text-inset);font-size:18px;font-weight:700;color:var(--lm-ink-fbf8f1)}
+.accountTools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding:0 var(--page-gutter)}
 .accountTool{min-height:80px;padding:14px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px;font-weight:600}
 @media(min-width:593px){.account{margin-inline:0;border-radius:20px 20px 0 0;overflow:hidden}}
 /* Home tab (search-sheet style): cream cards, one open at a time. Open = big title, small label, icon-tile rows;
@@ -278,7 +278,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .tabs.infoTabs{margin-top:-16px}
 /* Main trip tabs (Home … Info): a faint line runs edge to edge under them; the selected gold indicator sits directly above the continuous grey line. */
 .tabs.tripTabs{position:relative;grid-column:1 / -1;margin-top:-4px}
-.tripTabs::before{content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:2px;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);pointer-events:none}
+.tripTabs::before{content:"";position:absolute;left:calc(-1 * var(--page-text-inset));right:calc(-1 * var(--page-text-inset));bottom:0;height:2px;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);pointer-events:none}
 .tripTabs .tab::after{left:0;right:0;bottom:2px;border-radius:0;z-index:1}
 /* Itinerary day change: the day slides out (50 ms) toward the side you're leaving, the next slides in from the other side (50 ms). */
 .itineraryDayBody{display:grid;gap:12px;min-width:0}
@@ -349,8 +349,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .homeFeed{flex:1;min-height:160px}
 /* Home → Players: everyone who's joined, like the Golf leaderboard's rows but tighter — a small cream badge (photo or
    initials), the name, and @username under it. Every row is one height (an empty username line is kept). */
-.homePlayers{padding:0 16px 8px}
-.homePlayers .accountHeading{padding:0}
+.homePlayers{padding:0 var(--page-gutter) 8px}
+.homePlayers .accountHeading{padding:0 var(--page-text-shift)}
 .homeCompetition{display:grid;gap:10px;margin-top:10px}
 /* Golf → Team: a pill per round ("Round 1"…), 4 across with the 5th peeking in at the edge so you can tell it scrolls;
    the picked round's course · format under them. */
@@ -372,10 +372,11 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .homeInviteCopy:disabled{opacity:.45;cursor:default}
 .homeInviteCopy:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Players heading with "joined / allotted" on the right. */
-.homePlayersTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.homePlayersTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-inline:var(--page-text-shift)}
+.homePlayersTop .accountHeading{padding:0}
 .homePlayersCount{font:700 14px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495);font-variant-numeric:tabular-nums}
 .homeCompetition .homePlayersEmpty{margin-top:-2px !important}
-.homePlayerList{margin:10px 0 0;padding:0;list-style:none}
+.homePlayerList{margin:10px 0 0;padding:0 var(--page-text-shift);list-style:none}
 .homePlayer{display:grid;grid-template-columns:18px 26px minmax(0,1fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .homePlayerNumber{display:grid;align-items:center;justify-items:start;width:30px;height:30px;color:var(--lm-ink-dcc495);font:800 13px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
 .homePlayerBadge{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;overflow:hidden;background:#fbf8f1;color:var(--color-maroon-900);font:800 11px/1 var(--font-spectral),Georgia,serif}
@@ -384,7 +385,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .homePlayerWho{display:flex;flex-direction:column;gap:1px;min-width:0}
 .homePlayerName{font:700 15px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .homePlayerUsername{font:500 12px/1.25 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.homePlayersEmpty{margin-top:8px !important;font:500 13px/1.4 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
+.homePlayersEmpty{margin-top:8px !important;padding-inline:var(--page-text-shift);font:500 13px/1.4 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
 .predictBack{display:grid;place-items:center;width:36px;height:36px;margin:0 0 8px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:50%;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent);color:var(--lm-ink-dcc495);cursor:pointer}
 /* Team points open on the tournament box: the board grows to fit it and pushes the leaderboard down. */
 .golfTop:has([data-points-open]){height:auto;min-height:var(--golf-board-height)}
@@ -399,7 +400,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 @keyframes predictSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.predictSheet{animation:none}}
 
-.standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px -16px;padding:8px 16px;border-block:1px solid #dcc49566;color:var(--lm-ink-dcc495);font:500 13px/1.35 var(--font-barlow),sans-serif}
+.standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px calc(-1 * var(--page-gutter));padding:8px var(--page-text-inset);border-block:1px solid #dcc49566;color:var(--lm-ink-dcc495);font:500 13px/1.35 var(--font-barlow),sans-serif}
 .standingsNotice strong{font-weight:700}
 .standingsNotice > div{min-width:0}
 .standingsNotice p{margin:1px 0 0;font-size:11px;line-height:13px}
@@ -422,13 +423,20 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .leaderboardKind .tab{min-height:32px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:999px;color:var(--lm-ink-dcc495);text-shadow:none}
 .leaderboardKind .tab[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--color-maroon-900);text-shadow:none}
 .leaderboardKind button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
+.leaderboardBoard{overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.leaderboardBoard .tabs.leaderboardKind{position:relative;margin:0;padding:0 12px;gap:0}
+.leaderboardBoard .leaderboardKind::before{content:"";display:block;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(220,196,149,.3) 15%,rgba(220,196,149,.3) 85%,transparent)}
+.leaderboardBoard .leaderboardKind .tab{min-height:36px;border:0;border-radius:0;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:12px}
+.leaderboardBoard .leaderboardKind .tab[aria-pressed=true]{background:transparent;color:var(--lm-ink-dcc495)}
+.leaderboardBoard .leaderboardKind .tab::after{display:block;left:12px;right:12px;bottom:0;border-radius:0}
+.leaderboardBoard .leaderboardKind .tab[aria-pressed=true]::after{opacity:1}
 
 .body.golfBody{margin-top:8px}
 
 .sectionTabs.golfBoardTabs{gap:0}
-.sectionTabs.golfBoardTabs .tab{position:relative;min-height:32px;padding:0 4px;font-size:11.5px;border:0;border-radius:0;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
-.sectionTabs.golfBoardTabs .tab[aria-selected=true]{color:var(--lm-ink-dcc495);background:transparent}
-.sectionTabs.golfBoardTabs .tab::after{display:block;left:8px;right:8px;bottom:0;border-radius:0}
+.sectionTabs.golfBoardTabs .tab{position:relative;flex:1 1 0;min-height:26px;margin:3px 2px;padding:0 2px;font-size:13.5px;border:1px solid transparent;border-radius:999px;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
+.sectionTabs.golfBoardTabs .tab[aria-selected=true]{color:var(--lm-ink-dcc495);background:rgba(220,196,149,.16);border-color:rgba(220,196,149,.55)}
+.sectionTabs.golfBoardTabs .tab::after{display:none}
 .sectionTabs.golfBoardTabs .tab[aria-selected=true]::after{opacity:1}
 
 /* Draft remains first under the Big Board for team competitions. */
@@ -442,8 +450,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 
 .homeTapInDescription{margin-top:6px !important;font:500 12px/1.4 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 65%,transparent)}
 /* Teams (Home's Players once teams are set): each team's name is a small gold label, not a heading. */
-.homeTeam{margin-top:14px}
-.homeTeam .homePlayerList{margin-top:4px}
+.homeTeam{margin-top:14px;padding-inline:var(--page-text-shift)}
+.homeTeam .homePlayerList{margin-top:4px;padding-inline:0}
 .homeTeamName{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0;font:700 14px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495)}
 .homeTeamName span:last-child{font-variant-numeric:tabular-nums;font-size:13px}
 /* After the team draft (teams set) with no Match Selection coming up, the draft area has nothing in it: hide it. */

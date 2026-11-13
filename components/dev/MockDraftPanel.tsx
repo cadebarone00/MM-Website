@@ -34,7 +34,8 @@ export function MockDraftPanel({ preset, viewer, onViewer }: { preset: MockDraft
   const first = (current: MockDraftStore) => draftBoardFor(current.members, current.captains, current.settings, current.draft.picks).available[0];
   const wrongMove = () => {
     const current = readMockDraft(preset);
-    if (draftBoardFor(current.members, current.captains, current.settings, []).missingCaptains.length) return apply(mockStart(current, "organizer", "probe").store);
+    const empty = draftBoardFor(current.members, current.captains, current.settings, []);
+    if (empty.missingCaptains.length || empty.countError) return apply(mockStart(current, "organizer", "probe").store);
     if (!current.draft.startedAt) return apply(mockPick(current, "organizer", first(current), 1, "probe").store);
     const { wrong } = mockTurn(current);
     let next = wrong && first(current) ? mockPick(current, wrong, first(current), current.draft.picks.length + 1, "probe").store : current;
@@ -81,7 +82,7 @@ export function MockDraftPanel({ preset, viewer, onViewer }: { preset: MockDraft
     </section>
     <div className={styles.actions}>
       <button type="button" onClick={wrongMove} disabled={!!store.draft.completedAt}><ShieldAlert size={13} /> Try a wrong move</button>
-      <button type="button" onClick={nextPick} disabled={!!store.draft.completedAt || (!!store.draft.startedAt && board.turn === null) || (!store.draft.startedAt && board.missingCaptains.length > 0)}><Play size={13} /> Next pick automatically</button>
+      <button type="button" onClick={nextPick} disabled={!!store.draft.completedAt || (!!store.draft.startedAt && board.turn === null) || (!store.draft.startedAt && (board.missingCaptains.length > 0 || !!board.countError))}><Play size={13} /> Next pick automatically</button>
       <button type="button" onClick={() => void runToEnd()} disabled={!!store.draft.completedAt}><FastForward size={13} /> Run to the end</button>
       <button type="button" onClick={() => writeMockDraft(newMockDraft(preset))}><RotateCcw size={13} /> Reset</button>
     </div>

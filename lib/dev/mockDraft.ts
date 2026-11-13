@@ -10,11 +10,15 @@ import { teamLetter } from "@/lib/platform/teamDraft";
 export const MOCK_DRAFT_TRIP = "mock-team-draft";
 export const MOCK_DRAFT_PRESETS = [
   { id: "2t-8-snake", label: "2 Teams · 8 players · Snake", teamType: "2 Teams", players: 8, order: "Snake" },
-  { id: "2t-7-straight", label: "2 Teams · 7 players (odd) · Straight", teamType: "2 Teams", players: 7, order: "Straight" },
+  { id: "2t-6-straight", label: "2 Teams · 6 players · Straight", teamType: "2 Teams", players: 6, order: "Straight" },
   { id: "pairs-8", label: "Pairs · 8 players (4 teams)", teamType: "Pairs", players: 8, order: "Snake" },
-  { id: "pairs-7", label: "Pairs · 7 players (one left over)", teamType: "Pairs", players: 7, order: "Snake" },
   { id: "3ball-12", label: "3-Ball · 12 players · Straight", teamType: "3-Ball", players: 12, order: "Straight" },
   { id: "4ball-16", label: "4-Ball · 16 players (4 teams)", teamType: "4-Ball", players: 16, order: "Snake" },
+  // Wrong number of players (everyone must be on a team, every team the same size): the draft must refuse to start.
+  { id: "2t-7", label: "Can't start · 2 Teams with 7 (odd)", teamType: "2 Teams", players: 7, order: "Snake", wrongCount: true },
+  { id: "pairs-7", label: "Can't start · Pairs with 7", teamType: "Pairs", players: 7, order: "Snake", wrongCount: true },
+  { id: "3ball-10", label: "Can't start · 3-Ball with 10", teamType: "3-Ball", players: 10, order: "Snake", wrongCount: true },
+  { id: "4ball-10", label: "Can't start · 4-Ball with 10", teamType: "4-Ball", players: 10, order: "Snake", wrongCount: true },
   { id: "no-captain", label: "2 Teams · a team has no captain", teamType: "2 Teams", players: 8, order: "Snake", missingCaptain: true },
 ] as const;
 export type MockDraftPresetId = (typeof MOCK_DRAFT_PRESETS)[number]["id"];
@@ -84,6 +88,7 @@ export function mockStart(store: MockDraftStore, viewer: MockViewer, kind: MockL
   const who = mockViewerLabel(store, viewer);
   const refuse = (error: string) => ({ store: log(store, { who, text: `Start refused: ${error}`, ok: false, kind: kind === "probe" ? "probe" : "refused" }), error });
   if (mockViewerId(store, viewer) !== store.organizer) return refuse("Only the organizer can start the draft.");
+  if (boardOf(store).countError) return refuse(boardOf(store).countError!);
   if (boardOf(store).missingCaptains.length) return refuse("Every team needs a captain first (Settings → Players).");
   if (store.draft.startedAt) return { store, error: null };
   return { store: log({ ...store, draft: { ...store.draft, startedAt: new Date(Date.UTC(2027, 3, 20, 18)).toISOString() } }, { who, text: "Started the draft", ok: true, kind: "start" }), error: null };
@@ -120,6 +125,10 @@ export function mockChecks(store: MockDraftStore): MockCheck[] {
   const refused = (match: RegExp) => store.log.some(entry => !entry.ok && match.test(entry.text));
   const board = boardOf(store);
   const preset = MOCK_DRAFT_PRESETS.find(item => item.id === store.preset)!;
+  if ("wrongCount" in preset && preset.wrongCount) return [
+    { id: "no-start", label: "The draft can't start with the wrong number of players", state: refused(/multiples of|even number|at least/) ? "pass" : store.draft.startedAt ? "fail" : "pending" },
+    { id: "no-pick", label: "Nobody can pick", state: store.draft.picks.length ? "fail" : refused(/refused/) ? "pass" : "pending" },
+  ];
   if ("missingCaptain" in preset && preset.missingCaptain) return [
     { id: "no-start", label: "The draft can't start while a team has no captain", state: refused(/captain first/) ? "pass" : store.draft.startedAt ? "fail" : "pending" },
     { id: "no-pick", label: "Nobody can pick", state: store.draft.picks.length ? "fail" : refused(/refused/) ? "pass" : "pending" },
@@ -131,15 +140,13 @@ export function mockChecks(store: MockDraftStore): MockCheck[] {
     if (before.turn !== store.draft.picks[index].team) orderOk = false;
   }
   const pickedBeforeStart = store.draft.picks.some(pick => store.draft.startedAt && pick.pickedAt < store.draft.startedAt);
-  const leftovers = Number.isFinite(board.capacity) ? store.members.length - board.teamCount * board.capacity : 0;
   return [
     { id: "before-start", label: "Picking can't start before Start team draft", state: pickedBeforeStart ? "fail" : refused(/hasn't started/) ? "pass" : "pending" },
     { id: "on-clock", label: "Only the captain on the clock (or the organizer) can pick", state: refused(/not your pick/) ? "pass" : "pending" },
     { id: "order", label: `Pick order follows ${store.settings.order}${Number.isFinite(board.capacity) ? ", skipping full teams" : ""}`, state: !orderOk ? "fail" : store.draft.picks.length >= 2 ? "pass" : "pending" },
     { id: "no-double", label: "A drafted player can't be drafted again", state: refused(/already on a team/) ? "pass" : "pending" },
-    { id: "full", label: Number.isFinite(board.capacity) ? `No team goes over ${board.capacity} players` : "Everyone ends up on a team", state: board.teams.some(team => team.length > board.capacity) ? "fail" : board.done ? "pass" : "pending" },
-    ...(leftovers > 0 ? [{ id: "leftover", label: `${leftovers} player${leftovers === 1 ? " stays" : "s stay"} unpicked when every team is full`, state: board.done ? (board.available.length === leftovers ? "pass" : "fail") : "pending" } as MockCheck] : []),
-    { id: "saved", label: "The last pick finishes the draft and saves the teams", state: store.draft.completedAt ? (store.submittedTeams?.flat().length === store.members.length - leftovers ? "pass" : "fail") : "pending" },
+    { id: "full", label: `Every team ends with exactly ${board.capacity} players (no team goes over)`, state: board.teams.some(team => team.length > board.capacity) ? "fail" : board.done ? (board.teams.every(team => team.length === board.capacity) ? "pass" : "fail") : "pending" },
+    { id: "saved", label: "The last pick finishes the draft, everyone is on a team, and the teams are saved", state: store.draft.completedAt ? (store.submittedTeams?.flat().length === store.members.length ? "pass" : "fail") : "pending" },
   ];
 }
 
@@ -148,6 +155,7 @@ export function mockInstruction(store: MockDraftStore, viewer: MockViewer): stri
   const board = boardOf(store);
   const label = mockViewerLabel(store, viewer);
   if (store.draft.completedAt) return "Draft complete — the teams are saved. Press Reset, or pick another setup.";
+  if (board.countError) return `Wrong number of players: ${board.countError} As the Organizer, try Start team draft (or press "Try a wrong move") — it should be refused.`;
   if (board.missingCaptains.length) return `Team ${teamLetter(board.missingCaptains[0])} has no captain. As the Organizer, try Start team draft (or press "Try a wrong move") — it should be refused.`;
   if (!store.draft.startedAt) return viewer === "organizer"
     ? "You're the Organizer. Tap Start team draft in the phone. (Optional first: press \"Try a wrong move\" — an early pick should be refused.)"

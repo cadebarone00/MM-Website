@@ -43,6 +43,14 @@ export default async function GolfTripsPage() {
           </span>
         </SignInRequiredLink>
 
+        <Link href="/golf-trips/live" className={styles.live} aria-labelledby="maroon-live-entry-title" aria-describedby="maroon-live-entry-description">
+          <span className={styles.liveText}>
+            <span id="maroon-live-entry-title" className={styles.liveTitle}>The Maroon Live</span>
+            <span id="maroon-live-entry-description" className={styles.liveDescription}>Check out other trips happening now</span>
+          </span>
+          <ChevronRight size={21} strokeWidth={2} aria-hidden="true" />
+        </Link>
+
         {result.status === "ok" ? <>
           <TripSection id="upcoming-trips" heading="Upcoming" trips={upcoming} icon={Plane}
             empty={<Link href="/tournaments/create/golf-trip" className={styles.row}>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import type { MatchDraftPlayer } from "@/lib/platform/matchDraft";
-import { teamDraftSize, teamDraftTeamCount, teamDraftTurn, teamLetter } from "@/lib/platform/teamDraft";
+import { teamCountError, teamDraftCapacity, teamDraftSize, teamDraftTeamCount, teamDraftTurn, teamLetter } from "@/lib/platform/teamDraft";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import styles from "./TripDraftRoom.module.css";
 
@@ -75,7 +75,9 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   const size = teamDraftSize(teamType);
   const unique = players.filter((player, index) => players.findIndex(other => other.name === player.name) === index);
   const teamCount = teamDraftTeamCount(teamType, unique.length);
-  const capacity = size ?? Infinity;
+  // Everyone on a team, every team the same size (owner rule): 2 Teams fills each side to half; a wrong count can't draft.
+  const capacity = teamDraftCapacity(teamType, unique.length);
+  const countError = teamCountError(teamType, unique.length);
   const startTeam = (player: DraftRoomPlayer) => player.teamIndex ?? (player.team === "A" ? 0 : player.team === "B" ? 1 : undefined);
   const roster = unique.map(player => ({ ...player, on: picks[player.name] ?? startTeam(player) })).map(player => ({ ...player, on: player.on !== undefined && player.on < teamCount ? player.on : undefined }));
   // Each team: captain first, then everyone else in the order they joined it.
@@ -84,7 +86,7 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   const available = roster.filter(player => player.on === undefined);
   const turn = available.length ? teamDraftTurn(draftOrder, teams.map(team => team.length), start, capacity) : null;
   const isStarted = live ? live.started : started;
-  const picking = (live ? turn !== null && live.canPick(turn) && !live.busy : canEdit) && isStarted && draftType === "Captain's Picks" && turn !== null;
+  const picking = !countError && (live ? turn !== null && live.canPick(turn) && !live.busy : canEdit) && isStarted && draftType === "Captain's Picks" && turn !== null;
   const label = (team: number) => `Team ${teamLetter(team)}`;
   // The list shows the players still available (no Available / Team pills).
   const visible = available.filter(player => player.name.toLowerCase().includes(search.toLowerCase()));
@@ -113,7 +115,7 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
             <div className={styles.playerBoxTop}><strong>{player.name}</strong>{picking && <button type="button" className={styles.pick} aria-label={`Draft ${player.name} to ${label(turn!)}`} onClick={() => { if (live) live.onPick(player.id ?? player.name); else if (canEdit && started) setPicks(current => ({ ...current, [player.name]: turn! })); }}>Draft</button>}</div>
             <dl className={styles.statRow} aria-label={`${player.name} stats`}>{statCells(player).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
           </div>
-        </div>)}{visible.length === 0 && <p className={styles.message}>{search ? "No players match your search." : "No available players."}</p>}{done && available.length > 0 && <p className={styles.message}>Every team is full. {available.length === 1 ? "This player isn't" : "These players aren't"} on a team.</p>}</div>
+        </div>)}{visible.length === 0 && <p className={styles.message}>{search ? "No players match your search." : "No available players."}</p>}</div>
         {!live && canEdit && onComplete && done && available.length === 0 && teams.every(team => team.length > 0) && <button type="button" className={styles.pick} onClick={() => onComplete(roster.map(player => ({ id: String(players.findIndex(source => source.name === player.name)), name: player.name, handicap: player.handicap, team: player.on === 0 ? "A" : "B" })))}>Complete team draft</button>}
       </div>
     </section>
@@ -129,10 +131,10 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
       </div>
       <div className={styles.cornerControls}>
         <p className={styles.cornerWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>
-        {(live ? live.canStart && !isStarted : canEdit && !started) && !done && <button type="button" className={`${styles.pick} ${styles.startDraft}`} disabled={draftType !== "Captain's Picks" || roster.length < 2 || live?.busy} onClick={() => { if (live) live.onStart(); else if (canEdit && draftType === "Captain's Picks") setStarted(true); }}>Start team draft</button>}
+        {!countError && (live ? live.canStart && !isStarted : canEdit && !started) && !done && <button type="button" className={`${styles.pick} ${styles.startDraft}`} disabled={draftType !== "Captain's Picks" || roster.length < 2 || live?.busy} onClick={() => { if (live) live.onStart(); else if (canEdit && draftType === "Captain's Picks") setStarted(true); }}>Start team draft</button>}
       </div>
     </header>
-    {live?.message && <p className={styles.liveStatus} role="status">{live.message}</p>}
+    {(live?.message || countError) && <p className={styles.liveStatus} role="status">{live?.message || countError}</p>}
     <div className={styles.teamGrid} data-two={!size} aria-label="Team draft board">
       {/* 2 Teams: the team name sits above its column and every player gets their own box. Pairs / 3-Ball / 4-Ball: one box per team. */}
       {teams.map((team, index) => <section key={index} className={size ? styles.teamCard : styles.teamColumn} data-on-clock={picking && turn === index} aria-label={label(index)}>

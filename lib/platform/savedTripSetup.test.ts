@@ -52,3 +52,9 @@ test("Team Draft captains save as team number → account id, nothing else", () 
   assert.equal(validSetup({ draftCaptains: { 64: id } }), false);
   assert.equal(validSetup({ draftCaptains: [id] }), false);
 });
+
+test("Match Selection results and finished rounds save in the setup; junk doesn't", () => {
+  assert.equal(validSetup({ completedMatchDrafts: ["1-0"], matchSelectionResults: { "1-0": [{ a: [0, 2], b: [1, 3] }] } }), true);
+  assert.equal(validSetup({ completedMatchDrafts: ["nope"] }), false);
+  assert.equal(validSetup({ matchSelectionResults: { "1-0": [{ a: ["x"], b: [] }] } }), false);
+});

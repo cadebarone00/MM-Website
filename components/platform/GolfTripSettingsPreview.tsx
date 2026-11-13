@@ -1,4 +1,5 @@
 "use client";
+import { teamCountError } from "@/lib/platform/teamDraft";
 
 import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import { DatePicker } from "@/components/platform/DatePicker";
@@ -227,14 +228,15 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   const rosterSlots = Array.from({ length: playerTotal }, (_, index) => index);
   const pickedOn = (team: number) => rosterSlots.filter(index => teamPicks[index] === team);
   // Pairs / 3-Ball / 4-Ball: fixed players per team, Total players in steps of that size, at least 2 teams.
-  // 2 Teams: Total players in steps of 2 split in half, or (Add Sub/Uneven Teams on) a separate size per team up to the trip's players.
+  // 2 Teams: Total players in steps of 2 split in half. Owner rule (2026-11-12): everyone is on a team and every team is
+  // the same size, so the Add Sub/Uneven Teams switch is gone (an old saved "on" is ignored).
   const groupSize = ({ Pairs: 2, "3-Ball": 3, "4-Ball": 4 } as Record<string, number>)[competitionType.team ?? ""] ?? null;
   const [teamTotalChoice, setTeamTotalChoice] = usePersistedState<number | null>(persist, "teamTotalChoice", null);
-  const [unevenTeams, setUnevenTeams] = usePersistedState(persist, "unevenTeams", false);
+  const [unevenTeams] = usePersistedState(persist, "unevenTeams", false);
   const [teamTie, setTeamTie] = usePersistedState<"Retain" | "Teams Tie" | "Playoff">(persist, "teamTie", "Teams Tie");
   const selectedTeamTie = competitionType.team !== "2 Teams" && teamTie === "Retain" ? "Teams Tie" : teamTie;
   const [unevenSizes, setUnevenSizes] = usePersistedState<[number, number]>(persist, "unevenSizes", [2, 2]);
-  const uneven = unevenTeams && !groupSize;
+  const uneven = false;
   const pageGroup = COMPETITION_TYPES.find(group => group.key === overviewType) ?? COMPETITION_TYPES[0];
   // Team Selection starts unpicked. Switching how teams are picked starts the teams over.
   const [teamSelection, setTeamSelectionState] = usePersistedState<TeamSelection | null>(persist, "teamSelection", null);
@@ -771,12 +773,8 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                     <button type="button" aria-label="More players" disabled={!!submittedTeams || evenTotal >= teamTotalMax} onClick={() => setTeamTotalChoice(evenTotal + teamStep)}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
                   </div>
                 </div>}
-                {!groupSize && <div className={styles.totalPlayers}>
-                  <span className={styles.typeHeading}>Add Sub/Uneven Teams</span>
-                  <button type="button" role="switch" aria-checked={unevenTeams} aria-label="Add Sub/Uneven Teams" className={toggleStyles.toggle} disabled={!!submittedTeams} onClick={() => { if (!unevenTeams) setUnevenSizes([teamSizes[0], teamSizes[1]]); setUnevenTeams(on => !on); }}>
-                    <span className={toggleStyles.track} data-on={unevenTeams}><span className={toggleStyles.thumb} /></span><span>{unevenTeams ? "On" : "Off"}</span>
-                  </button>
-                </div>}
+                {/* Everyone on a team, every team the same size: say so when the trip's players don't fit this team type. */}
+                {teamCountError(competitionType.team, playerTotal) && <p className={styles.statNote} role="status">{teamCountError(competitionType.team, playerTotal)}</p>}
                   <div className={styles.teamSelection} role="group" aria-label="If Tie">
                     <span className={styles.typeHeading}>If Tie</span>
                     <div className={styles.tieChoices}>

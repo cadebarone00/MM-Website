@@ -58,6 +58,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   if (body.action === "start") {
     if (!loaded.viewer.isOrganizer) return NextResponse.json({ error: "Only the organizer can start the draft." }, { status: 403 });
     if (loaded.setup.settings.method !== "Captain's Picks") return NextResponse.json({ error: "This draft type doesn't use picks." }, { status: 400 });
+    // Everyone on a team, every team the same size: the wrong number of players can't be drafted.
+    const countError = draftBoardFor(loaded.members, loaded.setup.captains, loaded.setup.settings, loaded.draft.picks).countError;
+    if (countError) return NextResponse.json({ error: countError }, { status: 400 });
     const { data, error } = await db.rpc("start_golf_trip_team_draft", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId });
     return error ? refused(error) : answer(loaded, savedDraftFromJson(data) ?? loaded.draft);
   }

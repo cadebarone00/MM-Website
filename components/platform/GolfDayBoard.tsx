@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { golfDayAssignment, golfDayMatchNames, golfDayRounds, golfDaySummary } from "@/lib/platform/golfDay";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
@@ -9,12 +9,38 @@ import styles from "./GolfDayBoard.module.css";
 
 export function GolfDayBoard({ match, schedule, viewerName, structure, spectator, sittingOut, roundRsvps, children }: {
   match?: GolfMatchPreview; schedule?: GolfTripDraft; viewerName?: string | null; structure: CompetitionStructure;
-  spectator?: boolean; sittingOut?: boolean; roundRsvps?: Record<number, Record<string, string>>; children: ReactNode;
+  spectator?: boolean; sittingOut?: boolean; roundRsvps?: Record<number, Record<string, string>>; children: (handle: ReactNode) => ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const detailsId = useId();
+  const drag = useRef<{ id: number; y: number } | null>(null);
+  const dragged = useRef(false);
+  const finishDrag = (event: PointerEvent<HTMLButtonElement>) => {
+    if (drag.current?.id !== event.pointerId) return;
+    const distance = event.clientY - drag.current.y;
+    drag.current = null;
+    dragged.current = Math.abs(distance) > 8;
+    if (distance < -20) setCollapsed(true);
+    if (distance > 20) setCollapsed(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  const handle = <button type="button" className={styles.handle} aria-label={collapsed ? "Expand golf overview" : "Collapse golf overview"} aria-expanded={!collapsed} aria-controls={detailsId}
+      onPointerDown={event => {
+        if (!event.isPrimary || event.button !== 0) return;
+        dragged.current = false;
+        drag.current = { id: event.pointerId, y: event.clientY };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerUp={finishDrag}
+      onPointerCancel={() => { drag.current = null; dragged.current = false; }}
+      onClick={() => { if (dragged.current) { dragged.current = false; return; } setCollapsed(value => !value); }}>
+      <span aria-hidden="true" />
+    </button>;
   const rounds = golfDayRounds(match, schedule);
   const summary = golfDaySummary(match, viewerName, structure, spectator);
-  return <section className={styles.board} aria-label={spectator ? "Golf day overview" : "Your golf day"}>
-    <div className={styles.content}>
+  return <section className={styles.board} data-collapsed={collapsed} aria-label={spectator ? "Golf day overview" : "Your golf day"}>
+    <div id={detailsId} className={styles.details} data-collapsed={collapsed} inert={collapsed} aria-hidden={collapsed || undefined}>
+    <div className={styles.detailsInner}><div className={styles.content}>
       {summary && <dl className={styles.summary} aria-label="Your trip standings">
         <div><dt>Trip +/−</dt><dd>{summary.total}</dd></div>
         <div><dt>Position</dt><dd>{summary.position}</dd></div>
@@ -28,8 +54,10 @@ export function GolfDayBoard({ match, schedule, viewerName, structure, spectator
           <div className={styles.assignment}><p className={styles.tee}>{spectator ? "See tee sheet" : out ? "Sitting out" : player?.teeTime || ownSide?.teeTime || "Tee time not set"}</p><p className={styles.match}>{spectator ? "Team leaderboard" : out ? "Sitting out this round" : golfDayMatchNames(round, viewerName)}</p></div>
         </div>;
       }) : <p className={styles.empty}>Round not set</p>}
+    </div></div>
     </div>
-    <div className={styles.navigation}>{children}</div>
+
+    <div className={styles.navigation}>{children(handle)}</div>
   </section>;
 }
 

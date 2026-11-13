@@ -74,8 +74,8 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
-    id: "maroon-live-directory-mock", name: "Public Maroon Live directory mock", scopeRevision: 1,
-    scope: "Remove login/profile lookup from /tap-in and show fictional trip-name/location list only. Development website previews cover 0/1/3/12 entries on desktop/mobile. Explicit public access classification covers directory/code pages; existing authenticated TV/display API stays guarded. No saved-trip discovery, real destination publication, new vendor, persistence, analytics, payments, media or fake watch links. Real public listing consent/visibility/minimization, retention, security, UGC/provider/minors and professional release review remain review_required before connecting saved trips. Review: docs/maroon-live-directory-review.md.",
+    id: "maroon-live-directory-mock", name: "Public Maroon Live directory mock", scopeRevision: 2,
+    scope: "Remove login/profile lookup from /tap-in and show fictional trip-name/location list only. Golf Trips adds an app entry at /golf-trips/live using the same fixtures with app navigation; existing golf-trip access classification applies. Development website previews cover 0/1/3/12 entries on desktop/mobile. Explicit public access classification covers directory/code pages; existing authenticated TV/display API stays guarded. No saved-trip discovery, real destination publication, new vendor, persistence, analytics, payments, media or fake watch links. Real public listing consent/visibility/minimization, retention, security, UGC/provider/minors and professional release review remain review_required before connecting saved trips. Review: docs/maroon-live-directory-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "ugc", "organizer-responsibility", "retention", "account-deletion", "intellectual-property", "minors", "platform-rules", "legal-review"],
   },
   {
