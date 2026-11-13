@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, Search } from "lucide-react";
 import type { MatchDraftPlayer } from "@/lib/platform/matchDraft";
 import { teamCountError, teamDraftCapacity, teamDraftSize, teamDraftTeamCount, teamDraftTurn, teamLetter } from "@/lib/platform/teamDraft";
 import { MaroonMark } from "@/components/brand/MaroonMark";
@@ -68,6 +68,8 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   useEffect(() => {
     const element = dialog.current;
     element?.showModal();
+    // Start focus on the title, not the back button (no focus ring on the < when the room opens).
+    element?.querySelector<HTMLElement>("#draft-room-title")?.focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; element?.close(); };
@@ -123,8 +125,9 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   return createPortal(<dialog ref={dialog} className={styles.room} onCancel={onClose} aria-labelledby="draft-room-title">
     {/* "Team Draft Room" centered with the countdown under it; the draft day over its time in the right corner. */}
     <header className={`${styles.header} ${styles.headerCompact}`}>
-      <button type="button" className={styles.close} onClick={onClose} aria-label="Close draft room"><X size={22} /></button>
-      <div className={styles.titleBlock}><h1 id="draft-room-title">Team Draft Room</h1>
+      {/* Our back button (owner 2026-11-13): the < instead of an X. */}
+      <button type="button" className={`${styles.close} ${styles.backPlain}`} onClick={onClose} aria-label="Back"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></button>
+      <div className={styles.titleBlock}><h1 id="draft-room-title" tabIndex={-1} style={{ outline: "none" }}>Team Draft Room</h1>
       <div className={styles.timer} role="timer" aria-label={countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set"}>
         <span>{countdown ? `${countdown.days ? `${countdown.days}d ` : ""}${countdown.days || countdown.hours ? `${String(countdown.hours).padStart(2, "0")}:` : ""}${String(countdown.minutes).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}` : "?:?"}</span>
       </div>
@@ -138,7 +141,7 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
     <div className={styles.teamGrid} data-two={!size} aria-label="Team draft board">
       {/* 2 Teams: the team name sits above its column and every player gets their own box. Pairs / 3-Ball / 4-Ball: one box per team. */}
       {teams.map((team, index) => <section key={index} className={size ? styles.teamCard : styles.teamColumn} data-on-clock={picking && turn === index} aria-label={label(index)}>
-        <div className={size ? styles.teamCardHead : styles.teamColumnHead}><h2>{label(index)}</h2><small>{size ? `${team.length} / ${size}` : `${team.length} ${team.length === 1 ? "player" : "players"}`}</small></div>
+        <div className={size ? styles.teamCardHead : styles.teamColumnHead}><h2>{label(index)}</h2>{/* No "x players" beside 2 Teams names (owner 2026-11-13); team cards keep "2 / 3". */}{size ? <small>{`${team.length} / ${size}`}</small> : null}</div>
         {Array.from({ length: spots }, (_, spot) => <div key={spot} className={size ? styles.slot : `${styles.slot} ${styles.slotBox}`} data-filled={Boolean(team[spot])}><span className={styles.number}>{spot + 1}</span><div>{slotText(team[spot], spot)}</div></div>)}
       </section>)}
     </div>

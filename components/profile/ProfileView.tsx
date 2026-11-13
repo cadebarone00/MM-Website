@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Link as LinkIcon, Pencil, Search, Settings } from "lucide-react";
+import { Pencil, Search, Settings } from "lucide-react";
 import { ProfileAvatar } from "./ProfileAvatar";
-import { linkLabel } from "@/lib/profile/profileEdit";
+import { SocialIcon } from "./SocialIcon";
+import { socialDisplay, socialLabel } from "@/lib/profile/profileSocials";
 import { FriendRequestBadge } from "./FriendRequestBadge";
 import { FriendToggle } from "./FriendToggle";
 import type { Relation } from "@/lib/profile/friendRequestsServer";
@@ -90,11 +91,13 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
           </div>
           {/* Under the photo row: the bio (small, never more than 3 lines, stopping 10% short of the right edge, in the same font and size as the Friends / Rounds / Handicap labels). */}
           {identity.bio && <p className="mt-3 line-clamp-3 max-w-[90%] whitespace-pre-line font-condensed text-[13px] leading-snug text-cream-50/85">{identity.bio}</p>}
-          {/* Edit profile → Links (up to 5), under the bio; the read model leaves them out of someone else's Private profile. */}
-          {identity.links.length > 0 && <ul className="mt-2 flex max-w-[90%] flex-wrap gap-x-3 gap-y-1" aria-label="Links">
-            {identity.links.map((link) => <li key={link.url} className="min-w-0">
-              <a href={link.url} target="_blank" rel="noopener noreferrer nofollow ugc" className="flex min-w-0 items-center gap-1 font-condensed text-[13px] font-semibold text-gold-300 hover:underline">
-                <LinkIcon size={12} aria-hidden="true" className="shrink-0" /><span className="truncate">{link.title}</span><span className="sr-only"> ({linkLabel(link.url)})</span>
+          {/* Edit profile → Socials (up to 4), 2 across × 2 down under the bio; only the ones added show. The read model
+              leaves them out of someone else's Private profile. */}
+          {identity.links.length > 0 && <ul className="mt-2.5 grid max-w-[90%] grid-cols-2 gap-x-4 gap-y-1.5" aria-label="Socials">
+            {identity.links.map((social) => <li key={social.platform} className="min-w-0">
+              <a href={social.url} target="_blank" rel="noopener noreferrer nofollow ugc" aria-label={`${socialLabel(social.platform)}: ${socialDisplay(social)}`}
+                className="flex min-w-0 items-center gap-1.5 font-condensed text-[13px] font-semibold text-gold-300 hover:underline">
+                <span className="shrink-0"><SocialIcon platform={social.platform} size={15} /></span><span className="truncate">{socialDisplay(social)}</span>
               </a>
             </li>)}
           </ul>}

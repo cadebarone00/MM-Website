@@ -110,7 +110,7 @@ test("a legacy Maroon player looks like a normal profile: no old name, bio or ph
 
 test("someone else, Private profile: name, username and the headline numbers (rounds played, handicap) — nothing else", async () => {
   const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => { calls.rounds++; return [round("trip", "trip:a:b"), round("trip", "trip:a:c")]; } },
-    row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio.", avatarUrl: "https://photos.example/sam.jpg", links: [{ title: "Site", url: "https://sam.example" }] }));
+    row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio.", avatarUrl: "https://photos.example/sam.jpg", links: [{ platform: "instagram", title: "sam", url: "https://instagram.com/sam" }] }));
   for (const viewer of [OTHER, null]) {
     const p = (await assembleProfileReadModel(viewer, ME, s, TODAY))!;
     assert.deepEqual([p.isOwner, p.access], [false, "private"]);
@@ -127,9 +127,9 @@ test("someone else, Private profile: name, username and the headline numbers (ro
 
 test("someone else, Public profile: identity, modern bio, rounds and public tournaments — never golf trips, never the legacy handicap", async () => {
   const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => [round("trip", "trip:a:b")] },
-    row({ roundsVisibility: "public", legacyMaroonPlayerSlug: "cade-barone", bio: "Hi.", links: [{ title: "Site", url: "https://sam.example" }] }));
+    row({ roundsVisibility: "public", legacyMaroonPlayerSlug: "cade-barone", bio: "Hi.", links: [{ platform: "instagram", title: "sam", url: "https://instagram.com/sam" }] }));
   const p = (await assembleProfileReadModel(OTHER, ME, s, TODAY))!;
-  assert.deepEqual(p.identity.links, [{ title: "Site", url: "https://sam.example" }], "links show on a Public profile");
+  assert.deepEqual(p.identity.links, [{ platform: "instagram", title: "sam", url: "https://instagram.com/sam" }], "socials show on a Public profile");
   assert.deepEqual([p.isOwner, p.access, p.identity.canEditBio, p.identity.bio, p.identity.memberSince], [false, "public", false, "Hi.", "Jan 5, 2027"]);
   assert.deepEqual(p.trips, { status: "hidden" }, "trips are the owner's only, even if the database sent some");
   assert.deepEqual(p.tournaments.status === "ok" && p.tournaments.value.map((t) => t.name), ["Texas Cup"]);

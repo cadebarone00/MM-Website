@@ -384,6 +384,7 @@ function teamDraftConditions(type?: (typeof TEAM_DRAFT_TYPES)[number]): Simulato
     team("when-reached", "Draft time reached", "When", { draftWhen: "reached" }),
     team("picked-none", "No one picked yet", "Teams", { teamDraftPicked: "none" }),
     team("picked-half", "Half the players picked", "Teams", { teamDraftPicked: "half" }),
+    team("partial-room", "Some players chosen (open room)", "Teams", { ...DRAFT_SIM_DEFAULTS, ...(type ? { teamDraftType: type, teamDraftPlayers: type === "3-Ball" ? 12 : 8 } : {}), teamDraftPicked: "half", draftWhen: "reached", draftRoom: "open", mockDraft: "off", mockMatch: "off" }),
     team("picked-all", "Everyone picked", "Teams", { teamDraftPicked: "all" }),
     team("room-closed", "Draft Room closed", "Draft Room", { draftRoom: "closed" }),
     team("room-open", "Draft Room open", "Draft Room", { draftRoom: "open" }),
@@ -397,6 +398,8 @@ function matchSelectionConditions(): SimulatorConditional[] {
   return [
     { id: "match-sel-source", label: "From trip data", section: "Show", state: { draftSim: "off" } },
     match("sample", "Sample match selection (start here)", "Show", { ...DRAFT_SIM_DEFAULTS }),
+    { id: "match-sel-partial-singles", label: "Some matches selected · Singles (open room)", section: "Progress", state: { draftSim: "off", mockDraft: "off", mockMatch: "response-singles-partial", mockMatchViewer: "organizer" } },
+    { id: "match-sel-partial-pairs", label: "Some matches selected · Pairs (open room)", section: "Progress", state: { draftSim: "off", mockDraft: "off", mockMatch: "response-pairs-partial", mockMatchViewer: "organizer" } },
     ...MATCH_SEL_TYPES.map(type => match("type-" + type.toLowerCase(), type, "Type", { matchSelType: type })),
     match("singles", "Singles (1 v 1)", "Format", { matchSelFormat: "singles" }),
     match("pairs", "Pairs (2 v 2)", "Format", { matchSelFormat: "pairs" }),

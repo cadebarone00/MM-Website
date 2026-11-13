@@ -141,3 +141,9 @@ button.vsBox{cursor:pointer}
 .controlButtons{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
 .clearSpot{margin:10px 0 0;padding:6px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif;cursor:pointer}
 .placedTag{font:500 11px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+
+/* Team Draft Room + countdown centered on the screen (owner 2026-11-13): equal side columns, whatever sits in the corners. */
+.headerCompact{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.headerCompact .cornerControls,.headerCompact .cornerControls .startDraft{max-width:100px}
+.headerCompact .backPlain{display:grid;place-items:center;width:44px;height:44px;margin-left:-10px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:var(--lm-ink-fbf8f1)}
+.headerCompact .backPlain:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}

@@ -607,8 +607,9 @@
 .boardBox .statusPlain small{font-size:9px}
 .boardBox .winPct{font-size:12px}
 .boardBox .roundStat dd{font-size:15px}
-.matchupCompact .teamName{font-size:15px}
-.matchupCompact .boxStanding{font-size:16px}
+.matchupCompact .teamName{font-size:13px}
+.matchupCompact .boxStanding{font-size:13px}
+.matchupCompact .statusValue{font-size:9px}
 .matchupCompact .teamMeta{font:600 12px/1.3 var(--font-barlow),sans-serif}
 .roundInfo .summaryLabel{font-size:10px}
 .roundInfo .roundInfoCourse{font-size:18px}
@@ -644,7 +645,7 @@
 
 .leaderboardListHeading .columns{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent)}
 .leaderboardListHeading .columnLabel{padding-bottom:0;border-bottom:0}
-.columnPosition{text-align:left}
+.columnPosition{text-align:center}
 
 /* Team summary: fixed 50/50 colors across a thin top strip, labels and points below. */
 .boardBox .summaryTeams.teamStripeSummary{position:relative;padding:8px 14px 0;gap:8px}
@@ -661,7 +662,7 @@
 [data-points-open] .boardBox .teamStripeSummary .summaryFill{height:auto;min-height:72px}
 
 /* Align numbers with the shared 16px box edge; avatars start 28px after the number column start. */
-.leaderboard .rank{justify-items:start}
+.leaderboard .rank{justify-items:center}
 .leaderboard .playerCardTrigger{margin-left:-10px}
 .leaderboard .columnPlayer{padding-left:0;margin-left:-10px}
 @media(max-width:374px){.leaderboard .playerCardTrigger{margin-left:-6px}.leaderboard .columnPlayer{padding-left:0;margin-left:-6px}}
@@ -690,3 +691,30 @@
    at the top in that maroon, with the number right under it. */
 .teamStripeSummary::before{background:linear-gradient(90deg,var(--team-left,#dcc495) 0 22%,transparent 45% 55%,var(--team-right,#e89a9a) 78% 100%)}
 .boardBox .teamStripeSummary .toWinSplit{height:auto;margin:10px 0 2px}
+
+/* Golf → Team match boxes (owner 2026-11-13): about 20% shorter so more matches fit on screen. The lead fill is 30% shorter
+   (56px → 39px), the stats strip tighter, and every text 1px smaller except the player names. Only the match list's boxes
+   (.matchBoardRow), never the big board at the top. */
+.matchBoardRow .boardBox{min-height:0}
+.matchBoardRow .matchupCompact .teams{padding-top:6px}
+.matchBoardRow .matchupCompact .side{min-height:45px;padding-top:2px;padding-bottom:2px}
+.matchBoardRow .matchupCompact .boxStanding{font-size:13px}
+.matchBoardRow .boardBox .statusPlain{font-size:15px}
+.matchBoardRow .boardBox .statusPlain small{font-size:10px}
+.matchBoardRow .matchupCompact :is(.statusValue,.statusTime){font-size:15.2px}
+.matchBoardRow .matchupCompact .statusValue{font-size:10px}
+.matchBoardRow .boardBox .statusPlain:has(.statusValue){transform:translateY(3px)}
+.matchBoardRow .boardBox .statusPlain:has(.statusTime) small{font-size:8px}
+.matchBoardRow .matchBoardOpen{font-size:8px}
+.matchBoardRow .matchupCompact .teamMeta{font-size:11px}
+.matchBoardRow .boardBox>.stats{height:70px;--label:8px}
+.matchBoardRow .boardBox .win{gap:3px;margin-bottom:4px}
+.matchBoardRow .boardBox .winPct{font-size:11px}
+.matchBoardRow .boardBox .roundStat{gap:11px}
+.matchBoardRow .boardBox .roundStat dd{font-size:14px}
+/* Keep the middle column compact; the 45px sides provide room for two player names and grow the match box naturally. */
+.matchBoardRow .boxStatusLabelled{gap:1px}
+.matchBoardRow .matchBoardOpen{padding:0 4px}
+/* Move each whole side so the lead fill stays centered on its names and score. */
+.matchBoardRow .boardBox:has(.winBar) .side{transform:translateY(4.5px)}
+.matchBoardRow .boardBox:has(.winBar) .roundStats{transform:translateY(5px)}

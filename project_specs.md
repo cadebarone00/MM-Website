@@ -5021,6 +5021,10 @@ already uses, `/api/account/photo`). The avatar is automatic (see Avatar below).
 
 **Not included (owner said no):** Pronouns, Banners, Reorder grid, AI creator, Public business info / Facebook.
 
+**Owner changes 2026-11-13 (built):** no site header on this screen — "Edit profile" sits at the very top under the
+camera (SiteChrome treats /profile/edit as its own shell); the whole page is solid maroon (maroon-900, light mode too);
+**Done → Save**, dim until something changes, lit gold once you can press it (Name / Username / Bio / Gender).
+
 **Saving:** Name / Username / Bio / Gender save together when you tap **Done**. The back arrow leaves without saving
 (asks "Discard changes?" only if you changed something). Photo, Links and Profile visibility save right away when changed
 (like Settings does today).
@@ -5045,3 +5049,38 @@ This is the avatar style going forward: it becomes one shared `ProfileAvatar` co
 and the profile page now; other screens switch to it later, one at a time, when the owner asks.
 So: **no `avatar_key` column** — "Edit picture or avatar" opens Change photo / Remove photo, and the avatar circle updates
 by itself when you change your name.
+
+## Profile socials — 4 social profiles under the bio (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; `supabase/profile_socials.sql` RUN in production 2026-11-13, verified)
+
+**Owner answers:** pick the app + type your username (no "log in with" connecting); socials **replace** the plain Links
+from the Edit profile build; the profile shows only the socials you added (no reserved empty space).
+
+**What it is:** up to **4 social profiles** per golfer. On the profile they show **under the bio in 2 columns × 2 rows**:
+each box = the app's icon + your @username, tapping opens that profile in a new tab. 1 social = 1 box, 3 = two rows,
+none = nothing (no gap). Someone else's **Private** profile never shows them (same rule as Links today).
+
+**Apps you can pick (preloaded list):** Instagram, Facebook, YouTube, TikTok, LinkedIn, X (Twitter), Threads, Snapchat,
+Strava, and **Website** (any https address, for anything else). Each app can be added once.
+
+**Edit profile:** the **Links** row becomes **Socials** (shows "2 of 4" and `>`). Its screen lists your socials (icon,
+@username, remove) and **+ Add social**, which opens the list of apps; tap one, type your username (or paste your
+profile link — we pull the username out of it), tap Save. When you have 4, + Add social is greyed out. Saves right away,
+like Links does today.
+
+**How the link is made (you only type the username):** instagram.com/<name> · facebook.com/<name> · youtube.com/@<name> ·
+tiktok.com/@<name> · linkedin.com/in/<name> · x.com/<name> · threads.net/@<name> · snapchat.com/add/<name> ·
+strava.com/athletes/<number> · Website = the address you type. Usernames are checked for each app's allowed characters,
+so the link always goes to that app's own site.
+
+**Icons:** simple one-colour icons (gold on maroon) for each app, drawn in our style; no logos from other sites are loaded.
+
+**Where data is stored:** the same `profile_links` table, plus a `platform` column (which app); at most 4 per profile, one
+per app. New SQL file `supabase/profile_socials.sql` (run in production after `profile_edit_v2.sql`, which is already run).
+Any plain link saved before this becomes a "Website" social (and only the first 4 are kept).
+
+**Not included:** real account connecting / verifying it's your account; follower counts; showing socials anywhere
+except the profile.
+
+**Done looks like:** add / remove up to 4 socials in Edit profile (dev preview + live); they show 2×2 under the bio and open
+the right page; Private profiles hide them from others; bad usernames are refused with a plain message; tests for the
+link-building rules + the SQL; checked in the browser.

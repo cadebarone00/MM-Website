@@ -21,6 +21,18 @@ function runToEnd(id: MockMatchPresetId): MatchSelStore {
   return store;
 }
 
+test("partial samples have submitted matches, open slots and can still finish", () => {
+  for (const id of ["response-singles-partial", "response-pairs-partial"] as const) {
+    const store = newMockMatch(id);
+    const item = Object.values(store.rounds)[0];
+    assert.equal(item.state?.spots.filter(spot => spot.submitted).length, 4);
+    assert.ok(!item.state?.completedAt);
+    assert.ok(item.state!.spots.length < item.round.matches * item.round.perSide * 2);
+    assert.equal(new Set(item.state!.spots.map(spot => spot.profileId)).size, 4);
+    assert.ok(Object.values(runToEnd(id).rounds)[0].state?.completedAt);
+  }
+});
+
 test("every Mock match selection setup runs and every check passes", () => {
   for (const id of MOCK_MATCH_PRESET_IDS) {
     const end = runToEnd(id);

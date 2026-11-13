@@ -1,4 +1,4 @@
-import type { ProfileLink } from "./profileEdit";
+import type { ProfileSocial } from "./profileSocials";
 import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
 import { calculateHandicapIndex } from "../handicap/whs";
 import type { PlayerScorecard, Team, Tournament } from "../data/types";
@@ -52,8 +52,8 @@ export interface LegacyMaroonProfile {
 export interface ProfileIdentityView {
   displayName: string; username: string; initials: string; memberSince: string | null;
   avatarSrc: string | null; bio: string | null; canEditBio: boolean; roundsVisibility: RoundsVisibility;
-  /** Edit profile → Links, under the bio. Empty for someone else's Private profile. */
-  links: ProfileLink[];
+  /** Edit profile → Socials (up to 4), 2 × 2 under the bio. Empty for someone else's Private profile. */
+  links: ProfileSocial[];
 }
 
 /** Stats the modern rounds can honestly support today; null when there are no rounds to count. */
@@ -76,7 +76,7 @@ export interface ProfileReadModel {
 }
 
 /** The subject's own profiles row, as the server reads it (never the email). */
-export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null; /** Settings → Profile photo (profile_photos.sql). */ avatarUrl?: string | null; /** Edit profile → Links (profile_edit_v2.sql). */ links?: ProfileLink[] }
+export interface ProfileSubjectRow { id: ProfileId; displayName: string; username: string; createdAt: string | null; legacyMaroonPlayerSlug: string | null; roundsVisibility: RoundsVisibility; bio: string | null; /** Settings → Profile photo (profile_photos.sql). */ avatarUrl?: string | null; /** Edit profile → Socials (profile_socials.sql). */ links?: ProfileSocial[] }
 
 export interface ProfileSources {
   subject(subjectId: ProfileId): Promise<ProfileSubjectRow | null>;

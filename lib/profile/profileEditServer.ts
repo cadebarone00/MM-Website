@@ -1,6 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { ProfileId } from "./profileIdentity";
-import { GENDERS, profileLinksFromRows, type Gender, type ProfileEditInput, type ProfileLink } from "./profileEdit";
+import { GENDERS, type Gender, type ProfileEditInput } from "./profileEdit";
+import { profileSocialsFromRows, type ProfileSocial } from "./profileSocials";
 
 /**
  * Profile V1 edits (supabase/profile_v1.sql), server only. Creating a profile is Accounts V2's job (profileInitialization.ts). The ids always come from the signed-in session, never the
@@ -24,7 +25,7 @@ export async function updateMyProfile(profileId: ProfileId, input: ProfileEditIn
 
 /** The Edit profile form's starting values (own profile only). gender / links are only "available" once
  *  supabase/profile_edit_v2.sql has run; until then the screen hides those rows. Gender is private: only read here. */
-export interface MyProfileForm { displayName: string; username: string; bio: string; bioAvailable: boolean; gender: Gender | ""; genderAvailable: boolean; links: ProfileLink[]; linksAvailable: boolean }
+export interface MyProfileForm { displayName: string; username: string; bio: string; bioAvailable: boolean; gender: Gender | ""; genderAvailable: boolean; links: ProfileSocial[]; linksAvailable: boolean }
 export async function getMyProfileForm(profileId: ProfileId): Promise<MyProfileForm | null> {
   const db = createSupabaseServiceRoleClient();
   let row: Record<string, unknown> | null = null;
@@ -41,20 +42,20 @@ export async function getMyProfileForm(profileId: ProfileId): Promise<MyProfileF
   return { displayName: text(row.display_name), username: text(row.username), bio: text(row.bio), bioAvailable, gender, genderAvailable, links: links ?? [], linksAvailable: links !== null };
 }
 
-/** A profile's saved links, in order; null when they can't be read (profile_edit_v2.sql not run yet). Callers decide who may see them. */
-export async function getProfileLinks(profileId: ProfileId): Promise<ProfileLink[] | null> {
-  const { data, error } = await createSupabaseServiceRoleClient().from("profile_links").select("title, url, position").eq("profile_id", profileId).order("position");
+/** A profile's saved socials, in order; null when they can't be read (profile_socials.sql not run yet). Callers decide who may see them. */
+export async function getProfileLinks(profileId: ProfileId): Promise<ProfileSocial[] | null> {
+  const { data, error } = await createSupabaseServiceRoleClient().from("profile_links").select("platform, title, url, position").eq("profile_id", profileId).order("position");
   if (error) return null;
-  return profileLinksFromRows(data);
+  return profileSocialsFromRows(data);
 }
 
-export type LinksWrite = { status: "ok"; links: ProfileLink[] } | { status: "invalid"; error: string } | { status: "unavailable" } | { status: "failed" };
-/** Replaces my links (already checked by profileLinksFromBody; the database checks again). */
-export async function setMyProfileLinks(profileId: ProfileId, links: ProfileLink[]): Promise<LinksWrite> {
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("set_my_profile_links", { p_profile: profileId, p_links: links });
+export type LinksWrite = { status: "ok"; links: ProfileSocial[] } | { status: "invalid"; error: string } | { status: "unavailable" } | { status: "failed" };
+/** Replaces my socials (already checked by profileSocialsFromBody; the database checks again). */
+export async function setMyProfileLinks(profileId: ProfileId, links: ProfileSocial[]): Promise<LinksWrite> {
+  const { data, error } = await createSupabaseServiceRoleClient().rpc("set_my_profile_links", { p_profile: profileId, p_links: links.map(({ platform, url }) => ({ platform, url })) });
   if (error) {
     const result = failure("set_my_profile_links", error);
     return result.status === "ok" ? { status: "failed" } : result;
   }
-  return { status: "ok", links: profileLinksFromRows(data) };
+  return { status: "ok", links: profileSocialsFromRows(data) };
 }

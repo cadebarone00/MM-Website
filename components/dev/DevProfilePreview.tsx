@@ -11,7 +11,8 @@ import { ProfileFieldsSetting } from "@/components/settings/ProfileFieldsSetting
 import { SettingsScreen } from "@/components/settings/SettingsScreen";
 import { SAMPLE_FRIENDS, sampleProfileReadModel } from "@/lib/dev/sampleProfile";
 import { initialsFor } from "@/lib/profile/myProfile";
-import { profileEditFromBody, profileLinksFromBody } from "@/lib/profile/profileEdit";
+import { profileEditFromBody } from "@/lib/profile/profileEdit";
+import { profileSocialsFromBody } from "@/lib/profile/profileSocials";
 import styles from "@/components/settings/Settings.module.css";
 
 /**
@@ -68,7 +69,7 @@ export function DevEditProfilePreview() {
     savers={{
       async profile(body) { updateSampleProfile(checked(body)); },
       async photo(file) { const photoUrl = file ? await readPhoto(file) : null; updateSampleProfile({ photoUrl }); return photoUrl; },
-      async links(list) { const result = profileLinksFromBody({ links: list }); if (!result.ok) throw new Error(result.error); updateSampleProfile({ links: result.links }); return result.links; },
+      async links(list) { const result = profileSocialsFromBody({ links: list }); if (!result.ok) throw new Error(result.error); updateSampleProfile({ links: result.socials }); return result.socials; },
       async visibility(visibility) { updateSampleProfile({ visibility }); },
     }} />;
 }

@@ -439,13 +439,12 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
   }, [sourceMatch, selected, schedule]);
   // Competition is about the round being played: only that round's matches (matches without a round count as current).
   const roundMatch = useMemo(() => previewMatch && { ...previewMatch, matches: previewMatch.matches.filter(pairing => (pairing.round ?? previewMatch.round) === previewMatch.round) }, [previewMatch]);
-  const latestRound = sourceMatch?.roundStandings?.at(-1)?.round ?? sourceMatch?.round ?? 1;
-  const viewingPast = !!previewMatch && previewMatch.round < latestRound;
-  const { label: standingsFormat, sharedBall } = describeStandingsFormat(previewMatch?.format);
-  const standingsRound = sourceMatch?.roundStandings?.find(row => row.round === previewMatch?.round)?.standingsRound ?? previewMatch?.round;
-  const leaderboardMatch = previewMatch && sharedBall && standingsRound !== undefined && standingsRound !== previewMatch.round
-    ? { ...previewMatch, round: standingsRound, format: schedule?.["round" + standingsRound + "Format"] ?? previewMatch.format, formatDef: undefined }
-    : previewMatch;
+  // Indi always uses the current source, independent of Team's historical round picker.
+  const { label: standingsFormat, sharedBall } = describeStandingsFormat(sourceMatch?.format);
+  const standingsRound = sourceMatch?.roundStandings?.find(row => row.round === sourceMatch.round)?.standingsRound ?? sourceMatch?.round;
+  const leaderboardMatch = sourceMatch && sharedBall && standingsRound !== undefined && standingsRound !== sourceMatch.round
+    ? { ...sourceMatch, round: standingsRound, format: schedule?.["round" + standingsRound + "Format"] ?? sourceMatch.format, formatDef: undefined }
+    : sourceMatch;
   const matchOffset = sourceMatch && previewMatch ? competitionMatchOffset(sourceMatch, previewMatch.round) : 0;
   const trackRef = useRef<HTMLDivElement>(null);
   // Competitive trips use one Leaderboard pill and an optional Indi / Team selector.
@@ -462,17 +461,17 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
   // Main leaderboard's odds line (owner 2026-11-13): each player's chance of winning the individual competition, from the same model
   // and seed as Predict's Winners tab (so the numbers match) — net for Net, lowest gross total for Gross.
   // Worked out ONCE in the background (useTripMarkets) and shared with the Predict tab, so neither freezes the screen.
-  const marketSetup = useMemo(() => predictSetup ?? (previewMatch && structure.individual ? tripSetupFromPreview(previewMatch, structure) : null), [predictSetup, previewMatch, structure]);
+  const marketSetup = useMemo(() => sourceMatch && structure.individual ? tripSetupFromPreview(sourceMatch, structure) : predictSetup, [sourceMatch, structure, predictSetup]);
   const markets = useTripMarkets(marketSetup);
   const winChances = useMemo(() => {
-    if (!previewMatch || !structure.individual) return undefined;
+    if (!sourceMatch || !structure.individual) return undefined;
     if (!markets) return "loading" as const;
     const chances = (bet: "individualWinner" | "lowTotal") => {
       const market = markets.find(m => m.bet === bet);
       return new Map(market?.kind === "outcomes" ? market.outcomes.map(o => [o.label, o.chance] as const) : []);
     };
     return { net: chances("individualWinner"), gross: chances("lowTotal") };
-  }, [previewMatch, structure, markets]);
+  }, [sourceMatch, structure, markets]);
   // No competition: the Overview box is the day's round (course, tee times, who's playing — not those sitting out).
   const noComp = !structure.individual && !structure.team;
   // Individual only: the same box, split — the round on the left, the leaderboard's top 5 on the right.
@@ -573,27 +572,26 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     {/* Rounds (owner 2026-11-10): a pill per round number instead of the date / course / round / format header; the
         picked round's course and format sit under the pills. */}
     {previewMatch && golfSection === "Competition" && !predictActive && rounds.length > 0 && <div className={styles.roundPicker}>
-      <div ref={roundPillsRef} className={styles.roundPills} role="tablist" aria-label="Rounds">
+      <div className={styles.roundSelector}><div ref={roundPillsRef} className={styles.roundPills} style={{ "--round-index": Math.max(0, rounds.findIndex(round => round.number === previewMatch.round)) } as CSSProperties} role="tablist" aria-label="Rounds">
         {rounds.map(round => <button key={round.number} type="button" role="tab" aria-selected={round.number === previewMatch.round}
           className={`${styles.roundPill} ${round.number === previewMatch.round ? styles.roundPillActive : ""}`} aria-label={`Round ${round.number}`}
           onClick={() => setChosenRound(round.number)}>Round {round.number}</button>)}
-      </div>
+      </div></div>
       <p className={styles.roundPickerInfo}>
-        {/* Course on the left, format on the right (owner 2026-11-10). */}
+        {/* Full course name centered above the selected round's format. */}
         <span className={styles.roundPickerCourse}>{schedule?.[`round${previewMatch.round}Course`] || previewMatch.course || "Course TBD"}</span>
         <span className={styles.roundPickerFormat}>{schedule?.[`round${previewMatch.round}Format`] || previewMatch.format || "Format not set"}</span>
       </p>
     </div>}
-    {!gamesActive && active === 0 && previewMatch && !noComp && !teamOnly && (viewingPast || sharedBall) && <div className={styles.standingsNotice} role="status">
-      <div><strong>Standings after Round {standingsRound}</strong>{sharedBall && <p>{standingsFormat} being played in Round {previewMatch.round}</p>}</div>
-      {viewingPast && <button type="button" onClick={() => setChosenRound(latestRound)}>View current</button>}
+    {!gamesActive && active === 0 && previewMatch && !noComp && !teamOnly && sharedBall && <div className={styles.standingsNotice} role="status">
+      <div><strong>Standings after Round {standingsRound}</strong>{sharedBall && <p>{standingsFormat} being played in Round {sourceMatch?.round}</p>}</div>
     </div>}
     <div ref={trackRef} className={styles.slides} style={gamesActive ? { display: "none" } : undefined} onScroll={onScroll}>
       {sections.filter(({ id }) => !offStrip(id)).map(({ id: name, label }, i) => <div key={name} className={styles.slide} role="tabpanel" aria-label={structure.individual && structure.team ? (name === "Overview" ? "Indi leaderboard" : "Team leaderboard") : label} inert={active !== i}>
         {name === "Overview"
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
-          : previewMatch ? <GolfTripLeaderboard match={leaderboardMatch ?? previewMatch} byToday={noComp} tripStats={tripStats} winChances={winChances} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : leaderboardMatch ? <GolfTripLeaderboard match={leaderboardMatch} byToday={noComp} tripStats={tripStats} winChances={winChances} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
           : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} matchOffset={matchOffset} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>

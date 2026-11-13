@@ -3,19 +3,20 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Check, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { SocialIcon } from "@/components/profile/SocialIcon";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { PRIVACY_EXPLAIN } from "@/components/settings/PrivacySetting";
 import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 import {
-  BIO_MAX, GENDERS, LINKS_MAX, LINK_TITLE_MAX, NAME_MAX, USERNAME_RULE, genderLabel, limitBio, linkProblem, nameProblem, normalizeLinkUrl, usernameProblem,
-  type Gender, type ProfileEditInput, type ProfileLink,
+  BIO_MAX, GENDERS, NAME_MAX, USERNAME_RULE, genderLabel, limitBio, nameProblem, usernameProblem, type Gender, type ProfileEditInput,
 } from "@/lib/profile/profileEdit";
+import { SOCIAL_PLATFORMS, SOCIALS_MAX, socialDisplay, socialFromInput, socialHint, socialLabel, type ProfileSocial, type SocialPlatform } from "@/lib/profile/profileSocials";
 import styles from "./EditProfileScreen.module.css";
 
 /** What the screen starts with (lib/profile/profileEditServer.ts getMyProfileForm, plus photo + privacy). */
 export interface EditProfileInitial {
   displayName: string; username: string; bio: string; bioAvailable: boolean;
-  gender: Gender | ""; genderAvailable: boolean; links: ProfileLink[]; linksAvailable: boolean;
+  gender: Gender | ""; genderAvailable: boolean; links: ProfileSocial[]; linksAvailable: boolean;
   photoUrl: string | null; photoAvailable: boolean;
   /** null = the privacy setting can't be read yet (player_rounds.sql not run): the row is hidden. */
   visibility: RoundsVisibility | null;
@@ -25,7 +26,7 @@ export interface EditProfileInitial {
 export interface EditProfileSavers {
   profile(body: ProfileEditInput): Promise<void>;
   photo(file: File | null): Promise<string | null>;
-  links(links: ProfileLink[]): Promise<ProfileLink[]>;
+  links(links: ProfileSocial[]): Promise<ProfileSocial[]>;
   visibility(visibility: RoundsVisibility): Promise<void>;
 }
 
@@ -48,14 +49,14 @@ const ACCOUNT: EditProfileSavers = {
     const reply = await send("/api/account/photo", { method: "POST", body: form });
     return typeof reply.url === "string" ? reply.url : null;
   },
-  async links(links) { return (await send("/api/account/links", json("PUT", { links }))).links as ProfileLink[]; },
+  async links(links) { return (await send("/api/account/links", json("PUT", { links: links.map(({ platform, url }) => ({ platform, url })) }))).links as ProfileSocial[]; },
   async visibility(visibility) { await send("/api/account/privacy", json("PUT", { visibility })); },
 };
 
 /**
  * Edit profile (owner request 2026-11-13, Instagram's layout): back | Edit profile | Save; photo + avatar circles; rows for
- * Name, Username, Bio (typed in place), Links and Gender (their own screens), then the Private profile switch.
- * Save (dim until something changes) saves Name / Username / Bio / Gender together. Photo, Links and Private profile save the moment they change.
+ * Name, Username, Bio (typed in place), Socials and Gender (their own screens), then the Private profile switch.
+ * Save (dim until something changes) saves Name / Username / Bio / Gender together. Photo, Socials and Private profile save the moment they change.
  */
 export function EditProfileScreen({ initial, backHref = "/profile", savers = ACCOUNT }: { initial: EditProfileInitial; backHref?: string; savers?: EditProfileSavers }) {
   const router = useRouter();
@@ -150,7 +151,7 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
         </li>}
         {initial.linksAvailable && <li>
           <button type="button" className={styles.navRow} onClick={() => setPanel("links")}>
-            <span>Links</span><span className={styles.navCount}>{links.length || ""}</span><ChevronRight size={20} aria-hidden="true" />
+            <span>Socials</span><span className={styles.navCount}>{links.length} of {SOCIALS_MAX}</span><ChevronRight size={20} aria-hidden="true" />
           </button>
         </li>}
         {initial.genderAvailable && <li>
@@ -207,44 +208,77 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
       </ul>
     </div>}
 
-    {panel === "links" && <LinksPanel initial={links} save={savers.links} onClose={(saved) => { if (saved) { setLinks(saved); router.refresh(); } setPanel(null); }} />}
+    {panel === "links" && <SocialsPanel initial={links} save={savers.links} onClose={(saved) => { if (saved) { setLinks(saved); router.refresh(); } setPanel(null); }} />}
   </main>;
 }
 
-/** Edit profile → Links: up to 5 (title + web address). Done saves the whole list right away; Back drops edits here. */
-function LinksPanel({ initial, save, onClose }: { initial: ProfileLink[]; save: (links: ProfileLink[]) => Promise<ProfileLink[]>; onClose: (saved: ProfileLink[] | null) => void }) {
-  const [rows, setRows] = useState(initial.length ? initial : [{ title: "", url: "" }]);
+/**
+ * Edit profile → Socials (project_specs.md "Profile socials"): up to 4, one per app. The list (icon, @name, remove) and
+ * + Add social → pick an app → type the username (or paste the profile link) → Save. Every add / remove saves right away.
+ */
+function SocialsPanel({ initial, save, onClose }: { initial: ProfileSocial[]; save: (links: ProfileSocial[]) => Promise<ProfileSocial[]>; onClose: (saved: ProfileSocial[] | null) => void }) {
+  const [socials, setSocials] = useState(initial);
+  const [step, setStep] = useState<"list" | "pick" | SocialPlatform>("list");
+  const [typed, setTyped] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const edit = (index: number, patch: Partial<ProfileLink>) => setRows((list) => list.map((row, i) => i === index ? { ...row, ...patch } : row));
+  const used = new Set(socials.map((s) => s.platform));
 
-  async function done() {
-    // Empty rows are dropped; anything half-filled has to be fixed first.
-    const filled = rows.filter((row) => row.title.trim() || row.url.trim()).map((row) => ({ title: row.title.trim(), url: normalizeLinkUrl(row.url) }));
-    const problem = filled.map(linkProblem).find(Boolean);
-    if (problem) { setError(problem); return; }
+  async function store(next: ProfileSocial[]) {
     setSaving(true); setError("");
-    try { onClose(await save(filled)); }
-    catch (problem) { setError(problem instanceof Error ? problem.message : "Couldn't save your links. Try again."); setSaving(false); }
+    try { setSocials(await save(next)); setStep("list"); setTyped(""); }
+    catch (problem) { setError(problem instanceof Error ? problem.message : "Couldn't save your socials. Try again."); }
+    finally { setSaving(false); }
   }
+  function add(platform: SocialPlatform) {
+    const result = socialFromInput(platform, typed);
+    if (!result.ok) { setError(result.error); return; }
+    void store([...socials, result.social]);
+  }
+  const back = () => { setError(""); if (step === "list") onClose(socials); else setStep(step === "pick" ? "list" : "pick"); };
 
-  return <div className={styles.panel} role="dialog" aria-label="Links">
+  const title = step === "list" ? "Socials" : step === "pick" ? "Add social" : socialLabel(step);
+  return <div className={styles.panel} role="dialog" aria-label={title}>
     <div className={styles.topBar}>
-      <button type="button" className={styles.iconButton} aria-label="Back to Edit profile" onClick={() => onClose(null)}><ChevronLeft size={28} aria-hidden="true" /></button>
-      <h2 className={styles.title}>Links</h2>
-      <button type="button" className={styles.done} onClick={() => void done()} disabled={saving}>{saving ? "Saving…" : "Done"}</button>
+      <button type="button" className={styles.iconButton} aria-label={step === "list" ? "Back to Edit profile" : "Back"} onClick={back}><ChevronLeft size={28} aria-hidden="true" /></button>
+      <h2 className={styles.title}>{title}</h2>
+      {step !== "list" && step !== "pick"
+        ? <button type="button" className={`${styles.done} ${styles.save}`} onClick={() => add(step)} disabled={saving || !typed.trim()}>{saving ? "Saving…" : "Save"}</button>
+        : <span />}
     </div>
-    <p className={styles.panelIntro}>Up to {LINKS_MAX} links. They show on your profile under your bio.</p>
-    {rows.map((row, index) => <div key={index} className={styles.linkCard}>
-      <div className={styles.linkFields}>
-        <input className={styles.input} value={row.title} maxLength={LINK_TITLE_MAX} placeholder="Title (e.g. Instagram)" aria-label={`Link ${index + 1} title`} onChange={(e) => edit(index, { title: e.target.value })} />
-        <input className={styles.input} value={row.url} inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="Web address" aria-label={`Link ${index + 1} web address`} onChange={(e) => edit(index, { url: e.target.value })} />
-      </div>
-      <button type="button" className={`${styles.iconButton} ${styles.remove}`} aria-label={`Remove link ${index + 1}`} onClick={() => setRows((list) => list.filter((_, i) => i !== index))}><Trash2 size={18} aria-hidden="true" /></button>
-    </div>)}
-    <button type="button" className={styles.addLink} disabled={rows.length >= LINKS_MAX} onClick={() => setRows((list) => [...list, { title: "", url: "" }])}>
-      <Plus size={18} aria-hidden="true" /> {rows.length >= LINKS_MAX ? `${LINKS_MAX} links is the most` : "Add link"}
-    </button>
+
+    {step === "list" && <>
+      <p className={styles.panelIntro}>Up to {SOCIALS_MAX}. They show on your profile under your bio, two across.</p>
+      <ul className={styles.options}>
+        {socials.map((social) => <li key={social.platform} className={styles.socialRow}>
+          <span className={styles.socialIcon}><SocialIcon platform={social.platform} /></span>
+          <span className={styles.socialText}><span>{socialLabel(social.platform)}</span><span className={styles.socialHandle}>{socialDisplay(social)}</span></span>
+          <button type="button" className={`${styles.iconButton} ${styles.remove}`} aria-label={`Remove ${socialLabel(social.platform)}`} disabled={saving}
+            onClick={() => void store(socials.filter((s) => s.platform !== social.platform))}><Trash2 size={18} aria-hidden="true" /></button>
+        </li>)}
+      </ul>
+      <button type="button" className={styles.addLink} disabled={socials.length >= SOCIALS_MAX || saving} onClick={() => { setError(""); setStep("pick"); }}>
+        <Plus size={18} aria-hidden="true" /> {socials.length >= SOCIALS_MAX ? `${SOCIALS_MAX} socials is the most` : "Add social"}
+      </button>
+    </>}
+
+    {step === "pick" && <ul className={styles.options}>
+      {SOCIAL_PLATFORMS.filter((p) => !used.has(p.id)).map((p) => <li key={p.id}>
+        <button type="button" className={styles.option} onClick={() => { setTyped(""); setError(""); setStep(p.id); }}>
+          <span className={styles.socialPick}><span className={styles.socialIcon}><SocialIcon platform={p.id} /></span>{p.label}</span><ChevronRight size={20} aria-hidden="true" />
+        </button>
+      </li>)}
+    </ul>}
+
+    {step !== "list" && step !== "pick" && <>
+      <form className={styles.socialEntry} onSubmit={(e) => { e.preventDefault(); add(step); }}>
+        <span className={styles.socialIcon}><SocialIcon platform={step} size={22} /></span>
+        <input className={styles.input} autoFocus value={typed} inputMode={step === "website" ? "url" : "text"} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+          placeholder={socialHint(step)} aria-label={`${socialLabel(step)}: ${socialHint(step)}`} onChange={(e) => setTyped(e.target.value)} />
+      </form>
+      <p className={styles.panelIntro}>{step === "website" ? "Type your website's address." : `Type your ${socialLabel(step)} username, or paste the link to your profile.`}</p>
+    </>}
+
     {error && <p role="alert" className={styles.toast} onClick={() => setError("")}>{error}</p>}
   </div>;
 }
