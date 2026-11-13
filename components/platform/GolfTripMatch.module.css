@@ -327,8 +327,9 @@
 .predictRow{grid-column:1/-1;align-self:end;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px}
 /* Predict: a rectangle the same height as the stat boxes beside it. */
 .predictRow .predictPill{align-self:stretch;padding:0 16px;border-radius:8px}
-.summaryStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:5px 2px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent);border-radius:8px}
-.summaryStats .roundStat{gap:6px}
+.summaryStats{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:0 2px;border:0;border-radius:0;background:transparent}
+.summaryStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);left:2px;right:2px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.4),transparent);pointer-events:none}
+.summaryStats .roundStat{gap:15px}
 .predictPill{justify-self:center;padding:9px 28px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .predictPill:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
 .leaderboard{padding-bottom:5px}
@@ -575,8 +576,7 @@
 .boardBox .roundStat dd{color:#fff5df}
 .boardBox .statusPlain{color:#edcf91}
 .boardBox .statusPlain small{font-family:var(--font-barlow),sans-serif;letter-spacing:.12em;color:#d4bfa9}
-/* Stat panels: a soft tint, no outline. Predict: gold-tinted glass. */
-.boardBox .summaryStats{border:0;border-radius:10px;background:color-mix(in srgb,#fbf8f1 6%,transparent)}
+/* Team stats use the same open labels, fading rule and values as match stats. Predict: gold-tinted glass. */
 .boardBox .predictPill{border:1px solid rgba(201,168,110,.5);background:rgba(201,168,110,.12);color:#edcf91;box-shadow:inset 0 1px 0 rgba(255,232,181,.12)}
 .boardBox .predictPill:hover{background:rgba(201,168,110,.2)}
 /* Win bar: slimmer, on a quieter track. */

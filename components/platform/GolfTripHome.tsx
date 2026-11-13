@@ -20,7 +20,7 @@ import { BoardSlideBody, TripBigBoard, type BoardSlide } from "./TripBigBoard";
 import { bigBoardScore, upcomingSlides } from "@/lib/platform/bigBoard";
 import { GolfDayBoard } from "./GolfDayBoard";
 import { createPortal } from "react-dom";
-import { AlertTriangle, ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronLeft, ChevronRight, Clock, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, ExternalLink, FileText, Flag, LockKeyhole, MapPin, MessageCircle, Plane, Plus, Share2, ShieldCheck, ShoppingBag, Sun, Thermometer, Trash2, Trophy, User, Users, Wind, type LucideIcon } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, type GolfTripDraft, plannedRounds, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { normalizeCompetitor, type GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { ITINERARY_KIND_LABEL, itineraryByDay, itineraryCategory, itineraryDay, itineraryLongDate, itineraryTime, itineraryWeekday, localNow, withGolfRounds, type ItineraryItem, type ItineraryKind } from "@/lib/platform/golfTripItinerary";
@@ -537,7 +537,7 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     </GolfDayBoard>
 
     {/* Team/Indi keeps the same standalone navigation board above either view. */}
-    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.tabs} ${styles.tripTabs} ${styles.leaderboardKind}`} role="group" aria-label="Leaderboard type">
+    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={styles.slidingSelector} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
       <button type="button" className={`${styles.tab} ${golfSection === "Competition" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Competition"} onClick={() => goTo(availableSlides.indexOf("Competition"))}>Team</button>
       <button type="button" className={`${styles.tab} ${golfSection === "Overview" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Overview"} onClick={() => goTo(availableSlides.indexOf("Overview"))}>Indi</button>
     </div></div>}
@@ -597,13 +597,14 @@ function PredictSheet({ children, onClose }: { children: ReactNode; onClose: () 
     document.body.style.overflow = "hidden";
     return () => { dialog.close(); document.body.style.overflow = overflow; };
   }, []);
-  return createPortal(<dialog ref={dialogRef} className={styles.predictSheet} aria-label="Predict" onCancel={onClose}
+  // The Wallet sheet: its own header (Wallet, coins, In play, Profit/Loss) comes from GolfTripPredict; tap outside or
+  // press Escape to close.
+  return createPortal(<dialog ref={dialogRef} className={styles.predictSheet} aria-label="Wallet" onCancel={onClose}
     onClick={event => {
       if (event.target !== event.currentTarget) return;
       const rect = event.currentTarget.getBoundingClientRect();
       if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) onClose();
     }}>
-    <header className={styles.predictSheetHeader}><span>Predict</span><button type="button" onClick={onClose} aria-label="Close Predict" autoFocus><X size={22} aria-hidden="true" /></button></header>
     {children}
   </dialog>, document.body);
 }

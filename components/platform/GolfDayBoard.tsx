@@ -2,11 +2,12 @@
 
 import { useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
-import { golfDayAssignment, golfDayMatchNames, golfDayRounds, golfDaySummary } from "@/lib/platform/golfDay";
+import { golfDayAssignment, golfDayDateLabel, golfDayMatchNames, golfDayRounds, golfDaySummary } from "@/lib/platform/golfDay";
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import type { CompetitionStructure } from "@/lib/platform/golfTripNavigation";
 import styles from "./GolfDayBoard.module.css";
 import { shownUsername } from "@/lib/platform/playerUsername";
+import { courseOverviewName } from "@/lib/platform/courseShortName";
 
 export function GolfDayBoard({ match, schedule, viewerName, structure, spectator, sittingOut, roundRsvps, children }: {
   match?: GolfMatchPreview; schedule?: GolfTripDraft; viewerName?: string | null; structure: CompetitionStructure;
@@ -53,17 +54,21 @@ export function GolfDayBoard({ match, schedule, viewerName, structure, spectator
           <div className={styles.identityText}><p className={styles.name}>{viewerName}</p><p className={styles.username}>{shownUsername(viewerName, viewer?.username)}</p></div>
         </div>}
       {summary && <dl className={styles.summary} aria-label="Your trip standings">
-        <div><dt>Trip +/−</dt><dd>{summary.total}</dd></div>
-        <div><dt>Overall</dt><dd>{summary.position.split("/")[0].trim().replace(/^T(?=\d)/, "")}</dd></div>
+        <div><dt>TOT</dt><dd>{summary.total}</dd></div>
+        <div><dt>POS</dt><dd>{summary.position.split("/")[0].trim().replace(/^T(?=\d)/, "")}</dd></div>
         {structure.team && <div><dt>Pts Ern</dt><dd>{summary.points ?? "—"}</dd></div>}
       </dl>}
       </div>}
+      <h3 className={styles.date}><time dateTime={match?.roundDate || undefined}>{golfDayDateLabel(match?.roundDate)}</time></h3>
       {rounds.length ? rounds.map(round => {
         const { player, ownSide } = golfDayAssignment(round, viewerName, spectator);
         const out = roundRsvps?.[round.round]?.[viewerName ?? ""] === "out" || (round.round === match?.round && sittingOut);
+        const course = courseOverviewName(player?.course || ownSide?.course || round.course || "Course not set", round.course);
+        const format = round.format || "Format not set";
+        const matchup = golfDayMatchNames(round, viewerName);
         return <div className={styles.round} key={round.round} aria-label={`Round ${round.round} overview`}>
-          <div className={styles.course}><h3>{player?.course || round.course || "Course not set"}</h3><p>{round.format || "Format not set"}</p></div>
-          <div className={styles.assignment}><p className={styles.tee}>{spectator ? "See tee sheet" : out ? "Sitting out" : player?.teeTime || ownSide?.teeTime || "Tee time not set"}</p><p className={styles.match}>{spectator ? "Team leaderboard" : out ? "Sitting out this round" : golfDayMatchNames(round, viewerName)}</p></div>
+          <p className={styles.course}>{spectator ? "See tee sheet" : out ? "Sitting out" : player?.teeTime || ownSide?.teeTime || "TBD"} @ {course}</p>
+          <p className={styles.match}>{spectator ? format : out ? `${format} · Sitting out this round` : matchup === "No match assigned" ? `${format} · ${matchup}` : matchup}</p>
         </div>;
       }) : <p className={styles.empty}>Round not set</p>}
     </div></div>

@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { COURSE_SHORT_NAME_MAX, courseDisplayName, courseShortName } from "./courseShortName.ts";
+import { COURSE_SHORT_NAME_MAX, courseDisplayName, courseShortName, courseOverviewName } from "./courseShortName.ts";
+
+test("overview course names retain club and layout without over-shortening or inferring an unrelated venue", () => {
+  assert.equal(courseOverviewName("Mission Hills Country Club — Pete Dye Challenge Course"), "Mission Hills CC Pete Dye");
+  assert.equal(courseOverviewName("Pete Dye", "Mission Hills CC"), "Mission Hills CC Pete Dye");
+  assert.equal(courseOverviewName("Tournament", "Mission Hills CC"), "Mission Hills CC Dinah Shore Tournament");
+  assert.equal(courseOverviewName("Pete Dye", "Another Club"), "Pete Dye");
+  assert.equal(courseOverviewName("Pinehurst Country Club - No. 2"), "Pinehurst CC No. 2");
+  assert.equal(courseOverviewName(""), "Course not set");
+});
 
 test("filler words come off", () => {
   assert.equal(courseShortName("PGA West Stadium Course"), "PGA West Stadium");

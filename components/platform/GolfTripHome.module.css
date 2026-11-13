@@ -393,10 +393,9 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .golfTopSize:has([data-points-open])>*{flex:none}
 .golfTopSize:has([data-points-open]) section{height:auto}
 
-.predictSheet{position:fixed;inset:20dvh 0 0;height:80dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:auto;animation:predictSheetUp .25s ease-out}
-.predictSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
-.predictSheetHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:var(--lm-ink-dcc495);font-weight:700}
-.predictSheetHeader button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
+/* Predict pull-up: 85% tall over the same tinted blur as the Bell / chat sheets (owner 2026-11-13). */
+.predictSheet{position:fixed;inset:15dvh 0 0;height:85dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:auto;animation:predictSheetUp .25s ease-out}
+.predictSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);backdrop-filter:blur(4px);animation:sheetFade .25s ease both}
 @keyframes predictSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.predictSheet{animation:none}}
 
@@ -418,26 +417,23 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 :global(html[data-mode="light"]) .accountHead{background:#f3eee6;box-shadow:0 25px 0 #f3eee6}
 :global(html[data-mode="light"]) .account{background:linear-gradient(#f3eee6 120px,#f7f8f7 120px)}
 
-.tabs.leaderboardKind{margin:-6px 0 4px;gap:8px}
-.leaderboardKind::before,.leaderboardKind .tab::after{display:none}
-.leaderboardKind .tab{min-height:32px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);border-radius:999px;color:var(--lm-ink-dcc495);text-shadow:none}
-.leaderboardKind .tab[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--color-maroon-900);text-shadow:none}
-.leaderboardKind button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
-.leaderboardBoard{overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
-.leaderboardBoard .tabs.leaderboardKind{position:relative;margin:0;padding:0 12px;gap:0}
-.leaderboardBoard .leaderboardKind::before{content:"";display:block;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(220,196,149,.3) 15%,rgba(220,196,149,.3) 85%,transparent)}
-.leaderboardBoard .leaderboardKind .tab{min-height:36px;border:0;border-radius:0;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:12px}
-.leaderboardBoard .leaderboardKind .tab[aria-pressed=true]{background:transparent;color:var(--lm-ink-dcc495)}
-.leaderboardBoard .leaderboardKind .tab::after{display:block;left:12px;right:12px;bottom:0;border-radius:0}
-.leaderboardBoard .leaderboardKind .tab[aria-pressed=true]::after{opacity:1}
+.leaderboardBoard{min-width:0}
+.slidingSelector{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.slidingSelector::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/2);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transition:transform 220ms ease}
+.slidingSelector[data-second=true]::before{transform:translateX(100%)}
+.slidingSelector .tab{position:relative;min-width:0;min-height:30px;margin:0;padding:4px 12px;border:0;border-radius:12px;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:12px;text-align:center;text-shadow:none;transition:color 220ms ease}
+.slidingSelector .tab[aria-pressed=true]{background:transparent;color:var(--lm-ink-dcc495);text-shadow:0 0 8px rgba(220,196,149,.25)}
+.slidingSelector .tab::after{display:none}
+.slidingSelector button:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.slidingSelector::before,.slidingSelector .tab{transition:none}}
 
 .body.golfBody{margin-top:8px}
 
 .sectionTabs.golfBoardTabs{gap:0}
-.sectionTabs.golfBoardTabs .tab{position:relative;flex:1 1 0;min-height:26px;margin:3px 2px;padding:0 2px;font-size:13.5px;border:1px solid transparent;border-radius:999px;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent)}
-.sectionTabs.golfBoardTabs .tab[aria-selected=true]{color:var(--lm-ink-dcc495);background:rgba(220,196,149,.16);border-color:rgba(220,196,149,.55)}
-.sectionTabs.golfBoardTabs .tab::after{display:none}
-.sectionTabs.golfBoardTabs .tab[aria-selected=true]::after{opacity:1}
+.sectionTabs.golfBoardTabs .tab{position:relative;flex:1 1 0;min-height:26px;margin:3px 2px;padding:0 2px;font-size:13.5px;border:1px solid transparent;border-radius:0;background:transparent;color:var(--lm-ink-dcc495)}
+.sectionTabs.golfBoardTabs .tab[aria-selected=true]{color:var(--lm-ink-dcc495);background:transparent;border-color:transparent}
+.sectionTabs.golfBoardTabs .tab::after{display:block;left:50%;right:auto;bottom:0;width:30px;height:2px;transform:translateX(-50%);border-radius:999px;background:var(--lm-ink-dcc495);opacity:0}
+.sectionTabs.golfBoardTabs .tab[aria-selected=true]::after{opacity:1;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45)}
 
 /* Draft remains first under the Big Board for team competitions. */
 .homeDraft .accountHeading{margin-top:6px !important;margin-bottom:10px}

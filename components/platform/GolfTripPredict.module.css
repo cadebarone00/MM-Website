@@ -1,15 +1,6 @@
 /* Golf Trip → Golf → Predict, in the trip's dark look (white text, gold accents), and the organizer Predict panel. */
 .wrap{display:flex;flex-direction:column;gap:12px;color:var(--lm-ink-ffffff)}
-.wallet{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;padding:14px 16px;border-radius:20px;background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent)}
-.wallet div{display:grid;gap:2px}
-.walletLabel{display:inline-flex;align-items:center;gap:5px;font:600 11px/1.3 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-dcc495) 85%,transparent)}
-.wallet b{font:700 18px var(--font-barlow),sans-serif}
-.walletBig{font:600 26px/1.1 var(--font-spectral),Georgia,serif !important}
 .up{color:#7fd39a}.down{color:#ff9a9a}
-.fine{margin:-4px 2px 0;font:500 12px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 55%,transparent)}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--lm-ink-ffffff) 6%,transparent)}
-.tabs button{min-height:40px;border:0;border-radius:10px;background:transparent;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
-.tabs button[aria-selected=true]{background:#dcc495;color:var(--brand-2a0d16)}
 .cards{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 /* Cards never grow past the screen: their rows shrink and wrap instead. */
 .card,.cardBody,.lineRow>*{min-width:0}
@@ -130,3 +121,14 @@
 .slider input[type=range]:active::-webkit-slider-thumb,.slider input[type=range]:focus-visible::-webkit-slider-thumb{transform:scale(1.12);box-shadow:0 3px 10px rgba(0,0,0,.5),0 0 0 6px rgba(220,196,149,.22),0 0 14px rgba(220,196,149,.45)}
 .slider input[type=range]:active::-moz-range-thumb,.slider input[type=range]:focus-visible::-moz-range-thumb{transform:scale(1.12);box-shadow:0 3px 10px rgba(0,0,0,.5),0 0 0 6px rgba(220,196,149,.22),0 0 14px rgba(220,196,149,.45)}
 .slider{grid-template-columns:minmax(0,1fr);min-width:0}
+/* Wallet header (owner 2026-11-13): Wallet left, coins top right; In play and Profit/Loss under it; no fine print. */
+.walletHead{display:grid;gap:6px}
+.walletTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.walletTitle{margin:0;font:600 26px/1.1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.walletCoins{display:inline-flex;align-items:center;gap:6px;font:700 22px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495);font-variant-numeric:tabular-nums}
+.walletStats{display:flex;gap:22px;margin:0}
+.walletStats div{display:flex;align-items:baseline;gap:7px}
+.walletStats dt{font:600 11px/1.3 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--lm-ink-dcc495) 85%,transparent)}
+.walletStats dd{margin:0;font:700 16px var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
+/* Bet tabs use Home's trip-tab look; the faint line runs to the sheet's edges (it's padded 16px). */
+.betTabs{--page-text-inset:16px;margin-top:2px}

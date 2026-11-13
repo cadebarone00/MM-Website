@@ -5,6 +5,17 @@ import { rankLeaderboard } from "./golfLeaderboardOrder";
 import { resolveGolfFormat } from "./formats";
 import { teamPoints } from "./teamPoints";
 import type { CompetitionStructure } from "./golfTripNavigation";
+import { ordinal } from "./teamDraft";
+
+/** Use the round's calendar date without shifting it into the browser's time zone. */
+export function golfDayDateLabel(value?: string | null): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Date not set";
+  const date = new Date(`${value}T12:00:00Z`);
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) return "Date not set";
+  const parts = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).formatToParts(date);
+  const part = (type: string) => parts.find(item => item.type === type)?.value ?? "";
+  return `${part("weekday")}, ${part("month")} ${ordinal(Number(part("day")))}, ${part("year")}`;
+}
 
 /** Current cumulative standings and earned team-match points; no new scoring engine. */
 export function golfDaySummary(match: GolfMatchPreview | undefined, viewerName: string | null | undefined, structure: CompetitionStructure, spectator = false) {
@@ -33,9 +44,12 @@ export function golfDayMatchNames(match: GolfMatchPreview, viewerName?: string |
   const { ownSide, sides, player } = golfDayAssignment(match, viewerName, spectator);
   if (!ownSide || !player) return "No match assigned";
   const surname = (name: string) => getPlayerDisplayName(name).trim().split(/\s+/).at(-1) ?? name;
-  const own = [player, ...ownSide.golfers.filter(g => g.name !== player.name)].map(g => surname(g.name)).join(" & ");
-  const opponents = sides.filter(side => side && side !== ownSide).flatMap(side => side!.golfers).map(g => surname(g.name)).join(" & ");
-  return `${own} vs ${opponents || "TBD"}`;
+  const teammates = ownSide.golfers.filter(g => g.name !== player.name).map(g => surname(g.name));
+  const opponents = sides.filter(side => side && side !== ownSide).flatMap(side => side!.golfers).map(g => surname(g.name));
+  const format = match.format || "Format not set";
+  return teammates.length || opponents.length > 1
+    ? `${format}${teammates.length ? ` w/ ${teammates.join(" & ")}` : ""} vs ${opponents.join(" & ") || "TBD"}`
+    : `${format} vs ${opponents.join(" & ") || "TBD"}`;
 }
 
 /** Resolve each scheduled round of the same day without borrowing another round's seat. */

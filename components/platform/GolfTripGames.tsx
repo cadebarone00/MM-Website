@@ -103,7 +103,7 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
   const visible = mine.filter((game) => tripGameSettled(match, game) === (view === "Settled"));
 
   return <section className={styles.root} aria-label="Games">
-    <div className={`${homeStyles.tabs} ${homeStyles.tripTabs} ${homeStyles.leaderboardKind}`} role="group" aria-label="Game status">
+    <div className={homeStyles.slidingSelector} data-second={view === "Settled"} role="group" aria-label="Game status">
       {(["Active", "Settled"] as const).map((status) => <button key={status} type="button" className={`${homeStyles.tab} ${view === status ? homeStyles.tabActive : ""}`} aria-pressed={view === status} onClick={() => setView(status)}>{status}</button>)}
     </div>
     <header className={styles.gamesHeader}>

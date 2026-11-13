@@ -26,11 +26,10 @@ export function TripHomeRoster({ players, teams, allotted, invite }: {
   if (teams) return <section className={styles.homePlayers} aria-labelledby="home-roster-heading">
     <div className={styles.homePlayersTop}>
       <h2 id="home-roster-heading" className={styles.accountHeading}>Teams</h2>
-      <span className={styles.homePlayersCount} aria-label={`${teams.length} teams`}>{teams.length}</span>
     </div>
     {invite}
     {teams.map((team, teamIndex) => <div key={teamIndex} className={styles.homeTeam} role="group" aria-labelledby={`home-team-${teamIndex}`}>
-      <p id={`home-team-${teamIndex}`} className={styles.homeTeamName}><span>{team.name}</span><span aria-label={`${team.players.length} players`}>{team.players.length}</span></p>
+      <p id={`home-team-${teamIndex}`} className={styles.homeTeamName}><span>{team.name}</span></p>
       {list(team.players)}
     </div>)}
   </section>;
