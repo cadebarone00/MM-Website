@@ -4089,7 +4089,7 @@ the Team Draft conditionals (players, order, when, how many picked, room open/cl
 **Done looks like:** all four rooms render and draft correctly in the simulator (order, skipping full teams, ending when
 full), unit tests for the pick order, browser check of each room, existing 2 Teams behaviour unchanged.
 
-### Match Selection: rebuilt room, captains, saved and final (owner decisions 2026-11-12) — APPROVED + BUILT 2026-11-13 (uncommitted; golf_trip_match_selection.sql run in prod 2026-11-13)
+### Match Selection: rebuilt room, captains, saved and final (owner decisions 2026-11-12) — APPROVED + BUILT 2026-11-13 (committed in f6d62103; golf_trip_match_selection.sql run in prod 2026-11-13)
 
 **As built:** rules `lib/platform/matchSelection.ts` (+ `matchSelectionSetup.ts`, tests), SQL `supabase/golf_trip_match_selection.sql`
 (+ database tests; the round's state lives server-only, phones get only a version number through Realtime so hidden picks
