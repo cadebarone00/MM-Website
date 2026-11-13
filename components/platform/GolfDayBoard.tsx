@@ -6,6 +6,7 @@ import { golfDayAssignment, golfDayMatchNames, golfDayRounds, golfDaySummary } f
 import type { GolfTripDraft } from "@/lib/platform/golfTripDraft";
 import type { CompetitionStructure } from "@/lib/platform/golfTripNavigation";
 import styles from "./GolfDayBoard.module.css";
+import { shownUsername } from "@/lib/platform/playerUsername";
 
 export function GolfDayBoard({ match, schedule, viewerName, structure, spectator, sittingOut, roundRsvps, children }: {
   match?: GolfMatchPreview; schedule?: GolfTripDraft; viewerName?: string | null; structure: CompetitionStructure;
@@ -38,14 +39,25 @@ export function GolfDayBoard({ match, schedule, viewerName, structure, spectator
     </button>;
   const rounds = golfDayRounds(match, schedule);
   const summary = golfDaySummary(match, viewerName, structure, spectator);
+  const viewer = golfDayAssignment(match, viewerName, spectator).player;
+  const initials = viewerName?.trim().split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase();
   return <section className={styles.board} data-collapsed={collapsed} aria-label={spectator ? "Golf day overview" : "Your golf day"}>
     <div id={detailsId} className={styles.details} data-collapsed={collapsed} inert={collapsed} aria-hidden={collapsed || undefined}>
     <div className={styles.detailsInner}><div className={styles.content}>
+      {!spectator && (viewerName || summary) && <div className={styles.profileRow}>
+        {viewerName && <div className={styles.identity}>
+          <span className={styles.avatar} aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- existing player photo URL */}
+            {viewer?.avatarUrl ? <img src={viewer.avatarUrl} alt="" /> : initials}
+          </span>
+          <div className={styles.identityText}><p className={styles.name}>{viewerName}</p><p className={styles.username}>{shownUsername(viewerName, viewer?.username)}</p></div>
+        </div>}
       {summary && <dl className={styles.summary} aria-label="Your trip standings">
         <div><dt>Trip +/−</dt><dd>{summary.total}</dd></div>
-        <div><dt>Position</dt><dd>{summary.position}</dd></div>
-        {structure.team && <div><dt>Points earned</dt><dd>{summary.points ?? "—"}</dd></div>}
+        <div><dt>Overall</dt><dd>{summary.position.split("/")[0].trim().replace(/^T(?=\d)/, "")}</dd></div>
+        {structure.team && <div><dt>Pts Ern</dt><dd>{summary.points ?? "—"}</dd></div>}
       </dl>}
+      </div>}
       {rounds.length ? rounds.map(round => {
         const { player, ownSide } = golfDayAssignment(round, viewerName, spectator);
         const out = roundRsvps?.[round.round]?.[viewerName ?? ""] === "out" || (round.round === match?.round && sittingOut);

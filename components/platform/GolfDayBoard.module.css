@@ -18,16 +18,23 @@
 .empty{margin:6px 0;font:500 13px/1.4 var(--font-barlow),sans-serif}
 .navigation{position:relative;padding:0 16px 8px;background:transparent}
 
-.summary{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px;padding-bottom:4px}
+.profileRow{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px;padding-bottom:10px}
+.identity{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.avatar{display:grid;place-items:center;flex:none;width:36px;height:36px;overflow:hidden;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:rgba(220,196,149,.12);color:var(--lm-ink-dcc495);font:600 14px/1 var(--font-spectral),Georgia,serif}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.identityText{min-width:0}
+.name{margin:0;overflow-wrap:anywhere;font:600 15px/1.2 var(--font-spectral),Georgia,serif}
+.username{margin:4px 0 0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--lm-ink-dcc495);font:400 11px/1.2 var(--font-barlow),Arial,sans-serif}
+.summary{display:flex;align-items:center;justify-content:space-between;gap:9px;flex:none;margin:0;padding:10px 9px;border:1px solid rgba(220,196,149,.55);border-radius:20px}
 .summary>div{flex:1;min-width:0;text-align:center}
 .summary dt{font:600 9px/1.1 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495);text-transform:uppercase;letter-spacing:.05em}
 .summary dd{margin:2px 0 0;font:700 16px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
 
 /* Full-width separators dissolve across the outer 15% toward each phone edge. */
-.navigation::before,.summary::after,.round + .round::before{content:"";position:absolute;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(220,196,149,.3) 15%,rgba(220,196,149,.3) 85%,transparent)}
+.navigation::before,.profileRow::after,.round + .round::before{content:"";position:absolute;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(220,196,149,.3) 15%,rgba(220,196,149,.3) 85%,transparent)}
 /* Trace the rounded lower edge up to the screen sides, fading upward into the page. */
 .board::after{content:"";position:absolute;box-sizing:border-box;bottom:0;left:0;right:0;height:40px;border:1px solid rgba(220,196,149,.45);border-top:0;border-radius:0 0 28px 28px;pointer-events:none;mask-image:linear-gradient(to bottom,transparent,black 55%)}
 .navigation::before{top:0;left:0;right:0}
 .board[data-collapsed=true] .navigation::before{display:none}
-.summary::after{bottom:0;left:-26px;right:-26px}
+.profileRow::after{bottom:0;left:-26px;right:-26px}
 .round + .round::before{top:0;left:-26px;right:-26px}

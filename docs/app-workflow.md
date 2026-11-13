@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-13 - Personal Golf overview header (presentation only; implemented locally, not deployed).** Replaced the wide stats row with the viewer's avatar, name and username on the left and a compact rounded standings box on the right. It retains Trip +/-, shows Overall as the position number without /field size, and abbreviates team points to Pts Ern. Existing photo/initials and username formatting reuse the loaded viewer's golfer data; no first-player substitution or new fetch. Round/course/tee/match rows, the extra 30px expansion and tucked navigation remain. Section 22 updated; scoring, permissions, storage and workflow paths unchanged.
+
 **2026-11-13 - Fixed 30px overview extension (presentation only; implemented locally, not deployed).** Replaced the expanded overview's extra 10svh with a fixed 30px below its content. Baseline bottom padding remains 10px, for 40px total; the tucked navigation bar stays unchanged. Section 22 updated; no data, permissions or workflow paths changed.
 
 **2026-11-13 - Overview extends 10% farther down the screen (presentation only; implemented locally, not deployed).** Corrected the previous small spacing adjustment: the expanded overview now adds 10svh (10% of the stable viewport height) below its content, extending the board farther down the page. At an 844px viewport this adds 84.4px. The expanded content retains its existing 12px top/10px baseline bottom padding; collapsing still hides the entire detail region and keeps the navigation-only bar unchanged. Section 22 updated; no data, permissions or workflow paths changed.
@@ -1189,6 +1191,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+**Personal Golf overview header (2026-11-13):** The expanded member overview shows the viewer avatar (initials fallback), name and existing formatted username at left, with Trip +/-, Overall rank and Pts Ern in a rounded box at right. Overall omits the field-size denominator and tied-position prefix for the numeric display. Points remain conditional on team competition; calculations and missing-value rules are unchanged. Spectators do not get a personal header. Course/round and match/tee details retain their previous presentation below it.
 
 **Collapsible Golf overview (2026-11-12):** The GolfDayBoard details slide fully closed through the tiny handle at the bottom center of its navigation, 3px above the board edge. Expanded content has 12px top padding and 10px plus 30px bottom padding, extending a fixed 30px farther down the screen; collapsing still removes its full height. Its upper separator is hidden while collapsed so the trip-tab divider becomes the top edge; expanding restores the overview separator. The four section labels are 13.5px and centered in equal-width slots, with a consistently sized selected bubble pill and no underline; only this navigation row remains when collapsed. A tap/keyboard activation toggles; an upward/downward drag over 20px closes/opens it. The existing section navigation stays visible and functional, hidden details leave the accessibility tree, reduced motion disables transitions, and state is component-local rather than saved.
 
