@@ -3842,6 +3842,246 @@ tokens, OTP codes rather than links); safe resume; no public exposure of incompl
 - Tapping Comment doesn't open the post, and tapping the card still does.
 - Own-comment and Admin delete rules are unit-tested.
 - Typecheck, lint and tests pass; checked in the browser at phone width with no errors.
+
+## Feature: Import a past trip from a spreadsheet (spec 2026-11-06, approved 2026-11-06; built 2026-11-08 on `cam/explore-content`, NOT live — `supabase/golf_trip_import.sql` not run yet)
+
+**What it does / who uses it.** Any signed-in golfer who wants an old trip in the app. On Golf Trips, next to the **Past Trips** heading, an **Import past trip** button opens a short flow:
+1. Pick the kind of trip: **Individual**, **Team** or **Both**.
+2. Download that kind's Excel template and fill it in (Excel, Numbers or Google Sheets).
+3. Upload the filled-in file. The app checks it and shows a preview: trip name, dates, players, rounds, team result and individual champion, plus a plain list of anything to fix ("Matches row 6: Riley Foster is in two matches in round 3").
+4. Pick **which player is you**, then tap **Add trip**. The trip appears under Past Trips and opens on the normal trip page.
+
+**Tech stack.** Existing only: Next.js, Supabase, and `xlsx` (SheetJS), which is already installed. No new package, service or key.
+
+**Templates.** The three templates (`out/trip-templates`) move to `public/templates/` so the app can hand them out: `past-trip-individual.xlsx`, `past-trip-team.xlsx` and `past-trip-team-and-individual.xlsx`. Changes before they ship:
+- Formats renamed to the app's names: **Fourball (best ball)**, Singles, Alternate Shot, **Chapman** (replaces Greensomes, which the app doesn't have), Scramble, Shamble, Stroke Play and Stableford. The individual file's "Match play" becomes Singles.
+- Own-ball formats (Fourball, Singles, Stroke Play, Stableford) count for the individual. Shared-ball formats (Alternate Shot, Chapman, Scramble, Shamble) count for the team only.
+- The builder script moves to `scripts/build-past-trip-templates.py`.
+- The older unused `public/templates/trip-history-*` files stay as they are. Deleting them needs a separate OK.
+
+**How the upload is read.** On the server, `POST /api/golf-trips/import`, signed-in only. The file must be `.xlsx` and at most 2 MB.
+- The app reads only the yellow input cells and works everything out again in code (points, nets, winners, every check from the Problems columns). It never trusts the sheet's formulas, because Numbers and Google Sheets may not keep them.
+- **Preview** returns the summary and the problems list and saves nothing. **Add trip** sends the same file again and saves the trip in one step, so a double tap can't make two trips.
+
+**Data: it becomes a real trip**, the same tables a live trip uses, so it shows the same screens:
+- `golf_trips`: name, where, dates and `status = 'completed'`, plus a new column `imported boolean default false`.
+- `golf_trip_members`: you as the organizer, linked to your account. Everyone else is a member with no account yet (`profile_id` empty). That's the same way an invited player who hasn't joined is stored, so the existing invite flow can link them to their accounts later. No fake accounts.
+- `golf_trip_rounds`: round number, date and course.
+- ~~`golf_trip_setup.settings`~~ **Changed while building:** no setup row is written. Teams, formats and pairings live in `golf_trip_imported_results` with everything else, and the trip page builds its view from that. That avoids player-position settings breaking if a member row is cancelled.
+- **Linking a player later:**
+  1. The organizer opens the imported trip → Members → that player → **New invite link** (the existing button) and texts it to them.
+  2. The player signs up or logs in, then opens the link.
+  3. `accept_golf_trip_invitation` puts their account on that same member row.
+  - Results are stored by member row, so their scores and matches follow them automatically.
+  - A link only works once, and a claimed row can never move to someone else.
+- **New table `golf_trip_imported_results`**, one row per trip:
+  - Holds each player's score per round (by member row id): a total, plus holes 1–18 when given.
+  - Holds each match's winner.
+  - Holds how the individual winner is decided.
+  - It exists because live scores can only be saved for players with accounts (`scoring_group_players.profile_id` must be a real account), and old trips mostly don't have that.
+  - Members can read it through the server. Nobody writes it directly.
+- New SQL file `supabase/golf_trip_import.sql`, run by you in Supabase, the same way as before.
+
+**What the imported trip page shows.** The same trip page (`/golf-trips/<id>`).
+- **Same as a live trip:** trip header, rounds and courses, players and teams, the team standings and match results, the individual leaderboard and the champion.
+- **Scorecards:** a player entered hole by hole gets a full scorecard. A player entered as a total only shows the total.
+- **Hidden** because the trip is over: score entry, tee times, flights and travel plans, games, predictions, and changing dates or rounds.
+- **Who can see it:** you, plus any player who later links their account to their name on the trip.
+
+**Built differently from the plan above (2026-11-08):**
+- **Par column.** Rounds gets a **Par** column in the individual and team + individual files, needed for rounds with individual scores. The leaderboard shows totals against par (+6, E), so it needs the par.
+- **Team-only file.** It has no Scores sheet.
+- **Imported trip page** (`components/platform/ImportedGolfTripHome.tsx`):
+  - A bar at the top: Golf Trips, PAST TRIP and Settings, then the final result ("Pines won 5–3", "Champion: Alex Brooks").
+  - Underneath, the normal trip page in read-only mode (the same mode as watch links): leaderboard, matches and stats.
+  - A team-only trip opens on Match.
+  - Matches show WON or AS, since the template doesn't ask for margins.
+- **Imported trip Settings** (`ImportedTripSettings.tsx`): Members (New invite link) and Delete Trip only.
+- **Not done:** the "Upload a CSV" option.
+- **App simulator sample** (added 2026-11-09 on request): Golf Trip Active → **Import past trip (sample)** (`/dev/import-trip`). The real flow and checks, with no sign-in. Add trip keeps the trip in the dev server's memory only (`lib/dev/samplePastTrips.ts`, `/api/dev/past-trip-import`); development only.
+- **Checked:**
+  - Unit, database and presentation tests.
+  - The route checked once with stand-ins for sign-in and the database. That test isn't in `npm test`, because it needs Node's module-mock flag.
+  - Screens checked in the browser through a temporary preview page, since removed.
+- **Not yet tried with a real account.** That needs `golf_trip_import.sql` run first.
+
+**Third-party services.** None new.
+
+**Out of scope this round.**
+- Editing an imported trip. To fix one, delete it in trip settings and import it again.
+- Counting imported rounds toward handicaps or player stats.
+- Uploading CSV files or more than one trip at once.
+- Filling in the template inside the app.
+
+**Done =**
+- The Import past trip button shows next to Past Trips for signed-in users. The kind picker hands out the right template.
+- Each of the three example files imports with no problems and gives the same results as the sheet:
+  - Team file: Pines win 5–3.
+  - Individual file: Riley Foster is champion.
+  - Team + individual file: Pines win 5–3 and Alex Brooks is champion.
+- A broken file shows each problem with its sheet and row, and nothing is saved. A non-Excel file, an oversize file or a signed-out request is refused.
+- The imported trip is listed under Past Trips and opens on the trip page with the standings, matches, leaderboard and champion. Live-only parts are hidden.
+- Tapping Add trip twice makes one trip. A stranger opening its link sees "not found".
+- The import rules are unit-tested (reading, checks, points, own-ball rule, nets, champion). The database part is tested with PGlite.
+- Typecheck, lint and tests pass, and the flow is checked in the browser at phone width.
+
+## Feature: Import past trip, phone-first — walkthrough or spreadsheet, players fix their own scores (spec 2026-11-09, revised 2026-11-09: photo fill removed; approved + built 2026-11-09 on `cam/explore-content`, NOT live — `supabase/golf_trip_import_edits.sql` not run yet)
+
+**What it does / who uses it.** Builds on **Import a past trip from a spreadsheet** (built, above). The **Import past trip** button on Golf Trips stays the single way in. It now asks how you want to add the trip:
+1. **Enter it in the app** (marked recommended): a 7-step walkthrough built for a phone.
+2. **Use a spreadsheet**: today's template flow, unchanged, labelled "best on a computer, for lots of history".
+
+After a trip is added, **each player who has linked their account can fix their own scores**, and the organizer can fix any result.
+
+**Tech stack.** Existing only: Next.js, Supabase and `xlsx`. No AI, no new package, service or key.
+
+**One trip format behind both.** The spreadsheet reader's output (`ImportedTrip` in `lib/platform/pastTripImport.ts`) becomes the shared format.
+- The checks move into one function that takes an `ImportedTrip` draft from either source and returns the problems in plain words. Problems point to the walkthrough step, or to the spreadsheet row for the spreadsheet.
+- The spreadsheet reader becomes "spreadsheet → draft → the same checks", so the results stay identical.
+- `/api/golf-trips/import` accepts either the file (as now) or the draft as JSON, and always re-checks on the server.
+- The database save (`import_golf_trip`) and the imported trip page don't change.
+
+**Pages / flows.**
+- **Choice sheet** (from the button): the two options above.
+- **Walkthrough:** a new full-screen page, `/golf-trips/import`, signed-in only. A progress bar, then Back and Next on each step.
+  1. **Kind:** Individual, Team or Both.
+  2. **Basics:** trip name, where (the existing place search), and start and end dates (the existing date picker). Past dates only.
+  3. **Rounds:** for each round, the date (within the trip), the course from the existing course search (fills in par automatically, or type a course name and par), and the format. The format list depends on the kind, the same as the templates. Add and remove rounds.
+  4. **Players:** type names one after another, with handicap optional. For team trips, name the two teams and tap each player onto a team.
+  5. **Matches** (team rounds, plus Singles rounds in an individual trip):
+     - Each match is a card. Tap players in from the round's team lists, then tap **[Team 1] / Halved / [Team 2]** (or the player names).
+     - Shared-ball and own-ball formats get the right number of players per side automatically.
+  6. **Scores** (own-ball rounds, individual and Both only):
+     - A list of players for each round, with a number pad for the total (points for Stableford).
+     - "Add hole by hole" opens an 18-box card for that player.
+     - Shared-ball rounds say "No individual scores in Alternate Shot" and have no boxes.
+  7. **Review:**
+     - The same summary as today (players, rounds, team score, champion), plus anything still to fix, each with a "Fix" link back to its step.
+     - Then "Which player is you?" and **Add trip**.
+- **Saved as you go:** the walkthrough draft is kept on the phone (browser storage). Leaving and coming back resumes it. **Start over** clears it.
+- **Fixing scores after it's added** (imported trip page):
+  - **A player with a linked account:** **Edit my scores** changes their own round totals and holes, on the same score screen as step 6.
+  - **The organizer:** **Edit results** changes any score and any match winner.
+  - **Not editable:** the players, rounds and formats. To change those, delete the trip and import it again, same as today.
+  - Every change runs the same checks, and the team score, leaderboard and champion update straight away.
+- **App simulator sample:** both choices work in **Import past trip (sample)**, with nothing saved.
+
+**Data.**
+- **No new tables for the walkthrough.** It produces the same draft and the same `import_golf_trip` call.
+- **New SQL file `supabase/golf_trip_import_edits.sql`** (you run it):
+  - **Function `update_imported_trip_results(p_profile, p_trip, p_changes)`:** a player may change only score rows for their own member row, while the organizer may change any score or match winner. The server checks first and the function checks again.
+  - **New table `golf_trip_imported_edits`:** who changed what and when (member row, before and after). It isn't shown in the app this round.
+  - Members still read results through the server only.
+
+**As built (2026-11-09):**
+- **Shared rules:** `lib/platform/pastTripModel.ts` holds the trip format, `checkDraft`, the results and `applyResultChanges`, with no spreadsheet code, so the phone screens can use it. `pastTripImport.ts` re-exports it.
+- **Spreadsheet checks:** the spreadsheet keeps its row-by-row checks (so problems name the row), then also runs `checkDraft`. Both ways in accept exactly the same trips.
+- **One request reader:** `lib/platform/pastTripImportRequest.ts` reads either a file or a draft, for both the real route and the simulator route.
+- **Walkthrough:** `components/platform/ImportWalkthrough.tsx` at `/golf-trips/import`.
+  - "Where" is a plain text box, because the trip-creation place search is tied to that form.
+  - Round dates are picked from the trip's days.
+  - Next is blocked while the current step has problems.
+- **Fixing results:** `EditImportedResults.tsx` and `PATCH /api/golf-trips/[tripId]/imported-results`. The page sends back the revision it loaded, and a save returns the new results, so the sheet shows them straight away.
+- **Simulator:** `/dev/import-trip` covers both choices and fixing results, with a "View as a player" link.
+
+**Third-party services.** None.
+
+**Out of scope this round.**
+- Filling in a trip from photos or screenshots (removed by the owner, 2026-11-09).
+- Editing players, rounds or formats after import.
+- Showing the edit history in the app.
+- Importing several trips in one go.
+- Getting other players to approve each other's score edits.
+- Pre-filling players from people you've played with before.
+
+**Done =**
+- **The button:** it opens the two-choice sheet, and each choice leads to its flow. The spreadsheet flow works exactly as today.
+- **Walkthrough:** each of the three example trips can be entered by hand on a phone-width screen.
+  - The result matches the template's: Pines 5–3, Riley Foster, Alex Brooks.
+  - Wrong entries can't be saved (two matches for one player, a score in a shared-ball round, a round outside the trip dates, a missing par).
+  - Leaving and coming back keeps the draft.
+- **Fixing scores:**
+  - A linked player can change their own score but not anyone else's (refused on the server too). The organizer can change any score or winner.
+  - The page updates, and each change is recorded in `golf_trip_imported_edits`.
+- **Tests:**
+  - Unit tests: the shared checks for both sources, the draft to results, and the edit rules.
+  - PGlite tests for the edit function.
+  - Typecheck, lint and the full test suite pass.
+  - Clicked through in the app simulator sample at phone width.
+
+## Feature: Stats on imported trips (spec 2026-11-09, approved + built 2026-11-09 on `cam/explore-content`, NOT live — re-run `supabase/golf_trip_import_edits.sql` for the pars rule)
+
+**What it does / who uses it.** An imported trip's Golf tab gets working **Stats**, the same Stats a live trip shows:
+- scoring average, putts per round, fairway % and greens-in-regulation %, best and worst player per stat;
+- courses ranked, hardest and easiest holes and stretches, birdies and bogeys.
+
+Hole-by-hole cards also show par, putts, fairways and greens, as on a live trip. Owner decisions (2026-11-09):
+- **Full stats per hole:** strokes, putts, fairway and green.
+- **Golf tab only:** Leaderboard, Matches and Stats. No Predict, Games, Home, Venue or Itinerary on an imported trip, same as today.
+
+**Tech stack.** Existing only. Hole pars come from the app's existing course detail (`/api/courses/<ref>`, the course's scorecard). No new package, service or key.
+
+**What gets entered.**
+- **Hole pars for each round** (needed for stats):
+  - Picking a course from search fills in all 18 hole pars when the course has a scorecard on file.
+  - Otherwise, or for a typed course, the pars are entered in an 18-box par grid on the Rounds step.
+  - When all 18 pars are known, the round's par is their total.
+  - Hole pars are optional. Without them, that round just has no hole-by-hole stats.
+- **For each player, each hole** (optional; only where that hole's strokes are entered):
+  - **Strokes** (as now).
+  - **Putts** (0–10, no more than the strokes).
+  - **Fairway** on par 4s and 5s: Left, Hit or Right.
+  - **Green in regulation:** Hit or Missed.
+  - Stored the same way live scoring stores them: fairway left / center / right; green center for hit and "right" for a miss. (That's the miss value the 2026 historical import already uses, since the direction of a past miss isn't known.)
+- **Walkthrough:** the Scores step's **Holes** card becomes a list of 18 rows. Each row shows the hole and its par, then strokes, putts, fairway buttons (par 4s and 5s) and green buttons. Everything except strokes is optional, so people enter as much as they kept.
+- **After import:** **Edit my scores** and **Edit results** use the same hole card.
+  - Each player can add their own putts, fairways and greens later, which spreads the work.
+  - The organizer can also fill in hole pars for any round (for example, after a spreadsheet import).
+- **Spreadsheet:** unchanged (strokes per hole and totals). The stats get added afterwards, through Edit my scores or Edit results. 54 more columns would make the template unusable.
+
+**Checks** (same in every path, in `pastTripModel.ts`):
+- Hole pars are 3–6, and when all 18 are known the round par matches their total.
+- Putts are 0–10 and no more than the strokes.
+- Fairway only on a par 4 or 5.
+- Putts, fairway and green only on a hole that has strokes.
+
+**Data.**
+- **Stored with the rest:** `golf_trip_imported_results` gains, for each round, `holePars` (18 values or null), and for each score, `putts`, `fairway` and `green` (18 values each, or null). Old imported trips without them still work.
+- **Database change:** `supabase/golf_trip_import_edits.sql` gets one more rule: only the organizer may change hole pars. You re-run that file once; it's safe to run again.
+- **No new tables.**
+
+**Pages / flows.**
+- **Imported trip page:** the Stats section is filled from the imported scorecards, built with the same stats code a live trip uses (`tripStats`, `tripInsights`). The leaderboard's scorecards show pars, putts and the shot details.
+- **Rounds without hole-by-hole cards:** they still count toward the leaderboard but not toward per-hole stats. That's the same rule a live trip uses for incomplete cards.
+- **Simulator:** the sample flow covers all of it.
+
+**As built (2026-11-09):**
+- **Shot values:** `FairwayResult` / `GreenResult` in `pastTripModel.ts`.
+- **Round par:** when all 18 hole pars are known, the round's par is their total, so "add the course par" isn't asked separately.
+- **Stats section:** built in `importedTripPresentation.ts` (`statsFor`) with `tripStats()` and the live `GolfTripStats` Course / Individual views.
+  - It uses own-ball, non-Stableford cards that have 9 or 18 holes with both strokes and a par.
+  - Total-only rounds count on the leaderboard, not in hole stats.
+- **Spreadsheet imports:** now return the trip as tidied by the shared checks, so both ways in give identical data.
+- **Checked:**
+  - Unit tests for the stat rules and the Stats numbers, and a PGlite test that only the organizer can change pars.
+  - In a browser: Erin Hills from course search filled all 18 hole pars and par 72, a full card was entered, and the Stats tab showed it.
+- **Fixed on the way:** checking a fix to a trip could use a placeholder date ("9999-12-31") that made it look unfinished. It now uses the day after the trip.
+
+**Out of scope.**
+- Stats columns in the spreadsheet template.
+- Penalty strokes.
+- Sand saves and up-and-downs.
+- Games results (skins and so on) for imported trips.
+- Predict, Home, Venue and Itinerary tabs on imported trips.
+
+**Done =**
+- **A trip with stats:** entered in the walkthrough with full hole cards (pars, putts, fairways, greens), its Stats section shows the same numbers a live trip would. Unit-tested against `tripStats` on the same rounds.
+- **Hole pars:** picking a course with a scorecard fills in all 18 hole pars.
+- **Adding stats later:** a player can add their own stats afterwards through Edit my scores, and only theirs. The organizer can add hole pars, and a player can't (refused on the server and in the database function).
+- **Bad entries refused:** 5 putts on a 4, a fairway on a par 3, a par of 9.
+- **Older trips:** imported trips without stats still open and work.
+- **Tests:** typecheck, lint and the full test suite pass, and the flow is clicked through in the simulator at phone width.
+
 ## Account retirement and legacy testing (decisions approved 2026-10-30; PREPARED FOR REVIEW, nothing run)
 
 **What it does / who it affects.** V2 starts with **zero legacy logins**: everyone, including organizers and past
@@ -4036,6 +4276,477 @@ teams, golf, courses, format, lodging → Create → Your trip is ready → invi
 Dev previews: `/dev/trip-builder/join`, `/dev/trip-builder/ready`, `/dev/trip-builder/tips`. `@capacitor/share` 8.0.3
 added (`npx cap sync` not run). The Maroon photo goes at `public/images/the-maroon.jpg` (then set `MAROON_PHOTO`).
 
+
+## Feature: The Maroon as a real iPhone app (Capacitor, screens bundled) — Phase 1: on TestFlight (spec 2026-11-10, approved 2026-11-10 — bundle ID `site.themaroon.app`; IN PROGRESS, uncommitted)
+
+**What it does / who uses it.** The Maroon becomes a real iPhone app, installed through TestFlight. Owner decision (2026-11-10, "Option 1"):
+- The app's screens are the Next.js screens, packaged inside the app.
+- The app does **not** open the website.
+- It talks to the server (`https://themaroon.site`) only for data, signed in with the app's own login.
+
+Phase 1 is the smallest real app worth testing. Android uses the same build and comes in Phase 2.
+
+**Tech stack.**
+- **Existing:** Next.js, Supabase, Capacitor 8 (`@capacitor/core`, `@capacitor/haptics`, `@capacitor/share` already installed), and Xcode 16 on this Mac.
+- **New:** `@capacitor/cli` and `@capacitor/ios`, to build the Xcode project.
+- **New:** an iPhone Keychain storage plugin, so the login is stored encrypted (Capacitor's Preferences isn't encrypted, so it isn't used for that). Planned: `@aparajita/capacitor-secure-storage`, confirmed at build time.
+- No new services. Uses the owner's Apple Developer account.
+
+**How the app build works** (no new top-level folder):
+- **Website build:** `npm run build` works as it does now.
+- **App build:** `npm run build:app` makes a static copy of only the app's screens into `capacitor-web/` (Cade's `webDir`). It uses Next's `pageExtensions` setting, so it picks up only files named `page.app.tsx` / `layout.app.tsx`, which sit next to the website's own `page.tsx`.
+  - The website build ignores those files, and the app build ignores the website's pages and all `/api` routes.
+- **App screens are thin:** each one loads its data from the server, then shows the **same components** the website uses (`GolfTripHome`, `SavedGolfTripHome`, `ImportWalkthrough`, `ImportedGolfTripHome`, `PlatformHome`…). So the app and the website look and work the same.
+- **Addresses with an id** become query addresses in the app (`/golf-trips/trip?id=…`), because a packaged app can't have one page per trip. The website keeps its addresses.
+- **Two app settings files:**
+  - The **TestFlight build** has the screens inside it, with app name "The Maroon" and bundle ID `site.themaroon.app` (owner to confirm).
+  - The **dev build** keeps Cade's live-reload setup (`localhost:3001`), for the Xcode simulator only.
+- **Cade's `ios/mac-simulator-setup` branch** is merged in first, so his Xcode project is the starting point.
+
+**App login** (Phase 1: email and password, through the existing Supabase login and Cade's existing sign-up and onboarding rules):
+- The app keeps its own Supabase session, stored in the Keychain, and sends `Authorization: Bearer <token>` on every request.
+- Signing out clears it.
+- The same rules as the website apply: unfinished accounts go to onboarding first, and age and eligibility rules are unchanged.
+- Google and Apple sign-in come in a later phase, using the native sheets described in "Sign in with Google and Sign in with Apple". Apple requires Sign in with Apple only when other third-party sign-ins are offered, so email-only is fine for Phase 1.
+
+**Server changes:**
+- **Requests from the app:** API requests from the app (`capacitor://localhost`) are allowed. That covers the browser's permission check before each request (CORS and preflight) in `middleware.ts`. Website pages are unchanged.
+- **Every route a Phase 1 screen uses accepts the app login:** cookie or `Bearer`, through the existing `getCurrentProfileForRequest`.
+  - That's about 20 routes: golf trips list and trip, setup, scoring (entries, submit, corrections), round pars, games, plans, flights, join links and invitations, import past trip and imported results, course search, the Play ribbon, and profile compare.
+  - Routes that check the request came from the website (for example `round-pars`) also accept the app.
+- **New read routes** for screens that are built on the server today. Each returns what the web page builds, from one shared function, so the app and the website can't drift apart:
+  - `GET /api/golf-trips/<id>/page` returns the trip, setup, travel, flights summary, scoring and corrections, or the imported view.
+  - `GET /api/play` returns the Play page's ribbon setup.
+
+**Screens in Phase 1:**
+1. **Sign in** (email and password, plus forgot-password) and sign-up, using Cade's screens and rules.
+2. **Play (home).**
+3. **Golf Trips list:** join a trip, create a trip, upcoming and past trips, and Import past trip (both ways).
+4. **Trip page:** Home, Golf, Venue, Itinerary, scoring a live round, settings, and the imported trip page, all working as they do on the website.
+5. The bottom menu.
+
+Anything not in the app yet (Profile, Tourneys, Pick'ems, the rest) shows "Coming to the app soon" instead of a broken screen. Those come in Phase 2.
+
+**Getting it on TestFlight (owner steps, written up when Phase 1 is done):**
+1. Apple Developer account signed into Xcode.
+2. Create the app in App Store Connect with the same bundle ID.
+3. Run `npm run build:app`, then `npx cap sync ios`, then open Xcode.
+4. Product → Archive → Distribute → App Store Connect.
+5. TestFlight → internal testers.
+
+**Data.** No database changes. The website must be live on `main` with the server changes before the app can use them.
+
+**Out of scope for Phase 1.**
+- Android: Phase 2, same build plus `npx cap add android`.
+- Profile, Tourneys, Pick'ems, Fantasy, Watch, admin and portal screens: Phase 2 and later.
+- Native Google and Apple sign-in.
+- Push notifications and Live Activities: their own spec.
+- Offline use beyond what live scoring already does.
+- iPhone-style slide and swipe-back transitions and the other polish: Phase 2.
+- Public App Store release.
+
+**Risks to check first.**
+- Cade may already be building the app another way (`maroon-a6-poc`). Owner to check with him before building.
+- Some trip screens may have parts that only work on the server. Those are found during the build, and each gets its own read route.
+
+**Done =**
+- **App build:** `npm run build:app` makes the app's screens with no errors. `npx cap sync ios` and an Xcode build both run.
+- **On the simulator** (with no `localhost`): sign in with email, see Play and the Golf Trips list, open a trip, score a hole, and import a past trip both ways. Everything is saved to the real database through the app login.
+- **Routes:** each Phase 1 route works with an app login and still works with the website login. A request with no login, or with someone else's login, is refused (tests).
+- **Website unchanged:** typecheck, lint and the full test suite pass.
+- **Archive:** Xcode Archive succeeds with the owner's Team set, ready to upload to TestFlight.
+
+**Progress (2026-11-10):**
+- **App build works:** `npm run build:app` makes all 9 Phase 1 screens as static files with no server needed:
+  - `/`, `/login`, `/golf-trips`, `/golf-trips/import`;
+  - `/golf-trips/trip` and its `settings`, `settings/delete` and `flights` pages.
+  - It then copies them into Xcode (`cap sync ios`) and restores the website's route types (`next typegen`).
+- **Cade's Xcode project** (`ios/mac-simulator-setup`) taken in as files only: `ios/` and `capacitor.config.ts`, renamed "The Maroon" with bundle ID `site.themaroon.app`.
+  - His browser preview tool (`/dev-iphone`) was **not** merged. It was built on three-week-old shared files and would have undone newer work. It stays on his branch.
+  - Capacitor went from 8.5.2 to 8.6.0 (core, ios, cli), which `@capacitor/share` needs.
+  - Added the Keychain plugin, `@aparajita/capacitor-secure-storage`.
+- **Server:**
+  - **App login accepted everywhere:** `createSupabaseServerClient()` accepts the app's `Authorization: Bearer` on any request, verified by Cade's `requestIdentityClient` with its cookie-conflict check, so every route and loader works for the app.
+  - **Requests from the app:** `middleware.ts` answers the app's permission checks (`lib/app/appCors.ts`: `capacitor://localhost`, `https://localhost`, and `http://localhost:3002` in development only). No credentials are allowed across sites.
+  - **`round-pars`** accepts the app (its origin plus a Bearer token).
+  - **New data routes:** `GET /api/app/golf-trips/<id>` (`?view=page|settings|flights`) and `GET /api/app/play`. They use the same loaders as the website pages: `lib/platform/tripPageData.ts` and `lib/content/playData.ts`.
+- **Links:** `golfTripUrl(id, page?, query?)` builds `/golf-trips/trip/<page>/?id=` in the app. `lib/app/appPaths.ts` turns website-style links from the server into app links.
+- **App runtime** (`lib/app`, `components/app`):
+  - Supabase login on the phone (Keychain; browser storage only in `dev:app`).
+  - A `fetch` wrapper that sends `/api/…` to the server with the login.
+  - A sign-in gate, "Coming to the app soon" for screens not in the app yet, and the website's frame and bottom menu.
+  - Sign-in is email and password. An unfinished account is told to finish setup on the website for now.
+- **`npm run dev:app`:** the app's screens at `localhost:3002`, talking to the website dev server at `localhost:3001`.
+  - While it runs, `next-env.d.ts` points at the app's types. Run `npx next typegen` after stopping it.
+- **Blocked on hardware:** this Mac has Xcode 16.2, and Capacitor 8's iPhone library needs Xcode 26 (Swift 6.2), which needs a newer macOS than this Mac can run. The iPhone build waits for a newer Mac (owner buying one).
+- **Still to do in Phase 1:**
+  - Creating a trip in the app (`/tournaments/create/golf-trip` and `/golf-trips/new/*`), and joining by invite or join link.
+  - ~~Cade's sign-up and onboarding screens in the app~~ **Done (2026-11-10), see below.**
+  - Signed-in checks with a real account in `dev:app` (needs the owner's login).
+  - Updating `docs/app-workflow.md` and the compliance review (AGENTS.md), then committing.
+
+**Sign-in = Cade's real screens (2026-11-10):**
+- **Every screen:** the app uses Cade's Pending-accounts Phase 6 screens: Welcome, Sign up, Create a password, Email Verification, Confirmed, Log in, Forgot password, Reset code, Set a new password, then Name → Birthday → Photo → Settings → Profile Created, plus Your account (`/account/status`).
+  - App pages: `app/start/page.app.tsx`, `app/start/[screen]/page.app.tsx`, `app/onboarding/page.app.tsx`, `app/onboarding/[screen]/page.app.tsx` and `app/account/status/page.app.tsx`, all through `components/app/AppOnboarding.tsx`.
+  - They make the same step decisions as the website's server pages, from `GET /api/account/onboarding` and `lib/account/onboardingRoutes.ts`.
+  - Signed out, the app opens at Welcome.
+- **Getting the login into the app:** Cade's contract, `client: "app"`, returns the session instead of setting cookies.
+  - It already existed on `/api/auth/verify-code` and is added to `/api/auth/login`.
+  - `lib/account/onboardingClient.ts` `send()` asks for it in the app build and keeps the session on the phone. It signs the phone out when the server says `signedOut` (Birthday under 13). Finish sets a one-time marker so Profile Created shows once, where the website uses a cookie.
+- **Status messages:** shared by both in `components/auth/AccountStatusView.tsx`.
+- **Not in the app yet:** Google / Apple (need the native sheets, a later phase). Sign-up and the email code still only work where `MAROON_V2_ONBOARDING=on`, the same server gate as the website (legal review pending).
+- **Local testing:** the website dev server is run with `MAROON_V2_ONBOARDING=on` (in the command, not `.env`).
+- **Checked:** the app's Welcome and Log in screens are pixel-identical to the website's; a wrong password shows Cade's message; signed-out visits to a setup step go to Welcome. 49 sign-in tests pass.
+
+**Profile in the app (2026-11-10, owner request):**
+- **App screens:** `/profile`, `/profile/edit` and `/settings`. They use the same loaders as the website pages (`lib/profile/profileScreensData.ts`) through `GET /api/app/profile?view=profile|edit|settings`, an Active-only rule.
+- **Shared Settings look:** `components/settings/SettingsView.tsx`, used by both the website and the app.
+- **Sign out in the app** also clears the phone's login (`signOutAccount`).
+- **Still "Coming to the app soon":** Find golfers, Friends, other people's profiles and Delete account.
+- **Checked:** signed out, Profile in the app goes to Welcome; the website's Profile and Settings are unchanged; 71 related tests pass.
+
+## Feature: The Maroon iPhone app — Phase 2: every app screen works in the app (spec 2026-11-10, approved 2026-11-10; building group by group)
+
+**What it does / who uses it.** The owner asked (2026-11-10) for the app to work completely, so it's ready for TestFlight when the new Mac arrives. That means building trips and everything that now shows "Coming to the app soon". Every screen the app's own menus and buttons lead to works inside the app, exactly as on the website, using the same approach as Phase 1:
+- **Shared loader:** a server page's data loading moves into one function the website page and an app data route both use.
+- **App page:** the app page loads that data and shows the website's own components.
+- **Id addresses:** screens with an id in the address use the app's `?id=` form, and `lib/app/appPaths.ts` converts website links.
+
+No screen is redesigned. The website keeps working exactly as now.
+
+**Inventory** (107 user-facing pages; about 22 already in the app; the rest grouped):
+- **2A, golf trips and rounds** (core):
+  - The trip builder: `/golf-trips/new`, its steps (courses, dates, flights, format, golf, lodging, players, review, teams, transportation, learn, tour) and `/tournaments/create/golf-trip`.
+  - Joining: `/golf-trips/join/<code>`, `/golf-trips/invite/<token>`.
+  - Rounds: `/rounds/new`.
+- **2B, Tourneys and Pick'ems:**
+  - `/tournaments`, `/tournaments/join`, `/tournaments/mine` and `/tournaments/new`.
+  - `/tournaments/create` and `/tournaments/create/<type>`.
+  - Code tournaments: `/tournaments/code/new`, `/code/join`, `/code/<id>` and `/code/invite/<token>`.
+  - `/tournaments/live/<id>`, `/tournaments/invite/<token>` and `/tournaments/request-access`.
+  - `/tournaments/<tournament>/<year>` with `next` and `preview`.
+  - Watch codes (`/watch/<code>`) and `/pickems`.
+- **2C, Profile and account:** `/profile/search`, `/profile/friends`, `/profile/<username>`, `/settings/delete-account`, `/settings/content-team` and `/account/choose`.
+- **2D, Play tournament pages and the rest the app links to:** `/play/<tournament>/<year>` (with leaderboard, matches, players, more), `/t/<tournament>` pages, `/schedule` and `/schedule/<slug>`, `/contact` and `/watch-live`.
+- **2E, ready for TestFlight:**
+  - iPhone feel: safe areas, keyboard handling, swipe-back and slide transitions, pull-to-refresh where lists refresh.
+  - App icon and launch screen from the logo.
+  - Links outside the app (Terms, Privacy, email) open properly.
+  - An "update available" check.
+  - The Android project (`npx cap add android`) from the same build.
+  - `docs/app-workflow.md` updated and the AGENTS.md compliance review recorded.
+  - A full test run, then the owner's TestFlight steps written out.
+
+**Owner decisions (2026-11-10): all three recommendations accepted.** (1) the old season website pages stay website-only; (2) Wagers and Fantasy are left out of the TestFlight app, to be decided before the public release; (3) email only for TestFlight, native Google + Apple later. The original questions:
+1. **The old Maroon Masters season website pages:** Leaderboard, Teams, Players, History, Merchandise, Sponsorship, Vault, Videos, The Maroon articles, My Team / Join Team. Nothing in the app links to them.
+   - **Recommended:** leave them on the website only, out of the app.
+2. **Wagers and Fantasy:**
+   - Apple only allows real-money betting apps from licensed operators.
+   - Even play-money betting screens get extra review, and can get an app rejected or age-rated 17+.
+   - **Recommended:** leave them out of the TestFlight app for now (they say "Not in the app"), and decide before the public App Store release.
+3. **Google / Apple sign-in in the app:**
+   - These need the native sign-in sheets and the Apple / Google developer set-up.
+   - Apple requires Sign in with Apple whenever Google sign-in is offered.
+   - **Recommended:** email only for TestFlight, native Google + Apple as their own step.
+
+**Tech stack.** Existing only. No new services. The packages from Phase 1, plus possibly `@capacitor/app` and `@capacitor/keyboard`, which are already installed alongside the Keychain plugin.
+
+**Data.** No database changes expected. If a screen turns out to need a new server route, it's listed here before it's built.
+
+**Out of scope.**
+- Push notifications and Live Activities (their own spec).
+- Native Google / Apple sign-in (decision 3).
+- Public App Store submission.
+
+**Done =**
+- **Every screen** in groups 2A–2D opens and works in the app (`npm run dev:app`) the way it does on the website, signed in with a real account.
+  - That includes building a trip from start to finish, joining by code and invite link, starting a round, creating and joining a code tournament, watching by code, Pick'ems, and other people's profiles.
+- **Nothing the app links to says "Coming soon"**, except what the owner keeps out (decisions 1–2).
+- **App build:** `npm run build:app` builds every app screen with no errors.
+- **Tests:** the full test suite, typecheck and lint pass. Each new data route is covered by the access-rules test and refuses a request with no login.
+- **Android:** the project opens in Android Studio.
+- **Ready for the Mac:** on the new Mac, the only remaining steps are installing Xcode 26, `npm run build:app`, Archive and Upload.
+
+**Size.** About a week of work across several sessions. It's built and checked group by group (2A first), with a progress note added here after each group.
+
+**Progress (2026-11-11): groups 2A–2D built, uncommitted.**
+- **2A, golf trips and rounds:** the trip builder and all its steps, Learn and Tour, joining by code and invite link, and `/rounds/new` work in the app. The join and invite links read their code from the address (`?code=`, `?token=`). `GET /api/golf-trips/join/<code>` shows the trip before you join. Shared links always point to themaroon.site (`lib/app/shareOrigin.ts`).
+- **2B, Tourneys and Pick'ems:** all the Tourneys pages, code tournaments, live and invite pages, request access, watch codes and Pick'ems work in the app. Server additions: `GET /api/code-tournaments/invite/<token>` and `/api/app/tourneys`.
+- **2C, Profile and account:** Find golfers, Friends, other people's profiles, Delete account and the Content team page work in the app, all from `/api/app/profile?view=…`.
+- **2D, tournament pages and the rest:**
+  - Play's league home and tabs (`/play/tournament/`), a tournament's public site (`/t/site/`), and the organizer's studio, Start next year and Preview (`/tournaments/studio/…`) work in the app.
+  - All of them get their data from `/api/app/tournament?kind=…` (`lib/platform/tournamentScreensData.ts`).
+  - The public site and preview views now live in their own files (`TournamentSiteView.tsx`, `TournamentPreviewView.tsx`), so the app doesn't load website-only code.
+  - Schedule opens Golf Trips. Contact shows the support email. Watch live opens the TV broadcast in the browser.
+- **Address conversion:** `lib/app/appPaths.ts` converts every website address with a value in it (tests in `lib/app/appPaths.test.ts`).
+- **Checked:** typecheck and lint are clean. Every new app page opens on `localhost:3002`, and the website pages still work. Data loading has only been tested signed out; a signed-in pass with a real tournament comes in 2E.
+- **Next:** group 2E.
+
+**Progress (2026-11-11): group 2E built, uncommitted.**
+- **Found by the full app build:**
+  - Tourneys, My Tournaments (playing) and the organizer's My Tournaments loaded their data on the server, so they can't be packaged.
+  - They now get their data from `lib/platform/tourneyScreensData.ts`, which the website pages and `/api/app/tourneys?view=join|mine|organizer` share.
+- **iPhone feel:**
+  - Swipe from the left edge goes back (`MaroonViewController` in `ios/App/App/SceneDelegate.swift`).
+  - Pull down at the top of a screen to refresh it, and screens refresh when you come back to the app (`components/app/AppNative.tsx` and `appRefresh.ts`).
+  - The Android back button works.
+  - `@capacitor/app` and `@capacitor/keyboard` are added (exact versions).
+- **Icon and launch screen:**
+  - The app icon is The Maroon's M (`public/brand/maroon-app-icon.svg`), and the launch screen is the white M on maroon.
+  - The old Capacitor images are in `out/backups/ios-assets-2026-11-11/`.
+- **Links out of the app:**
+  - A link to a website-only page (Terms, the old season pages and so on) opens on themaroon.site in the phone's browser.
+  - Wagers and Fantasy show "Not in the app" with no link out.
+  - Any other unknown address shows "Not in the app".
+  - "Forgot it?" opens the app's own reset screen.
+- **Update check:** `/api/app/version` (public) together with `APP_BUILD` in `lib/app/appVersion.ts`. Setting `MAROON_APP_MIN_BUILD` on the server makes older builds show "Update The Maroon".
+- **Android:** `android/` was created with `npx cap add android`, using the same screens and plugins. It has not been built yet, because this Mac has no Android Studio or Java. Its icon is still Capacitor's default.
+- **Docs:**
+  - `docs/testflight.md` has the owner's step-by-step TestFlight guide.
+  - `docs/iphone-app-review.md` has the compliance review (review_required) and is registered in `lib/compliance/featureRegistry.ts`.
+  - `docs/app-workflow.md` and its HTML were updated.
+- **Checked:**
+  - `npm run build:app` builds all 82 app screens and syncs all 5 plugins into the iPhone project. The Keychain plugin was missing before this sync.
+  - Typecheck and lint are clean, and the app and website pages load.
+- **Not checked:**
+  - A real iPhone build, which needs Xcode 26 on the new Mac.
+  - A signed-in pass with a real account.
+  - An Android run.
+
+**Progress (2026-11-12): TestFlight packaging.**
+- **Owner asked for TestFlight only.** The public App Store plan was dropped.
+- **Info.plist additions:**
+  - Photo, camera and location permission messages. Without them, iOS stops the app when the photo picker offers the camera, and location can't be asked for.
+  - `ITSAppUsesNonExemptEncryption = false`, so each upload doesn't ask the encryption question.
+- **Blocker found (owner action):**
+  - themaroon.site (production) is behind Vercel Authentication. Every request, including the app's API calls, is sent to a Vercel login, so the app can't sign in.
+  - Fix: Vercel → Settings → Deployment Protection. Steps are in docs/testflight.md.
+  - The app's `/api/app/*` routes also go live only after this branch is merged to `main` and deployed.
+
+## Feature: Leagues (replaces Pick'ems) — spec 2026-11-12, approved 2026-11-12 with the owner's answers below; Stage 1 (dev preview) in progress
+
+**What it does / who uses it.**
+- **Leagues replace the empty Pick'ems tab** in the bottom menu (same spot, new name and icon). Pick'ems is a blank placeholder today, and the old Wagers / Fantasy / My Team addresses that redirect to it will redirect to Leagues instead.
+- **A league is a hybrid of Play and a Golf Trip:**
+  - Simpler than a trip: no lodging, travel, flights or multi-day schedule.
+  - More than Play: groups, league games and random teams.
+- **Who uses it:**
+  - A league organizer (anyone signed in) creates the league and runs each league day.
+  - Members join by code or invite link.
+
+**How it works.**
+1. **One league round (owner's choice).** A league is one round on one course, on one day, with one tee. When it's done, it's done. A **Copy this league** button starts next time's league with the same players and settings.
+2. **Groups.**
+   - The league's players are split into groups (foursomes by default, sizes 2–5).
+   - The organizer can split them automatically or drag players between groups.
+   - Groups get tee times or a shotgun start, reusing the code tournaments' tee sheet (`foursomes`, `TeeTiming`).
+3. **First screen: a very basic leaderboard.**
+   - One row per player with their total strokes and how many holes they've played.
+   - A **Gross / Net** switch at the top. Net uses each player's handicap, the same way code tournaments do.
+4. **League games (owner's choice, 2026-11-12).**
+   - **League-wide skins:** gross or net, across every player in the league, not per group. Ties carry over or don't, as the organizer chooses. No money: skins are counted only.
+   - **2-person team game with random pairs.** The organizer picks the format:
+     - **Best Ball:** the lower of the two scores on each hole.
+     - **Combined:** both scores added.
+     - **Stableford Best Ball:** the better of the two Stableford points on each hole (par 2, birdie 3, eagle 4…).
+     - **Stableford Combined:** both players' points added.
+   - Each format can be **Gross or Net**.
+   - **Winner segments:** the organizer picks **6 holes** (winners for holes 1–6, 7–12 and 13–18), **9 holes** (front 9 and back 9) or **18 holes** (one overall winner). Each segment has its own pairs leaderboard.
+   - Every score is worked out from the players' own hole-by-hole scores, so partners don't need to play in the same group.
+5. **Random pair rules.** The organizer picks how pairs are drawn:
+   - **Random:** a plain shuffle.
+   - **Balanced (A-B draw):** players are ranked by handicap, and each pair gets one from the better half and one from the other half.
+   - **Split up groups:** partners come from different playing groups.
+   - **Keep groups together:** partners play in the same group.
+   - **Odd number of players:** one team has 3 players. Its best ball counts, and for Combined formats its best 2 scores count.
+   - The organizer can **re-draw** until it's right, then **lock** the pairs before the round starts. Everyone sees the pairs once they're locked.
+6. **Play a round within the group, exactly like a trip.**
+   - One scorer per group (owner's choice) enters the group's scores hole by hole with the trip's scorecard (offline-safe, submit at the end).
+   - A group can also add its own group games (Wolf, Vegas, Nassau, match play…) the same way trip groups do.
+   - Every score feeds the league leaderboard and the league games.
+
+**Screens (website and iPhone app).**
+- **Leagues tab (`/leagues`):**
+  - Your leagues, sorted Live, then Upcoming, then Past.
+  - Buttons to create a league and to join by code.
+- **Create a league (`/leagues/new`):** name, course and tee (the existing course search), date, Gross/Net default, and the league games.
+- **A league (`/leagues/<id>`, app `/leagues/league/?id=`):**
+  - The tabs are **Leaderboard** (first), **Skins**, **Pairs**, **Groups** and **My Round**.
+  - The organizer also gets **Settings**: players, groups, teams, games, and ending the league.
+- **Joining:** `/leagues/join` by code, and invite links reuse the code-tournament invite pattern.
+- **Dev preview: `/dev/leagues`.** A full sample league with 16 players, 4 groups, scores in progress, skins and random pairs, so you can click through without a database. It's gated like the other `/dev` pages and shows on 3001 and in the app on 3002.
+
+**Data (new Supabase tables, `supabase/leagues.sql`, to run in the Supabase SQL editor).**
+- `leagues`: id, code, name, organizer, course, tee and date, scoring (Gross/Net) and status (live/ended).
+- `league_players`: the members and their handicap for this round.
+- `league_groups` and `league_group_players`: the groups, tee times and scorer.
+- `league_games`: the skins settings, and the pairs game's format, gross/net, segments and draw rule.
+- `league_pairs`: the locked pairs.
+- `league_holes`: one row per player per hole with strokes.
+- **Access:** row-level security so only members see a league, only the organizer changes it, and only a group's scorer (or the organizer) enters that group's scores.
+- **Server:** API routes under `/api/leagues/...`, each with an entry in `lib/account/accessPolicy.ts`. The app reads through `/api/app/leagues`.
+
+**Tech stack.** Existing only (Next.js, Supabase, Capacitor). No new services or packages.
+
+**iPhone app.**
+- Every Leagues screen gets a `page.app.tsx`.
+- Leagues gets a shared loader + view + app data route, the `appPaths` mappings and an AppShell entry.
+- Done only after `npm run build:app` passes.
+
+**Out of scope (first version).**
+- Seasons: standings across many league days.
+- Handicap updates from league rounds.
+- Money and payouts.
+- Push notifications.
+- TV / Tap In display.
+
+**Done =**
+- The dev preview at `/dev/leagues` works on the website and in the app.
+- With `supabase/leagues.sql` run, you can create a league, join by code, auto-group players, draw random pairs under each rule, score a round in a group like a trip (one scorer per group), and watch the Gross/Net leaderboard, league-wide skins and the pairs segment winners update.
+- The full test suite (with new tests for the leaderboard, skins, pair draws, pair formats and segments, and access rules), typecheck, lint and `npm run build:app` pass.
+
+**Size.** Large: about the size of code tournaments. It's built in stages, each checked:
+- **Stage 1:** the dev preview with sample data, so you can look and give feedback early.
+- **Stage 2:** the database and server.
+- **Stage 3:** real scoring and the app.
+
+**Not in the first version (owner's choice, 2026-11-12):** low gross / low net prizes, closest to the pin and long drive.
+
+**Progress (2026-11-12): Stage 1 (dev preview) built, uncommitted.**
+- **Code:**
+  - `lib/platform/leagues.ts` has the rules: Gross/Net leaderboard, league-wide skins with carryover, the 4 pair draw rules (odd numbers make one team of 3), the 4 pair formats, and 6 / 9 / 18-hole winners. Tests are in `lib/platform/leagues.test.ts` (9 pass).
+  - `components/platform/LeagueHome.tsx` has the Leaderboard, Skins, Pairs and Groups tabs, the scorer's group card (the trip scorecard), and League Settings for skins and the pair draw/lock.
+  - `lib/dev/sampleLeague.ts` is the sample league.
+  - The preview lives at `/dev/leagues` on the website dev server, with an app page that only shows on the dev server.
+- **Checked:**
+  - Works on 3001 and 3002, with no browser errors.
+  - Entering a score on the scorer's card updates the leaderboard.
+  - `npm run build:app` builds 85 screens. Typecheck and lint are clean.
+- **Left for later stages:**
+  - The bottom-menu Pick'ems → Leagues switch and `/leagues` (Stage 2, once leagues are saved).
+  - Create, join, the database and the server.
+  - Group games inside a group (Wolf, Vegas…) on the scorer's card.
+
+**Owner changes (2026-11-12), built in the preview:**
+- **Players see no setting pills.** Gross/Net on the leaderboard is the organizer's setting: only the organizer gets the switch, and the last column's header says which one it is. Skins carryover is an organizer-only switch on the Skins tab, and the Skins tab is stripped down to winners and holes.
+- **Pairs:** strokes formats (Best Ball, Combined) show score to par, with Combined counting double par. The Stableford formats show points.
+- **"Groups" is renamed "Tee Times".**
+- **New "Group" tab:** each group plays its own game, exactly like Play's "Play a round".
+  - The group's scorer picks it using the same game sheet, team picker, Net and Birdies double.
+  - The scorer's card gets the game's per-hole picks (Wolf partner and so on) and live standings.
+  - Everyone in the group sees the standings.
+  - Stored on the group (`LeagueGroup.game`, `inputs`).
+
+**Progress (2026-11-12): Stage 2 (real leagues) built, uncommitted. `supabase/leagues.sql` must be run in Supabase before leagues work on the live site.**
+- **Database:** `supabase/leagues.sql` adds 4 tables, locked down, with checked functions for create, look up, join, load, list, settings, tee times, strokes, group game, submit, end, copy and delete. Tested against a real Postgres (PGlite), covering every access rule, ran twice to confirm it's safe to re-run, with no public grants.
+- **Server:**
+  - `lib/platform/leaguesServer.ts` holds the database calls and `lib/platform/leaguesRequest.ts` the request checks (with tests).
+  - Routes: `/api/leagues` (list and create), `/lookup`, `/join`, and `/<id>` (load, save a change, copy, delete).
+  - `/api/leagues` is in `lib/account/accessPolicy.ts` (Active accounts).
+- **Screens (website and app):**
+  - The Leagues tab replaces Pick'ems in the bottom menu (`/pickems` → `/leagues`).
+  - Create a league (course search with an 18-hole scorecard only, tee, date, Gross/Net, playing and handicap) shows the code with Copy and Share link.
+  - Join works by code or by link (`/leagues/join?code=`).
+  - The league page (`/leagues/<id>`, app `/leagues/league/?id=`) loads and refreshes every 5 seconds. Each change shows at once and saves in order.
+- **League Settings now has:**
+  - The join code with Copy and Share link.
+  - A Tee Times editor: make tee times on a timing (first time, minutes between, Off 1 / Off 1 & 10 / Shotgun), then change any group's time, starting hole or scorer, move players, or add late joiners.
+  - Copy this league (new date, same players and settings), End league and Delete league.
+- **The preview** `/dev/leagues` uses the same change list (`applyLeagueChange`), so it behaves like the real thing.
+- **Docs:** compliance review `docs/leagues-review.md` (review_required, registered), and `docs/app-workflow.md` updated.
+- **Not in this stage:**
+  - Emailed invites (the share link covers inviting).
+  - The organizer entering scores without being a scorer.
+  - A signed-in pass on the live database, which needs the SQL run first.
+
+## Feature: One way to join everything — a code, or an email with the code (spec 2026-11-12, approved 2026-11-12 with the owner's answers below; building)
+
+**What it does / who uses it.** The owner asked (2026-11-12) for Play rounds, Golf Trips, Tourneys and Leagues to join the same way. Each one gets a **6-character invite code** (like `K7Q-4MZ`), and whoever runs it can **email the code** to people.
+
+**How it works today (2026-11-12):**
+
+| | Code | Email | Other |
+|---|---|---|---|
+| Play (round with friends) | none | none | the host invites by name; an invite card shows on Play |
+| Golf Trip | none (only a long join link) | yes: a private link per email, Accept/Decline | |
+| Tourney | yes | yes (from a spreadsheet of names and emails) | per-person invite links |
+| League | yes | none | a share link |
+
+**What changes:**
+1. **Every Play round, trip, tourney and league has a 6-character code.**
+   - It uses the same letters as now (no 0/O, 1/I/L look-alikes) and never starts with W, which is reserved for watch codes.
+   - The code is shown wherever the host or organizer manages it, with **Copy code**, **Share** (the phone's share sheet: Messages, WhatsApp…) and **Email the code**.
+2. **Each tab's own "Join with a code" box (owner's choice, 2026-11-12).**
+   - Play takes Play round codes, Golf Trips takes trip codes, Tourneys takes tourney codes, and Leagues takes league codes. A code typed in the wrong tab says "No round / trip / tourney / league has that code".
+   - Each kind's share link opens its own Join page:
+     - `/rounds/join?code=`
+     - `/golf-trips/join?code=` (the existing trip join page also takes the new 6-character codes)
+     - `/tournaments/code/join?code=`
+     - `/leagues/join?code=`
+   - You see what you're joining, add your handicap if it needs one, then tap **Join**.
+3. **"Email the code"** is the same card everywhere:
+   - Type one or more email addresses (a name is optional), or, as now for tourneys, drop in a spreadsheet.
+   - Each person gets an email: "*Cam invited you to Thursday Night League*", with the code in big letters and a **Join** button.
+   - Golf Trip emails keep their own Accept/Decline link too, and Tourney emails keep their per-person link. Both just add the code.
+4. **What joining does:**
+   - **Play round (owner's choice: code + name invites):** you're added to the round (still up to 5 players), the same as accepting the host's invite.
+   - **Golf Trip:** you're added straight in as a member (owner's choice), the same as today's join link. The organizer can still remove people.
+   - **Tourney / League:** unchanged.
+5. **What stays:** Play's invite-by-name and Play-page invite cards, trip join links, and tourney and trip invite links all keep working.
+
+**Safety:**
+- Only the host or organizer can email the code. Emails are capped at 50 per round, trip, tourney or league, and 200 a day per person.
+- The same address isn't emailed twice for the same thing within an hour.
+- Emails contain no personal details beyond the sender's display name.
+- Each send is recorded (who sent it, to which address, for what, and when) so the caps work. The records are kept 90 days.
+
+**Data (Supabase SQL to run, `supabase/join_codes.sql`):**
+- Adds a `code` column to `shared_rounds` and `golf_trips`, and gives every existing round and trip a code.
+- Lookup and join-by-code functions for rounds and trips. Tourneys and leagues already have them.
+- A new `email_invites_sent` table holds the send records (service role only).
+
+**Server:**
+- Round and trip code lookup and join go on their existing routes.
+- `POST /api/invites/email` sends the code by email. The sender must be the host or organizer.
+- All three go into `lib/account/accessPolicy.ts`.
+
+**Third-party service: Resend (email).**
+- Already used by tourney invites. It needs `RESEND_API_KEY` and `EMAIL_FROM` (a verified sender) on Vercel and in `.env`.
+- These aren't set up yet. Until they are, "Email the code" says email isn't set up, and Copy and Share still work.
+
+**iPhone app:** every new screen works in the app (`page.app.tsx`, `appPaths`). `npm run build:app` must pass.
+
+**Out of scope:** text-message sending from the server (the phone's Share sheet covers texts), push notifications, and contacts import.
+
+**Done =**
+- All four have a code with Copy, Share and Email.
+- Each tab's code box, and each share link, joins the right thing on the website and in the app.
+- Emails send once Resend is set up, and the caps are tested.
+- Existing invites and links still work.
+- The full test suite, typecheck, lint and `build:app` pass. The SQL is tested against Postgres before you run it.
+
+**Progress (2026-11-12): built, uncommitted.**
+- **To run in Supabase:** `supabase/join_codes.sql`. Tested against the real `shared_rounds`, `golf_trips`, `golf_trip_invitations`, `tournament_codes` and `leagues` SQL files in Postgres (PGlite), and safe to run twice.
+- **Email needs Resend set up:** `RESEND_API_KEY` and `EMAIL_FROM`.
+- **Play rounds:**
+  - Round setup has "Let friends join with a code".
+  - The round screen shows the invite card to everyone playing; only the host gets Email.
+  - The Play page has a "Have a code?" box that goes to `/rounds/join?code=` (website and app).
+- **Golf Trips:**
+  - Trip Settings → Members starts with the invite card. Anyone on the trip can share; the organizer can email and make a new code.
+  - The Join a Trip box takes the code (or a pasted join link).
+  - `/golf-trips/join/<code>` and its route and app page take both kinds of code.
+- **Tourneys:** unchanged (they already had code + emailed invites).
+- **Leagues:** the invite card in League Settings and after Create.
+- **Shared code:**
+  - `lib/platform/codeInvites.ts` holds the Join pages, address reading and the email (with tests).
+  - `lib/platform/joinCodesServer.ts` holds the database calls and sending.
+  - `components/platform/InviteCodeCard.tsx` is the one card.
+- **Review:** `docs/join-codes-review.md` (review_required, registered). Open follow-up: whether invite emails need an unsubscribe link.
+- **Owner change (2026-11-13): one identical Join card, join codes only.**
+  - `components/platform/JoinCodeCard.tsx` is the same white card ("Join a Round / Trip / Tournament / League", one code box, Join) on Play (under Play a round), Golf Trips, Tourneys (under Join a Tournament) and Leagues.
+  - It takes only a 6-character join code, so pasted links, Trip IDs and watch codes are no longer taken there. Shared links and watch links still open as before.
+  - The old boxes `GolfTripJoin.tsx` and `JoinCodeEntry.tsx` were removed (still in git history).
 
 ## Dev simulator → Golf Trip Active → Home sub-pages (owner request 2026-11-11) — APPROVED + BUILT 2026-11-11 (uncommitted)
 
@@ -4287,7 +4998,7 @@ No leftovers, no uneven teams.
 **Done looks like:** tests for the rule (each type, good and bad counts); mock draft + simulator conditionals show the
 refusal; Settings note and no uneven switch; lint/types clean; browser-checked.
 
-## Edit profile — Instagram-style screen (owner request 2026-11-13) — SPEC, awaiting final approval
+## Edit profile — Instagram-style screen (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; `supabase/profile_edit_v2.sql` RUN in production 2026-11-13, verified; simulator conditionals not added yet)
 
 **What it is:** `/profile/edit` (and its dev copy `/dev/profile/edit`) gets the look of Instagram's Edit profile
 (owner screenshot 2026-11-13): back arrow top-left, "Edit profile" title centered, a **Done** button top-right, then

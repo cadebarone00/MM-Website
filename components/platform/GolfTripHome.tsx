@@ -558,7 +558,7 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     </GolfDayBoard>
 
     {/* Team/Indi keeps the same standalone navigation board above either view. */}
-    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.slidingSelector} ${styles.underlineSelector}`} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
+    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.slidingSelector} ${styles.underlineSelector} ${styles.bubbleUnderline}`} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
       <button type="button" className={`${styles.tab} ${golfSection === "Competition" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Competition"} onClick={() => goTo(availableSlides.indexOf("Competition"))}>Team</button>
       <button type="button" className={`${styles.tab} ${golfSection === "Overview" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Overview"} onClick={() => goTo(availableSlides.indexOf("Overview"))}>Indi</button>
     </div></div>}

@@ -1,0 +1,15 @@
+/* The invite card (InviteCodeCard): rounds, trips and leagues, on their dark maroon pages. */
+.card{display:grid;justify-items:center;gap:10px;margin:0 0 14px;padding:16px;border:1px solid color-mix(in srgb,#ffffff 10%,transparent);border-radius:16px;background:color-mix(in srgb,#ffffff 4%,transparent);text-align:center;color:#fbf8f1}
+.label{margin:0;font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#c9a86e}
+.code{margin:0;font:700 34px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:#fbf8f1}
+.hint{margin:0;font:500 13px/1.45 var(--font-barlow),sans-serif;color:#e8d7b2}
+.actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.actions button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid color-mix(in srgb,#c9a86e 55%,transparent);border-radius:999px;background:color-mix(in srgb,#ffffff 6%,transparent);color:#fbf8f1;font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.actions button[aria-expanded=true]{border-color:#dcc495;background:#dcc495;color:#2a0a12}
+.email{display:grid;gap:8px;width:100%;text-align:left}
+.email label{display:grid;gap:6px;font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#c9a86e}
+.email textarea{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid color-mix(in srgb,#c9a86e 55%,transparent);border-radius:12px;background:color-mix(in srgb,#000000 22%,transparent);color:#fff3d6;font:500 15px/1.4 var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;resize:vertical}
+.send{min-height:44px;border:0;border-radius:12px;background:#dcc495;color:#2a0a12;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.send:disabled{opacity:.45;cursor:default}
+.note{margin:0;font:600 13px/1.45 var(--font-barlow),sans-serif;color:#f0a0a0}
+.note[data-good]{color:#b8e0b0}

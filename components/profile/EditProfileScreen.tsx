@@ -53,9 +53,9 @@ const ACCOUNT: EditProfileSavers = {
 };
 
 /**
- * Edit profile (owner request 2026-11-13, Instagram's layout): back | Edit profile | Done; photo + avatar circles; rows for
+ * Edit profile (owner request 2026-11-13, Instagram's layout): back | Edit profile | Save; photo + avatar circles; rows for
  * Name, Username, Bio (typed in place), Links and Gender (their own screens), then the Private profile switch.
- * Done saves Name / Username / Bio / Gender together. Photo, Links and Private profile save the moment they change.
+ * Save (dim until something changes) saves Name / Username / Bio / Gender together. Photo, Links and Private profile save the moment they change.
  */
 export function EditProfileScreen({ initial, backHref = "/profile", savers = ACCOUNT }: { initial: EditProfileInitial; backHref?: string; savers?: EditProfileSavers }) {
   const router = useRouter();
@@ -82,8 +82,8 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
 
   function leave() { router.push(backHref); router.refresh(); }
 
-  async function done() {
-    if (!dirty) { leave(); return; }
+  async function save() {
+    if (!dirty) return;
     const problem = nameProblem(displayName) ?? (usernameChanged ? usernameProblem(username.trim()) : null);
     if (problem) { setError(problem); return; }
     setBusy("save"); setError("");
@@ -116,7 +116,7 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
       <header className={styles.topBar}>
         <button type="button" className={styles.iconButton} aria-label="Back" onClick={() => dirty ? setPanel("discard") : router.push(backHref)}><ChevronLeft size={28} aria-hidden="true" /></button>
         <h1 className={styles.title}>Edit profile</h1>
-        <button type="button" className={styles.done} onClick={() => void done()} disabled={busy === "save"}>{busy === "save" ? "Saving…" : "Done"}</button>
+        <button type="button" className={`${styles.done} ${styles.save}`} onClick={() => void save()} disabled={!dirty || busy === "save"}>{busy === "save" ? "Saving…" : "Save"}</button>
       </header>
 
       <section className={styles.pictures} aria-label="Picture and avatar">
@@ -197,7 +197,7 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
         <button type="button" className={styles.iconButton} aria-label="Back to Edit profile" onClick={() => setPanel(null)}><ChevronLeft size={28} aria-hidden="true" /></button>
         <h2 className={styles.title}>Gender</h2><span />
       </div>
-      <p className={styles.panelIntro}>This won&apos;t be part of your public profile. Only you can see it. It saves when you tap Done.</p>
+      <p className={styles.panelIntro}>This won&apos;t be part of your public profile. Only you can see it. It saves when you tap Save.</p>
       <ul className={styles.options}>
         {GENDERS.map((option) => <li key={option.value}>
           <button type="button" className={styles.option} aria-pressed={gender === option.value} onClick={() => { setGender(option.value); setPanel(null); }}>

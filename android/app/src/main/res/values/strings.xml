@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">The Maroon</string>
+    <string name="title_activity_main">The Maroon</string>
+    <string name="package_name">site.themaroon.app</string>
+    <string name="custom_url_scheme">site.themaroon.app</string>
+</resources>

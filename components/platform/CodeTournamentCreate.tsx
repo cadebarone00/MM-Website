@@ -80,8 +80,9 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
   </main>;
 }
 
-/** One round: pick the course (search / near me), then its tee and date. Shared with the organizer's Add round later. */
-export function AddRound({ onCancel, onAdd, minDate }: { onCancel: () => void; onAdd: (round: NewRound) => void; minDate?: string }) {
+/** One round: pick the course (search / near me), then its tee and date. Shared with the organizer's Add round later, and
+ *  with Create a league (`labels`: its own wording). */
+export function AddRound({ onCancel, onAdd, minDate, labels = { kicker: "Add a round", title: "Where's this round?", button: "Add round" } }: { onCancel: () => void; onAdd: (round: NewRound) => void; minDate?: string; labels?: { kicker: string; title: string; button: string } }) {
   const [picked, setPicked] = useState<CourseResult | null>(null);
   const [course, setCourse] = useState<ScoringCourse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,8 +98,8 @@ export function AddRound({ onCancel, onAdd, minDate }: { onCancel: () => void; o
       .catch((e: Error) => { if (e.name !== "AbortError") setError("Couldn't reach the course. Check your connection."); });
     return () => controller.abort();
   }, [picked]);
-  const back = <header className={styles.header}><button type="button" className={styles.back} onClick={picked ? () => { setPicked(null); setCourse(null); setError(null); } : onCancel} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button><p className={styles.kicker}>Add a round</p></header>;
-  if (!picked) return <main className={styles.page}>{back}<div className={styles.search}><ExploreCourseSearch onPick={setPicked} kicker="Round course" title="Where's this round?" /></div></main>;
+  const back = <header className={styles.header}><button type="button" className={styles.back} onClick={picked ? () => { setPicked(null); setCourse(null); setError(null); } : onCancel} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button><p className={styles.kicker}>{labels.kicker}</p></header>;
+  if (!picked) return <main className={styles.page}>{back}<div className={styles.search}><ExploreCourseSearch onPick={setPicked} kicker="Round course" title={labels.title} /></div></main>;
   // Only the course's own holes (some listings run extra, unlabelled holes past 18).
   const holes = course ? (course.par.length >= 18 ? 18 : course.par.length >= 9 ? 9 : 0) : 0;
   const chosenTee = course?.tees[tee] ?? null;
@@ -116,7 +117,7 @@ export function AddRound({ onCancel, onAdd, minDate }: { onCancel: () => void; o
             </select> : <p className={styles.note}>No tee boxes listed for this course.</p>}
           </label>
           <label className={styles.field}><span>Date</span><DatePicker value={date} min={minDate} onChange={(event) => setDate(event.target.value || date)} /></label>
-          <button type="submit" className={styles.primary}>Add round <Check size={16} aria-hidden="true" /></button>
+          <button type="submit" className={styles.primary}>{labels.button} <Check size={16} aria-hidden="true" /></button>
         </form>}
     </section>
   </main>;

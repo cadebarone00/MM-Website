@@ -91,7 +91,7 @@ export function simulatorPages(): SimulatorPage[] {
       pages.push({ id: "live-v2" + path.replaceAll("/", "-"), path, label, group: "Live V2 Auth", fixtures: false, conditions: [] });
     }
   }
-  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
+  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/leagues", "Leagues"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
   // Trip Builder: the first-time Learn screen and the full tour.
@@ -212,6 +212,9 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
     { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
+  // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
+  const importTrip = pages.find(page => page.path === "/dev/import-trip");
+  if (importTrip) Object.assign(importTrip, { label: "Import past trip (sample)", group: "Golf Trip Active", conditions: [] });
   // Golf Trip Active → Home: the after-visit rating prompt ("How was yesterday?", phase 4 of the Venue places plan).
   // Home's Conditionals are grouped under headings: the whole trip first, then each Home section top to bottom.
   const tripHome = pages.find(page => page.id === "/dev/tournament");

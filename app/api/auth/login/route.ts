@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { initializeAfterSignIn } from "@/lib/profile/profileInitialization";
 
@@ -9,8 +10,15 @@ function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
+/**
+ * POST /api/auth/login — { usernameOrEmail, password, client?: "app" }.
+ * - website: the session goes into this browser's cookies.
+ * - app (client: "app", the iPhone / Android app): no cookies; the session comes back in the reply for the phone to
+ *   keep — the same contract as POST /api/auth/verify-code.
+ */
 export async function POST(request: Request) {
-  const { usernameOrEmail, password } = await request.json();
+  const { usernameOrEmail, password, client } = await request.json();
+  const app = client === "app";
 
   if (!usernameOrEmail || !password) {
     return NextResponse.json({ ok: false, error: "Enter your username/email and password." }, { status: 400 });
@@ -32,7 +40,9 @@ export async function POST(request: Request) {
     email = data ? data.email : "nonexistent-user-lookup@example.invalid";
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = app
+    ? createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    : await createSupabaseServerClient();
   const { data: signedIn, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -48,5 +58,7 @@ export async function POST(request: Request) {
 
   // Accounts V2: a verified sign-in makes sure the profile exists (idempotent; never blocks the sign-in).
   await initializeAfterSignIn(signedIn.user?.id);
-  return NextResponse.json({ ok: true });
+  if (!app || !signedIn.session) return NextResponse.json({ ok: true });
+  const { access_token, refresh_token, expires_at } = signedIn.session;
+  return NextResponse.json({ ok: true, session: { access_token, refresh_token, expires_at } }, { headers: { "Cache-Control": "no-store" } });
 }

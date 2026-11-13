@@ -34,7 +34,7 @@ export function DevProfilePreview() {
 }
 
 /** The same checks the real save route makes (the database's username checks aren't simulated). */
-function checked(body: Record<string, unknown>) {
+function checked(body: object) {
   const result = profileEditFromBody(body);
   if (!result.ok) throw new Error(result.error);
   return result.input;
@@ -62,7 +62,7 @@ export function DevSettingsPreview() {
 
 export function DevEditProfilePreview() {
   const mine = useSampleProfile();
-  return <EditProfileScreen key={`${mine.displayName}|${mine.username}|${mine.bio}|${mine.gender}|${mine.links.length}|${mine.visibility}`} backHref="/dev/profile"
+  return <EditProfileScreen key={`${mine.displayName}|${mine.username}|${mine.bio}|${mine.gender}`} backHref="/dev/profile"
     initial={{ displayName: mine.displayName, username: mine.username, bio: mine.bio, bioAvailable: true, gender: mine.gender, genderAvailable: true,
       links: mine.links, linksAvailable: true, photoUrl: mine.photoUrl, photoAvailable: true, visibility: mine.visibility }}
     savers={{

@@ -1,5 +1,7 @@
 // lib/supabase/client.ts
 import { createBrowserClient } from "@supabase/ssr";
+import { isAppBuild } from "@/lib/app/appEnv";
+import { appSupabase } from "@/lib/app/appAuth";
 
 /**
  * The first browser-side Supabase client this codebase has needed — every
@@ -13,5 +15,7 @@ import { createBrowserClient } from "@supabase/ssr";
  * policy at all, so this key cannot write anything.
  */
 export function createSupabaseBrowserClient() {
+  // The iPhone / Android app has no website cookies: Realtime runs on the app's own login (lib/app/appAuth.ts).
+  if (isAppBuild) return appSupabase();
   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 }

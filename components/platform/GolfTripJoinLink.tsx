@@ -44,8 +44,10 @@ export function GolfTripJoinLink({ code, preview, state, signupHref, loginHref }
   const goToTrips = <div className={styles.actions}><Link className={styles.secondary} href="/golf-trips">Go to Golf Trips</Link></div>;
   let body;
   if (shown === "invalid") {
-    body = <Card title="This invite link isn't working">
-      <p className={home.settingsNote}>It may have been replaced by a newer link. Ask the organizer for a new one.</p>{goToTrips}
+    // A 6-character trip code (supabase/join_codes.sql) or the 30-minute link.
+    const typedCode = code?.length === 6;
+    body = <Card title={typedCode ? "That code isn't working" : "This invite link isn't working"}>
+      <p className={home.settingsNote}>{typedCode ? "No trip has that code. Check it with the organizer, who can also make a new one." : "It may have been replaced by a newer link. Ask the organizer for a new one."}</p>{goToTrips}
     </Card>;
   } else if (shown === "expired") {
     body = <Card title="This invite link expired">

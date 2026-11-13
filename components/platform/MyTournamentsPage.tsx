@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { formatDateRange, previewBasePath, publicBasePath } from "@/lib/platform/publicSite";
 import type { EditionSummary, TournamentSummary } from "@/lib/platform/myTournaments";
-import { loadMyTournaments } from "@/lib/platform/myTournamentsServer";
-import { loadMyAccess } from "@/lib/platform/accessRequestsServer";
+import type { OrganizerHomeData } from "@/lib/platform/tourneyScreensData";
 import { CreatorAccessNotice } from "./CreatorAccessNotice";
 import { OrganizerStudioShell } from "./OrganizerStudioShell";
 import styles from "./MyTournaments.module.css";
@@ -50,12 +48,10 @@ function EditionRow({ tournament, edition }: { tournament: TournamentSummary; ed
 
 /**
  * My Tournaments: the organizer studio's home. Signed-in only; lists just the
- * tournaments this user owns or organizes (see list_managed_editions).
+ * tournaments this user owns or organizes (see list_managed_editions). The data comes from loadOrganizerHome (website
+ * page and the app's /api/app/tourneys?view=organizer); signed-out visitors are sent to log in before this.
  */
-export async function MyTournamentsPage() {
-  const [result, accessResult] = await Promise.all([loadMyTournaments(), loadMyAccess()]);
-  if (!result.signedIn) redirect("/login");
-  const access = accessResult.signedIn && accessResult.ok ? accessResult.access : null;
+export function MyTournamentsPage({ result, access }: Extract<OrganizerHomeData, { signedIn: true }>) {
   // Unknown access (lookup failed) falls back to the Create link, which is still gated on save.
   const canCreate = access?.canCreate ?? true;
 

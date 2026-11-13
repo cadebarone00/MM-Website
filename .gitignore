@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Isolated V1 retirement browser regression build
 /.next-v1-retirement/
+
+# The app build's screens (npm run build:app); Capacitor copies them into the Xcode project
+/capacitor-web/

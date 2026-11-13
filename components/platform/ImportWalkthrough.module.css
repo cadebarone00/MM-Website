@@ -1,0 +1,135 @@
+/* Import past trip → Enter it in the app (ImportWalkthrough.tsx): one short step per screen, phone first. */
+.page {
+  min-height: 100svh;
+  margin-bottom: calc(-5.75rem - env(safe-area-inset-bottom));
+  padding: var(--app-top-clearance) max(16px, calc((100% - 560px) / 2)) calc(120px + 5.75rem + env(safe-area-inset-bottom));
+  background: #f3f0eb;
+  color: var(--color-maroon-800);
+  font: 400 15px/1.45 var(--font-barlow), sans-serif;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+.back, .reset { display: inline-flex; align-items: center; gap: 2px; padding: 6px 4px; border: 0; background: transparent; color: var(--color-maroon-700); font: 600 15px/1.2 var(--font-barlow), sans-serif; cursor: pointer; }
+.reset { font-weight: 500; font-size: 14px; text-decoration: underline; }
+.count { font: 600 13px/1.2 var(--font-barlow), sans-serif; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); }
+.progress { height: 6px; margin: 6px 0 14px; border-radius: 3px; background: color-mix(in srgb, var(--color-maroon-800) 12%, transparent); overflow: hidden; }
+.progress span { display: block; height: 100%; border-radius: 3px; background: var(--color-maroon-700); transition: width 0.25s ease; }
+.title { margin: 0 0 14px; font: 400 clamp(26px, 7vw, 34px)/1.1 var(--font-spectral), Georgia, serif; letter-spacing: -0.03em; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.text, .hint { margin: 0; }
+.hint { color: color-mix(in srgb, var(--color-maroon-800) 65%, transparent); font-size: 13px; }
+
+.choice { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 15%, transparent); border-radius: 16px; background: #fff; color: inherit; text-align: left; cursor: pointer; }
+.choice[aria-pressed="true"] { border-color: var(--color-maroon-700); }
+.choiceIcon { display: grid; flex: none; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: #f4eee4; }
+.choiceLabel { display: block; font: 600 17px/1.3 var(--font-barlow), sans-serif; }
+.choiceAbout { display: block; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); font-size: 13px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; min-width: 0; }
+.field input, .field select, .player input, .side select, .scoreRow input, .picker {
+  box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 18%, transparent); border-radius: 12px;
+  background: #fff; color: inherit; font: 500 16px/1.2 var(--font-barlow), sans-serif;
+}
+.picker { display: flex; align-items: center; gap: 8px; text-align: left; font-weight: 600; cursor: pointer; }
+.picker svg { flex: none; color: var(--color-maroon-700); }
+.picker span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker[data-empty="true"] { color: color-mix(in srgb, var(--color-maroon-800) 50%, transparent); font-weight: 500; }
+.typeInstead { align-self: flex-start; padding: 2px 0; border: 0; background: transparent; color: var(--color-maroon-700); font: 500 13px/1.3 var(--font-barlow), sans-serif; text-decoration: underline; cursor: pointer; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Format gets the room; Par only needs a couple of digits. */
+.formatRow { grid-template-columns: 1fr 92px; }
+.formatRow input { text-align: center; }
+
+/* Dropdowns: the app's own look instead of the browser's — a maroon chevron, room for long names, and a lighter
+   "Pick one" until something is chosen (data-empty). */
+.field select, .side select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 38px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a2436' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px;
+  font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field select:hover, .side select:hover { border-color: color-mix(in srgb, var(--color-maroon-800) 35%, transparent); }
+.field select:focus-visible, .side select:focus-visible, .field input:focus-visible, .player input:focus-visible, .scoreRow input:focus-visible {
+  outline: none; border-color: var(--color-maroon-700); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-maroon-700) 18%, transparent);
+}
+.field select[data-empty="true"], .side select[data-empty="true"] { color: color-mix(in srgb, var(--color-maroon-800) 50%, transparent); font-weight: 500; }
+.field select option, .side select option { color: var(--color-maroon-800); font-weight: 500; }
+
+.card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: #fff; box-shadow: 0 4px 16px color-mix(in srgb, var(--color-maroon-800) 8%, transparent); }
+.cardHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cardHead h2 { margin: 0; font: 700 16px/1.3 var(--font-barlow), sans-serif; }
+.icon { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--color-maroon-700); cursor: pointer; }
+.add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 1.5px dashed color-mix(in srgb, var(--color-maroon-800) 30%, transparent); border-radius: 12px; background: transparent; color: var(--color-maroon-700); font: 600 15px/1.2 var(--font-barlow), sans-serif; cursor: pointer; }
+
+.player { display: grid; grid-template-columns: 1fr 76px 36px; gap: 8px; align-items: center; padding: 10px; border-radius: 14px; background: #fff; }
+.teams { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.teams button, .winner button { min-height: 40px; padding: 0 8px; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 18%, transparent); border-radius: 10px; background: #fff; color: inherit; font: 600 14px/1.2 var(--font-barlow), sans-serif; cursor: pointer; overflow-wrap: anywhere; }
+.teams button[aria-pressed="true"], .winner button[aria-pressed="true"] { border-color: var(--color-maroon-800); background: var(--color-maroon-800); color: #fff; }
+
+.match { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: #faf7f2; }
+.sides { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: end; }
+.vs { align-self: center; margin-top: 18px; font: 700 12px/1 var(--font-barlow), sans-serif; letter-spacing: 0.08em; color: color-mix(in srgb, var(--color-maroon-800) 45%, transparent); }
+.side { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sideLabel { font: 700 12px/1.2 var(--font-barlow), sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-maroon-800) 70%, transparent); }
+.side select { font-size: 15px; padding: 0 8px; }
+.winner { display: grid; grid-template-columns: 1fr 0.8fr 1fr; gap: 6px; }
+.remove { align-self: flex-end; border: 0; background: transparent; color: var(--color-maroon-700); font: 500 13px/1.2 var(--font-barlow), sans-serif; text-decoration: underline; cursor: pointer; }
+
+.scoreRow { display: grid; grid-template-columns: 1fr 80px auto; gap: 8px; align-items: center; }
+.scoreName { font-weight: 600; overflow-wrap: anywhere; }
+.total { text-align: center; }
+.holesToggle { min-height: 40px; padding: 0 10px; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 18%, transparent); border-radius: 10px; background: #fff; color: var(--color-maroon-700); font: 600 13px/1.2 var(--font-barlow), sans-serif; cursor: pointer; }
+.holesToggle[aria-expanded="true"] { background: var(--color-maroon-800); color: #fff; }
+.holes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.holes label { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 600 11px/1 var(--font-barlow), sans-serif; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); }
+.scoreRow .holes input { min-height: 36px; padding: 0; text-align: center; font-size: 15px; border-radius: 8px; }
+
+.problems { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 0; padding: 10px 12px 10px 28px; border-radius: 12px; background: #fbeaec; color: #7a0010; font-size: 14px; }
+.problems li span { margin-right: 8px; }
+.problems li button { border: 0; background: transparent; color: #7a0010; font: 700 14px/1.2 var(--font-barlow), sans-serif; text-decoration: underline; cursor: pointer; }
+.error { margin: 12px 0 0; color: #a1001a; font-weight: 600; }
+
+.summary { padding: 12px 14px; border-radius: 14px; background: #fff; }
+.tripName { margin: 0; font: 700 18px/1.25 var(--font-barlow), sans-serif; }
+.meta { margin: 2px 0 8px; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); font-size: 13px; }
+.facts { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; }
+.facts dt { color: color-mix(in srgb, var(--color-maroon-800) 70%, transparent); }
+.facts dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* Next / Add trip stays just above the app's bottom menu. */
+.footer { position: fixed; left: 0; right: 0; bottom: calc(5.75rem + env(safe-area-inset-bottom)); padding: 10px max(16px, calc((100% - 560px) / 2)); background: linear-gradient(transparent, #f3f0eb 30%); z-index: 5; }
+.primary { width: 100%; min-height: 50px; border: 0; border-radius: 14px; background: var(--color-maroon-800); color: #fff; font: 700 16px/1.2 var(--font-barlow), sans-serif; cursor: pointer; }
+.primary:disabled { opacity: 0.55; cursor: default; }
+.choice:focus-visible, .back:focus-visible, .reset:focus-visible, .add:focus-visible, .primary:focus-visible, .teams button:focus-visible, .winner button:focus-visible, .holesToggle:focus-visible, .picker:focus-visible, .icon:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: 2px; }
+
+/* Dates: the calendar pop-up's field underneath, the date written out ("May 15, 2025") on top, with a calendar icon. */
+.date { position: relative; display: block; }
+.date input { color: transparent !important; caret-color: transparent; cursor: pointer; }
+.date::after {
+  content: attr(data-label); position: absolute; inset: 0; display: flex; align-items: center; padding: 0 38px 0 12px;
+  font: 600 16px/1.2 var(--font-barlow), sans-serif; color: var(--color-maroon-800); pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a2436' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 12px center / 16px;
+}
+.date[data-empty="true"]::after { color: color-mix(in srgb, var(--color-maroon-800) 50%, transparent); font-weight: 500; }
+@media (max-width: 380px) { .date::after { font-size: 15px; } }
+
+/* Hole pars grid under a round (optional, for stats). */
+.parsBox { display: flex; flex-direction: column; gap: 8px; }
+.parsBox .holes input { box-sizing: border-box; width: 100%; min-height: 36px; padding: 0; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 18%, transparent); border-radius: 8px; background: #fff; color: inherit; text-align: center; font: 600 15px/1 var(--font-barlow), sans-serif; }
+
+/* A player's hole-by-hole card: one row per hole — hole/par, score, putts, then fairway and green choices. */
+.card18 { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; background: #faf7f2; }
+.card18Head, .holeRow { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 6px; align-items: center; }
+.card18Head span { font: 700 11px/1 var(--font-barlow), sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); text-align: center; }
+.card18Head span:first-child { text-align: left; }
+.holeRow { padding: 6px 0; border-top: 1px solid color-mix(in srgb, var(--color-maroon-800) 8%, transparent); }
+.holeLabel { display: flex; flex-direction: column; font: 700 16px/1.1 var(--font-barlow), sans-serif; }
+.holeLabel small { font: 500 11px/1.2 var(--font-barlow), sans-serif; color: color-mix(in srgb, var(--color-maroon-800) 60%, transparent); }
+.scoreRow .holeRow input { min-height: 40px; padding: 0; text-align: center; font-size: 16px; border-radius: 10px; }
+.holeShots { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.shot { display: inline-flex; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 15%, transparent); border-radius: 10px; overflow: hidden; background: #fff; }
+.shot button { min-height: 34px; padding: 0 9px; border: 0; border-left: 1px solid color-mix(in srgb, var(--color-maroon-800) 12%, transparent); background: transparent; color: inherit; font: 600 12px/1 var(--font-barlow), sans-serif; cursor: pointer; }
+.shot button:first-child { border-left: 0; }
+.shot button[aria-pressed="true"] { background: var(--color-maroon-800); color: #fff; }
+.shot button:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: -3px; }

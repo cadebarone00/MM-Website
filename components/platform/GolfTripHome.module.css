@@ -463,3 +463,10 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .slidingSelector.underlineSelector{padding:0;border:0;border-radius:0;background:transparent;box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent)}
 .slidingSelector.underlineSelector::before{top:auto;bottom:0;left:0;width:50%;height:2px;border:0;border-radius:1px;background:var(--lm-ink-dcc495);box-shadow:none}
 .slidingSelector.underlineSelector .tab{min-height:36px;border-radius:0;font-size:13px}
+/* Team / Indi only (owner 2026-11-13, later): keep the bubble around both, and the picked one gets just a short glowing gold
+   line under its word (no box). The line slides between them. */
+.slidingSelector.underlineSelector.bubbleUnderline{padding:4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:none}
+.slidingSelector.underlineSelector.bubbleUnderline::before{bottom:6px;left:calc(4px + (100% - 8px)/4 - 18px);width:36px;border-radius:999px;transform:none;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45);transition:left 220ms ease}
+.slidingSelector.underlineSelector.bubbleUnderline[data-second=true]::before{left:calc(4px + 3*(100% - 8px)/4 - 18px)}
+.slidingSelector.underlineSelector.bubbleUnderline .tab{min-height:30px}
+@media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline::before{transition:none}}

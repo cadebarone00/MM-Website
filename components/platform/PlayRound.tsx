@@ -9,6 +9,7 @@ import { ExploreCourseSearch, place, type CourseResult } from "./ExploreCourseSe
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import gamesStyles from "./GolfTripGames.module.css";
+import { InviteCodeCard } from "./InviteCodeCard";
 import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, type RoundPlayer, type ScoringCourse } from "@/lib/platform/personalRound";
 import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import type { PlayerRound, ScoredCard } from "@/lib/platform/playerRounds";
@@ -37,7 +38,7 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 const handicapValue = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n >= -10 && n <= 54 ? n : null; };
 const holesLabel = (holes: HolesChoice) => holes === "18" ? "18 holes" : holes === "front" ? "Front 9" : "Back 9";
 /** "2–5 players", "2 or 4 players", "5 players". */
-const playersLabel = (sizes: number[]) => sizes.length === 1 ? `${sizes[0]} players` : sizes.every((n, i) => i === 0 || n === sizes[i - 1] + 1) ? `${sizes[0]}–${sizes.at(-1)} players` : `${sizes.slice(0, -1).join(", ")} or ${sizes.at(-1)} players`;
+export const playersLabel = (sizes: number[]) => sizes.length === 1 ? `${sizes[0]} players` : sizes.every((n, i) => i === 0 || n === sizes[i - 1] + 1) ? `${sizes[0]}–${sizes.at(-1)} players` : `${sizes.slice(0, -1).join(", ")} or ${sizes.at(-1)} players`;
 /** The game picker's groups, as in the trip's New game sheet. */
 const GAME_GROUPS: { title: string; ids: GameId[] }[] = [
   { title: "Points games", ids: ["skins", "wolf", "daytona", "vegas", "sixes", "nines", "bbb", "stableford"] },
@@ -143,6 +144,8 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
   const [startError, setStartError] = useState<string | null>(null);
   const [rating, setRating] = useState("");
   const [slope, setSlope] = useState("");
+  /** Friends can join with the round's code (supabase/join_codes.sql), so it's a round with friends even with no invites. */
+  const [withCode, setWithCode] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/rounds/course/${encodeURIComponent(picked.ref)}`, { signal: controller.signal })
@@ -169,11 +172,12 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
     : !rated ? course?.custom ? "Add the course rating and slope above for it to count" : "This tee has no rating, so it won't count" : holes !== "18" ? "9-hole rounds are saved but don't count yet" : "Counts once you submit";
 
   async function start() {
-    if (!course || !fits) return;
+    // With a code, more players can join after Start, so a game waiting for more players doesn't hold it up.
+    if (!course || (!fits && !withCode)) return;
     const game: GameConfig | null = def ? { id: def.id, net: net && !def.teamFormat, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: names.map((_, i) => teamOf(i)) } : {}) } : null;
     const setup: PersonalRoundSetup = { course, tee: chosenTee, holes, stats, countForHandicap: countForHandicap && !teamFormat, datePlayed, players, myHandicap: handicapValue(myHandicap), game };
-    if (!players.length) { onStart({ setup, startedAt: new Date().toISOString() }); return; }
-    // With invites, the round is created in the database so everyone can join it.
+    if (!players.length && !withCode) { onStart({ setup, startedAt: new Date().toISOString() }); return; }
+    // With invites or a code, the round is created in the database so everyone can join it.
     setStarting(true); setStartError(null);
     const result = await post("/api/rounds/shared", { setup, invites: players.map((p) => p.profileId) });
     setStarting(false);
@@ -220,6 +224,8 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
           </ul>
           {players.length < MAX_INVITES && <InvitePlayer taken={players.flatMap((p) => p.profileId ? [p.profileId] : [])} onInvite={(player) => { setPlayers((all) => [...all, player]); setTeams([]); }} />}
           {players.length > 0 && <p className={styles.blurb}>Invites go out when you start. Players can join any time during the round.</p>}
+          <label className={styles.toggle}><span>Let friends join with a code<small>You&apos;ll get a code to share once the round starts</small></span>
+            <input type="checkbox" role="switch" checked={withCode} onChange={(event) => setWithCode(event.target.checked)} /></label>
         </fieldset>
 
         <fieldset className={styles.field}><legend>Game</legend>
@@ -239,14 +245,14 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
           <input type="checkbox" role="switch" checked={countForHandicap && !teamFormat} disabled={teamFormat} onChange={(event) => setCount(event.target.checked)} /></label>
         <label className={styles.field}><span>Date played</span><DatePicker value={datePlayed} max={today()} onChange={(event) => setDate(event.target.value || today())} /></label>
         {startError && <p className={styles.error} role="alert">{startError}</p>}
-        <button type="submit" className={styles.primary} disabled={!fits || starting}>{starting ? "Starting…" : players.length ? "Start & send invites" : "Start round"} <ArrowRight size={16} aria-hidden="true" /></button>
+        <button type="submit" className={styles.primary} disabled={(!fits && !withCode) || starting}>{starting ? "Starting…" : players.length ? "Start & send invites" : "Start round"} <ArrowRight size={16} aria-hidden="true" /></button>
       </form>}
     </section>
   </main>;
 }
 
-/** "Choose a game" button + the trip-style game sheet. */
-function GamePicker({ gameId, onPick, open, setOpen }: { gameId: GameId | ""; onPick: (id: GameId | "") => void; open: boolean; setOpen: (open: boolean) => void }) {
+/** "Choose a game" button + the trip-style game sheet (also a league group's game, LeagueHome). */
+export function GamePicker({ gameId, onPick, open, setOpen }: { gameId: GameId | ""; onPick: (id: GameId | "") => void; open: boolean; setOpen: (open: boolean) => void }) {
   const def = gameId ? gameDef(gameId) : null;
   return <>
     <div className={styles.gamePick}>
@@ -381,6 +387,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const [snap, setSnap] = useState<SharedRound | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const [attempt, setAttempt] = useState(0);
   const [card, setCard] = useState(saved.card);
@@ -394,9 +401,9 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
 
   useEffect(() => {
     let stop = false;
-    const load = () => fetch(sharedUrl(id), { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; round?: SharedRound; me?: string; code?: string }>).then((body) => {
+    const load = () => fetch(sharedUrl(id), { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; round?: SharedRound; me?: string; code?: string; inviteCode?: string | null }>).then((body) => {
       if (stop) return;
-      if (body.ok && body.round && body.me) { setSnap(body.round); setMe(body.me); setProblem(null); return; }
+      if (body.ok && body.round && body.me) { setSnap(body.round); setMe(body.me); setInviteCode(body.inviteCode ?? null); setProblem(null); return; }
       setProblem(body.code === "not_in_round" ? "You're no longer in this round. Your own card is still on this phone." : "Can't reach the round right now. Your scores are kept on this phone.");
     }).catch(() => { if (!stop) setProblem("No connection. Your scores are kept on this phone; changes send again when you're back."); });
     load();
@@ -490,6 +497,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
         }} />
       </div>}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {active.length} in the round, so it isn&apos;t scored right now.</p>}
+      {inviteCode && !ended && save.status !== "saved" && active.length < 5 && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
       <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
         leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? Scores already sent stay in the round.")) onLeave(); }}>Leave round on this phone</button>} />
     </section>

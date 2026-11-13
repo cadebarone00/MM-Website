@@ -40,8 +40,12 @@ export const API_RULES: readonly AccessRule[] = [
     category: "public", why: "V1 public read-only data (no account)" },
   { pattern: /^\/api\/wagers\/(hole-in-one|low-individual|player-birdies|player-doubles|team-winner|total-birdies|published-types|mm-coins\/settled-markets|player-tournament-birdies\/[^/]+)$/,
     category: "public", methods: READS, why: "V1 public odds / market reads" },
-  { pattern: /^\/api\/(account\/search|code-tournaments|content|courses\/[^/]+\/gps|fantasy|golf-trips|platform|portal|profile|rounds|tap-in|wagers)(\/|$)/,
+  { pattern: /^\/api\/(account\/search|code-tournaments|content|courses\/[^/]+\/gps|fantasy|golf-trips|invites|leagues|platform|portal|profile|rounds|tap-in|wagers)(\/|$)/,
     category: "active", why: "golf / social / organizer / admin features" },
+  // The iPhone / Android app's data for Play, Golf Trips and Profile (project_specs.md "The Maroon as a real iPhone app"):
+  // the same Active-only rule as those pages.
+  { pattern: /^\/api\/app\/(play|golf-trips|profile|tourneys|tournament)(\/|$)/, category: "active", why: "the app's Play, Golf Trips, Profile and Tourneys screens" },
+  { pattern: /^\/api\/app\/version$/, category: "public", why: "the oldest app build the server still supports, checked before sign-in" },
 ];
 
 // Page rules, first match wins (paths without query strings).
@@ -63,7 +67,7 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/(portal|wagers|fantasy|my-team|vault|history|leaderboard|players|teams|watch-live|broadcast)(\/.*)?$/, category: "public",
     why: "retired V1 pages: they only redirect to pages that are themselves gated" },
   { pattern: /^\/$/, category: "active", why: "Play (home)" },
-  { pattern: /^\/(play|golf-trips|tournaments|rounds|profile|pickems|tap-in|dashboard|admin)(\/.*)?$/, category: "active", why: "golf / social / organizer / admin" },
+  { pattern: /^\/(play|golf-trips|tournaments|rounds|profile|pickems|leagues|tap-in|dashboard|admin)(\/.*)?$/, category: "active", why: "golf / social / organizer / admin" },
 ];
 
 export type Classified = { category: AccessCategory; rule: AccessRule | null };

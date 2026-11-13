@@ -10,7 +10,7 @@ import { startFakeSupabase } from "./fake-supabase.mjs";
 const APP_PORT = Number(process.env.APP_PORT ?? 3112);
 const FAKE_PORT = Number(process.env.FAKE_PORT ?? 54412);
 const app = `http://localhost:${APP_PORT}`;
-const MAIN_TABS = ["/", "/golf-trips", "/profile", "/tournaments/join", "/pickems"];
+const MAIN_TABS = ["/", "/golf-trips", "/profile", "/tournaments/join", "/leagues"];
 
 const fake = await startFakeSupabase({ port: FAKE_PORT });
 const fan = await fake.addUser({ name: "fan" });
@@ -47,7 +47,7 @@ try {
 
   const p = await phone(player);
   // The five main pages share the app chrome: icon-only top bar, the 5-tab bottom menu, the right tab lit.
-  for (const [url, tab] of [["/", "explore"], ["/tournaments/join", "tourneys"], ["/tournaments/mine", "tourneys"], ["/pickems", "pick'ems"], ["/profile", "profile"]]) {
+  for (const [url, tab] of [["/", "explore"], ["/tournaments/join", "tourneys"], ["/tournaments/mine", "tourneys"], ["/leagues", "leagues"], ["/profile", "profile"]]) {
     await p.goto(app + url);
     await p.getByRole("heading", { level: 1 }).first().waitFor();
     assert.equal(here(p), url, `${url} is not redirected`);

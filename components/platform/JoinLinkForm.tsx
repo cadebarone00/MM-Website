@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Link2 } from "lucide-react";
 import { tournamentPathFromLink } from "@/lib/platform/pastTournaments";
 import styles from "./JoinTournament.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 /** Paste a tournament link → open that tournament's page. Does not enroll anyone. */
 export function JoinLinkForm() {
@@ -14,7 +15,7 @@ export function JoinLinkForm() {
 
   function open(event: FormEvent) {
     event.preventDefault();
-    const path = tournamentPathFromLink(link, window.location.origin);
+    const path = tournamentPathFromLink(link, shareOrigin());
     if (!path) {
       setError("That doesn't look like a tournament link.");
       return;

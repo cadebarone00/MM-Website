@@ -1,0 +1,12 @@
+/* The Join card (JoinCodeCard): the same white card on Play, Golf Trips, Tourneys and Leagues, whatever the page behind it. */
+.card{box-sizing:border-box;width:100%;padding:18px 18px 20px;border-radius:20px;background:#fff;box-shadow:0 6px 24px color-mix(in srgb,var(--color-maroon-800) 10%,transparent),0 1px 3px color-mix(in srgb,var(--color-maroon-800) 6%,transparent);color:var(--color-maroon-800);text-align:left}
+.title{display:block;font:700 18px/1.2 var(--font-barlow),sans-serif;letter-spacing:-.01em}
+.hint{margin:4px 0 12px;color:color-mix(in srgb,var(--color-maroon-800) 60%,transparent);font:400 14px/1.5 var(--font-barlow),sans-serif}
+.row{display:flex;gap:8px}
+.input{flex:1;min-width:0;min-height:48px;padding:0 14px;border:1px solid color-mix(in srgb,var(--color-maroon-800) 14.9%,transparent);border-radius:12px;background:#f8f6f2;color:var(--color-maroon-800);font:600 16px var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.input::placeholder{letter-spacing:0;text-transform:none;font-weight:400}
+.input:focus-visible{outline:3px solid var(--lm-ink-c9a86e);outline-offset:1px}
+.button{flex:none;min-height:48px;padding:0 20px;border:0;border-radius:12px;background:var(--color-maroon-700);color:#fbf8f1;font:700 16px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.button:disabled{opacity:.5;cursor:default}
+.button:focus-visible{outline:3px solid var(--lm-ink-c9a86e);outline-offset:2px}
+.error{margin:8px 0 0;color:#a3122a;font:400 14px/1.4 var(--font-barlow),sans-serif}

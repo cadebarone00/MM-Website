@@ -6,12 +6,14 @@ import { Check, Copy, Share2 } from "lucide-react";
 import { tapInPath } from "@/lib/platform/tapIn";
 import styles from "./GolfTripHome.module.css";
 import tapStyles from "./TripTapIn.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 export function TripTapInInvite({ code, name }: { code?: string | null; name: string }) {
   const path = tapInPath(code);
   const [status, setStatus] = useState("");
   const [copied, setCopied] = useState(false);
-  const link = () => path ? new URL(path, window.location.origin).href : null;
+  // Shared links use the live website, never the app's own address (lib/app/shareOrigin.ts).
+  const link = () => path ? new URL(path, shareOrigin()).href : null;
   async function copy() {
     const url = link();
     if (!url) return;

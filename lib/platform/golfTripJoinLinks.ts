@@ -6,6 +6,15 @@
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const isJoinCode = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{24,64}$/.test(value);
+/** The trip's 6-character invite code (supabase/join_codes.sql), which doesn't expire, as stored. */
+export const isTripInviteCode = (value: unknown): value is string => typeof value === "string" && /^[A-HJKMNP-Z2-9]{6}$/.test(value);
+/** What the trip's join page takes: the 30-minute link's code, or the 6-character invite code (typed in any case, with or without a dash). */
+export function tripJoinValue(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (/^[A-Za-z0-9_-]{24,64}$/.test(value)) return value;
+  const code = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  return isTripInviteCode(code) ? code : null;
+}
 
 /** 24 random bytes as base64url: 32 characters. Made on the server; the database only checks the format. */
 export function newJoinCode(): string {

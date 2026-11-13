@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { SavedTripSettingsWorkspace } from "@/components/platform/SavedTripSettingsWorkspace";
+import { ImportedTripSettings } from "@/components/platform/ImportedTripSettings";
 import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
 import { setupForViewer } from "@/lib/platform/savedTripSetup";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
@@ -17,6 +18,8 @@ export default async function SavedGolfTripSettingsPage({ params }: { params: Pr
   const view = await getGolfTrip(tripId);
   if (view.status === "signed-out") redirect("/login");
   if (view.status === "not-found") notFound();
+  // Imported past trip: Members (invite links) and Delete Trip only.
+  if (view.trip.trip.imported) return <ImportedTripSettings trip={view.trip} viewer={view.viewer} />;
 
   return <SavedTripSettingsWorkspace trip={view.trip} viewer={view.viewer} snapshot={setupForViewer(await loadSavedTripSetup(view.trip), view.viewer.isOrganizer)} />;
 }

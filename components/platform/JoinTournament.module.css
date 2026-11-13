@@ -207,3 +207,6 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 :global(html[data-mode="light"]) .tourneys .actionBox svg,
 :global(html[data-mode="light"]) .tourneys .actionBox { color: #fbf8f1; }
 :global(html[data-mode="light"]) .tourneys .actionBox svg { color: #e8c98a; }
+
+/* Tourneys: the Join card (JoinCodeCard) under Create / Join. */
+.joinCard{margin:12px 0 0}

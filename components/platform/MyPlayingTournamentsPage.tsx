@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { loadMyPlayingTournaments } from "@/lib/platform/pastTournamentsServer";
+import type { MyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import { TournamentRows } from "./JoinTournamentPage";
 import { PlatformHeader } from "./PlatformHeader";
 import styles from "./JoinTournament.module.css";
@@ -9,9 +9,9 @@ import styles from "./JoinTournament.module.css";
  * My Tournaments (/tournaments/mine), opened from the Tourneys page: the
  * current and upcoming tournaments you're playing in. Each card's Enter
  * Tournament button (or the card itself) opens its Tournament Home. (The organizer studio's list is the separate /tournaments.)
+ * The data comes from loadMyPlaying (website page and the app's /api/app/tourneys?view=mine).
  */
-export async function MyPlayingTournamentsPage() {
-  const mine = await loadMyPlayingTournaments();
+export function MyPlayingTournamentsPage({ mine }: { mine: MyPastTournaments }) {
 
   return <>
     <PlatformHeader title="My Tournaments" />

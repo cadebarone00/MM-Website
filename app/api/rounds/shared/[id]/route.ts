@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sharedRoundInviteCode } from "@/lib/platform/joinCodesServer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import * as rounds from "@/lib/platform/sharedRoundsServer";
 import type { PersonalRoundSetup } from "@/lib/platform/personalRound";
@@ -14,7 +15,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const result = await rounds.getSharedRound(user.id, (await params).id);
   if (!result.ok) return NextResponse.json({ ok: false, code: result.code }, { status: status(result.code) });
   if (!result.value) return NextResponse.json({ ok: false, code: "not_in_round" }, { status: 404 });
-  return NextResponse.json({ ok: true, round: result.value, me: user.id }, { headers: { "Cache-Control": "no-store" } });
+  // The round's invite code, to share (none until supabase/join_codes.sql is run).
+  const code = await sharedRoundInviteCode(user.id, (await params).id);
+  return NextResponse.json({ ok: true, round: result.value, me: user.id, inviteCode: code.ok ? code.value : null }, { headers: { "Cache-Control": "no-store" } });
 }
 
 type Action =

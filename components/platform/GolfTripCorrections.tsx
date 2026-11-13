@@ -52,7 +52,7 @@ export function GolfTripCorrections({ tripId, profileId }: { tripId: string; pro
 
   if (list === null) return <Card title="Corrections"><p className={styles.settingsNote}>Loading…</p></Card>;
   if (list === "unavailable") return <Card title="Corrections"><p className={styles.settingsNote}>Corrections aren&apos;t available yet.</p></Card>;
-  const roundUrl = (n: number) => `${golfTripUrl(tripId)}?round=${n}`;
+  const roundUrl = (n: number) => golfTripUrl(tripId, undefined, { round: n });
   const myCards = list.rounds.filter((r) => r.played && r.mySubmitted);
   const pending = list.requests.filter((r) => r.status === "pending");
   const decided = list.requests.filter((r) => r.status !== "pending");

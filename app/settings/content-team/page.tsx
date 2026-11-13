@@ -1,30 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { ContentTeam } from "@/components/settings/ContentTeam";
-import { canPublish, postCounts } from "@/lib/content/ribbon";
-import { contentViewer, loadItems, loadTeam } from "@/lib/content/ribbonServer";
-import { isRibbonSampleEnabled, sampleContentTeam, sampleRibbonItems } from "@/lib/content/ribbonSample";
-import styles from "@/components/settings/Settings.module.css";
+import { ContentTeamView } from "@/components/settings/SettingsSubpages";
+import { loadContentTeam } from "@/lib/profile/profileScreensData";
 
 export const metadata: Metadata = { title: "Content team | The Maroon", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 /** Settings → Content team (Admins only): Posters, their invites and post counts. Anyone else gets Not Found. */
+
 export default async function ContentTeamPage() {
-  const sample = isRibbonSampleEnabled();
-  const viewer = sample ? null : await contentViewer();
-  if (viewer && !canPublish(viewer)) notFound();
-  const items = viewer ? await loadItems(viewer) : sampleRibbonItems();
-  const members = viewer ? await loadTeam(items) : sampleContentTeam().map((member) => ({ ...member, counts: postCounts(items, member.profileId) }));
-  return <main className={styles.page}>
-    <div className={styles.inner}>
-      <header className={styles.header}>
-        <Link href="/settings" className={styles.back} aria-label="Back to Settings"><ArrowLeft size={18} aria-hidden="true" /></Link>
-        <span className={styles.backLabel}>Settings</span><h1 className="sr-only">Content team</h1>
-      </header>
-      <ContentTeam initial={members} sample={sample} />
-    </div>
-  </main>;
+  const data = await loadContentTeam();
+  if (data.status === "not-allowed") notFound();
+  return <ContentTeamView members={data.members} sample={data.sample} />;
 }

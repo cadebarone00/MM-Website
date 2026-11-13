@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { golfTripUrl } from "@/lib/platform/golfTripCreate";
 import { notFound, redirect } from "next/navigation";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 import { DeleteTrip } from "@/components/platform/GolfTripSettings";
@@ -8,5 +9,5 @@ export default async function DeleteSavedTrip({ params }: { params: Promise<{ tr
   const view = await getGolfTrip(tripId);
   if (view.status === "signed-out") redirect("/login");
   if (view.status !== "ok" || !view.viewer.isOrganizer) notFound();
-  return <main className={styles.page}><Link href={`/golf-trips/${tripId}/settings`}>Back to settings</Link><h1>Delete {view.trip.trip.name}</h1><DeleteTrip tripId={tripId} /></main>;
+  return <main className={styles.page}><Link href={golfTripUrl(tripId, "settings")}>Back to settings</Link><h1>Delete {view.trip.trip.name}</h1><DeleteTrip tripId={tripId} /></main>;
 }

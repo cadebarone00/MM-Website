@@ -1,9 +1,6 @@
-import styles from "@/components/platform/JoinTournament.module.css";
-import pageStyles from "./page.module.css";
+import { redirect } from "next/navigation";
 
-/** Pick'ems: maroon placeholder until the real page is built. */
+/** Pick'ems was replaced by Leagues (project_specs.md "Feature: Leagues"). */
 export default function PickemsPage() {
-  return (
-    <main className={`${styles.page} ${pageStyles.page}`} aria-label="Pick'ems" />
-  );
+  redirect("/leagues");
 }

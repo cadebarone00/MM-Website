@@ -5,6 +5,7 @@ import { useState } from "react";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import { tournamentPlayerInvitePath, type PlayerInviteStatus } from "@/lib/platform/tournamentPlayerInvitations";
 import { profileHref } from "@/lib/profile/profileEdit";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 const LABEL: Record<PlayerInviteStatus, string> = { joined: "Joined", invited: "Invited", declined: "Declined", none: "Not invited" };
 
@@ -28,7 +29,7 @@ export function PlayerInvite({ apiBase, playerId, name, status, username, onInvi
       const response = await fetch(`${apiBase}/players/${playerId}/invite`, { method: "POST" });
       const reply = await response.json().catch(() => null) as { ok?: boolean; inviteToken?: string; error?: string } | null;
       if (response.ok && reply?.ok && reply.inviteToken) {
-        setLink(new URL(tournamentPlayerInvitePath(reply.inviteToken), window.location.origin).href);
+        setLink(new URL(tournamentPlayerInvitePath(reply.inviteToken), shareOrigin()).href);
         onInvited();
       } else setMessage(reply?.error ?? "We couldn't make that invite. Try again.");
     } catch {

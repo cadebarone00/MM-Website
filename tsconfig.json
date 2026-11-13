@@ -42,6 +42,8 @@
     ".next-v1-retirement/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "capacitor-web",
+    "out/backups"
   ]
 }

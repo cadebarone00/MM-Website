@@ -4,6 +4,7 @@ import { formatWhen, type PostCounts } from "@/lib/content/ribbon";
 import type { ContentTeamMember } from "@/lib/content/ribbonSample";
 import settings from "./Settings.module.css";
 import styles from "./ContentTeam.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 export type ContentTeamRow = ContentTeamMember & { counts: PostCounts };
 
@@ -54,7 +55,7 @@ export function ContentTeam({ initial, sample = false }: { initial: ContentTeamR
       return;
     }
     // Sample only: a made-up code. The server makes a one-time code and keeps only its hash.
-    setLink(`${window.location.origin}/join-team/${Math.random().toString(36).slice(2, 10)}`);
+    setLink(`${shareOrigin()}/join-team/${Math.random().toString(36).slice(2, 10)}`);
   }
   async function remove(id: string) {
     if (!sample && !await send(`/api/content/team/${id}`, { method: "DELETE" })) return;

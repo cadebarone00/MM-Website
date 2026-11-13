@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flag, Plane, UserRound } from "lucide-react";
+import { Flag, Handshake, Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
-import { PickemsIcon } from "./ImageIcons";
 import { FriendRequestBadge } from "@/components/profile/FriendRequestBadge";
 import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
@@ -16,7 +15,7 @@ const TABS = [
   { href: "/golf-trips", label: "Golf Trips", icon: Plane },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/tournaments/join", label: "Tourneys", icon: LeaderboardIcon },
-  { href: "/pickems", label: "Pick'ems", icon: PickemsIcon, size: 32 },
+  { href: "/leagues", label: "Leagues", icon: Handshake },
 ] as const;
 
 export function SiteBottomNav() {
@@ -27,7 +26,8 @@ export function SiteBottomNav() {
       {TABS.map((tab) => {
         const active = siteBottomNavTabActive(pathname, tab.href);
         const Icon = tab.icon;
-        const size = "size" in tab ? tab.size : ICON_SIZE;
+        // A tab can ask for a bigger icon (none does right now).
+        const size = (tab as { size?: number }).size ?? ICON_SIZE;
         return (
           <Link
             key={tab.href}
