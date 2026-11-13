@@ -2,8 +2,8 @@
 .mom{margin:0 5% 6px;color:var(--lm-ink-fbf8f1)}
 /* One line of cream words, never wrapping, with a small gold button at the end. */
 .note{display:flex;align-items:center;gap:10px;min-height:34px}
-.line{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 15px/1.2 var(--font-barlow),sans-serif}
-.action{flex:none;padding:6px 12px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;text-decoration:none;white-space:nowrap}
+.line{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 15px/1.2 var(--font-spectral),Georgia,serif}
+.action{flex:none;padding:6px 12px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-spectral),Georgia,serif;text-decoration:none;white-space:nowrap}
 .action:focus-visible{outline:2px solid var(--lm-ink-fbf8f1);outline-offset:2px}
 /* Several notes: each shows for 10 s — fades in over 500 ms, holds, then fades out over the last 500 ms. */
 .rotating{animation:momTurn 10s linear both}
@@ -28,4 +28,4 @@
 /* Countdown labels 30% larger (10px → 13px). */
 .label{font-size:13px}
 /* Next-round reminder: the sub heading under the line, smaller and gold. */
-.sub{color:var(--lm-ink-dcc495);font:600 13px/1.25 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.sub{color:var(--lm-ink-dcc495);font:600 13px/1.25 var(--font-spectral),Georgia,serif;letter-spacing:.04em}

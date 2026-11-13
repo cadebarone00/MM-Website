@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { GolfTripHome } from "./GolfTripHome";
 import { CodeTournamentHome } from "./CodeTournamentHome";
 import { SavedTripSetupProvider } from "./SavedTripSetupProvider";
+import { tapInStats } from "@/lib/platform/tapInStats";
 import { savedTripPresentation } from "@/lib/platform/savedTripPresentation";
 import { roundScoringFrom } from "@/lib/platform/teamPoints";
 import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
 import type { SpectatorTrip, WatchView } from "@/lib/platform/watchView";
 import homeStyles from "./GolfTripHome.module.css";
 import styles from "./CodeTournament.module.css";
+import tapStyles from "./TripTapIn.module.css";
 
 /** How often a watched trip checks for new scores (a watched tournament refreshes itself). */
 const POLL_MS = 10_000;
@@ -36,12 +38,12 @@ export function WatchPage({ code }: { code: string }) {
   }, [load, view?.kind]);
 
   if (view?.kind === "tournament") return <CodeTournamentHome id="" meId={null} watchCode={code} />;
-  if (view?.kind === "trip") return <SpectatorTrip trip={view.trip} />;
+  if (view?.kind === "trip") return <SpectatorTrip trip={view.trip} problem={problem} />;
   return <main className={homeStyles.page}><p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading…"}</p></main>;
 }
 
 /** A trip's Golf tab for spectators: the same leaderboard and matches members see, built the same way. */
-function SpectatorTrip({ trip }: { trip: SpectatorTrip }) {
+function SpectatorTrip({ trip, problem }: { trip: SpectatorTrip; problem: string | null }) {
   const { savedTrip, scoring, setup, draft } = trip;
   const values = setup.values;
   const types = values.localCompetitionType as { individual: string | null; team: string | null } | undefined;
@@ -49,7 +51,17 @@ function SpectatorTrip({ trip }: { trip: SpectatorTrip }) {
     roundScoring: roundScoringFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), values.compFormats as Record<string, RoundCompSettings> | undefined,
       values.compRounds as Record<string, boolean> | undefined, Number(values.playerTotal) || savedTrip.members.length) };
   return <SavedTripSetupProvider tripId={savedTrip.trip.id} snapshot={setup} editable={false}>
-    <GolfTripHome spectator preview={draft} settingsHref="" previewMatch={previewMatch} competitionKey={savedTrip.trip.id}
+    <div className={tapStyles.spectator}>
+      <header className={tapStyles.masthead}>
+        <p className={tapStyles.brand}>The Maroon</p>
+        <span className={tapStyles.pill}>The Maroon Live</span>
+        <h1 className={tapStyles.tripName}>{savedTrip.trip.name}</h1>
+        <p className={tapStyles.summary}>{savedTrip.members.length} players{scoring ? ` / Round ${scoring.roundNumber}` : ""}</p>
+        <p className={tapStyles.following}>Follow the scores. Know the story.</p>
+      </header>
+      {problem && <p className={tapStyles.notice} role="status">{problem}</p>}
+    <GolfTripHome tripStats={tapInStats(trip)} spectator preview={draft} settingsHref="" previewMatch={previewMatch} competitionKey={savedTrip.trip.id}
       savedCompetitionType={types} savedTeamColors={values.teamColors as (string | null)[] | undefined} />
+    </div>
   </SavedTripSetupProvider>;
 }

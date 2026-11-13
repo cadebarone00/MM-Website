@@ -14,6 +14,7 @@ import { PageScrollBackground } from "./PageScrollBackground";
 /** V2 owns app navigation. Marketing and Tap In own their web surfaces. */
 export function SiteChrome({ children, catalog }: { children: ReactNode; catalog: SeasonCatalogData }) {
   const pathname = usePathname();
+  if (pathname.startsWith("/tap-in/")) return children;
   if (["/website", "/dev-website", "/dashboard", "/tap-in", "/broadcast"].includes(pathname)) return children;
   const content = <div className="app-camera-buffer"><AreaNavigation><RoundExitProvider>
     <PageScrollBackground /><AppChrome>{children}</AppChrome>

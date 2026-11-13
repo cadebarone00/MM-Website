@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { GolfMatchPreview } from "./golfTripPreviewFixture";
 import { scoreGame } from "./roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn } from "./tripGames";
+import { tripGameRound, tripGameSettled, currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn } from "./tripGames";
 
 const PAR = [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const golfer = (name: string, teeTime = "", hcp = 0) => ({ name, hcp, thru: "", score: "", teeTime, course: "" });
@@ -86,4 +86,21 @@ test("organizer games: each round's games become my group's games, sized to fit,
   assert.deepEqual(made.map((g) => [g.round, g.config.id, g.players.length, g.started]), [[1, "wolf", 4, true], [1, "nines", 3, true], [2, "match", 4, false]],
     "Daytona needs 5 so it's skipped; Nines takes 3; Match Play waits for teams");
   assert.equal(organizerGames({ "1": ["wolf"] }, group, made).length, 0, "already made");
+});
+
+test("games settle only with every participant score and keep their own historical round", () => {
+  const m = trip(true);
+  const game = { key: "history", round: 2, config: { id: "skins" as const, net: false, birdiesDouble: false }, players: ["Cam", "Drew"], inputs: [], started: true };
+  assert.equal(tripGameSettled(m, game), false);
+  const completed = { ...m, leaderboard: m.leaderboard.map(r => ({ ...r, holes: PAR.map(() => 4) })) };
+  assert.equal(tripGameSettled(completed, game), true);
+  assert.equal(tripGameSettled(completed, { ...game, config: { ...game.config, id: "wolf" }, inputs: [] }), false);
+  const later = { ...m, round: 3, roundStandings: [{ round: 2, par: PAR, leaderboard: completed.leaderboard }] };
+  assert.equal(tripGameSettled(later, game), true);
+  assert.deepEqual(gameStrokes(tripGameRound(later, game), game), [PAR.map(() => 4), PAR.map(() => 4)]);
+  assert.equal(tripGameSettled({ ...later, roundStandings: [] }, game), false);
+  assert.equal(tripGameSettled(completed, { ...game, players: ["Missing"] }), false);
+  assert.equal(tripGameSettled(completed, { ...game, players: [] }), false);
+  const corrected = { ...completed, leaderboard: completed.leaderboard.map(r => ({ ...r, holes: [...r.holes.slice(0, 17), null] })) };
+  assert.equal(tripGameSettled(corrected, game), false);
 });

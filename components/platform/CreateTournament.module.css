@@ -8,7 +8,7 @@
 /* Cream 40 / maroon 60 on every screen. */
 .cream{flex:1 1 0}
 .picker{flex:0 0 auto;height:60svh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:safe flex-end;gap:16px;
-  padding:24px max(16px,calc((100% - 528px)/2)) calc(8px + 5.75rem + env(safe-area-inset-bottom));
+  padding:24px max(var(--page-gutter),calc((100% - 528px)/2)) calc(8px + 5.75rem + env(safe-area-inset-bottom));
   border-radius:32px 32px 0 0;background:var(--lm-bg-240001);box-shadow:0 -12px 32px color-mix(in srgb,var(--color-maroon-900) 16%,transparent);color:var(--lm-ink-fbf8f1)}
 .list{display:flex;flex-direction:column;gap:8px}
 /* The gold "Or" between Golf Trip and the other choices, on the left. */
@@ -102,7 +102,7 @@
 /* Review: fully maroon (no cream), every answer as a row. Same negative bottom margin as .split so the maroon
    runs under the bottom menu on phones. */
 .review{display:flex;flex-direction:column;gap:20px;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));
-  padding:32px max(16px,calc((100% - 528px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1)}
+  padding:32px max(var(--page-gutter),calc((100% - 528px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1)}
 .reviewList{margin:0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent)}
 .reviewRow{display:grid;grid-template-columns:minmax(96px,38%) 1fr;align-items:baseline;gap:12px;padding:14px 4px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent)}
 .reviewLabel{font:600 14px/1.3 var(--font-barlow),sans-serif;letter-spacing:.02em;color:var(--lm-ink-dcc495)}

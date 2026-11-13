@@ -148,6 +148,11 @@
 /* Plain custom properties (not part of the Tailwind theme scale —
    referenced directly via var() for gradients/scrims/motion) */
 :root {
+  /* Space between the boxes and the left/right edge of the phone, app wide. */
+  --page-gutter: 8px;
+  /* Text that sits right on the background (not inside a box) stays further in. Shift = how much further than the boxes. */
+  --page-text-inset: 16px;
+  --page-text-shift: calc(var(--page-text-inset) - var(--page-gutter));
   --app-safe-top: var(--app-top-clearance);
   --gradient-maroon: linear-gradient(160deg, var(--color-maroon-700) 0%, var(--color-maroon-900) 100%);
   --gradient-trophy: linear-gradient(135deg, var(--color-gold-300) 0%, var(--color-gold-600) 100%);

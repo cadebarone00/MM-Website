@@ -9,6 +9,7 @@ import { SavedTripScorecards } from "./SavedTripScorecards";
 import { GolfTripCorrections } from "./GolfTripCorrections";
 import { GolfTripCompetitionPreviewProvider } from "./GolfTripCompetitionPreviewProvider";
 import { WatchCodeChip } from "./WatchCodeChip";
+import { travelFromFlightPlan } from "@/lib/platform/golfTripDetails";
 
 export function SavedTripSettingsWorkspace({ trip, snapshot, viewer }: { trip: SavedGolfTrip; snapshot: TripSetupSnapshot; viewer: { isOrganizer: boolean; memberId: string; profileId: string } }) {
   const tripId = trip.trip.id;
@@ -16,7 +17,8 @@ export function SavedTripSettingsWorkspace({ trip, snapshot, viewer }: { trip: S
   return <SavedTripSetupProvider tripId={tripId} snapshot={snapshot} editable={viewer.isOrganizer}>
     <GolfTripCompetitionPreviewProvider initialRounds={[]}>
     <GolfTripSettingsPreview tripName={trip.trip.name} backHref={golfTripUrl(tripId)} dataKey={tripId} persistenceScope={tripId} scoringTripId={tripId}
-      scheduleBaseDate={snapshot.basis.startDate} playerCount={trip.trip.expected_traveler_count ?? 1} players={trip.members.filter(member => member.invitationStatus === "accepted").map(member => member.displayName)} pastTrips={[]}
+      scheduleBaseDate={snapshot.basis.startDate} tripDetails={{ destination: trip.trip.destination, travel: travelFromFlightPlan(trip.trip.flight_plan) }} playerCount={trip.trip.expected_traveler_count ?? 1} players={trip.members.filter(member => member.invitationStatus === "accepted").map(member => member.displayName)}
+      playerIds={trip.members.filter(member => member.invitationStatus === "accepted").map(member => member.profileId ?? "")} pastTrips={[]}
       tripRounds={snapshot.basis.rounds.map(round => ({ id: `round-${round.roundNumber}`, number: round.roundNumber, date: round.playDate ?? "", course: round.courseName || "Course TBD", format: "Singles", nassau: false, handicap: false, status: "scheduled" }))}
       livePanels={{ members, tripId, profileId: viewer.profileId, scorecards: <SavedTripScorecards trip={trip} />, isOrganizer: viewer.isOrganizer, deleteHref: golfTripUrl(tripId, "settings/delete"),
         scoring: <><Link href={golfTripUrl(tripId)}>Open trip scoring</Link><GolfTripCorrections tripId={tripId} profileId={viewer.profileId} /></> }} />

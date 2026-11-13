@@ -4747,3 +4747,253 @@ No screen is redesigned. The website keeps working exactly as now.
   - `components/platform/JoinCodeCard.tsx` is the same white card ("Join a Round / Trip / Tournament / League", one code box, Join) on Play (under Play a round), Golf Trips, Tourneys (under Join a Tournament) and Leagues.
   - It takes only a 6-character join code, so pasted links, Trip IDs and watch codes are no longer taken there. Shared links and watch links still open as before.
   - The old boxes `GolfTripJoin.tsx` and `JoinCodeEntry.tsx` were removed (still in git history).
+
+## Dev simulator → Golf Trip Active → Home sub-pages (owner request 2026-11-11) — APPROVED + BUILT 2026-11-11 (uncommitted)
+
+**What it does / who uses it.** Dev only (the owner, designing in the `/dev` App simulator). Today every Home state sits in
+one long Conditionals list on "Home". This splits Home into child pages, one per thing on Home, each with its own
+Conditionals, so each piece (especially the two drafts) can be checked and signed off on its own. No real trip data is
+written; nothing changes for players.
+
+**Pages under Home** (same `parentId` pattern Settings already uses; each opens the Home tab in the phone):
+1. **Overview**: today's Overview conditionals.
+2. **Big Board**: today's top + upcoming conditionals.
+3. **Team Draft**: opens Home with the Team Draft strip; a "Draft Room open" conditional opens the room itself.
+   Conditionals: Draft type (Captain's Picks / Duck Race) · Draft order (Snake / Straight) · Player count (4, 8, 12, 16,
+   odd number) · When (no date set / countdown running / draft time reached) · Teams (none picked / half picked / all picked).
+4. **Match Selection** (renamed from "Match Draft" in the simulator): opens Home with the Match Selection strip; a "Match
+   Room open" conditional opens the room. Conditionals: Type (Response / Ranks / Randomized) · Format (Singles 1v1 /
+   Pairs 2v2) · Players per team (2, 4, 6, 8, uneven teams) · When (not set / countdown / time reached) · Round locked.
+5. **Invite players**, 6. **Players**, 7. **Competition**, 8. **Rating prompt**: today's conditionals, moved.
+"Home" itself keeps only the "Whole trip" conditionals (data source, competitive, round state, signed in as).
+
+**Data.** New simulator state keys only (lib/dev/simulator.ts + parse validation + simulator.test.ts), sample rosters
+from lib/dev/matchDraftPreview.ts / a new team-draft sample. No database, no storage beyond the simulator's own.
+
+**Done looks like.** Each sub-page shows in the simulator under Home; every conditional changes what the phone shows;
+simulator tests + type check pass; checked in the browser. Renaming "Match Draft" to "Match Selection" in the real app
+UI is a separate step, after this.
+
+### Team Draft room for 2 Teams, Pairs, 3-Ball, 4-Ball (owner request 2026-11-11) — APPROVED + BUILT 2026-11-11 (uncommitted)
+
+**Owner decisions (2026-11-11):** Pairs / 3-Ball / 4-Ball drafts use **one captain per team**; the room shows a **grid of
+team cards** (two per row, scrolling) instead of the two A/B columns.
+
+**The room (components/platform/TripDraftRoom.tsx), by team type:**
+- **2 Teams:** looks and works as today (Team A / Team B columns).
+- **Pairs / 3-Ball / 4-Ball:** team size 2 / 3 / 4; number of teams = players ÷ size, rounded down (same rule as Settings),
+  labelled Team A, B, C… Each card: letter badge, team name, numbered slots; slot 1 = the captain (already placed), the rest
+  "Open spot". The team picking now is highlighted ("On the clock").
+- **Pick order** across all teams: Snake = A→last, then last→A, repeating; Straight = A→last every round. Full teams are
+  skipped. The draft ends when every team is full; leftover players (e.g. 7 players in Pairs) stay in the list, not picked.
+- **Fix:** whose turn it is counts players already on a team (today it ignores them — the "half picked" bug).
+- Players sheet: Available plus a team filter that works for any number of teams. Draft button says "Draft to Team C".
+- Still memory-only like today (closing loses picks). Saving / live / captain-only is a later step.
+
+**Captains:** the simulator uses the first players as captains. In the real app slot 1 uses the captains set in Settings →
+Players when there are any; with none, slot 1 is just the team's first pick.
+
+**Simulator:** under Home → Team Draft, four room pages — **2 Teams room, Pairs room, 3-Ball room, 4-Ball room**. Each has
+the Team Draft conditionals (players, order, when, how many picked, room open/closed) with its team type built in, and its
+"start here" sample opens the room. Player counts per page fit the type (e.g. Pairs 4/8/12/16 + an odd count).
+
+**Done looks like:** all four rooms render and draft correctly in the simulator (order, skipping full teams, ending when
+full), unit tests for the pick order, browser check of each room, existing 2 Teams behaviour unchanged.
+
+### Match Selection: rebuilt room, captains, saved and final (owner decisions 2026-11-12) — APPROVED + BUILT 2026-11-13 (committed in f6d62103; golf_trip_match_selection.sql run in prod 2026-11-13)
+
+**As built:** rules `lib/platform/matchSelection.ts` (+ `matchSelectionSetup.ts`, tests), SQL `supabase/golf_trip_match_selection.sql`
+(+ database tests; the round's state lives server-only, phones get only a version number through Realtime so hidden picks
+can't leak), route `app/api/golf-trips/[tripId]/match-selection/route.ts`, `lib/platform/useMatchSelection.ts`, room
+`components/platform/TripMatchDraftRoom.tsx` (rebuilt), pretend server `lib/dev/mockMatchSelection.ts` (also runs simulator
+samples / dev trips), test panel `components/dev/MockMatchPanel.tsx`, setup fields `matchSelectionResults` /
+`completedMatchDrafts`. The organizer sees both teams' picks (they run it); everyone else follows the hiding rules.
+
+Replaces the earlier "VS board" plan. Built all at once: the look, the rules, saving, and a Mock match selection test run.
+Round Robin (a schedule, not a selection) is untouched.
+
+**Owner decisions (2026-11-12):** each team's **captain** sets their own team's players (the organizer can step in for
+either team) · **Ranks are hidden** from the other team until locked · **Response groups are shown** to the other team the
+moment they're submitted · everything is **saved and final**, live on every phone.
+
+**The room** (components/platform/TripMatchDraftRoom.tsx) — same look as the Team Draft room:
+- Header: **"Match Selection Room"** centered, countdown under it, the day over the time in the corner.
+- **VS board right under the header line:** team names across the top (small gold, like Home's Teams). One row per match:
+  "Match 1" (Ranks: "Rank 1"), **[Team A box] VS [Team B box]**; Pairs (2 v 2) stack two boxes per side. Empty = "Tap to
+  place"; filled = avatar + name + HCP. Hidden ranks show as "Ranked ✓" (no name) until revealed.
+- A slim bar above the Players pull-up: **Round** picker, whose turn / the timer, and the buttons (Start, Submit, Lock in
+  ranks, Randomize).
+- **Players** pull-up at the bottom: rests 35% up, tap → 85% with the blur; the same player boxes as the Team Draft
+  (avatar, name, stats row, tap → profile). It only lists the team you're placing for.
+- **Tap a box → pick a player** for it. Only boxes the person holding the phone may fill right now are tappable.
+
+**The three types (rules the server enforces):**
+- **Response:** matches go in order; the team that puts forward first alternates each match (A for Match 1, B for Match 2…).
+  The captain on turn places a single / pairing and taps **Submit** — then it's saved and the other team sees it; the other
+  captain responds. Each turn has its timer (Settings: put forward / respond minutes); when it runs out, the empty spots are
+  filled at random from that team's unused players (anything already chosen is kept).
+- **Ranks:** one shared window (Settings: minutes). Each captain ranks their team (rank 1 plays rank 1…) and can change it
+  until they tap **Lock in ranks** or time runs out. The other team can't see them. Both are revealed together when both are
+  locked or the time is up; spots still empty at that point are filled at random from that team's unranked players.
+- **Randomized:** the organizer taps **Randomize** once; the matches are drawn, saved and final.
+- When every match is set, the round's selection is **complete**: the matches are saved with the round and Home's Match
+  Selection card shows "Match selection complete". No undo, no changes.
+- Only rounds set to Match Draft in Settings; a round that's already been played is locked. Teams must be set (the team
+  draft done) first.
+
+**Data (Supabase, new `supabase/golf_trip_match_selection.sql` — to run in production before it works there):**
+- `golf_trip_match_selection`: trip, round key, type, started at, the current deadline, each team's "locked in" time,
+  completed at.
+- `golf_trip_match_selection_spots`: trip, round key, match number, team, spot, the player's account, who placed them, when,
+  and whether it's been submitted/revealed. One player per round once; a spot filled once (Response) — Ranks spots can be
+  changed only by their own captain until locked.
+- Database functions (called only from our server): read (hides the other team's unrevealed spots), start (organizer),
+  place / submit / lock in (captain of that team or organizer, right turn, inside the time), randomize (organizer),
+  catch up timers (fills expired turns at random), finish (saves the matches into the trip setup as
+  `matchSelectionResults[round]` and adds the round to `completedMatchDrafts`). Added to Realtime.
+- Route `/api/golf-trips/[tripId]/match-selection` (GET / POST), same pattern as the team draft.
+
+**Mock match selection (test run):** simulator Home → Match Selection → **Mock match selection (test run)**, test panel
+left of the phone exactly like the Mock draft: **In control** (Organizer · Team A captain · Team B captain · Player), **What to
+do next**, **Checks** (✅/❌), **Log**, buttons (Try a wrong move · Next step automatically · **Jump the clock** · Run to the end ·
+Reset). Setups: Response · Singles 4 v 4 · Response · Pairs 4 v 4 · Ranks · Singles · Ranks · Pairs · Randomized · Response
+with a timed-out turn · Ranks with a timed-out window · Round already played (locked) · Teams not set yet (can't start).
+Checks include: only the right captain can place · the other team can't see unsubmitted Response picks or unlocked Ranks ·
+a player can't be placed twice · timeouts fill only empty spots from that team · results saved when complete.
+
+**Done looks like:** rule tests + database tests (wrong captain, hidden ranks, double placement, timeouts, finish); the
+mock run passes every setup; a two-phone check on the local test database; lint/types clean.
+
+## Team Draft: picks are saved and final (owner request 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted; SQL run in prod 2026-11-12)
+
+**As built (differences from the plan below):** picking opens when the organizer taps **Start team draft** (automatic
+opening at the draft time needs the trip's time zone, which trips don't store yet). Captains are set in **Settings →
+Team Competition → Draft → Captains** (one dropdown per team, saved by account as `draftCaptains`), and every team type —
+2 Teams too — puts its captain in spot 1. Files: `lib/platform/teamDraftPicks.ts` (+ tests), `lib/platform/useTeamDraft.ts`,
+`app/api/golf-trips/[tripId]/team-draft/route.ts`, `supabase/golf_trip_team_draft.sql` (+ `lib/platform/golfTripTeamDraftDatabase.test.ts`).
+
+**Owner rule:** when a player is drafted they belong to that team for good — off the draft board, onto the team, never
+moved. So every pick is saved to the trip the instant it's made, and every phone in the trip sees the same draft.
+
+**Who uses it:** the trip's captains (they pick), the organizer (starts the draft, can pick for any team), everyone else
+on the trip (watches live, can't pick).
+
+**How it works (all team types: 2 Teams, Pairs, 3-Ball, 4-Ball):**
+1. Before the draft time the room shows the countdown; no Draft buttons.
+2. **Picking opens at the draft time** (the organizer can also tap "Start team draft" to open it early).
+3. Only the **captain of the team on the clock** (or the organizer) sees Draft buttons. The server re-checks this — the
+   button alone never decides.
+4. Tap Draft → the server saves the pick → the player leaves the Players list and lands in the team's box on **every**
+   phone (Supabase Realtime, with a 10-second refresh as backup — same as live scoring).
+5. **No undo, no moving players** once picked. If two people tap at once, only the first pick counts; the other phone
+   gets "That pick was already made" and refreshes.
+6. When every spot is filled the draft is **complete** automatically: the teams are saved as the trip's teams (the same
+   place Settings → Teams saves them), so Home, Competition and Match Selection use them. The manual "Complete team
+   draft" button goes away.
+7. Closing the room, refreshing, or tapping into someone's profile and coming back loses nothing.
+
+**Captains:** the captains set in Settings → Players. The server matches them to trip members (signed-in accounts).
+Captain's Picks needs a captain on every team; until then the room says "Set captains in Settings → Players".
+
+**Data (Supabase, new file `supabase/golf_trip_team_draft.sql` — must be run in production before it works there):**
+- `golf_trip_team_draft_picks`: trip, pick number (1, 2, 3…), the picked member's profile, team number, who picked, when.
+  One row per pick; a player can be picked once; pick numbers can't repeat (that's what stops double picks).
+- `golf_trip_team_draft_state`: trip, started at, completed at.
+- Database functions (security definer, called only from our server with the signed-in profile): read the draft (any
+  trip member), start it (organizer), make a pick (captain on the clock or organizer, right pick number, player free),
+  complete it (writes the teams into the trip setup). Tables added to Realtime.
+- Server route `/api/golf-trips/[tripId]/team-draft` (GET read, POST start / pick). Whose turn it is comes from the
+  same rule the room uses (`teamDraftTurn` in lib/platform/teamDraft.ts).
+
+**Simulator:** sample drafts keep their picks for the browser tab (so profile → back keeps them); no database.
+
+**Not in this step:** pick timers / auto-pick, Duck Race, Match Selection saving (next), push notifications for "you're
+on the clock".
+
+**Done looks like:** unit tests for turn + pick checks; database tests (wrong captain refused, double pick refused,
+picked player can't be picked again, complete writes teams); browser check with two signed-in phones in the local dev
+stack; simulator still works; lint/types clean.
+
+## Dev simulator: Mock Draft + Mock Match Selection test runs (owner request 2026-11-12) — APPROVED; Mock draft BUILT 2026-11-12 (uncommitted); Mock match selection waits for the Match Selection rebuild
+
+**As built:** `lib/dev/mockDraft.ts` (+ tests), `components/dev/MockDraftPanel.tsx`, page `home-team-draft-mock`, state `mockDraft` / `mockDraftViewer`; the Draft Room's saved-draft helper (`useTeamDraft`) takes an optional pretend server (`TeamDraftTransport`).
+
+**What it does / who uses it.** Dev only (the owner, in `/dev`). Run a whole draft from start to finish inside the phone,
+switching who is holding the phone, with a **test panel just left of the iPhone / Android screen** that says who is in
+control, what to do next, and whether each step behaved correctly. Nothing touches the real database.
+
+**How it works.** The phone shows the **real** Draft Room in its saved-draft ("live") mode. Instead of the server, it
+talks to a pretend server that runs in the browser with the **same rules** (`lib/platform/teamDraftPicks.ts`). The test
+panel and the phone share it, so a pick made in the phone shows in the panel instantly and vice versa. Each test run is
+kept for the browser tab until you press Reset.
+
+**Pages (simulator):** Home → Team Draft → **Mock draft (test run)**; Home → Match Selection → **Mock match selection
+(test run)**. Conditionals on each page = the setups to run:
+- Mock draft: 2 Teams · 8 players · Snake; 2 Teams · 7 players (odd) · Straight; Pairs · 8 (4 teams); Pairs · 7 (one left
+  over); 3-Ball · 12; 4-Ball · 16; "A team has no captain" (should refuse to start).
+- Mock match selection: Response · Singles 4 v 4; Response · Pairs; Ranks · Singles; Ranks · Pairs; Randomized; Uneven 5 v 4;
+  Round locked.
+
+**The test panel (left of the phone):**
+1. **In control:** Organizer · Team A captain · Team B captain (… one per team) · Player (can only watch). Tap to switch —
+   the phone changes to what that person sees.
+2. **What to do next:** one plain instruction, e.g. "Organizer: tap Start team draft", "Team B captain is on the clock —
+   switch to Team B captain and draft someone", "Try drafting as Team A captain now — it should be refused".
+3. **Checks** (✅ / ❌, updated as you go): picking can't start before Start · only the captain on the clock can pick · pick
+   order matches Snake/Straight · a picked player can't be picked again · full teams are skipped · leftovers stay unpicked
+   · the draft finishes when every spot is filled and the teams are saved.
+4. **Log:** every action in order ("Team A captain drafted Pete → Team A", "Refused: It's not your pick").
+5. Buttons: **Reset**, **Next pick automatically** (makes the correct person pick), **Run to the end**.
+
+**Mock match selection** works the same way (Team A / Team B captain, organizer, player; who puts forward / responds /
+ranks; timers can be skipped with "Jump the clock"). Note: the Match Selection room is still the old one (only the
+organizer can act). Its controls get rebuilt in the approved "Match Selection room = VS board" work — recommended order:
+build **Mock draft now**, and **Mock match selection together with that rebuild** so it tests the new rules, not the old.
+
+**Data:** browser storage only (dev); no database, no API, no production code paths change except the Draft Room
+accepting the pretend server (the real one stays the default).
+
+**Done looks like:** each mock setup runs start → finish in the simulator; switching controller changes the phone; a
+wrong-person pick shows ❌-proof ("refused") and a correct one ✅; browser-checked; tests/lint/types clean.
+
+## Trip Settings → General → General Settings: the trip's basics in one place (owner request 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted; supabase/golf_trip_details.sql RUN in prod 2026-11-12)
+
+**Owner answers:** (a) Trip Name / Destination / Travel are changeable (new `update_golf_trip_details` + PATCH `/api/golf-trips/<id>/details`); (b) Travel included.
+
+**What it is:** The General Settings box (top left of Trip Settings → General) opens one page with the trip's basics from Trip Builder. **Everyone on the trip can open and see it. Only the organizer can change anything**; for players every control is shown but locked.
+
+**Sections on the page (top to bottom):**
+1. **Trip:** Trip Name and Destination (the same search used in Trip Builder step 1).
+2. **Dates:** Arrival and Departure (the same date picker). These **move here from Organizer → Golf Schedule**; Golf Schedule keeps "Golf on Arrival Day" / "Golf on Departure Day" and shows the dates as plain text.
+3. **Players:** the player amount (− / + stepper). It **moves here from General → Players**. The Players page then just shows "X of Y joined" (Y = this number); no stepper there. Same limits as today: can't go below the number already joined, max stays the same.
+4. **Golf Schedule:** a simple list the organizer can fill in any time: Round N, the course, and the date (one row per round, + Add Round). It writes to the **same rounds** as Organizer → Golf Schedule, so the two always match; tee times, groups and the rest stay only in Organizer → Golf Schedule.
+5. **Travel (suggested from Trip Builder):** "How's everyone getting there?" — Flying / Driving / A mix.
+
+**Not moved here:** "Are you all competing?", team structure and formats (already in Organizer → Competition); lodging (already on the Venue tab).
+
+**Where it's saved:** dates, player amount and rounds already save with the trip's settings (`/api/golf-trips/<id>/setup`), so no database change. **Trip Name, Destination and Travel are stored on the trip itself (travel as its flight plan answer) and nothing can change them after the trip is made yet**: editing them needs a new save route and probably a SQL change (OPEN QUESTION below).
+
+**Done looks like:** organizer can change each item on General Settings and it shows the same everywhere it's used (Golf Schedule, Players, trip Home); a player sees every item but can't change it; dev preview and saved trips both work; type check + tests pass; checked in the browser.
+
+**Open questions for the owner:** (a) Should Trip Name / Destination / Travel be editable now (needs a database change), or shown read-only for this step? (b) Include the Travel section, yes or no?
+
+## Team sizes: everyone on a team, every team the same size (owner rule 2026-11-12) — APPROVED + BUILT 2026-11-12 (uncommitted)
+
+**Rule:** in a team competition everyone is on a team and every team has the same number of players. So the number of
+players must be: **2 Teams → even** · **Pairs → a multiple of 2** · **3-Ball → a multiple of 3** · **4-Ball → a multiple of 4**.
+No leftovers, no uneven teams.
+
+**Changes:**
+1. **Draft rules** (`lib/platform/teamDraftPicks.ts`, used by the server, the room and the mock draft): if the trip's
+   players don't fit the rule, the draft can't start — the room says e.g. "Pairs needs players in multiples of 2 (you have
+   7). Add or remove a player first." 2 Teams fills both teams to exactly half. The "leftover players" behaviour goes away.
+2. **Settings → Team Competition:** the **Add Sub/Uneven Teams** switch is removed (teams can't be different sizes). When
+   the trip's player count doesn't fit the chosen team type, a plain note shows under it (same wording as above).
+3. **Simulator + Mock draft:** the odd / leftover setups become "can't start" checks (7 players · 2 Teams, 7 · Pairs,
+   10 · 3-Ball, 10 · 4-Ball) — the Draft Room must refuse and say why. Home → Players' "one left over" conditional becomes
+   "Wrong number of players (can't draft)".
+
+**Not changed:** individual (non-team) competitions; trips already saved with uneven teams keep their saved teams.
+
+**Done looks like:** tests for the rule (each type, good and bad counts); mock draft + simulator conditionals show the
+refusal; Settings note and no uneven switch; lint/types clean; browser-checked.

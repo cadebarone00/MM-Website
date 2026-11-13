@@ -1,0 +1,26 @@
+/* Trip Home → Competition card (all lettering one size: the left-side labels' 10px, owner 2026-11-10): the Big Board look (gold outline, dark maroon, gold light from the top, fading lines).
+   Fonts (owner rule): values in Spectral; tiny ALL-CAPS labels in Barlow. */
+.card{box-sizing:border-box;margin-top:2px;padding:14px 14px 12px;border:1px solid rgba(201,168,110,.6);border-radius:16px;color:#fbf8f1;
+  background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:0 10px 28px color-mix(in srgb,#000 35%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
+
+.facts{display:grid;gap:8px;margin:0}
+.fact{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
+.card{--size:10px}
+.fact dt,.pointsLabel,.subhead,.roundNumber{font:700 var(--size)/1.3 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#d4bfa9}
+.fact dd{margin:0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 var(--size)/1.3 var(--font-spectral),Georgia,serif;color:#fff5df;text-align:right}
+
+.divider{height:1px;margin:12px 0;background:linear-gradient(90deg,transparent,rgba(201,168,110,.5),transparent)}
+
+.subhead{margin:0 0 8px;color:#edcf91}
+.rounds{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.round{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
+.roundWhat{display:flex;flex-direction:column;align-items:flex-end;gap:1px;min-width:0}
+.roundFormat,.roundCourse{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 var(--size)/1.3 var(--font-spectral),Georgia,serif;color:#fbf8f1;text-align:right}
+.roundCourse{font-weight:500;color:color-mix(in srgb,#fbf8f1 65%,transparent)}
+.roundCourse[data-unset]{font-style:italic}
+.roundFormat[data-unset]{color:color-mix(in srgb,#fbf8f1 50%,transparent);font-style:italic}
+
+.points{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pointsCell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border-radius:12px;background:color-mix(in srgb,#fbf8f1 6%,transparent)}
+.pointsValue{font:700 28px/1 var(--font-spectral),Georgia,serif;color:#fff5df}
+.toWin{color:#edcf91}

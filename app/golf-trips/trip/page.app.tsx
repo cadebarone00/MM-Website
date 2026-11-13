@@ -20,7 +20,7 @@ function AppTrip() {
     editing={data.editing ? { ...data.editing, endpoint: `/api/golf-trips/${tripId}/imported-results` } : undefined} />;
   if (data.status !== "live") return <AppStatus state={{ status: "error", error: "Trip not found.", code: 404 }} onRetry={reload} />;
   const { savedTrip, viewer } = data;
-  return <SavedGolfTripHome tips={{ profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} planSnapshot={data.planSnapshot} setupSnapshot={data.setupSnapshot}
+  return <SavedGolfTripHome tapInCode={savedTrip.trip.watch_code} tips={{ profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} planSnapshot={data.planSnapshot} setupSnapshot={data.setupSnapshot}
     savedTrip={savedTrip} preview={savedTripAsDraft(savedTrip)} settingsHref={golfTripUrl(tripId, "settings")} backHref="/golf-trips/"
     alertScope={{ tripId, profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} flights={{ summary: data.flightSummary, href: golfTripUrl(tripId, "flights") }}
     scoring={data.scoring ?? undefined} />;

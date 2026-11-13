@@ -1,4 +1,4 @@
-.page{box-sizing:border-box;min-height:100svh;padding:32px 16px calc(28px + env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);font-family:var(--font-barlow),sans-serif}
+.page{box-sizing:border-box;min-height:100svh;padding:32px var(--page-gutter) calc(28px + env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);font-family:var(--font-barlow),sans-serif}
 .content{width:100%;max-width:560px;margin:0 auto}
 .playerRow.playerRow{grid-template-columns:30px 40px minmax(0,1fr)}
 .playerListRow.playerListRow.playerListRow{grid-template-columns:30px minmax(0,1fr) 40px}

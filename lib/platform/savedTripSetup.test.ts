@@ -43,3 +43,18 @@ test("course short names save by course name, 24 letters at most", () => {
   for (const bad of [{ "Mission Hills CC": "x".repeat(25) }, { "Mission Hills CC": "  " }, { "Mission Hills CC": 3 }, ["Dinah Shore"], { ["x".repeat(201)]: "Short" }])
     assert.equal(validSetup({ courseShortNames: bad }), false);
 });
+
+test("Team Draft captains save as team number → account id, nothing else", () => {
+  const id = "0d4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c";
+  assert.equal(validSetup({ draftCaptains: { 0: id, 1: id.replace("0d", "1d") } }), true);
+  assert.equal(validSetup({ draftCaptains: {} }), true);
+  assert.equal(validSetup({ draftCaptains: { 0: "Cade" } }), false);
+  assert.equal(validSetup({ draftCaptains: { 64: id } }), false);
+  assert.equal(validSetup({ draftCaptains: [id] }), false);
+});
+
+test("Match Selection results and finished rounds save in the setup; junk doesn't", () => {
+  assert.equal(validSetup({ completedMatchDrafts: ["1-0"], matchSelectionResults: { "1-0": [{ a: [0, 2], b: [1, 3] }] } }), true);
+  assert.equal(validSetup({ completedMatchDrafts: ["nope"] }), false);
+  assert.equal(validSetup({ matchSelectionResults: { "1-0": [{ a: ["x"], b: [] }] } }), false);
+});

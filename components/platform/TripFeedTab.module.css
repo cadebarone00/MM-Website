@@ -1,0 +1,35 @@
+/* The Feed tab: a block out of the right edge (a lead fill's shape), sitting just above the bottom menu's Pick'ems. */
+.tab,.sheet{--tab-w:78px;--tab-h:46px;--tab-bottom:calc(82px + env(safe-area-inset-bottom));
+  /* The welcome / email-confirmed screens' look: dark maroon with a soft gold glow rising from the bottom (radial gradient glow). */
+  --tab-glow:radial-gradient(120% 90% at 50% 125%,rgba(201,168,110,.38),transparent 70%)}
+@media(min-width:1024px){.tab,.sheet{--tab-bottom:24px}} /* no bottom menu on big screens */
+
+.tab{position:fixed;right:0;bottom:var(--tab-bottom);z-index:101;width:var(--tab-w);height:var(--tab-h);padding:0 0 0 4px;border:1px solid rgba(201,168,110,.45);border-right:0;border-radius:16px 0 0 16px;background:var(--tab-glow),#240001;color:#fbf8f1;box-shadow:0 6px 18px color-mix(in srgb,var(--lm-bg-000000) 35%,transparent);font:700 16px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
+.tab:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
+
+/* The full-screen Feed: dramatic maroon with the gold glow at the TOP. Closed, it's clipped down to exactly the tab;
+   open, the clip grows to the whole screen. */
+.sheet{position:fixed;inset:0;z-index:110;isolation:isolate;display:flex;flex-direction:column;background:#240001;color:#fbf8f1;overflow:hidden;
+  clip-path:circle(0 at calc(100% - 38px) 70px);
+  visibility:hidden;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s .5s}
+.sheet[data-open]{clip-path:circle(150vmax at calc(100% - 38px) 70px);visibility:visible;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s}
+/* The glow lights up once the screen has grown. */
+.sheet::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 55% at 50% -12%,rgba(201,168,110,.3),transparent 70%);opacity:0;transition:opacity .2s}
+.sheet[data-open]::before{opacity:1;transition:opacity .5s .2s}
+
+/* Feed title + close, up in the glow. */
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:560px;box-sizing:border-box;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px 0;opacity:0;transition:opacity .12s}
+.sheet[data-open] .header{opacity:1;transition:opacity .25s .2s}
+.title{margin:0;font:700 28px/1.1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
+.close{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:color-mix(in srgb,#fbf8f1 10%,transparent);color:#fbf8f1;cursor:pointer}
+.close:hover{background:color-mix(in srgb,#fbf8f1 16%,transparent)}
+.close:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+
+/* The feed: a slide-up sheet like Chats (85% tall, rounded top, gold edge, grab handle), rising after the screen opens. */
+.panel{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;width:min(100%,560px);height:85dvh;box-sizing:border-box;margin:0 auto;padding-top:22px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-bottom:0;border-radius:28px 28px 0 0;background:var(--lm-bg-240001);box-shadow:0 -12px 60px #0006;
+  transform:translateY(100%);transition:transform .2s ease-in}
+.panel::before{content:"";position:absolute;top:9px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:rgba(220,196,149,.45)}
+.sheet[data-open] .panel{transform:translateY(0);transition:transform .45s cubic-bezier(.22,1,.36,1) .3s}
+.body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:env(safe-area-inset-bottom)}
+
+@media(prefers-reduced-motion:reduce){.sheet,.sheet[data-open],.sheet::before,.header,.panel,.sheet[data-open] .panel{transition:none}}

@@ -4,7 +4,7 @@ import { loadTapInDisplay } from "@/lib/tap-in/display";
 import { TapInDisplay } from "@/components/tap-in/TapInDisplay";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Watch Live | Tap In", robots: { index: false, follow: false } };
+export const metadata = { title: "Watch Live | The Maroon Live", robots: { index: false, follow: false } };
 export default async function BroadcastPage() {
   const player = await loadWebsitePlayer();
   if (!player) redirect("/login/email?next=%2Ftap-in");

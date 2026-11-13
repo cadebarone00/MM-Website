@@ -20,12 +20,12 @@ const newSessionToken = () => crypto.randomUUID?.() ?? `${Date.now().toString(36
  * answers (destinationPlaceId / Latitude / Longitude); typing over it clears them. If places aren't configured or
  * fail, it stays a plain text box.
  */
-export function DestinationSearch() {
+export function DestinationSearch({ initial, disabled = false }: { /** General Settings: the trip's current destination (instead of the Trip Builder draft). */ initial?: string; disabled?: boolean } = {}) {
   const id = useId();
   const [text, setText] = useState("");
   // A saved destination (a started trip, or coming Back) goes in once; it isn't searched until it's changed.
   const draftRaw = useSyncExternalStore(subscribeNever, golfTripDraftSnapshot, () => "");
-  const saved = parseGolfTripDraft(draftRaw).destination ?? "";
+  const saved = initial ?? parseGolfTripDraft(draftRaw).destination ?? "";
   const [seeded, setSeeded] = useState("");
   if (saved && !seeded) { setSeeded(saved); setText(saved); }
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -97,7 +97,7 @@ export function DestinationSearch() {
   return <div className={styles.field}>
     <label className={styles.fieldLabel} htmlFor={`${id}-input`}>Destination</label>
     <input id={`${id}-input`} className={styles.input} type="text" name="destination" placeholder="Pinehurst, North Carolina"
-      autoComplete="off" required value={text} onChange={(event) => type(event.target.value)} onKeyDown={onKeyDown}
+      autoComplete="off" required disabled={disabled} value={text} onChange={(event) => type(event.target.value)} onKeyDown={onKeyDown}
       onBlur={() => setSuggestions([])} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={`${id}-list`}
       aria-activedescendant={active >= 0 ? `${id}-option-${active}` : undefined} />
     {open && <ul id={`${id}-list`} className={styles.suggestions} role="listbox" aria-label="Suggested places">

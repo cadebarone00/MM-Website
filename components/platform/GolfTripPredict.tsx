@@ -6,6 +6,7 @@ import { STAT_LABELS, type StatKey } from "@/lib/platform/predictStats";
 import { usePredictSettings } from "@/lib/platform/predictSetting";
 import { Wheel } from "./Wheel";
 import styles from "./GolfTripPredict.module.css";
+import home from "./GolfTripHome.module.css";
 
 /**
  * Golf Trip → Golf → Predict: a prediction market in Maroon Coins (play only, no cash value). Every price is the model's
@@ -85,15 +86,21 @@ export function GolfTripPredict({ setup }: { setup: TripSetup }) {
   const profit = book.balance + invested - STARTING_COINS;
 
   return <div className={styles.wrap}>
-    <section className={styles.wallet} aria-label="My Maroon Coins">
-      <div><span className={styles.walletLabel}><Coins size={14} aria-hidden="true" /> Maroon Coins</span><b className={styles.walletBig}>{coins(book.balance)}</b></div>
-      <div><span className={styles.walletLabel}>In play</span><b>{coins(invested)}</b></div>
-      <div><span className={styles.walletLabel}>Profit / loss</span><b className={profit >= 0 ? styles.up : styles.down}>{profit >= 0 ? "+" : ""}{coins(profit)}</b></div>
-    </section>
-    <p className={styles.fine}>Play coins for this trip only. No money changes hands.</p>
+    {/* Wallet (owner 2026-11-13): "Wallet" with the coins top right, In play and Profit/Loss under it, then the bet tabs
+        drawn like Home's trip tabs (Home … Itinerary). */}
+    <header className={styles.walletHead} aria-label="Wallet">
+      <div className={styles.walletTop}>
+        <h2 className={styles.walletTitle}>Wallet</h2>
+        <b className={styles.walletCoins} aria-label={`${coins(book.balance)} Maroon Coins`}><Coins size={16} aria-hidden="true" />{coins(book.balance)}</b>
+      </div>
+      <dl className={styles.walletStats}>
+        <div><dt>In play</dt><dd>{coins(invested)}</dd></div>
+        <div><dt>Profit/Loss</dt><dd className={profit >= 0 ? styles.up : styles.down}>{profit >= 0 ? "+" : ""}{coins(profit)}</dd></div>
+      </dl>
+    </header>
 
-    <div className={styles.tabs} role="tablist" aria-label="Bet categories">
-      {BET_CATEGORIES.map((c) => <button key={c} type="button" role="tab" aria-selected={tab === c} onClick={() => setTab(c)}>{c}</button>)}
+    <div className={`${home.tabs} ${home.tripTabs} ${styles.betTabs}`} role="tablist" aria-label="Bet categories">
+      {BET_CATEGORIES.map((c) => <button key={c} type="button" role="tab" aria-selected={tab === c} className={`${home.tab} ${tab === c ? home.tabActive : ""}`} onClick={() => setTab(c)}>{c}</button>)}
     </div>
 
     <div className={styles.cards}>

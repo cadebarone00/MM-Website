@@ -26,10 +26,11 @@
 .playerTeam{display:block;margin-top:4px;color:var(--lm-ink-dcc495);font:500 11px var(--font-barlow),sans-serif}
 .rankActions{flex-wrap:nowrap;gap:4px}
 .matchRoom .player strong{min-width:0;overflow-wrap:anywhere}
-.matchRoom .header{padding-top:var(--app-icon-top,0px)}
 
-/* Keep the roster in normal flow so it cannot cover round controls or generation buttons. */
-.matchRoom .sheet{position:relative;left:auto;right:auto;bottom:auto;flex:none;width:100%;max-width:720px;max-height:46%;margin:0 auto}
+
+/* Match Selection uses the same anchored 35% / 85% Players pull-up as Team Draft. */
+.matchRoom .peekSheet{position:absolute;left:0;right:0;bottom:0;flex:initial;width:auto;max-width:none;max-height:none;height:35%;margin:0;z-index:3}
+.matchRoom .peekSheet[data-expanded=true]{height:85%}
 
 .matchClock{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif}
 .matchClock strong{color:var(--lm-ink-f1d69f);font:700 26px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
@@ -38,3 +39,105 @@
 .changePlayer{margin-top:5px;padding:2px 0;border:0;background:transparent;color:var(--lm-ink-dcc495);text-decoration:underline;font:600 10px var(--font-barlow),sans-serif;cursor:pointer}
 .slot[data-pending=true]{background:color-mix(in srgb,var(--lm-ink-dcc495) 7.1%,transparent)}
 .rosterTarget{margin:10px 0;color:var(--lm-ink-dcc495);font:600 12px var(--font-barlow),sans-serif}
+
+/* Pairs / 3-Ball / 4-Ball: a grid of team cards, two per row; the team picking now is outlined in gold. */
+.teamGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:900px;width:100%;box-sizing:border-box;margin:0 auto;padding:12px 16px 100px;flex:1;min-height:0;overflow:auto;align-content:start}
+.teamCard{min-width:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25.1%,transparent);border-radius:12px;padding:10px 12px 4px;background:color-mix(in srgb,var(--lm-ink-dcc495) 3%,transparent)}
+.teamCard[data-on-clock=true]{border-color:var(--lm-ink-dcc495);box-shadow:0 0 0 1px var(--lm-ink-dcc495)}
+.teamCardHead{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 37.6%,transparent)}
+.teamCardHead>span{display:grid;place-items:center;width:26px;height:26px;flex:none;background:#dcc495;color:var(--color-maroon-700);border-radius:50%;font-weight:700;font-size:13px}
+.teamCardHead h2{margin:0;flex:1;min-width:0;font-size:15px}
+.teamCardHead small{color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif}
+.teamCard .slot{min-height:50px;padding:7px 0;gap:8px}
+.teamCard .slot:last-child{border-bottom:0}
+.teamCard .number{width:24px;height:24px;font-size:12px}
+.tabs[data-many=true]{flex-wrap:wrap}
+.tabs[data-many=true] button{flex:0 0 auto;min-width:40px;padding:8px 12px}
+.tabs[data-many=true] button:first-child{flex:1 0 100%}
+
+
+/* 2 Teams header: close button left, "Team Draft Room" + countdown centered, the draft day over its time in the right corner. */
+.headerCompact{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.headerCompact .close{justify-self:start}
+.headerCompact h1{font-size:18px;white-space:nowrap}
+.headerCompact .timer{font-size:15px}
+.cornerWhen{justify-self:end;display:grid;margin:0;color:var(--lm-ink-dcc495);font:500 10px/1.35 var(--font-barlow),sans-serif;text-align:right;white-space:nowrap}
+/* 2 Teams: team name above each column (outside any box); each player spot is its own box down the column. */
+.teamColumn{display:flex;flex-direction:column;gap:8px;min-width:0}
+.teamColumnHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:4px 2px 8px;border-bottom:2px solid color-mix(in srgb,var(--lm-ink-dcc495) 37.6%,transparent)}
+.teamColumn[data-on-clock=true] .teamColumnHead{border-bottom-color:var(--lm-ink-dcc495)}
+.teamColumnHead h2{margin:0;font-size:16px}
+.teamColumnHead small{color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif}
+.slotBox{min-height:50px;padding:8px 10px;gap:8px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25.1%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 3%,transparent)}
+.slotBox[data-filled=true]{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 50.2%,transparent)}
+.slotBox .number{width:24px;height:24px;font-size:12px}
+/* Team Draft Players pull-up: rests at 35% of the screen with the list showing, raises to 85% over a blurred board
+   (same blur as the app's other slide-ups). The board scrolls clear of the resting pull-up. */
+.peekSheet{height:35%;max-height:none;z-index:3;transition:height .28s ease}
+.peekSheet[data-expanded=true]{height:85%}
+.peekSheet .panel{flex:1;min-height:0}
+.sheetBackdrop{position:absolute;inset:0;z-index:2;background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);backdrop-filter:blur(4px);animation:draftSheetFade .25s ease both}
+@keyframes draftSheetFade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.peekSheet{transition:none}.sheetBackdrop{animation:none}}
+.teamGrid{padding-bottom:calc(35dvh + 16px)}
+/* Players list rows: plain number + avatar exactly like Home's Players list (18px · 26px, 10px gaps, 16px from the screen
+   edge), then each player's own slim box: name (+ Draft) over a stats row. */
+.peekSheet .panel{padding:0 15px 24px}
+.playerRow{display:grid;grid-template-columns:18px 26px minmax(0,1fr);align-items:center;gap:10px;padding:5px 0}
+.rowNumber{color:var(--lm-ink-dcc495);font:800 13px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
+.rowAvatar{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;overflow:hidden;background:#fbf8f1}
+.rowAvatar img{width:100%;height:100%;object-fit:cover}
+.rowMark{display:block;width:72%;height:72%}
+.playerBox{min-width:0;padding:7px 10px 6px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 4%,transparent)}
+.playerBoxTop{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:26px}
+.playerBoxTop strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.playerBoxTop .pick{flex:none;padding:5px 10px}
+.statRow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin:4px 0 0}
+.statRow>div{min-width:0;text-align:center}
+.statRow dt{color:color-mix(in srgb,var(--lm-ink-dcc495) 75%,transparent);font:600 8px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.statRow dd{margin:1px 0 0;color:var(--lm-ink-fbf8f1);font:700 11px/1.2 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* Tapping a player's box opens their profile: a link covering the box, with the Draft button kept on top of it. */
+.playerBox{position:relative}
+.profileLink{position:absolute;inset:0;z-index:0;border-radius:inherit}
+.profileLink:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.playerBoxTop .pick{position:relative;z-index:1}
+
+/* Both rooms share the organizer start action under the schedule in the right corner. */
+.headerCompact{grid-template-columns:32px minmax(0,1fr) minmax(86px,112px)}
+.headerCompact h1{font-size:clamp(14px,4vw,18px);white-space:normal}
+.cornerControls{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:112px;min-width:0}
+.cornerControls .startDraft{max-width:112px;min-height:28px;padding:6px 8px;font-size:10px;line-height:1.2;white-space:normal}
+.startDraft:disabled{opacity:.45;cursor:default}
+.matchRoom .board{padding-bottom:calc(35dvh + 16px)}
+.peekSheet .matchControls{padding:8px 0}
+.peekSheet .matchRound{padding:8px 0}
+/* Saved drafts: one status line under the header (waiting for the start, captains missing, "already made", complete). */
+.liveStatus{flex:none;margin:0;padding:8px 16px;text-align:center;color:var(--lm-ink-f1d69f);font:600 12px/1.4 var(--font-barlow),sans-serif;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent)}
+
+/* Match Selection Room: the VS board right under the header (one row per match: [Team A] VS [Team B]), a slim control
+   bar, then the same Players pull-up as the Team Draft. */
+.vsBoard{flex:1;min-height:0;overflow:auto;box-sizing:border-box;width:100%;max-width:900px;margin:0 auto;padding:10px 14px calc(35dvh + 70px)}
+.vsHead,.vsRow{display:grid;grid-template-columns:44px minmax(0,1fr) 26px minmax(0,1fr);gap:6px;align-items:center}
+.vsHead{padding:2px 0 8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 37.6%,transparent)}
+.vsTeam{font:700 14px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-dcc495);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsRow{padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent)}
+.vsRow[data-turn=true] .vsLabel{color:var(--lm-ink-f1d69f)}
+.vsLabel{font:700 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
+.vsVs{text-align:center;font:800 11px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 70%,transparent)}
+.vsSide{display:grid;gap:5px;min-width:0}
+.vsBox{display:flex;align-items:center;gap:7px;min-height:44px;min-width:0;padding:6px 8px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 22%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 3%,transparent);color:var(--lm-ink-fbf8f1);font:inherit;text-align:left}
+button.vsBox{cursor:pointer}
+.vsBox[data-active=true]{border-color:var(--lm-ink-dcc495);box-shadow:0 0 0 1px color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);background:color-mix(in srgb,var(--lm-ink-dcc495) 7%,transparent)}
+.vsBox[data-target=true]{box-shadow:0 0 0 2px var(--lm-ink-f1d69f)}
+.vsBox[data-filled=true]{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent)}
+.vsBox .rowAvatar{width:22px;height:22px;flex:none}
+.vsWho{display:grid;min-width:0}
+.vsWho strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsWho small{font:500 10px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.vsHidden{font:600 12px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.controlBar{position:absolute;left:0;right:0;bottom:35%;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 14px;background:color-mix(in srgb,var(--lm-bg-240001) 92%,transparent);border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 22%,transparent)}
+.roundSelect{display:flex;align-items:center;gap:6px;min-width:0;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif}
+.roundSelect select{min-width:0;max-width:210px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 43.9%,transparent);border-radius:8px;background:var(--lm-bg-350001);color:var(--lm-ink-fbf8f1);font:12px var(--font-spectral),Georgia,serif}
+.controlButtons{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.clearSpot{margin:10px 0 0;padding:6px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif;cursor:pointer}
+.placedTag{font:500 11px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}

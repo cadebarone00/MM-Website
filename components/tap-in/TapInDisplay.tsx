@@ -86,7 +86,7 @@ export function TapInDisplay({ initial }: { initial: Display }) {
 
   return <main className={styles.display} ref={stage}>
     <header className={styles.controls}>
-      <Link href="/tap-in">Tap In</Link>
+      <Link href="/tap-in">The Maroon Live</Link>
       <div role="group" aria-label="Leaderboard display">
         <button type="button" aria-pressed={board === "individual"} onClick={() => setBoard("individual")}>Leaderboard</button>
         <button type="button" aria-pressed={board === "matches"} onClick={() => setBoard("matches")}>Match Play</button>

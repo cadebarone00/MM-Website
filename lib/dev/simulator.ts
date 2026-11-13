@@ -6,6 +6,10 @@ import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 import { ALL_NOTIFICATION_PREVIEWS, type NotificationPreview } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
+import { validDraftSim, type DraftSimState } from "./draftSim";
+import { MOCK_DRAFT_PRESET_IDS, validMockViewer, type MockDraftPresetId, type MockViewer } from "./mockDraft";
+import { MATCH_SEL_VIEWERS, MOCK_MATCH_PRESET_IDS, type MatchSelViewer, type MockMatchPresetId } from "./mockMatchSelection";
+import { HOME_COMPETITION_STAGES, HOME_INVITE_STAGES, HOME_MOMENTUM_STAGES, HOME_OVERVIEW_STAGES, HOME_PLAYERS_STAGES, HOME_UPCOMING_STAGES, type HomeCompetitionStage, type HomeInviteStage, type HomeMomentumStage, type HomeOverviewStage, type HomePlayersStage, type HomeUpcomingStage } from "./homeSections";
 
 // Portrait CSS pixels, not panel pixels. Safe insets are editable test inputs.
 // Dimensions/provenance and browser-emulation limits: docs/dev-simulator-review.md.
@@ -33,7 +37,9 @@ export const SIMULATOR_SOURCES = [
   { id: "masters", label: "The Maroon Masters (official)" },
 ] as const;
 export type SimulatorSource = (typeof SIMULATOR_SOURCES)[number]["id"];
-export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean };
+export type SimulatorConditional = { id: string; label: string; source?: SimulatorSource; state?: Partial<SimulatorState>; playerCount?: boolean;
+  /** A heading the panel shows above this card when it starts a new group (e.g. Golf Trip → Home's sections). */
+  section?: string };
 export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean;
   /** Another LOCAL development server that serves this page (e.g. http://localhost:3002). No simulator bridge reaches it. */
   origin?: string };
@@ -99,11 +105,26 @@ export type SimulatorState = {
   venueStage?: "list" | "loading" | "category" | "saved" | "empty" | "no-destination";
   /** Golf Trip → Home: the "How was yesterday?" after-visit rating prompt. Unset = "off". */
   ratingStage?: "off" | "prompt" | "one" | "done";
+  /** Golf Trip → Home sections (lib/dev/homeSections.ts). Unset = that section shows the trip's own data. */
+  homeOverview?: HomeOverviewStage;
+  homeMomentum?: HomeMomentumStage;
+  homeUpcoming?: HomeUpcomingStage;
+  /** none = "No competition"; empty = competition, nothing scheduled yet. The draft cards use dualDraftMomentum / matchDraftPreview. */
+  homeCompetition?: HomeCompetitionStage;
+  homeInvite?: HomeInviteStage;
+  homePlayers?: HomePlayersStage;
   /** Authentication → Birthday: boxes empty / the shared calendar open / a birthday filled in. Unset = "empty". */
   birthdayStage?: "empty" | "calendar" | "picked";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
-};
+  /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
+  mockDraft?: MockDraftPresetId | "off";
+  mockDraftViewer?: MockViewer;
+  /** Home → Match Selection → Mock match selection (test run): which setup runs ("off" = none) and who holds the phone. */
+  mockMatch?: MockMatchPresetId | "off";
+  mockMatchViewer?: MatchSelViewer;
+  /** Home → Team Draft / Match Selection sub-pages: the draft sample shown (lib/dev/draftSim.ts). */
+} & DraftSimState;
 export const COMPETITION_SETUPS = [["none", "No competition"], ["individual", "Individual only"], ["team", "Match only"], ["both", "Individual + match"]] as const;
 export type CompetitionSetup = (typeof COMPETITION_SETUPS)[number][0];
 /** The Individual / Team types a setup stands for (Settings → Competition). */
@@ -197,6 +218,11 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.playerRoleViewer !== undefined && !["organizer","captain-a","captain-b","player"].includes(String(state.playerRoleViewer))) return null;
   if (state.matchDraftPreview !== undefined && !["off", "Response", "Ranks", "Randomized"].includes(String(state.matchDraftPreview))) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;
+  if (!validDraftSim(state)) return null;
+  if (state.mockDraft !== undefined && state.mockDraft !== "off" && !MOCK_DRAFT_PRESET_IDS.includes(state.mockDraft as MockDraftPresetId)) return null;
+  if (state.mockDraftViewer !== undefined && !validMockViewer(state.mockDraftViewer)) return null;
+  if (state.mockMatch !== undefined && state.mockMatch !== "off" && !MOCK_MATCH_PRESET_IDS.includes(state.mockMatch as MockMatchPresetId)) return null;
+  if (state.mockMatchViewer !== undefined && !MATCH_SEL_VIEWERS.includes(state.mockMatchViewer as MatchSelViewer)) return null;
   if (state.notificationPreview !== undefined && !ALL_NOTIFICATION_PREVIEWS.includes(String(state.notificationPreview))) return null;
   if (state.wallpaper !== undefined && !["default", "dark", "light"].includes(String(state.wallpaper))) return null;
   if (state.highlightSim !== undefined && !parseHighlightSim(state.highlightSim)) return null;
@@ -206,6 +232,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;
+  for (const [key, allowed] of [["homeOverview", HOME_OVERVIEW_STAGES], ["homeMomentum", HOME_MOMENTUM_STAGES], ["homeUpcoming", HOME_UPCOMING_STAGES], ["homeCompetition", HOME_COMPETITION_STAGES], ["homeInvite", HOME_INVITE_STAGES], ["homePlayers", HOME_PLAYERS_STAGES]] as const)
+    if (state[key] !== undefined && !(allowed as readonly unknown[]).includes(state[key])) return null;
   if (state.birthdayStage !== undefined && !["empty", "calendar", "picked"].includes(String(state.birthdayStage))) return null;
   if (state.tripBuilderStage !== undefined && !(TRIP_BUILDER_STAGES as readonly unknown[]).includes(state.tripBuilderStage)) return null;
   if (state.photoStage !== undefined && !["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"].includes(String(state.photoStage))) return null;

@@ -25,7 +25,7 @@ export default async function SavedGolfTripPage({ params, searchParams }: { para
     editing={data.editing ? { ...data.editing, endpoint: `/api/golf-trips/${tripId}/imported-results` } : undefined} />;
   const { savedTrip, viewer } = data;
   // GolfTripHome reads questionnaire-shaped answers; the saved trip is passed in that shape.
-  return <SavedGolfTripHome tips={{ profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} planSnapshot={data.planSnapshot} setupSnapshot={data.setupSnapshot}
+  return <SavedGolfTripHome tapInCode={savedTrip.trip.watch_code} tips={{ profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} planSnapshot={data.planSnapshot} setupSnapshot={data.setupSnapshot}
     savedTrip={savedTrip} preview={savedTripAsDraft(savedTrip)} settingsHref={golfTripUrl(tripId, "settings")} backHref="/golf-trips"
     alertScope={{ tripId, profileId: viewer.profileId, isOrganizer: viewer.isOrganizer }} flights={{ summary: data.flightSummary, href: golfTripUrl(tripId, "flights") }}
     scoring={data.scoring ?? undefined} />;

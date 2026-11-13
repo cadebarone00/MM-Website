@@ -20,6 +20,19 @@ function swapIds<T>(value: T, ids: Map<string, string>): T {
   return JSON.parse(text) as T;
 }
 
+/** Only competition display data belongs in the anonymous response, including nested keys. */
+function publicSetupValues(values: Record<string, unknown>): Record<string, unknown> {
+  const shown: Record<string, unknown> = {};
+  const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
+  for (const key of ["teamNames", "teamColors"]) if (Array.isArray(values[key])) shown[key] = values[key].filter(item => typeof item === "string" || item === null);
+  for (const key of ["playerTotal", "dayCount"]) if (typeof values[key] === "number") shown[key] = values[key];
+  if (object(values.localCompetitionType)) shown.localCompetitionType = Object.fromEntries(["individual", "team"].filter(key => values.localCompetitionType && (typeof (values.localCompetitionType as Record<string, unknown>)[key] === "string" || (values.localCompetitionType as Record<string, unknown>)[key] === null)).map(key => [key, (values.localCompetitionType as Record<string, unknown>)[key]]));
+  for (const key of ["compRounds", "roundsPerDay", "teamPicks"]) if (object(values[key])) shown[key] = Object.fromEntries(Object.entries(values[key]).filter(([index, value]) => /^\d+(?:-\d+)?$/.test(index) && (typeof value === "boolean" || typeof value === "number")));
+  if (Array.isArray(values.submittedTeams) && values.submittedTeams.every(group => Array.isArray(group) && group.every(index => Number.isInteger(index) && index >= 0 && index < 64))) shown.submittedTeams = values.submittedTeams;
+  if (object(values.compFormats)) shown.compFormats = Object.fromEntries(Object.entries(values.compFormats).filter(([key, value]) => /^\d+-\d+$/.test(key) && object(value)).map(([key, value]) => [key, Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([field, setting]) => ["players", "format", "matchType", "nassau", "pointsPerMatch", "scoring"].includes(field) && ["string", "number", "boolean"].includes(typeof setting)))]));
+  return shown;
+}
+
 /** A tournament for spectators: players as p1, p2…; no join code, no organizer id, no Info PDF or tee sheets (players only). */
 export function spectatorTournament(t: CodeTournament): CodeTournament {
   const ids = new Map(t.players.map((p, i) => [p.profileId, `p${i + 1}`]));
@@ -49,5 +62,26 @@ export function spectatorTrip(trip: SavedGolfTrip, scoring: TripRoundScoring | n
   };
   const draft: GolfTripDraft = { ...savedTripAsDraft(savedTrip), destination: "", yourName: "", yourEmail: "" };
   delete draft.destinationLatitude; delete draft.destinationLongitude;
-  return swapIds({ savedTrip, scoring, setup, draft }, ids);
+  // Public settings are an explicit allowlist, not the member settings snapshot.
+  const publicSetup: TripSetupSnapshot = { available: setup.available, revision: 0,
+    basis: { startDate: savedTrip.trip.start_date, endDate: savedTrip.trip.end_date, rounds: savedTrip.rounds },
+    values: publicSetupValues(setup.values) };
+  const acceptedIds = new Set(accepted.map(member => member.profileId));
+  const publicScoring: TripRoundScoring | null = scoring ? {
+    roundId: watchId + "-round-" + scoring.roundNumber, roundNumber: scoring.roundNumber,
+    pars: scoring.pars ? { pars: scoring.pars.pars, source: scoring.pars.source, courseName: scoring.pars.courseName, courseRef: null, tee: null, confirmedBy: null, confirmedAt: null, lockedAt: scoring.pars.lockedAt } : null,
+    groups: scoring.groups.map((group, index) => ({ id: watchId + "-group-" + (index + 1), groupNumber: group.groupNumber ?? index + 1,
+      lockedAt: group.lockedAt ?? null, startHole: group.startHole,
+      players: group.players.filter(player => acceptedIds.has(player.profileId)).map(player => ({
+        profileId: player.profileId, displayName: accepted.find(member => member.profileId === player.profileId)!.displayName,
+        playOrder: player.playOrder, side: player.side ?? null, submittedAt: player.submittedAt ?? null,
+        attesterProfileId: acceptedIds.has(player.attesterProfileId) ? player.attesterProfileId : null,
+      })) })),
+    entries: scoring.entries.filter(entry => acceptedIds.has(entry.scoredProfileId) && acceptedIds.has(entry.enteredByProfileId)).map(entry => ({
+      scoredProfileId: entry.scoredProfileId, enteredByProfileId: entry.enteredByProfileId, hole: entry.hole, strokes: entry.strokes,
+      putts: entry.putts ?? null, fairway: entry.fairway ?? null, green: entry.green ?? null,
+      penaltyFairway: entry.penaltyFairway ?? false, penaltyGreen: entry.penaltyGreen ?? false, clientUpdatedAt: "", version: 1,
+    })),
+  } : null;
+  return swapIds({ savedTrip, scoring: publicScoring, setup: publicSetup, draft }, ids);
 }

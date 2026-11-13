@@ -6,6 +6,16 @@
 /** Longest short name the organizer can type (and what the automatic one aims for). */
 export const COURSE_SHORT_NAME_MAX = 24;
 
+/** Roomier overview labels retain the club and layout instead of applying the 24-character short-name limit. */
+export function courseOverviewName(course: string, venue?: string): string {
+  let name = course.replace(/\s+/g, " ").trim();
+  const layouts: Record<string, string> = { "pete dye": "Pete Dye", "pete dye challenge": "Pete Dye", "pete dye challenge course": "Pete Dye", palmer: "Palmer", tournament: "Dinah Shore Tournament", "dinah shore": "Dinah Shore Tournament" };
+  if (/\bmission hills\b/i.test(venue ?? "") && layouts[name.toLowerCase()]) name = `Mission Hills CC ${layouts[name.toLowerCase()]}`;
+  return name.replace(/\bCountry Club\b/gi, "CC").replace(/\bGolf Club\b/gi, "GC")
+    .replace(/\b(Pete Dye)\s+Challenge(?:\s+Course)?\b/gi, "$1")
+    .replace(/\s+[–—-]\s+|\s*[·|]\s*/g, " ").replace(/\s+/g, " ").trim() || "Course not set";
+}
+
 // Filler that adds nothing at a glance, longest first so "Golf & Country Club" goes before "Country Club".
 const FILLER = [
   "golf and country club", "golf & country club", "golf resort and spa", "golf resort & spa", "resort and spa", "resort & spa",

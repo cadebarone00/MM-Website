@@ -1,0 +1,37 @@
+.board{position:relative;margin-inline:calc(-1 * var(--page-gutter));margin-bottom:10px;overflow:visible;border:0;border-radius:0 0 28px 28px;background:radial-gradient(ellipse at 50% 100%,rgba(220,196,149,.07),transparent 75%);box-shadow:none;color:var(--lm-ink-fbf8f1)}
+.content{padding:2px 26px 10px}
+.details{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .25s ease,opacity .2s ease}
+.details[data-collapsed=true]{grid-template-rows:0fr;opacity:0}
+.detailsInner{min-height:0;overflow:hidden}
+.handle{position:absolute;z-index:1;left:50%;bottom:-9px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:32px;height:10px;padding:0;border:1px solid rgba(220,196,149,.45);border-top:0;border-radius:0 0 9px 9px;background:#240001;color:var(--lm-ink-dcc495);cursor:ns-resize;touch-action:none}
+.handle span{width:12px;height:2px;border-radius:999px;background:currentColor;opacity:.65}
+.handle:hover span{opacity:1}
+.handle:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:-4px;border-radius:8px}
+@media(prefers-reduced-motion:reduce){.details{transition:none}}
+.date{margin:0 0 8px;text-align:center;color:var(--lm-ink-dcc495);font:600 15px/1.2 var(--font-spectral),Georgia,serif}
+.round{padding:5px 0}
+.round + .round{position:relative;margin-top:2px;padding-top:4px}
+.course{margin:0;font:600 13px/1.35 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1);overflow-wrap:anywhere}
+.match{margin:4px 0 0;font:500 12px/1.4 var(--font-barlow),Arial,sans-serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 75%,transparent);overflow-wrap:anywhere}
+.empty{margin:6px 0;font:500 13px/1.4 var(--font-barlow),sans-serif}
+.navigation{position:relative;padding:0 16px 8px;background:transparent}
+
+.profileRow{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px;padding-bottom:10px}
+.identity{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.avatar{display:grid;place-items:center;flex:none;width:36px;height:36px;overflow:hidden;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:rgba(220,196,149,.12);color:var(--lm-ink-dcc495);font:600 14px/1 var(--font-spectral),Georgia,serif}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.identityText{min-width:0}
+.name{margin:0;overflow-wrap:anywhere;font:600 15px/1.2 var(--font-spectral),Georgia,serif}
+.username{margin:4px 0 0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--lm-ink-dcc495);font:400 11px/1.2 var(--font-barlow),Arial,sans-serif}
+.summary{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;min-width:168px;box-sizing:border-box;margin:0;padding:10px 12px;border:1px solid rgba(220,196,149,.55);border-radius:20px}
+.summary>div{flex:1;min-width:0;text-align:center}
+.summary dt{white-space:nowrap;font:600 9px/1.1 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495);text-transform:uppercase;letter-spacing:.05em}
+.summary dd{margin:2px 0 0;font:700 16px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+
+/* Full-width separators dissolve across the outer 15% toward each phone edge. */
+.profileRow::after{content:"";position:absolute;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(220,196,149,.3) 15%,rgba(220,196,149,.3) 85%,transparent)}
+/* Trace the rounded lower edge up to the screen sides, fading upward into the page. */
+.board::after{content:"";position:absolute;box-sizing:border-box;bottom:0;left:0;right:0;height:40px;border:1px solid rgba(220,196,149,.45);border-top:0;border-radius:0 0 28px 28px;pointer-events:none;mask-image:linear-gradient(to bottom,transparent,black 55%)}
+
+
+.profileRow::after{bottom:0;left:-26px;right:-26px}

@@ -12,6 +12,9 @@ import { normalizeTripScenario } from "@/lib/dev/tripScenario";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
 import { lightTap } from "@/lib/haptics";
+import { DRAFT_SIM_DEFAULTS } from "@/lib/dev/draftSim";
+import { MockDraftPanel } from "./MockDraftPanel";
+import { MockMatchPanel } from "./MockMatchPanel";
 import styles from "./DevSimulator.module.css";
 
 const initialDevice = SIMULATOR_DEVICES[4];
@@ -66,6 +69,9 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
+  // Home → Team Draft → Mock draft (test run): the test panel sits just left of the phone.
+  const mockDraftPreset = selectedPage.id === "home-team-draft-mock" && state.mockDraft && state.mockDraft !== "off" ? state.mockDraft : null;
+  const mockMatchPreset = selectedPage.id === "home-match-selection-mock" && state.mockMatch && state.mockMatch !== "off" ? state.mockMatch : null;
   const conditions = scenarioVisible ? selectedPage.conditions?.filter(condition=>!condition.playerCount && !["competition-source","competitive","social","round-source","scheduled","round-live","round-end-match","round-end-mismatch","round-between","round-complete","dual-draft-momentum","home-draft-configured"].includes(condition.id) && !["home-match-draft-","match-draft-","format-"].some(prefix=>condition.id.startsWith(prefix))) : selectedPage.conditions;
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
@@ -239,7 +245,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
-    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
+    <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset || mockMatchPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
         <form className={styles.cards} action="/dev" method="get">{groups.map(group => <button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage(pages.find(page => (page.group ?? "Other") === group)!.id); }}>{group}</button>)}</form>
@@ -268,7 +274,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       </aside>)}
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
-        <div className={styles.cards}>{conditions?.length ? conditions.map(condition => condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
+        <div className={styles.cards}>{conditions?.length ? conditions.map((condition, index) => <Fragment key={condition.id}>{condition.section && condition.section !== conditions[index - 1]?.section && <h3 className={styles.conditionSection}>{condition.section}</h3>}{condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : key === "draftSim" ? "off" : state.draftSim && state.draftSim !== "off" ? DRAFT_SIM_DEFAULTS[key as keyof typeof DRAFT_SIM_DEFAULTS] : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
           {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); chooseSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
           {/* The Maroon Masters: wipe everything set up on it and start the official trip over (the app frame reloads fresh). */}
@@ -277,7 +283,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
             chooseSource("masters");
             try { iframe.current?.contentWindow?.location.reload(); } catch { /* the frame reloads on its next navigation */ }
           }}><RotateCcw size={13} /> Reset The Maroon Masters</button>}
-</Fragment>) : <p>No conditional states</p>}</div>
+</Fragment>}</Fragment>) : <p>No conditional states</p>}</div>
         {/* Notifications → Phone / In-app: preview the Highlights Engine's real output (rules, quips, decisions) on these same screens. */}
         {(currentPath === "/dev/notifications/phone" || currentPath === "/dev/notifications/in-app") && <HighlightScenarioControls value={state.highlightSim} onChange={next => setState(current => ({ ...current, highlightSim: next }))} />}
         {/* Authentication → Email confirmed / Profile created: replay the gold M animation (same counter as the logo entrance). */}
@@ -296,6 +302,8 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
         {!!selectedPage.conditions?.length && <button type="button" onClick={() => { setState(DEFAULT_SIMULATOR_STATE); setSource("maroon"); }}><RotateCcw size={13} /> Reset conditionals</button>}
       </aside>
       {scenarioVisible && <TripScenarioControls state={state} onChange={changes=>setState(current=>normalizeTripScenario({...current,...changes}))} onReset={()=>{resetDevSetup(devTripScope(config));initializeTripScenario(config);iframe.current?.contentWindow?.location.reload();}}/>}
+      {mockDraftPreset && <MockDraftPanel preset={mockDraftPreset} viewer={state.mockDraftViewer ?? "organizer"} onViewer={viewer => setState(current => ({ ...current, mockDraftViewer: viewer }))} />}
+      {mockMatchPreset && <MockMatchPanel preset={mockMatchPreset} viewer={state.mockMatchViewer ?? "organizer"} onViewer={viewer => setState(current => ({ ...current, mockMatchViewer: viewer }))} />}
       <div className={styles.previewColumn}>
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>

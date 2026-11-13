@@ -1,3 +1,4 @@
+import { validRoundRobinResults } from "./roundRobin";
 import { COURSE_SHORT_NAME_MAX } from "./courseShortName";
 import { draftScheduleError } from "./draftSchedule";
 import type { SavedGolfTrip } from "./golfTripCreate";
@@ -15,10 +16,10 @@ export const setupDecode = (_key: string, value: unknown) => value && typeof val
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export const datePlus = (date: string, days: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const dayDifference = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000);
-const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings gameRounds skinsScoring".split(" "));
+const fields = new Set("pastTrips scoringFieldsOff playerTotal localCompetitionType lockedComp teamChoiceSaved typePlayers teamNames teamColors teamPicks teamTotalChoice unevenTeams unevenSizes teamTie teamSelection draftDate draftTime draftType draftMethod draftCaptains matchSelectionResults completedMatchDrafts submittedTeams gameSettings dayCount roundsPerDay arrivalShift pickedCourses yardageCorrections roundTees compRounds skinsOn skinsRounds skinsPlayers compFormats teeTimes roundRobinResults matchSelections matchPerRound allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames golfOnArrival golfOnDeparture playerStats inAppScoring predictSettings gameRounds skinsScoring".split(" "));
 const bools = new Set("teamChoiceSaved unevenTeams skinsOn matchPerRound golfOnArrival golfOnDeparture playerStats inAppScoring".split(" "));
-const arrays = new Set("pastTrips teamNames teamColors unevenSizes".split(" "));
-const records = new Set("scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings gameRounds".split(" "));
+const arrays = new Set("completedMatchDrafts pastTrips teamNames teamColors unevenSizes".split(" "));
+const records = new Set("matchSelectionResults draftCaptains scoringFieldsOff typePlayers teamPicks lockedComp roundsPerDay pickedCourses yardageCorrections roundTees compRounds skinsRounds skinsPlayers compFormats teeTimes roundRobinResults matchSelections allRoundsMatch teePlayers teeMatches slotCourseNames courseShortNames gameSettings predictSettings gameRounds".split(" "));
 const enums: Record<string, readonly unknown[]> = {
   skinsScoring: ["Gross", "Net"], teamTie: ["Retain", "Teams Tie", "Playoff"], teamSelection: [null, "Manual", "Draft", "Random"], draftType: ["Snake", "Straight"], draftMethod: ["Captain's Picks", "Duck Race"],
 };
@@ -28,10 +29,11 @@ const mapOf = (value: unknown, check: (value: unknown) => boolean) => object(val
 const setOf = (value: unknown, check: (value: unknown) => boolean) => object(value) && Array.isArray(value.$set) && value.$set.every(check);
 export const FORMAT_NAMES = ["Singles", "Fourball", "Alternate Shot", "Chapman", "Scramble", "Shamble", "Stroke Play", "Stableford"] as const;
 const formatNames: readonly string[] = FORMAT_NAMES;
-const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5) && ["rankMinutes","putForwardMinutes","responseMinutes"].every(key=>value[key]===undefined || int(value[key],1,120));
+const matchChoice = (value: unknown) => object(value) && [null, "Manual", "Match Draft", "Round Robin"].includes(value.method as never) && [null, "Response", "Ranks", "Randomized"].includes(value.draftType as never) && text(value.date, 10) && text(value.time, 5) && ["rankMinutes","putForwardMinutes","responseMinutes"].every(key=>value[key]===undefined || int(value[key],1,120));
 const roundFormat = (value: unknown) => object(value) && int(value.players) && typeof value.pointsPerMatch === "number" && value.pointsPerMatch >= 0 && value.pointsPerMatch <= 1000 && ["Match Play", "Stroke Play"].includes(String(value.matchType)) && typeof value.nassau === "boolean" && ["Gross", "Net", "Both"].includes(String(value.scoring)) && formatNames.includes(String(value.format));
 const tees = (value: unknown) => object(value) && (value.tee === null || text(value.tee)) && typeof value.perHole === "boolean" && mapOf(value.holeTees, entry => text(entry));
 const nestedChecks: Record<string, (value: unknown) => boolean> = {
+  roundRobinResults: validRoundRobinResults,
   teamNames: value => Array.isArray(value) && value.every(item => text(item, 120)),
   teamColors: value => Array.isArray(value) && value.every(item => item === null || text(item, 80)),
   unevenSizes: value => Array.isArray(value) && value.length === 2 && value.every(item => int(item, 1)),
@@ -59,13 +61,13 @@ const nestedChecks: Record<string, (value: unknown) => boolean> = {
   // Organizer → Games: Play game ids per round number.
   gameRounds: value => mapOf(value, ids => Array.isArray(ids) && ids.length <= 20 && ids.every(id => text(id, 20))),
 };
-function safeJson(value: unknown, depth = 0): boolean {
+function safeJson(value: unknown, depth = 0, field = ""): boolean {
   if (depth > 12) return false;
   if (value === null || typeof value === "boolean") return true;
-  if (typeof value === "string") return value.length <= 4000;
+  if (typeof value === "string") return value.length <= (field === "roster" ? 16000 : 4000);
   if (typeof value === "number") return Number.isFinite(value) && Math.abs(value) <= 1_000_000;
   if (Array.isArray(value)) return value.length <= 2000 && value.every(item => safeJson(item, depth + 1));
-  return object(value) && Object.keys(value).length <= 2000 && Object.entries(value).every(([key, item]) => !["__proto__", "constructor", "prototype"].includes(key) && safeJson(item, depth + 1));
+  return object(value) && Object.keys(value).length <= (field === "outcomes" ? 2048 : 2000) && Object.entries(value).every(([key, item]) => !["__proto__", "constructor", "prototype"].includes(key) && safeJson(item, depth + 1, key));
 }
 /** Bounded, whitelisted presentation configuration. Never accepts profile/member IDs or score overrides. */
 export function validSetup(value: unknown): value is SetupValues {
@@ -81,7 +83,14 @@ export function validSetup(value: unknown): value is SetupValues {
     if (key === "playerTotal" && (Number(item) < 1 || Number(item) > 64)) return false;
     if (key === "dayCount" && (Number(item) < 1 || Number(item) > 31)) return false;
     if (key === "arrivalShift" && Math.abs(Number(item)) > 3660) return false;
-    if (key === "localCompetitionType" && (!object(item) || ![null, "Stroke Play", "Points Based"].includes(item.individual as never) || ![null, "2 Teams", "Pairs", "3-Ball", "4-Ball"].includes(item.team as never))) return false;
+    if (key === "localCompetitionType" && (!object(item) || ![null, "Stroke Play", "Points Based", "Stableford", "Match Play"].includes(item.individual as never) || ![null, "2 Teams", "Pairs", "3-Ball", "4-Ball"].includes(item.team as never))) return false;
+    // Team Draft captains: team number ("0" = Team A) → the captain's account (profile id).
+    if (key === "draftCaptains" && !Object.entries(item as SetupValues).every(([team, id]) => /^([0-9]|[1-5][0-9]|6[0-3])$/.test(team) && typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) return false;
+    // Match Selection results (saved by the server when a round finishes): round key → per match, Team A's and Team B's
+    // players as member positions; completedMatchDrafts: the round keys that are done.
+    if (key === "completedMatchDrafts" && !(item as unknown[]).every(round => typeof round === "string" && /^[0-9]{1,2}-[0-9]$/.test(round))) return false;
+    if (key === "matchSelectionResults" && !Object.entries(item as SetupValues).every(([round, matches]) => /^[0-9]{1,2}-[0-9]$/.test(round) && Array.isArray(matches)
+      && matches.every(match => object(match) && [match.a, match.b].every(side => Array.isArray(side) && side.length <= 4 && side.every(player => Number.isInteger(player) && player >= 0 && player < 64))))) return false;
     if (key === "submittedTeams" && item !== null && (!Array.isArray(item) || !item.every(team => Array.isArray(team) && team.every(player => Number.isInteger(player) && player >= 0 && player < 64)))) return false;
     if (key === "teamTotalChoice" && item !== null && (!Number.isInteger(item) || Number(item) < 1 || Number(item) > 64)) return false;
     if (key === "roundsPerDay" && !Object.entries(item as SetupValues).every(([day, count]) => /^-?\d+$/.test(day) && [0, 1, 2].includes(count as number))) return false;

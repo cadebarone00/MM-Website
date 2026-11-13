@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { updateSampleProfile, useSampleProfile } from "@/components/dev/useSampleProfile";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -20,8 +20,14 @@ import styles from "@/components/settings/Settings.module.css";
  */
 const LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/edit" };
 
+// "?view=public" / "?view=private" (a Team Draft sample player's box links here) picks someone else's profile.
+const subscribeNothing = () => () => {};
+const viewFromUrl = () => { const view = new URLSearchParams(window.location.search).get("view"); return view === "public" || view === "private" ? view : null; };
+
 export function DevProfilePreview() {
-  const preview = useSimulator()?.state.profilePreview ?? "sample";
+  const linked = useSyncExternalStore(subscribeNothing, viewFromUrl, () => null);
+  const simulated = useSimulator()?.state.profilePreview;
+  const preview = linked ?? simulated ?? "sample";
   const mine = useSampleProfile();
   const profile = useMemo(() => sampleProfileReadModel(preview, mine, new Date().toISOString().slice(0, 10)), [preview, mine]);
   return <ProfileView profile={profile} friendsCount={SAMPLE_FRIENDS} links={LINKS} />;

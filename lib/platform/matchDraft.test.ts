@@ -36,3 +36,19 @@ test("round schedules use per-round date overrides, configured format, disabled 
  assert.equal(result.length,2);assert.equal(result[0].locked,true);assert.equal(result[1].key,"0-1");assert.equal(result[1].date,"2027-04-21");assert.equal(result[1].type,"Ranks");assert.equal(result[1].perSide,2);assert.equal(result[1].matches,2);
  assert.equal(matchDraftRounds({...setup,matchPerRound:true},rounds,8).length,0);
 });
+
+test("match cards need a course and a configured format", () => {
+ const setup = { allRoundsMatch: { method: "Match Draft" } };
+ assert.equal(matchDraftRounds(setup, [{ number: 1, date: "2027-04-22", course: "Course" }], 8).length, 0);
+ assert.equal(matchDraftRounds(setup, [{ number: 1, date: "2027-04-22", course: "Course TBD", format: "Singles" }], 8).length, 0);
+ assert.equal(matchDraftRounds(setup, [{ number: 1, date: "2027-04-22", course: "Course", format: "Singles" }], 8).length, 1);
+});
+
+test("stroke-play scrambles and zero-capacity rounds never create match drafts", () => {
+ const round = { number: 1, date: "2027-04-22", course: "Course", format: "Scramble" };
+ const comp = { players: 8, format: "Scramble", matchType: "Stroke Play", nassau: false, pointsPerMatch: 1, scoring: "Gross" };
+ const setup = { allRoundsMatch: { method: "Match Draft" }, compFormats: { "0-0": comp } };
+ assert.deepEqual(matchDraftRounds(setup, [round], 8), []);
+ assert.deepEqual(matchDraftRounds({ ...setup, compFormats: { "0-0": { ...comp, players: 1, matchType: "Match Play" } } }, [round], 1), []);
+ assert.deepEqual(matchDraftRounds({ allRoundsMatch: { method: "Match Draft" } }, [{ ...round, format: "Stroke Play" }], 8), []);
+});

@@ -264,3 +264,20 @@
 [1019/153041.130:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
 [1020/142929.884:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
 [1028/222017.929:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[1110/112456.339:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[1113/081322.184:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.185:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.240:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.240:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.256:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.256:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.345:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/081322.345:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.333:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.334:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.371:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.371:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.374:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.374:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.516:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1113/083456.516:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.

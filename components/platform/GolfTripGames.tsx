@@ -12,7 +12,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
-import { currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
+import { tripGameRound, tripGameSettled, currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
 import styles from "./GolfTripGames.module.css";
 
 /**
@@ -27,7 +27,7 @@ export type SavedGamesContext = { tripId: string; meId: string; group: { profile
 const REALTIME = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 /** Pars for a game: the round's saved pars, else the shown round's, else par 4s (birdies can't be told without pars). */
 const withPars = (match: GolfMatchPreview, game: TripGame): GolfMatchPreview =>
-  game.pars?.length === 18 ? { ...match, par: game.pars } : match.par.length ? match : { ...match, par: Array(18).fill(4) };
+  tripGameRound(match, game);
 const readGames = (): TripGame[] => { try { return JSON.parse(localStorage.getItem(STORE) ?? "[]"); } catch { return []; } };
 const firstName = (name: string) => name.split(/\s+/)[0];
 
@@ -98,15 +98,20 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
     setSheetBox({ top: Math.max(16, tabs?.top ?? 16), bottom: 0 });
     setCreating(true);
   };
+  const [view, setView] = useState<"Active" | "Settled">("Active");
   const mine = games.filter((g) => g.players.includes(me));
+  const visible = mine.filter((game) => tripGameSettled(match, game) === (view === "Settled"));
 
   return <section className={styles.root} aria-label="Games">
+    <div className={homeStyles.slidingSelector} data-second={view === "Settled"} role="group" aria-label="Game status">
+      {(["Active", "Settled"] as const).map((status) => <button key={status} type="button" className={`${homeStyles.tab} ${view === status ? homeStyles.tabActive : ""}`} aria-pressed={view === status} onClick={() => setView(status)}>{status}</button>)}
+    </div>
     <header className={styles.gamesHeader}>
       <h2 className={styles.activeGamesTitle}>Your Games</h2>
       <button type="button" className={homeStyles.itineraryAddPill} aria-haspopup="dialog" onClick={openNew}><Plus size={16} strokeWidth={2.5} aria-hidden />New game</button>
     </header>
-    {mine.length === 0 && <p className={styles.emptyGames}>No games yet. Tap New game, pick a round and a game, and it scores itself from the scorecard.</p>}
-    {mine.map((game) => {
+    {loaded && visible.length === 0 && <p className={styles.emptyGames}>{view === "Settled" ? "No settled games yet. Completed games will appear here." : "No active games. Tap New game to start one."}</p>}
+    {visible.map((game) => {
       const update = (next: Partial<TripGame>) => {
         save(games.map((g) => g.key === game.key ? { ...g, ...next } : g));
         if (!saved) return;
@@ -121,7 +126,7 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
       };
       const canRemove = !saved || (game as TripGame & { mine?: boolean }).mine !== false;
       // Games with nothing to set up (Vegas included, even ones saved before it picked teams by hole) go straight to the game card.
-      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={withPars(match, game)} onRemove={canRemove ? remove : undefined}
+      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={withPars(match, game)} settled={view === "Settled"} onRemove={canRemove && view === "Active" ? remove : undefined}
         onInput={pick} />
         : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={canRemove ? remove : undefined} />;
     })}
@@ -129,6 +134,7 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
     {creating && <NewGame box={sheetBox} group={group} rounds={rounds.length ? rounds : [match.round]} current={match.round} onClose={() => setCreating(false)}
       onCreate={(game) => {
         setCreating(false);
+        setView("Active");
         if (!saved) { save([...games, game]); return; }
         void send({ action: "create", round: game.round, requestId: crypto.randomUUID(),
           game: { gameType: game.config.id, net: game.config.net, birdiesDouble: game.config.birdiesDouble, ...(game.config.teams ? { teams: game.config.teams } : {}), players: game.players.map(profileOf) } });
@@ -137,11 +143,11 @@ export function GolfTripGames({ match, rounds, signedInName, saved, organizerGam
 }
 
 /** A game during its round: hole picker for the extra pick, then the standings (scored by Play's own rules). */
-function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: GolfMatchPreview; onInput: (hole: number, part: HoleInput) => void; onRemove?: () => void }) {
+function GameCard({ game, match, onInput, onRemove, settled = false }: { settled?: boolean; game: TripGame; match: GolfMatchPreview; onInput: (hole: number, part: HoleInput) => void; onRemove?: () => void }) {
   const def = gameDef(game.config.id);
   const holes = match.par.length, range: [number, number] = [0, holes];
   const strokes = gameStrokes(match, game);
-  const live = match.round === game.round;
+  const live = match.round === game.round && match.par.length > 0 && match.leaderboard.length > 0;
   const now = currentHole(strokes, holes);
   const [shown, setShown] = useState<number | null>(null);
   const hole = shown ?? now;
@@ -163,7 +169,7 @@ function GameCard({ game, match, onInput, onRemove }: { game: TripGame; match: G
       ? [0, 1].map((t) => game.players.filter((_, i) => game.config.teams![i] === t).map(firstName).join(" & ")).join("  vs  ")
       : names.join(" · ")}</p>}
     {!live ? <p className={styles.emptyGames}>Scores show here during Round {game.round}.</p> : <>
-      {(vegas || (def.holeInput && def.holeInput !== "snake")) && <div className={styles.holePick}>
+      {!settled && (vegas || (def.holeInput && def.holeInput !== "snake")) && <div className={styles.holePick}>
         <div className={styles.holeStep}>
           <button type="button" aria-label="Previous hole" disabled={hole <= 0} onClick={() => setShown(Math.max(0, hole - 1))}><ChevronLeft size={18} aria-hidden /></button>
           <b>Hole {hole + 1}{hole === now && thru < holes ? " · now" : ""}</b>

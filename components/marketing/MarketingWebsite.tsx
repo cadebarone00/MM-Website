@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowUpRight, Flag, MapPin, Medal, Trophy, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { WebsiteBrand } from "./WebsiteBrand";
@@ -24,7 +25,7 @@ export function MarketingWebsite({ accountActions }: { accountActions?: ReactNod
     <a className={styles.skip} href="#main">Skip to content</a>
     <header className={styles.header}>
       <WebsiteBrand />
-      <nav aria-label="Website navigation"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#our-story">Our Story</a><a href="#support">Support</a><a href="/tap-in">Tap In</a><span className={styles.navActions}>{accountActions ?? <a className={styles.navSignIn} href="/login/email?next=%2Fdashboard">Sign In</a>}<a className={styles.navDownload} href="#download">Download <ArrowUpRight size={15} aria-hidden="true" /></a></span></nav>
+      <nav aria-label="Website navigation"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#our-story">Our Story</a><a href="#support">Support</a><Link href="/tap-in">The Maroon Live</Link><span className={styles.navActions}>{accountActions ?? <a className={styles.navSignIn} href="/login/email?next=%2Fdashboard">Sign In</a>}<a className={styles.navDownload} href="#download">Download <ArrowUpRight size={15} aria-hidden="true" /></a></span></nav>
     </header>
     <main id="main">
       <WebsiteHero />
@@ -40,7 +41,7 @@ export function MarketingWebsite({ accountActions }: { accountActions?: ReactNod
       <div className={styles.footerTop}><WebsiteBrand /><p>Golf is better together.</p></div>
       <nav className={styles.footerLinks} aria-label="Footer destinations">
         <div><h2>The Maroon</h2><a href="#our-story">About The Maroon</a><a href="#features">Features</a><a href="#how-it-works">How It Works</a></div>
-        <div><h2>Your game</h2><a href="/dashboard">Player Dashboard</a><a href="/tap-in">Tap In &middot; Watch Live</a><a href="#download">iOS &amp; Android</a></div>
+        <div><h2>Your game</h2><a href="/dashboard">Player Dashboard</a><Link href="/tap-in">The Maroon Live</Link><a href="#download">iOS &amp; Android</a></div>
         <div><h2>Get in touch</h2><a href="#support">Support &amp; Feedback</a></div>
       </nav>
       <div className={styles.footerBottom}><span>&copy; {new Date().getFullYear()} The Maroon</span><a href="#top">BACK TO TOP &uarr;</a></div>

@@ -61,6 +61,7 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/join-team\/[^/]+$/, category: "active", why: "Content team invite link" },
   { pattern: /^\/tournaments\/live\/[^/]+$/, category: "public", why: "public tournament view" },
   { pattern: /^\/watch\/[^/]+$/, category: "public", why: "watch code, no sign-in" },
+  { pattern: /^\/tap-in(?:\/[^/]+)?$/, category: "public", why: "The Maroon Live directory and code-based spectator pages, no sign-in" },
   { pattern: /^\/t\//, category: "public", why: "public tournament websites" },
   { pattern: /^\/(website|contact|merchandise|sponsorship|the-maroon(\/.*)?|schedule(\/.*)?|videos(\/.*)?)$/, category: "public", why: "marketing / public info" },
   { pattern: /^\/(portal|wagers|fantasy|my-team|vault|history|leaderboard|players|teams|watch-live|broadcast)(\/.*)?$/, category: "public",
