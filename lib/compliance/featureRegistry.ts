@@ -250,6 +250,21 @@ const seeds: FeatureSeed[] = [
     attentionCategories: ["affiliate-links", "advertising", "privacy", "personal-data", "retention", "taxes", "platform-rules", "legal-review"],
   },
   {
+    id: "join-codes", name: "Invite codes and \"Email the code\" (rounds, trips, tourneys, leagues)",
+    scope: "6-character invite codes for Play rounds and Golf Trips (joining by code: rounds up to 5, trips straight in); host / organizer emails any kind's code to typed addresses via Resend. Addresses kept 90 days in email_invites_sent only for the caps (50 per item, 200/day per sender, once an hour per address). Unsubscribe / anti-spam obligations, Resend processing terms and live verification remain follow-ups: docs/join-codes-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "advertising", "platform-rules", "legal-review"],
+  },
+  {
+    id: "leagues", name: "Leagues (one-round leagues with groups, skins and random pairs)",
+    scope: "Organizer-created one-round leagues joined by code or link; members see each other's names, handicap indexes and hole scores; a scorer per group enters the group's scores; skins, random 2-person pairs and group games are counted only (no money). Service-role functions with organizer / scorer / member checks (supabase/leagues.sql). Retention period and live-database verification remain follow-ups: docs/leagues-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "platform-rules", "legal-review"],
+  },
+  {
+    id: "native-capacitor-app", name: "The Maroon iPhone / Android app (Capacitor, screens bundled)",
+    scope: "Website screens statically exported into a Capacitor app (site.themaroon.app) reading the live API with a Keychain/Keystore-stored Supabase Bearer session (no cookies); /api/app/* data routes reuse the website loaders and Active access rules; CORS limited to app origins without credentials; public /api/app/version minimum-build check. Wagers and Fantasy kept out and not linked; email-only sign-in for TestFlight. No new data collection or tracking. Real-device, signed-in and Android runs, App Store privacy labels, age rating, Sign in with Apple and open-source notices remain follow-ups: docs/iphone-app-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "intellectual-property", "open-source", "platform-rules", "minors", "legal-review"],
+  },
+  {
     id: "notifications", name: "Notifications", scopeRevision: 2,
     scope: "Trip Web Push implementation and unresolved findings: docs/trip-momentum-review.md. Review email, SMS and push separately: service/marketing purpose, recipient authority, preferences, opt-out/suppression, lock-screen exposure and vendor retention.",
     attentionCategories: ["privacy", "personal-data", "advertising", "security", "retention", "minors", "platform-rules", "legal-review"],

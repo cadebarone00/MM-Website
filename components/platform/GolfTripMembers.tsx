@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { InviteCodeCard } from "./InviteCodeCard";
 import { useRouter } from "next/navigation";
 import { Card } from "./GolfTripHome";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
@@ -11,6 +12,7 @@ import { profileHref } from "@/lib/profile/profileEdit";
 import home from "./GolfTripHome.module.css";
 import fields from "./CreateTournament.module.css";
 import styles from "./GolfTripMembers.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 type Member = SavedGolfTrip["members"][number];
 const BADGE: Record<MemberState, string> = { organizer: "Organizer", accepted: "Member", pending: "Invited", declined: "Declined" };
@@ -31,7 +33,7 @@ async function send(url: string, method: "POST" | "DELETE", body?: unknown): Pro
  * emails to the organizer alone). With `manage` (the organizer's tab): invite someone, copy / renew their invite link,
  * cancel an invitation, remove a member. Pending and declined invitations are never players.
  */
-export function GolfTripMembers({ tripId, members, viewerMemberId, manage }: { tripId: string; members: Member[]; viewerMemberId: string; manage: boolean }) {
+export function GolfTripMembers({ tripId, tripName = "this trip", members, viewerMemberId, manage }: { tripId: string; tripName?: string; members: Member[]; viewerMemberId: string; manage: boolean }) {
   const router = useRouter();
   const [link, setLink] = useState<{ memberId: string; name: string; url: string } | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function GolfTripMembers({ tripId, members, viewerMemberId, manage }: { t
   const [message, setMessage] = useState("");
 
   const showLink = (memberId: string, name: string, token: string) =>
-    setLink({ memberId, name, url: new URL(golfTripInvitePath(token), window.location.origin).href });
+    setLink({ memberId, name, url: new URL(golfTripInvitePath(token), shareOrigin()).href });
 
   async function renew(member: Member) {
     setBusy(member.id);
@@ -68,6 +70,7 @@ export function GolfTripMembers({ tripId, members, viewerMemberId, manage }: { t
   const players = acceptedMembers(members).length;
   const invited = members.filter((m) => memberState(m) === "pending").length;
   return <Card title="Members">
+    <TripInviteCode tripId={tripId} name={tripName} manage={manage} />
     <p className={home.settingsNote}>{players} {players === 1 ? "player" : "players"}{invited ? ` · ${invited} invited` : ""}</p>
     <ul className={styles.list} aria-label="Trip members">
       {members.map((member) => {
@@ -199,4 +202,21 @@ export function LeaveGolfTrip({ tripId }: { tripId: string }) {
       : <button type="button" className={home.dangerButton} onClick={() => { setConfirming(true); setMessage(""); }}>Leave Trip</button>}
     {message && <p className={home.settingsMessage} role="status">{message}</p>}
   </Card>;
+}
+
+/** The trip's 6-character invite code (supabase/join_codes.sql): shown once it loads; nothing before that SQL is run. */
+function TripInviteCode({ tripId, name, manage }: { tripId: string; name: string; manage: boolean }) {
+  const [code, setCode] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/golf-trips/${tripId}/invite-code`, { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; code?: string | null }>)
+      .then((body) => { if (alive && body.ok && body.code) setCode(body.code); }).catch(() => {});
+    return () => { alive = false; };
+  }, [tripId]);
+  if (!code) return null;
+  return <InviteCodeCard kind="trip" id={tripId} code={code} name={name} canEmail={manage}
+    onNewCode={manage ? async () => {
+      const body = await fetch(`/api/golf-trips/${tripId}/invite-code`, { method: "POST" }).then((r) => r.json() as Promise<{ ok: boolean; code?: string }>).catch(() => null);
+      if (body?.ok && body.code) setCode(body.code);
+    } : undefined} />;
 }

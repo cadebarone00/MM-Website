@@ -8,6 +8,8 @@
     "docs:workflow:check": "node scripts/render-workflow.cjs --check",
     "build:career-archive": "tsx scripts/build-career-archive.ts",
     "dev": "next dev -p 3001",
+    "dev:app": "MAROON_APP_BUILD=1 NEXT_PUBLIC_MAROON_API_BASE=http://localhost:3001 next dev -p 3002",
+    "build:app": "MAROON_APP_BUILD=1 next build && cap sync ios && next typegen",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -30,10 +32,15 @@
     "test:browser:tournament-invite": "node scripts/test-tournament-invite-browser.mjs"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@aws-sdk/client-s3": "^3.1124.0",
     "@aws-sdk/s3-request-presigner": "^3.1124.0",
-    "@capacitor/core": "8.5.2",
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
     "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/keyboard": "8.0.6",
     "@capacitor/share": "^8.0.3",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.0",
@@ -47,6 +54,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/google.maps": "^3.66.5",

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import type { InvitePreview } from "@/lib/platform/tournamentInvites";
 import styles from "./PlayRound.module.css";
+import { appHref } from "@/lib/app/appPaths";
 
 const handicapValue = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n >= -10 && n <= 54 ? n : null; };
 
@@ -26,7 +27,7 @@ export function CodeTournamentInviteResponse({ token, invite, signedIn, signupHr
     setBusy(true); setError(null);
     const reply = await fetch(`/api/code-tournaments/invite/${encodeURIComponent(token)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handicap: hcp }) })
       .then((r) => r.json() as Promise<{ ok: boolean; id?: string; message?: string }>).catch(() => null);
-    if (reply?.ok && reply.id) { router.replace(`/tournaments/code/${reply.id}`); return; }
+    if (reply?.ok && reply.id) { router.replace(appHref(`/tournaments/code/${reply.id}`)); return; }
     setBusy(false);
     setError(reply?.message ?? "No connection. Try again when you're back online.");
   }, [token, router]);

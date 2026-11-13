@@ -85,9 +85,11 @@ test("the real /play loader still requires a signed-in user before loading anyth
   assert.match(source, /yourMatch: null/);
   for (const page of files("app/play")) {
     const text = read(page);
-    assert.match(text, /loadTournamentHome\(/, `${page} uses the real loader`);
+    // The app's page (page.app.tsx) loads through /api/app/tournament?kind=play, which uses the same real loader.
+    if (!page.endsWith(".app.tsx")) assert.match(text, /loadTournamentHome\(/, `${page} uses the real loader`);
     assert.ok(!/playDemo/.test(text), `${page} must not use the demo`);
   }
+  assert.match(read("lib/platform/tournamentScreensData.ts"), /loadPlayTournament = \(slug: string, year: string\): Promise<TournamentHome> => loadTournamentHome\(slug, year\)/, "the app's Play data uses the real loader");
 });
 
 test("only the /dev/play routes use the demo, and every one of them goes through the gate", () => {

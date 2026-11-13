@@ -7,6 +7,7 @@ import { ExploreIcon } from "@/components/nav/ImageIcons";
 import { GolfBagIcon } from "./GolfBagIcon";
 import { ExploreCourseSearch } from "./ExploreCourseSearch";
 import { RoundInvites } from "./RoundInvites";
+import { JoinCodeCard } from "./JoinCodeCard";
 import { BUILT_IN_TRIP, TripPromos } from "./TripPromos";
 import { RibbonProvider, type RibbonSetup } from "./ribbon/RibbonProvider";
 import { RibbonAdminBar } from "./ribbon/RibbonAdminBar";
@@ -49,6 +50,7 @@ function PlatformHomeContent({ signedIn }: { signedIn: boolean }) {
           <Link href="/rounds/new" className={styles.cardAction}>Play a round <span><ArrowRight size={16} aria-hidden="true" /></span></Link>
         </div>
       </motion.article>
+      {signedIn && <div className={styles.joinCard}><JoinCodeCard kind="round" /></div>}
       {/* Tournaments and golf trips side by side, each opening its page. */}
       <div className={styles.playCards}>
         <Link href="/tournaments/join" className={styles.playCard} onNavigate={beginJoinTournamentTransition}><Trophy size={18} aria-hidden="true" /> Tournament <ArrowRight size={15} aria-hidden="true" /></Link>

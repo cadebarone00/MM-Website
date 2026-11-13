@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAppOrigin } from "@/lib/app/appCors";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 import { parsFromForm } from "@/lib/platform/tripRoundPars";
 import { confirmRoundPars, loadRoundCoursePars, setGroupStartHole } from "@/lib/platform/tripRoundParsServer";
@@ -11,10 +12,10 @@ import { getTripRoundScoring } from "@/lib/platform/tripScoringServer";
  * POST { action: "confirm", round, pars, source } — "course" pars are loaded again here and must match exactly (so the
  * label is true); anything typed or edited is "manual". POST { action: "start-hole", round, groupId, startHole }.
  *
- * APP STORE READINESS BLOCKER (2026-10-21): like the other trip API routes, this one trusts a browser session cookie
- * and refuses any request whose Origin isn't this website. A native Capacitor app (capacitor://localhost /
- * https://localhost) can't call it as it stands. The fix must be a native-compatible API contract (e.g. token auth
- * and an allowed native origin), NOT making the native app load the hosted website.
+ * POST is refused unless it comes from this website (protects the cookie login from other sites) or from the iPhone /
+ * Android app (lib/app/appCors.ts) carrying its own login as a Bearer token — the app never uses cookies, so another
+ * site can't borrow its login. (Resolves the 2026-10-21 App Store blocker, project_specs.md "The Maroon as a real
+ * iPhone app"; the app's screens are packaged in the app, it doesn't load the website.)
  */
 const headers = { "Cache-Control": "private, no-store" };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -44,7 +45,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ trip
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
-  if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin." }, { status: 403, headers });
+  const origin = request.headers.get("origin");
+  const fromApp = isAppOrigin(origin) && /^Bearer\s/i.test(request.headers.get("authorization") ?? "");
+  if (origin !== new URL(request.url).origin && !fromApp) return NextResponse.json({ error: "Invalid origin." }, { status: 403, headers });
   const { tripId } = await params;
   const view = await organizerTrip(tripId);
   if (!view) return NextResponse.json({ error: "Trip not found." }, { status: 404, headers });

@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { formatCode, type CodeTournamentLookup } from "@/lib/platform/codeTournaments";
 import styles from "./PlayRound.module.css";
 import own from "./CodeTournament.module.css";
+import { appHref } from "@/lib/app/appPaths";
 
 type Look = { status: "loading" } | { status: "found"; t: CodeTournamentLookup } | { status: "missing" } | { status: "error"; message: string };
 const handicapValue = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n >= -10 && n <= 54 ? n : null; };
@@ -37,7 +38,7 @@ export function CodeTournamentJoin({ code, sample }: { code: string; sample?: Co
     const reply = await fetch("/api/code-tournaments/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, handicap: handicapValue(handicap) }) })
       .then((r) => r.json() as Promise<{ ok: boolean; id?: string; message?: string }>).catch(() => null);
     setBusy(false);
-    if (reply?.ok && reply.id) { router.push(`/tournaments/code/${reply.id}`); return; }
+    if (reply?.ok && reply.id) { router.push(appHref(`/tournaments/code/${reply.id}`)); return; }
     setError(reply?.message ?? (reply === null ? "No connection. Try again when you're back online." : `Couldn't join ${t.name}. Try again.`));
   }
 

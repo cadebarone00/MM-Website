@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { ChevronRight, Flag, Plus } from "lucide-react";
 import { formatDateRange } from "@/lib/platform/publicSite";
-import { loadMyPastTournaments } from "@/lib/platform/pastTournamentsServer";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
 import { TourneyActions } from "./TourneyActions";
 import { PublicTournamentSearch } from "./PublicTournamentSearch";
-import { listMyCodeTournaments } from "@/lib/platform/codeTournamentsServer";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { TourneysHomeData } from "@/lib/platform/tourneyScreensData";
 import { PlatformHeader } from "./PlatformHeader";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./JoinTournament.module.css";
@@ -15,14 +13,10 @@ import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntran
 
 /**
  * Tourneys (/tournaments/join): create or join a tournament (by code), find public ones (by name, location or date; Live,
- * Upcoming and Past), go to My Tournaments, or revisit the finished tournaments you played in.
+ * Upcoming and Past), go to My Tournaments, or revisit the finished tournaments you played in. The data comes from
+ * loadTourneysHome (website page and the app's /api/app/tourneys?view=join).
  */
-export async function JoinTournamentPage() {
-  const past = await loadMyPastTournaments();
-  // Tournaments joined by code (current first); none when signed out or before tournament_codes.sql is run.
-  const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
-  const coded = user ? await listMyCodeTournaments(user.id) : null;
-  const codeTournaments = coded?.ok ? coded.value : [];
+export function JoinTournamentPage({ past, codeTournaments }: TourneysHomeData) {
 
   return <>
     <PlatformHeader title="Tourneys" />

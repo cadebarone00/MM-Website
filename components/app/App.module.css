@@ -1,0 +1,21 @@
+/* The iPhone / Android app's own screens: sign in, loading, coming soon. Same colors and fonts as the website. */
+.splash, .center { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 100svh; padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); background: #f3f0eb; color: var(--color-maroon-800); text-align: center; }
+.splash { background: var(--color-maroon-900); color: #fbf8f1; }
+.logo { font: 400 32px/1.1 var(--font-spectral), Georgia, serif; letter-spacing: -0.03em; }
+.title { margin: 0; font: 400 clamp(26px, 7vw, 34px)/1.15 var(--font-spectral), Georgia, serif; letter-spacing: -0.03em; }
+.text, .small { margin: 0; max-width: 360px; font: 400 15px/1.45 var(--font-barlow), sans-serif; }
+.small { font-size: 13px; color: color-mix(in srgb, var(--color-maroon-800) 65%, transparent); }
+.form { display: flex; flex-direction: column; gap: 12px; width: min(100%, 360px); text-align: left; }
+.field { display: flex; flex-direction: column; gap: 6px; font: 600 15px/1.2 var(--font-barlow), sans-serif; }
+.field input { box-sizing: border-box; width: 100%; min-height: 48px; padding: 0 14px; border: 1.5px solid color-mix(in srgb, var(--color-maroon-800) 18%, transparent); border-radius: 12px; background: #fff; color: inherit; font: 500 16px/1.2 var(--font-barlow), sans-serif; }
+.field input:focus-visible { outline: none; border-color: var(--color-maroon-700); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-maroon-700) 18%, transparent); }
+.primary, .secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 22px; border-radius: 14px; font: 700 16px/1.2 var(--font-barlow), sans-serif; cursor: pointer; text-decoration: none; }
+.primary { border: 0; background: var(--color-maroon-800); color: #fff; }
+.form .primary { width: 100%; }
+.primary:disabled { opacity: 0.6; }
+.secondary { border: 1.5px solid var(--color-maroon-700); background: transparent; color: var(--color-maroon-700); }
+.error { margin: 0; color: #a1001a; font: 600 14px/1.3 var(--font-barlow), sans-serif; }
+.status { padding: 48px 24px; text-align: center; font: 500 15px/1.4 var(--font-barlow), sans-serif; color: color-mix(in srgb, var(--color-maroon-800) 70%, transparent); }
+
+/* Pull to refresh (AppNative): a small note under the notch while pulling down at the top of a screen. */
+.pull { position: fixed; z-index: 1000; top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: var(--color-maroon-800); color: #fbf8f1; font-size: 13px; font-weight: 600; pointer-events: none; }

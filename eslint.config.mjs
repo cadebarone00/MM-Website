@@ -10,6 +10,10 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
+    // The app build's output (npm run build:app / dev:app) and the files Capacitor copies into Xcode.
+    "capacitor-web/**",
+    "ios/App/App/public/**",
+    "android/app/src/main/assets/public/**",
     "build/**",
     "next-env.d.ts",
     // Claude Code git worktrees (each has its own .next build output that

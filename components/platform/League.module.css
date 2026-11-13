@@ -1,0 +1,103 @@
+/* Leagues (LeagueHome). The league page sits on the golf trip's dark maroon page, like tournaments (CodeTournament.module.css). */
+.courseBar{margin:10px 0 14px;text-align:center}
+
+/* The league's sections: plain text tabs on one line, a thin gold underline under the one you're on. */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;margin:0 0 16px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent)}
+.tab{flex:1 0 auto;margin-bottom:-1px;padding:10px 8px 11px;white-space:nowrap;border:0;border-bottom:2px solid transparent;background:none;color:color-mix(in srgb,var(--lm-ink-e8d7b2) 60%,transparent);font:600 12px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:color .15s,border-color .15s}
+.tab[aria-selected=true]{border-bottom-color:var(--lm-ink-dcc495);color:var(--lm-ink-fbf8f1)}
+.courseBar p{margin:0;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.courseBar h2{margin:4px 0 0;font:600 20px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+
+/* Gross / Net, and League Settings' choices: a row of pill buttons, one picked. */
+.toggle,.choice [role=radiogroup]{display:flex;flex-wrap:wrap;gap:6px}
+.toggle{justify-content:center;margin:4px 0 14px}
+.toggle button,.choice button{min-height:36px;padding:0 16px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-e8d7b2);font:600 13px var(--font-barlow),sans-serif;cursor:pointer}
+.toggle button[aria-checked=true],.choice button[aria-checked=true]{border-color:var(--lm-ink-dcc495);background:var(--lm-ink-dcc495);color:var(--lm-bg-2a0a12)}
+.choice button:disabled{opacity:.35;cursor:default}
+
+/* Leaderboards: position, name, then numbers. My row is highlighted. */
+.board{width:100%;border-collapse:collapse;font:500 15px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1);font-variant-numeric:tabular-nums}
+.board th,.board td{padding:10px 6px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);text-align:center}
+.board thead th{padding-top:4px;white-space:nowrap;font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.board tbody th{width:100%;text-align:left;font-weight:600}
+.board tr[data-me] th,.board tr[data-me] td{background:color-mix(in srgb,var(--lm-ink-dcc495) 12%,transparent)}
+.toPar{color:var(--lm-ink-e8d7b2)}
+.toPar[data-under]{color:#e66b6b}
+.total{font-weight:700}
+
+.note,.help{margin:0 0 12px;text-align:center;font:500 13px/1.45 var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2)}
+.help{margin:-2px 0 12px;text-align:left;color:var(--lm-ink-c9a86e)}
+.heading{margin:18px 0 8px;font:700 11px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.winner{margin:0 0 8px;font:700 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fff3d6)}
+.segment + .segment{margin-top:8px}
+
+/* Skins: totals, then each hole. */
+.list,.holes,.pairList{margin:0;padding:0;list-style:none}
+.list li,.holes li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);font:500 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.list b,.holes b{font-weight:700;color:var(--lm-ink-dcc495);white-space:nowrap}
+.holes li span:nth-child(2){flex:1}
+.holes li[data-status=open]{color:color-mix(in srgb,var(--lm-ink-fbf8f1) 55%,transparent)}
+.holes li[data-status=open] b{color:color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent)}
+.holeNumber{display:grid;place-items:center;flex:none;width:28px;height:28px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:50%;font:700 12px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+
+/* Groups: one card per group. */
+.groups{display:grid;gap:12px}
+.group,.card{padding:14px;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);border-radius:16px;background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent)}
+.group[data-me]{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent)}
+.group header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.group h3,.card h2{margin:0;font:600 18px var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.group header span{font:600 12px var(--font-barlow),sans-serif;color:var(--lm-ink-c9a86e)}
+.group ul{margin:0;padding:0;list-style:none}
+.group li{display:flex;justify-content:space-between;padding:6px 0;font:500 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.group li small{margin-left:8px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent);font:700 10px var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
+.group li b{font-weight:600;color:var(--lm-ink-c9a86e);font-variant-numeric:tabular-nums}
+
+/* League Settings. */
+.card{display:grid;gap:12px;margin:0 0 14px}
+.code{margin-left:6px;color:var(--lm-ink-fbf8f1);letter-spacing:.14em}
+.choice{display:grid;gap:8px}
+.choice > span{font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.pairList{display:grid;gap:6px}
+.pairList li{display:flex;align-items:center;gap:10px;font:500 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.pairList li span{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--lm-ink-dcc495) 20%,transparent);font:700 11px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* DEV ONLY (/dev/leagues): the "preview as" switch above the league. */
+.previewBar{margin:0;padding:10px 16px;background:var(--lm-bg-2a0a12)}
+
+/* Skins: the organizer's Carryover switch, on its own quiet line. */
+.switchRow{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px;padding:8px 4px;font:600 13px var(--font-barlow),sans-serif;color:var(--lm-ink-e8d7b2);cursor:pointer}
+.switchRow input{appearance:none;position:relative;width:44px;height:26px;margin:0;border-radius:999px;background:color-mix(in srgb,var(--lm-ink-ffffff) 18%,transparent);cursor:pointer;transition:background .15s}
+.switchRow input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--lm-ink-fbf8f1);transition:transform .15s}
+.switchRow input:checked{background:var(--lm-ink-dcc495)}
+.switchRow input:checked::after{transform:translateX(18px)}
+.switchRow input:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.list + .holes{margin-top:14px}
+
+/* Group: the group's own game (Play a round's picker and standings). */
+/* Play a round's colours are set on its own page, so the card brings them along to look exactly like Play. */
+.groupGame{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;display:grid;gap:12px}
+
+/* League Settings: the join code card. */
+.shareCard{justify-items:center;text-align:center}
+.shareLabel{margin:0;font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.shareCode{margin:0;font:700 34px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;color:var(--lm-ink-fbf8f1)}
+/* Tee Times editor: timing fields in a row, then each group's time / hole / scorer and its players with Move to. */
+.timing{display:flex;flex-wrap:wrap;gap:10px}
+.timing label{display:grid;gap:6px;font:700 10px var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--lm-ink-c9a86e)}
+.select{min-height:38px;padding:0 10px;border:1px solid color-mix(in srgb,var(--lm-ink-c9a86e) 55%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-bg-000000) 22%,transparent);color:var(--lm-ink-fff3d6);font:600 14px var(--font-barlow),sans-serif;letter-spacing:0;text-transform:none;color-scheme:dark}
+.editGroup{display:grid;gap:8px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent)}
+.editGroup h3{margin:0;font:600 16px var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.editGroup ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.editGroup li{display:flex;align-items:center;justify-content:space-between;gap:10px;font:500 14px var(--font-barlow),sans-serif;color:var(--lm-ink-fbf8f1)}
+.copyRow{display:grid;gap:10px}
+.danger{border-color:#e66b6b88;color:#f0a0a0}
+/* The Leagues tab (on Play a round's page). */
+.homeActions{display:grid;gap:10px;margin:8px 0 18px}
+.empty{display:grid;justify-items:center;gap:10px;margin:28px 0;text-align:center;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
+.leagueList{display:grid;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+.leagueList a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #b99c6b77;border-radius:14px;color:#f4efe6;text-decoration:none}
+.leagueList strong{display:block;font:600 17px var(--font-spectral),Georgia,serif}
+.leagueList small{display:block;margin-top:2px;font:500 13px var(--font-barlow),sans-serif;color:#c9a86e}
+/* On the dark page the main button is gold (Play a round's maroon button is made for its cream cards). */
+.create{background:#dcc495;color:var(--color-maroon-950);text-decoration:none}

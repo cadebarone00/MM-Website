@@ -6,6 +6,7 @@ import { Check, Copy } from "lucide-react";
 import { shareLink } from "@/lib/platform/shareLink";
 import { useTripJoinLink } from "@/lib/platform/useTripJoinLink";
 import styles from "./GolfTripInviteDialog.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 type Status = "copied" | "shared" | "failed" | null;
 
@@ -28,7 +29,7 @@ export function GolfTripInviteDialog({ tripId, tripName = "Golf trip", url, onDo
     return () => window.removeEventListener("keydown", onKey);
   }, [onDone]);
 
-  const linkNow = async () => off ? new URL(url, window.location.origin).href : (await fresh())?.url ?? null;
+  const linkNow = async () => off ? new URL(url, shareOrigin()).href : (await fresh())?.url ?? null;
   async function copy() {
     const link = await linkNow();
     if (!link) return;

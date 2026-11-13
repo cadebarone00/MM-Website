@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requestIdentityClient } from "./requestIdentity";
@@ -16,7 +16,22 @@ import { requestIdentityClient } from "./requestIdentity";
  */
 export async function createSupabaseServerClient(request?: Request): Promise<SupabaseClient> {
   if (request) return requestIdentityClient(request.headers.get("authorization"), createSupabaseCookieClient, plainClient);
+  // The iPhone / Android app sends its login as `Authorization: Bearer` instead of a cookie (project_specs.md "The Maroon
+  // as a real iPhone app"). A request that carries one is verified the same way as an explicit Request above (with the
+  // cookie-conflict check), so every route and loader works for the app without being changed one by one. Browsers never
+  // send this header by themselves, so it adds no cross-site risk. No header (every website request): cookies, unchanged.
+  const authorization = await requestAuthorization();
+  if (authorization !== null) return requestIdentityClient(authorization, createSupabaseCookieClient, plainClient);
   return createSupabaseCookieClient();
+}
+
+/** This request's Authorization header, or null (none sent, or not inside a request — a script or a test). */
+async function requestAuthorization(): Promise<string | null> {
+  try {
+    return (await headers()).get("authorization");
+  } catch {
+    return null;
+  }
 }
 
 // Opt-in request identity leaves existing browser-only callers unchanged.

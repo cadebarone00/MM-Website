@@ -1,11 +1,18 @@
 import { privateJson, selfServiceCaller } from "@/lib/account/selfServiceRequest";
-import { isJoinCode } from "@/lib/platform/golfTripJoinLinks";
-import { joinGolfTripByCode } from "@/lib/platform/golfTripsServer";
+import { tripJoinValue } from "@/lib/platform/golfTripJoinLinks";
+import { getGolfTripJoinPreview, joinGolfTripByCode } from "@/lib/platform/golfTripsServer";
 
-/** Trip Builder: the signed-in person joins a trip through its shareable link. Private, never cached. */
+/** The join link's preview (trip name and status), the same one the website's join page shows. Private, never cached. */
+export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+  const code = tripJoinValue((await params).code);
+  if (!code) return privateJson({ ok: true, preview: null });
+  return privateJson({ ok: true, preview: await getGolfTripJoinPreview(code) });
+}
+
+/** Trip Builder: the signed-in person joins a trip through its shareable link or its 6-character invite code. Private, never cached. */
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
-  if (!isJoinCode(code)) return privateJson({ status: "not_found" }, 400);
+  const code = tripJoinValue((await params).code);
+  if (!code) return privateJson({ status: "not_found" }, 400);
   const caller = await selfServiceCaller(request);
   if ("error" in caller) return caller.error;
   try {

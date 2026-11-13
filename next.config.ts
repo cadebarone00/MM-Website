@@ -4,7 +4,23 @@ import type { NextConfig } from "next";
 // pages (the real sign-in screens, on maroon-auth-dev) in its phone. Builds for production keep X-Frame-Options SAMEORIGIN.
 const devFrameParent = process.env.NODE_ENV === "development" ? "http://localhost:3001" : null;
 
-const nextConfig: NextConfig = {
+// The iPhone / Android app build (`npm run build:app`, project_specs.md "The Maroon as a real iPhone app"): only the app's
+// screens (`page.app.tsx` / `layout.app.tsx`, next to the website's own pages) become static files in capacitor-web/,
+// which Capacitor packages into the Xcode project. No /api routes, middleware or server pages are in it; the app gets
+// its data from the live server with its own login.
+const appBuild = process.env.MAROON_APP_BUILD === "1";
+const appConfig: NextConfig = {
+  output: "export",
+  distDir: "capacitor-web",
+  pageExtensions: ["app.tsx", "app.ts"],
+  trailingSlash: true,
+  images: { unoptimized: true },
+  // Its own type check (tsconfig.app.json), so the website build's generated route types don't get mixed in.
+  typescript: { tsconfigPath: "tsconfig.app.json" },
+  env: { NEXT_PUBLIC_MAROON_APP: "1" },
+};
+
+const nextConfig: NextConfig = appBuild ? appConfig : {
   distDir: process.env.NEXT_BUILD_OUTPUT || ".next",
   serverExternalPackages: ["lightningcss", "@tailwindcss/oxide"],
   async headers() {

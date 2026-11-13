@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
+import { golfTripUrl, type SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { GolfTripMembers, LeaveGolfTrip } from "./GolfTripMembers";
 import styles from "./GolfTripHome.module.css";
 
@@ -12,11 +12,11 @@ import styles from "./GolfTripHome.module.css";
 export function ImportedTripSettings({ trip, viewer }: { trip: SavedGolfTrip; viewer: { isOrganizer: boolean; memberId: string } }) {
   const tripId = trip.trip.id;
   return <main className={styles.page}>
-    <Link href={`/golf-trips/${tripId}`}>Back to {trip.trip.name}</Link>
+    <Link href={golfTripUrl(tripId)}>Back to {trip.trip.name}</Link>
     <h1>Trip Settings</h1>
-    <GolfTripMembers tripId={tripId} members={trip.members} viewerMemberId={viewer.memberId} manage={viewer.isOrganizer} />
+    <GolfTripMembers tripId={tripId} tripName={trip.trip.name} members={trip.members} viewerMemberId={viewer.memberId} manage={viewer.isOrganizer} />
     {viewer.isOrganizer
-      ? <p><Link href={`/golf-trips/${tripId}/settings/delete`}>Delete Trip</Link> (to fix a mistake, delete it and import the spreadsheet again)</p>
+      ? <p><Link href={golfTripUrl(tripId, "settings/delete")}>Delete Trip</Link> (to fix a mistake, delete it and import the spreadsheet again)</p>
       : <LeaveGolfTrip tripId={tripId} />}
   </main>;
 }

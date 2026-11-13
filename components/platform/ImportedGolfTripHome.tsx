@@ -23,7 +23,7 @@ const OPEN_ON_MATCHES: GolfTripNavigation = { tab: "Golf", golfSection: "Competi
  */
 export function ImportedGolfTripHome({ savedTrip, view, backHref = "/golf-trips", settingsHref, editing }: { savedTrip: SavedGolfTrip; view: ImportedTripView; backHref?: string; settingsHref?: string | null; editing?: ImportedEditing }) {
   const tripId = savedTrip.trip.id;
-  const settings = settingsHref === undefined ? `${golfTripUrl(tripId)}/settings` : settingsHref;
+  const settings = settingsHref === undefined ? golfTripUrl(tripId, "settings") : settingsHref;
   const snapshot = { values: { localCompetitionType: view.competitionType, ...(view.teamNames ? { teamNames: view.teamNames } : {}) }, revision: 0,
     basis: { startDate: savedTrip.trip.start_date, endDate: savedTrip.trip.end_date, rounds: savedTrip.rounds }, available: false };
   return <>

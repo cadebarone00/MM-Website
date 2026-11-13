@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { initializeProfile } from "@/lib/profile/profileInitialization";
 import { isTournamentInviteToken } from "@/lib/platform/inviteImport";
-import { acceptTournamentInvite } from "@/lib/platform/tournamentInvites";
+import { acceptTournamentInvite, getTournamentInvite } from "@/lib/platform/tournamentInvites";
 import { handicapFrom } from "@/lib/platform/codeTournamentsRequest";
+
+/** GET: the invite link's preview (the tournament it's for), the same one the website's invite page shows. */
+export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  if (!isTournamentInviteToken(token)) return NextResponse.json({ ok: true, invite: null }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ ok: true, invite: await getTournamentInvite(token) }, { headers: { "Cache-Control": "private, no-store" } });
+}
 
 /** POST { handicap? }: the signed-in person joins the tournament from their invite link (a new account gets its profile first). */
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {

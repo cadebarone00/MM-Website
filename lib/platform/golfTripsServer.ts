@@ -4,7 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile, notGolfer, tripProfileId, type CurrentProfile } from "@/lib/profile/currentProfile";
 import { initializeProfile } from "@/lib/profile/profileInitialization";
 import { acceptResultFromJson, declineResultFromJson, invitationPreviewFromJson, type AcceptInvitationResult, type DeclineInvitationResult, type InvitationPreview, type InviteInput } from "./golfTripInvitations.ts";
-import { joinLinkFromJson, joinPreviewFromJson, joinResultFromJson, newJoinCode, type JoinLink, type JoinPreview, type JoinResult } from "./golfTripJoinLinks.ts";
+import { isTripInviteCode, joinLinkFromJson, joinPreviewFromJson, joinResultFromJson, newJoinCode, type JoinLink, type JoinPreview, type JoinResult } from "./golfTripJoinLinks.ts";
 import { membersForViewer } from "./golfTripMembers.ts";
 import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, type GolfTripViewer, type SavedGolfTrip } from "./golfTripCreate.ts";
 import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
@@ -250,9 +250,16 @@ export async function resetGolfTripJoinLink(tripId: string, origin: string):
   return link ? { status: "ok", link } : { status: "not-found" };
 }
 
-/** What the join page shows (signed in or not). Null for an unknown/replaced link or when the SQL isn't installed. */
+/** What the join page shows (signed in or not). Null for an unknown/replaced link or when the SQL isn't installed.
+ *  A 6-character invite code (supabase/join_codes.sql) shows the same preview; it never expires. */
 export async function getGolfTripJoinPreview(code: string): Promise<JoinPreview | null> {
   const current = await getCurrentProfile();
+  if (isTripInviteCode(code)) {
+    const { data, error } = await createSupabaseServiceRoleClient().rpc("find_golf_trip_by_code", { p_profile: tripProfileId(current), p_code: code });
+    if (error) { if (!notInstalled(error)) console.error("find_golf_trip_by_code failed:", error.message); return null; }
+    const found = data as { tripId: string; tripName: string; destination: string | null; startDate: string | null; endDate: string | null; organizerName: string | null; member: boolean } | null;
+    return found && joinPreviewFromJson({ ...found, destination: found.destination ?? "", startDate: found.startDate ?? "", endDate: found.endDate ?? "", status: found.member ? "member" : "open" });
+  }
   const { data, error } = await createSupabaseServiceRoleClient().rpc("get_golf_trip_join_preview", { p_profile: tripProfileId(current), p_code: code });
   if (error) {
     if (!notInstalled(error)) console.error("get_golf_trip_join_preview failed:", error.message);
@@ -270,6 +277,17 @@ export async function joinGolfTripByCode(code: string, caller?: CurrentProfile):
     const initialized = await initializeProfile(current.account.id);
     if (initialized.status !== "ok") return { status: "no-profile" };
     profileId = current.account.id;
+  }
+  // The 6-character invite code adds you straight in, the same as the link (supabase/join_codes.sql).
+  if (isTripInviteCode(code)) {
+    const before = await getGolfTripJoinPreview(code);
+    if (!before) return { status: "not_found" };
+    const { data, error } = await createSupabaseServiceRoleClient().rpc("join_golf_trip_by_invite_code", { p_profile: profileId, p_code: code });
+    if (error) {
+      if (notInstalled(error) || error.code === "22023") return { status: "not_found" };
+      throw failure("join_golf_trip_by_invite_code", error);
+    }
+    return { status: before.status === "member" ? "already_member" : "joined", tripId: data as string };
   }
   const { data, error } = await createSupabaseServiceRoleClient().rpc("join_golf_trip_by_code", { p_profile: profileId, p_code: code });
   if (error) {

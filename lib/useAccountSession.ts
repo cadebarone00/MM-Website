@@ -1,5 +1,7 @@
 "use client";
 
+import { isAppBuild } from "@/lib/app/appEnv";
+import { appSupabase } from "@/lib/app/appAuth";
 import { useEffect, useState } from "react";
 import type { Team } from "@/lib/data";
 
@@ -46,7 +48,9 @@ export async function signOutAccount(): Promise<void> {
     endpoint = (await registration?.pushManager.getSubscription().catch(() => null))?.endpoint;
   }
   const res = await fetch("/api/auth/signout", { method: "POST", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint }) });
-  if (!res.ok) throw new Error(`Sign out failed (${res.status})`);
+  // The iPhone / Android app also forgets the login kept on the phone (lib/app/appAuth.ts), whatever the server said.
+  if (isAppBuild) await appSupabase().auth.signOut({ scope: "local" });
+  if (!res.ok && !isAppBuild) throw new Error(`Sign out failed (${res.status})`);
   // Deliberately a full load, not router.push: nothing from the signed-in session survives.
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign("/");

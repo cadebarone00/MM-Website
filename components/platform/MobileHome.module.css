@@ -57,3 +57,5 @@ button.cardAction{width:100%;border:0;background:transparent;font-family:inherit
 :global(html[data-mode="light"]) .roundCard .cardAction{color:#fbf8f1}
 :global(html[data-mode="light"]) .roundCard .cardAction>span{background:#fbf8f1;color:var(--color-maroon-700)}
 :global(html[data-mode="light"]) .playCard{border-color:var(--color-maroon-700);background:var(--color-maroon-700);color:#fbf8f1}
+/* Play: the Join card (JoinCodeCard) under the Play a round card. */
+.joinCard{margin:12px 24px 0}

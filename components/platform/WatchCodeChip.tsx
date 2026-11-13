@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
 import { formatCode } from "@/lib/platform/codeTournaments";
 import styles from "./CodeTournament.module.css";
+import { shareOrigin } from "@/lib/app/shareOrigin";
 
 /** A trip's watch code for its members to pass on: tap to copy, or Share (where the phone can). */
 export function WatchCodeChip({ code, name }: { code: string; name: string }) {
@@ -17,7 +18,7 @@ export function WatchCodeChip({ code, name }: { code: string; name: string }) {
       <button type="button" className={styles.codeChip} onClick={copy} aria-label={`Watch code ${shown}, copy`}>
         <span>Watch</span><b>{shown}</b>{copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
       </button>
-      {canShare && <button type="button" className={styles.organizerButton} onClick={() => navigator.share({ title: name, text: `Follow ${name} on The Maroon: code ${shown}`, url: `${location.origin}/watch/${code}` }).catch(() => {})}>
+      {canShare && <button type="button" className={styles.organizerButton} onClick={() => navigator.share({ title: name, text: `Follow ${name} on The Maroon: code ${shown}`, url: `${shareOrigin()}/watch/${code}` }).catch(() => {})}>
         <Share2 size={15} aria-hidden="true" /> Share</button>}
     </div>
   </div>;

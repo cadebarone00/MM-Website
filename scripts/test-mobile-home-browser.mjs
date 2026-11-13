@@ -19,7 +19,7 @@ try {
     assert.equal(await page.getByRole('heading', { level: 1 }).innerText(), 'The Maroon');
     // Main app navigation: the 5-tab bottom menu (Play lit) and an icon-only top bar.
     const tabs = await page.locator('[data-site-bottom-nav] a').evaluateAll(links => links.map(a => a.getAttribute('href')));
-    assert.deepEqual(tabs, ['/', '/golf-trips', '/profile', '/tournaments/join', '/pickems']);
+    assert.deepEqual(tabs, ['/', '/golf-trips', '/profile', '/tournaments/join', '/leagues']);
     assert.equal(await page.locator('[data-site-bottom-nav] a[aria-current="page"]').getAttribute('href'), '/');
     const menu = await page.locator('header nav[aria-label="Platform navigation"] a').evaluateAll(links => links.map(a => [a.textContent.trim(), a.getAttribute('href')]));
     assert.ok(!menu.some(([, href]) => href === '/website'), 'menu has no /website tournament shortcut');

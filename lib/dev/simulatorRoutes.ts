@@ -86,7 +86,7 @@ export function simulatorPages(): SimulatorPage[] {
       pages.push({ id: "live-v2" + path.replaceAll("/", "-"), path, label, group: "Live V2 Auth", fixtures: false, conditions: [] });
     }
   }
-  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/pickems", "Pick?ems"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
+  for (const [path, label] of [["/new-user", "New User"], ["/signup", "Create an Account"], ["/", "Play / Home"], ["/golf-trips", "Golf Trips"], ["/profile", "Profile"], ["/tournaments/join", "Tourneys"], ["/leagues", "Leagues"], ["/golf-trips/new", "Create Golf Trip"], ["/golf-trips/trip/settings", "Golf Trip · App settings"], ["/login", "Log In welcome"], ["/login/email", "Email sign in"]]) {
     if (existsSync(join(process.cwd(), "app", path, "page.tsx"))) pages.push({ id: path, path, label, fixtures: false });
   }
   // Trip Builder: the first-time Learn screen and the full tour.

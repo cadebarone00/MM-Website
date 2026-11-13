@@ -37,8 +37,22 @@ export function isGolfTripId(value: string): boolean {
   return UUID.test(value);
 }
 
-export function golfTripUrl(tripId: string): string {
-  return `/golf-trips/${tripId}`;
+/** A trip page under the trip (Trip Settings, Delete, Flights). */
+export type GolfTripSubpage = "settings" | "settings/delete" | "flights";
+
+/**
+ * The link to a trip (or one of its pages), with optional query values. The website uses /golf-trips/<id>/<page>. The
+ * iPhone / Android app build (NEXT_PUBLIC_MAROON_APP=1) has no page per trip, so it uses /golf-trips/trip/<page>/?id=<id>
+ * (project_specs.md "The Maroon as a real iPhone app"); lib/app/appPaths.ts turns any website-style link back into this.
+ */
+export function golfTripUrl(tripId: string, page?: GolfTripSubpage, query: Record<string, string | number> = {}): string {
+  const search = new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]));
+  if (process.env.NEXT_PUBLIC_MAROON_APP === "1") {
+    search.set("id", tripId);
+    return `/golf-trips/trip/${page ? `${page}/` : ""}?${search}`;
+  }
+  const rest = search.size ? `?${search}` : "";
+  return `/golf-trips/${tripId}${page ? `/${page}` : ""}${rest}`;
 }
 
 /** Join a Trip: the trip id from a pasted Trip ID or trip link (…/golf-trips/<id>), or null when there isn't one. */

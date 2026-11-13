@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ProfileView } from "@/components/profile/ProfileView";
-import { getCurrentProfile } from "@/lib/profile/currentProfile";
-import { loadProfileReadModel, profileIdForUsername } from "@/lib/profile/profileReadModelServer";
-import { friendCount } from "@/lib/profile/friendsServer";
-import { friendshipWith } from "@/lib/profile/friendRequestsServer";
 import styles from "../page.module.css";
+import { loadPublicProfile } from "@/lib/profile/profileScreensData";
 
 export const metadata: Metadata = { title: "Profile | The Maroon", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -15,17 +12,11 @@ export const dynamic = "force-dynamic";
  * server only; the page never gets an id or email. What shows follows the V1 privacy rules in the read model
  * (lib/profile/profileReadModel.ts). Your own username goes to /profile.
  */
+
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  const subjectId = await profileIdForUsername(decodeURIComponent(username));
-  if (!subjectId) notFound();
-  const current = await getCurrentProfile();
-  const viewerId = current.status === "ok" ? current.profile.profileId : null;
-  if (viewerId === subjectId) redirect("/profile");
-  const profile = await loadProfileReadModel(viewerId, subjectId);
-  if (!profile) notFound();
-  const friends = await friendCount(subjectId).catch(() => null);
-  // Signed in: the friend button in the corner shows (and switches) where we stand.
-  const friendship = viewerId ? { profileId: subjectId, ...await friendshipWith(viewerId, subjectId).catch(() => ({ relation: "none" as const, tripMate: false })) } : undefined;
-  return <div className={styles.page}><ProfileView profile={profile} friendsCount={friends} friendship={friendship} /></div>;
+  const data = await loadPublicProfile(decodeURIComponent(username));
+  if (data.status === "not-found") notFound();
+  if (data.status === "self") redirect("/profile");
+  return <div className={styles.page}><ProfileView profile={data.profile} friendsCount={data.friends} friendship={data.friendship} /></div>;
 }
