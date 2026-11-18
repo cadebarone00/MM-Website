@@ -12,7 +12,8 @@ import { friendIds, tripFriendIds } from "./friendsServer";
 
 export type Relation = "friends" | "requested" | "incoming" | "none";
 /** `tripMate`: friends from a golf trip together (automatic, so they can't be removed). */
-export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation; tripMate: boolean }
+/** `isPrivate`: their profile is Private (search still finds them; their profile then shows only the top). */
+export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation; tripMate: boolean; isPrivate: boolean }
 export interface FriendRequest { id: string; profileId: string; name: string; username: string | null; photoUrl: string | null }
 export type FriendsResult<T> = { ok: true; value: T } | { ok: false; code: "not_installed" | "refused" | "failed"; message: string };
 
@@ -31,8 +32,14 @@ export async function searchGolfers(me: string, query: string): Promise<FriendsR
   const found = await rpc<{ id: string; name: string; username: string | null; avatarPath: string | null; relation: Relation }[]>("search_golfers", { p_viewer: me, p_query: query.slice(0, 60) });
   if (!found.ok) return found;
   const tripMates = found.value.length ? await tripFriendIds(me) : new Set<string>();
+  // Which results are Public (rounds_visibility, player_rounds.sql); anything unknown counts as Private.
+  const publicIds = new Set<string>();
+  if (found.value.length) {
+    const { data } = await db().from("profiles").select("id, rounds_visibility").in("id", found.value.map((g) => g.id));
+    for (const row of (data ?? []) as { id: string; rounds_visibility?: string | null }[]) if (row.rounds_visibility === "public") publicIds.add(row.id);
+  }
   return { ok: true, value: found.value.map((g) => ({ id: g.id, name: g.name, username: g.username, photoUrl: profilePhotoUrl(g.avatarPath),
-    relation: tripMates.has(g.id) ? "friends" : g.relation, tripMate: tripMates.has(g.id) && g.relation !== "friends" })) };
+    relation: tripMates.has(g.id) ? "friends" : g.relation, tripMate: tripMates.has(g.id) && g.relation !== "friends", isPrivate: !publicIds.has(g.id) })) };
 }
 
 /** I ask `to` to be friends; a new request emails them (when email is set up). `origin`: the site the email links to. */

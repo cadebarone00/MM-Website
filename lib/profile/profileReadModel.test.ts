@@ -108,13 +108,13 @@ test("a legacy Maroon player looks like a normal profile: no old name, bio or ph
   assert.deepEqual([q.legacy, q.identity.displayName], [null, "Sam Fresh"]);
 });
 
-test("someone else, Private profile: name, username and the headline numbers (rounds played, handicap) — nothing else", async () => {
+test("someone else, Private profile: the whole top (name, photo, bio, socials, headline numbers) — none of the bottom", async () => {
   const { s, calls } = sources({ history: async () => { calls.history++; return HISTORY; }, rounds: async () => { calls.rounds++; return [round("trip", "trip:a:b"), round("trip", "trip:a:c")]; } },
     row({ legacyMaroonPlayerSlug: "cade-barone", bio: "Secret bio.", avatarUrl: "https://photos.example/sam.jpg", links: [{ platform: "instagram", title: "sam", url: "https://instagram.com/sam" }] }));
   for (const viewer of [OTHER, null]) {
     const p = (await assembleProfileReadModel(viewer, ME, s, TODAY))!;
     assert.deepEqual([p.isOwner, p.access], [false, "private"]);
-    assert.deepEqual(p.identity, { displayName: "Sam Fresh", username: "samfresh", initials: "SF", memberSince: null, avatarSrc: "https://photos.example/sam.jpg", bio: null, canEditBio: false, roundsVisibility: "private", links: [] }, "the photo shows, the bio and links don't");
+    assert.deepEqual(p.identity, { displayName: "Sam Fresh", username: "samfresh", initials: "SF", memberSince: null, avatarSrc: "https://photos.example/sam.jpg", bio: "Secret bio.", canEditBio: false, roundsVisibility: "private", links: [{ platform: "instagram", title: "sam", url: "https://instagram.com/sam" }] }, "the whole top shows: photo, bio and socials");
     assert.deepEqual([p.rounds, p.trips, p.tournaments], [{ status: "hidden" }, { status: "hidden" }, { status: "hidden" }]);
     assert.deepEqual([p.teamHistory, p.legacy], [[], null]);
     // Only the counts: no averages, bests or anything from a round.

@@ -312,7 +312,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
    Home / Golf / Venue / Info tabs sit in the same spot for one- and two-line names. Longer names stop at two lines with "…". */
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
 /* Itinerary tab: "+ Add" pill centered right under the Itinerary tab (the 4th of the main tabs). */
-.itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-14px;margin-bottom:-14px}
+.body.itineraryBody{margin-top:8px}
+.itineraryAddRow{display:flex;justify-content:flex-end;margin:0}
 .itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .itineraryAddPill:focus-visible{outline:2px solid var(--lm-ink-fbf8f1);outline-offset:2px}
 /* Itinerary golf rounds: Sit out then Play (green) side by side in the header row, level with the tee time and inside
@@ -355,7 +356,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 /* Golf → Team: a pill per round ("Round 1"…), 4 across with the 5th peeking in at the edge so you can tell it scrolls;
    the picked round's course · format under them. */
 .roundPicker{margin:0 0 -4px}
-.roundSelector{padding:2px 4px;overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.roundSelector{padding:2px 4px;overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
 .roundPills{position:relative;isolation:isolate;display:flex;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:0}
 .roundPills::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:0;bottom:0;left:0;width:calc(100% / 4.4);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transform:translateX(calc(var(--round-index,0) * 100%));transition:transform 220ms ease;pointer-events:none}
 .roundPills::-webkit-scrollbar{display:none}
@@ -475,6 +476,9 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .slidingSelector.underlineSelector.bubbleUnderline .tab{min-height:26px;padding-block:2px}
 .slidingSelector.underlineSelector.bubbleUnderline::before{bottom:3px}
 @media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline::before{transition:none}}
-.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector::before{bottom:4px;left:12px;width:calc((100% - 8px)/2 - 16px);transform:translateX(0);background:linear-gradient(90deg,transparent,rgba(220,196,149,.9) 12%,var(--lm-ink-dcc495) 50%,rgba(220,196,149,.9) 88%,transparent);box-shadow:0 0 5px rgba(220,196,149,.25);transition:transform 220ms ease}
-.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector[data-second=true]::before{left:12px;transform:translateX(calc(100% + 16px))}
-@media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector::before{transition:none}}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector{border-radius:12px}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector::before{left:4px;right:4px;bottom:0;width:auto;height:2px;transform:none;border-radius:0;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);box-shadow:none;transition:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector[data-second=true]::before{left:4px;transform:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{display:block;left:10%;right:10%;bottom:-3px;height:2px;border-radius:0;background:#dcc495;box-shadow:none;opacity:0;transition:opacity .15s ease}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab[aria-pressed=true]::after{opacity:1}
+@media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{transition:none}}

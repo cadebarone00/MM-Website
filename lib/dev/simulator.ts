@@ -84,6 +84,8 @@ export type SimulatorState = {
   sampleGames?: boolean;
   /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
   profilePreview?: ProfilePreview;
+  /** Profile preview: the search bar open with nothing typed (friend requests), with results, or with no results. Unset = closed. */
+  profileSearch?: "empty" | "results" | "none";
   dualDraftMomentum?: boolean;
   playerRoleViewer?: "organizer" | "captain-a" | "captain-b" | "player";
   matchDraftPreview?: "off" | "Response" | "Ranks" | "Randomized";
@@ -215,6 +217,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.competitionSetup !== undefined && !COMPETITION_SETUPS.some(([id]) => id === state.competitionSetup)) return null;
   if (state.profilePreview !== undefined && !PROFILE_PREVIEWS.includes(state.profilePreview as ProfilePreview)) return null;
+  if (state.profileSearch !== undefined && !["empty", "results", "none"].includes(String(state.profileSearch))) return null;
   if (state.playerRoleViewer !== undefined && !["organizer","captain-a","captain-b","player"].includes(String(state.playerRoleViewer))) return null;
   if (state.matchDraftPreview !== undefined && !["off", "Response", "Ranks", "Randomized"].includes(String(state.matchDraftPreview))) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;

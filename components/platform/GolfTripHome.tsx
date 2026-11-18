@@ -250,7 +250,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
       (tripNow ?? new Date().toLocaleString("sv-SE")).slice(0, 10), [], RATE_WITHIN_DAYS) : []} /> : preview && <RatePlacesPrompt />}
     {addingPlace && travel && <GolfTripAddPlace travel={travel} placeId={addingPlace.placeId} name={addingPlace.name} address={addingPlace.address} onChange={changeMyTravel}
       onAdded={addingPlace.done} onClose={() => setAddingPlace(null)} />}
-    <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : ""}`} role="tabpanel" aria-label={tab}>
+    <div className={`${styles.body} ${tab === "Golf" ? styles.golfBody : tab === "Itinerary" ? styles.itineraryBody : ""}`} role="tabpanel" aria-label={tab}>
       {tab === "Home" ? <><InfoAccount tapInCode={tapInCode} tripId={placesTripId} spectator={spectator} match={previewMatch} viewerName={savedGames?.group.find(player => player.profileId === savedGames.meId)?.name ?? signedInName} competitionTypes={structure.individual || structure.team ? { individual: sharedType?.individual ?? (structure.individual ? "Stroke Play" : null), team: sharedType?.team ?? (structure.team ? "2 Teams" : null) } : null} draftScope={competitionKey ?? "default"} teamNames={previewMatch?.sides.map(side=>side.name)} draft={draft} draftPlayers={draftRoster} teamDraft={teamDraft} isOrganizer={isOrganizer} momentumEvents={momentum.events} settingsHref={settingsHref} flights={flights} weather={weather} itinerary={goingItinerary} travel={travel} tripNow={tripNow} onOpenItinerary={openItinerary} players={previewMatch?.leaderboard.map(row => row.golfer)}
         rounds={plannedRounds(draft).map(round => ({ number: round.number, date: round.date, course: draft[`round${round.number}Course`] || "Course TBD", format: draft[`round${round.number}Format`] || (previewMatch && round.number === previewMatch.round ? previewMatch.formatDef?.label : undefined) }))}
         afterRound={previewMatch ? (roundLive || previewMatch.leaderboard.some(row => row.holes.every(strokes => strokes !== null)) ? previewMatch.round : previewMatch.round - 1) : 0}
@@ -271,8 +271,8 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
           players={travel?.members.map(member => member.name) ?? []} items={goingItinerary ?? []} onOpenItinerary={openItinerary} />
         : tab === "Itinerary" ? <>
           {/* "+ Add" (the My Info add pop-ups) sits right under the Itinerary tab; then the day-by-day itinerary. */}
-          {travel && <div className={styles.itineraryAddRow}><GolfTripAddTravel travel={travel} onChange={changeMyTravel} className={styles.itineraryAddPill} /></div>}
-          <ItineraryList items={itinerary} tripDays={dates} today={tripNow?.slice(0, 10)} now={tripNow?.slice(0, 16)} rsvpKey={rsvpKey} myName={myName} activeRound={roundLive && previewMatch?.leaderboard.some(row => row.holes.some(strokes => strokes === null)) ? previewMatch.round : undefined}
+          
+          <ItineraryList addControl={travel ? <GolfTripAddTravel travel={travel} onChange={changeMyTravel} className={styles.itineraryAddPill} /> : undefined} items={itinerary} tripDays={dates} today={tripNow?.slice(0, 10)} now={tripNow?.slice(0, 16)} rsvpKey={rsvpKey} myName={myName} activeRound={roundLive && previewMatch?.leaderboard.some(row => row.holes.some(strokes => strokes === null)) ? previewMatch.round : undefined}
             onRespond={(id, answer) => changeMyTravel({ type: "respond", id, answer })}
             onDelete={id => changeMyTravel({ type: "remove", id: id.split(":")[0] })}
             canDelete={id => Boolean(travel?.items.some(item => item.id === id.split(":")[0] && item.source === "mine" && item.createdBy === travel.meId))}
@@ -557,7 +557,7 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
     </GolfDayBoard>
 
     {/* Team/Indi keeps the same standalone navigation board above either view. */}
-    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.slidingSelector} ${styles.underlineSelector} ${styles.bubbleUnderline}`} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
+    {structure.individual && structure.team && !gamesActive && !predictActive && <div className={styles.leaderboardBoard}><div className={`${styles.slidingSelector} ${styles.underlineSelector} ${styles.bubbleUnderline} ${styles.fullLineSelector}`} data-second={golfSection === "Overview"} role="group" aria-label="Leaderboard type">
       <button type="button" className={`${styles.tab} ${golfSection === "Competition" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Competition"} onClick={() => goTo(availableSlides.indexOf("Competition"))}>Team</button>
       <button type="button" className={`${styles.tab} ${golfSection === "Overview" ? styles.tabActive : ""}`} aria-pressed={golfSection === "Overview"} onClick={() => goTo(availableSlides.indexOf("Overview"))}>Indi</button>
     </div></div>}
@@ -793,8 +793,8 @@ function EventRow({ event }: { event: InfoEvent }) {
  * Days run from the trip's first day (plus any earlier day with something on it) to its last; no < on the first, no > on the last.
  * Opens on today when today is one of the days.
  */
-function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "default", myName = "You", now: tripNowProp, activeRound, onRespond, onDelete, canDelete }: {
-  items?: ItineraryItem[]; tripDays: string[]; today?: string; whoFor?: (itemId: string) => string[];
+function ItineraryList({ addControl, items, tripDays, today: tripToday, whoFor, rsvpKey = "default", myName = "You", now: tripNowProp, activeRound, onRespond, onDelete, canDelete }: {
+  addControl?: ReactNode; items?: ItineraryItem[]; tripDays: string[]; today?: string; whoFor?: (itemId: string) => string[];
   /** Play / Sit out on golf rounds: which trip, and who I am. */
   rsvpKey?: string; myName?: string; activeRound?: number;
   /** Trip clock "YYYY-MM-DDTHH:mm" (dev); otherwise the device's time when the list opened. */
@@ -818,7 +818,7 @@ function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "d
   const [todayIso] = useState(() => localNow(new Date()).slice(0, 10));
   // Arrows: the day slides away (50 ms), then the next one slides in from that side (50 ms) — 100 ms in all.
   const [slide, setSlide] = useState<{ to: number; dir: 1 | -1; stage: "out" | "in" } | null>(null);
-  if (!days.length) return <Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>;
+  if (!days.length) return <><Card title="Itinerary"><Empty>Nothing on the itinerary yet</Empty></Card>{addControl && <div className={styles.itineraryAddRow}>{addControl}</div>}</>;
   const today = days.findIndex(({ day }) => day === (tripToday ?? todayIso));
   const index = Math.min(days.length - 1, picked ?? Math.max(0, today));
   const { day, items: dayItems } = days[index];
@@ -839,6 +839,7 @@ function ItineraryList({ items, tripDays, today: tripToday, whoFor, rsvpKey = "d
         <h2 className={`${styles.itineraryDayTitle} ${slideClass}`}><span>{itineraryWeekday(day)}</span><small>{itineraryLongDate(day)}</small></h2>
         {index < days.length - 1 ? <button type="button" className={styles.itineraryDayStep} aria-label="Next day" onClick={() => go(1)}><ChevronRight size={22} strokeWidth={2.25} aria-hidden /></button> : <span className={styles.itineraryDayStep} aria-hidden />}
       </div>
+      {addControl && <div className={styles.itineraryAddRow}>{addControl}</div>}
       <div className={`${styles.itineraryDayBody} ${slideClass}`} onAnimationEnd={event => { if (event.target === event.currentTarget) onSlideEnd(); }}>
       {dayItems.length === 0 && <p className={styles.itineraryEmptyDay}>Nothing planned for today.</p>}
       {/* Each of your plans that day: its type above, then a raised cream box (like Competition → Format rounds) with the time over a line, the headline and details. Tap for its sheet. */}

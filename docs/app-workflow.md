@@ -6,6 +6,24 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-18 - Completed countdown pill transition (implemented locally, not deployed).** At zero, the Team Draft Room countdown rectangle now becomes Start Team Draft for the organizer, retaining existing start eligibility checks. Preserved the existing early Start Draft Now action while the countdown runs and Waiting To Start for players at zero. The date/time remains aligned opposite Back. Section 22 updated; storage and workflow paths unchanged.
+
+**2026-11-13 - Team draft countdown-to-start pill (implemented locally, not deployed).** The Team Draft Room countdown now sits in a rounded rectangle beneath its title. At zero, it becomes Start Team Draft for an eligible organizer, using the existing start action and permission checks; before zero or without a schedule it stays a timer. The date/time stays on the right and aligns vertically with Back. Section 22 and Mermaid annotation updated; storage and overview mappings unchanged. Scope: existing draft controls only, no new data, audience or permissions; unresolved compliance reviews remain review_required.
+
+**2026-11-13 - Matching round frame and bottom-edge selector lines (presentation only; implemented locally, not deployed).** Changed the round selector frame to 12px rounded corners, matching Team/Indi and Active/Settled. Their selected gold lines are now 80% of the previous tab width, centered and resting on the frame bottom border. Heights, round scrolling and filtering remain unchanged. Section 22 updated; workflow paths unchanged.
+
+**2026-11-13 - Unboxed Home competition details (presentation only; implemented locally, not deployed).** Removed the Home Competition details outer border, tinted background, shadow and card padding. Increased its labels, values and round text from 10px to 12px, and point totals from 28px to 30px. Section 22 updated; competition settings, calculations and workflow paths unchanged.
+
+**2026-11-13 - Itinerary date first, Add below divider (presentation only; implemented locally, not deployed).** Moved the day/date heading up to an 8px gap below Home/Itinerary navigation. Add now sits right-aligned beneath the day/date divider instead of above the heading. Empty itineraries retain the Add action. Section 22 updated; day navigation, travel editing and workflow paths unchanged.
+
+**2026-11-13 - Aligned odds direction indicators (presentation only; implemented locally, not deployed).** The match-board odds direction indicator now inherits the percentage text size and centers vertically beside it instead of using a larger, top-aligned glyph. Percentage text stays horizontally centered. Section 22 updated; odds calculations and workflow paths unchanged.
+
+**2026-11-13 - PLAYER heading aligned with names (presentation only; implemented locally, not deployed).** In the Indi leaderboard, inset the PLAYER heading by the 30px avatar width plus its 8px name gap so its left edge aligns with player names at standard and narrow phone widths. Rows, avatars and POS remain unchanged. Section 22 updated; data and workflow paths unchanged.
+
+**2026-11-13 - Home-style selector underlines (presentation only; implemented locally, not deployed).** Team/Indi and Active/Settled now use the Home/Itinerary underline treatment: a solid gold line across the selected tab above a faint shared rule, fading in on selection. Replaced the inset fading-end sliding line; both rounded frames retain their 32px height. Section 22 updated; navigation, filtering and workflow paths unchanged.
+
+**2026-11-13 - Identical compact Golf selectors (presentation only; implemented locally, not deployed).** Team/Indi now uses the exact same selector classes as Active/Settled, including the inset, softly faded sliding line. Both use a rounded rectangle with 12px corners while retaining their 32px height. Section 22 updated; switching, filtering and workflow paths unchanged.
+
 **2026-11-13 - Inset Games selector line (presentation only; implemented locally, not deployed).** Inset the Active/Settled selection line 8px from each edge of its selected half, raised it 1px and softened its ends and glow so it sits naturally within the rounded frame. Section 22 updated; selection and filtering unchanged, with no workflow path changes.
 
 **2026-11-13 - Matching Games status selector frame (presentation only; implemented locally, not deployed).** Active/Settled now shares Team/Indi's rounded maroon frame, top glow, text and 32px height, while retaining a full-half-width sliding selection line instead of Team/Indi's short line. Section 22 updated; Games filtering and workflow paths unchanged.
@@ -715,6 +733,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  %% Team Draft countdown pill becomes its existing organizer start action at zero.
   %% Dev draft conditions can open half-picked teams or half-submitted singles/pairs match selection.
   %% Team round browsing does not rewind Indi; historical individual rounds remain in player profiles.
   %% Predict uses an inline Golf section; its old Wallet slide-up and team board entry are removed.
@@ -1267,6 +1286,8 @@ The separate test-season controls operate on a designated database season. This 
 
 **Golf overview pull lip (2026-11-13):** The overview pull control is a 38px-wide, 14px-high rounded lip extending 13px below the bottom outline, with a centered 12px grip line. A 10px bottom margin gives following content room. Tap, keyboard and vertical drag still expand or collapse the overview in every Golf section.
 
+**Odds direction alignment (2026-11-13):** The direction indicator beside the odds percentage inherits its text size and is vertically centered, leaving the percentage horizontally centered above its bar.
+
 **Lower match stats alignment (2026-11-13):** Both mirrored stat groups shift down 5px when an odds bar is present, centering the labels, divider and values between that bar and the card bottom without resizing the card.
 
 **Match name alignment (2026-11-13):** When an odds bar is present, each complete side shifts down 4.5px, centering its names and score between the card top and the bar while keeping the lead fill centered around them without resizing the card. Cards without odds retain their existing alignment.
@@ -1275,21 +1296,29 @@ The separate test-season controls operate on a designated database season. This 
 
 **Golf match-box text (2026-11-13):** Compact match boards use 13px player names and side scores. The F or completed-hole number matches THRU at 10px in match rows (with the progress stack lowered 3px) and 9px in other compact boards. Tee-time sizes, existing wrapping and ellipsis behavior remain unchanged.
 
-**Games status selector (2026-11-13):** Active/Settled reuses the Team/Indi frame, background, text and compact 32px height. Its selected line spans most of the selected half with 8px side insets, softly faded ends and a restrained glow, sliding between Active and Settled; Team/Indi retains its short line. Filtering remains unchanged.
+**Games status selector (2026-11-13):** Active/Settled and Team/Indi share identical selector classes, background, text and compact 32px height. Both selectors use solid gold underlines centered at 80% of the selected tab width, resting on the frame bottom border and fading in when selected. They share the same frame and 12px rounded corners. Filtering remains unchanged.
 
 **Compact selectors (2026-11-13):** Team/Indi and the round selector are each 32px tall, with 26px buttons and 2px vertical insets (approximately 15% taller than the previous 28px frames). Text sizes and existing selection/scrolling behavior remain.
 
 **Format-to-match spacing (2026-11-13):** The round details area has a -4px bottom margin, reducing clearance before the match content by 4px while retaining the centered course/format layout.
 
+**Home Competition presentation (2026-11-13):** Competition details appear directly on Home without an outer card border, background, shadow or padding. Shared labels, values and round text are 12px; point totals are 30px. Existing separators and point-summary panels remain.
+
+**Itinerary header layout (2026-11-13):** Day/date appears first, 8px beneath the main trip navigation; Add is right-aligned below its divider and before the day entries. Empty itineraries keep Add available.
+
 **Itinerary card appearance (2026-11-13):** Itinerary entries use Golf-style dark maroon surfaces, 16px rounded corners, soft top glow and shadows, distinguished by a warm white outline. Cream text and brighter RSVP/status accents remain readable on the dark surface. Existing detail dialogs, invitations and participation actions retain their behavior.
 
+**Team Draft Room countdown control (2026-11-13):** A 32px-high rounded rectangle below the room title contains the countdown. At zero it becomes Start Team Draft when existing organizer/start eligibility permits; starting still uses the same local or saved-trip action. Before zero, the existing organizer Start Draft Now action remains below the timer; players see Waiting To Start at zero and cannot start the draft. The right-hand date/time aligns with the Back button.
+
 **Partial draft simulator conditions (2026-11-13):** In /dev, Home > Team Draft (including room subpages) offers Some players chosen (open room), which uses the existing half-picked roster with draft time reached. Home > Match Selection offers Some matches selected for singles and pairs, with half the Response matches submitted through the existing selection rules. The rooms stay interactive and unfinished slots remain available. The same presets also appear under Mock match selection (test run), where existing reset controls restart the sample; ordinary mock storage can retain subsequent actions. Saved trips and production drafting are unaffected.
+
+**Leaderboard PLAYER heading (2026-11-13):** The PLAYER label is inset 38px from its avatar-column origin, aligning with the player names after the 30px avatar and 8px gap, including narrow phone layouts.
 
 **Leaderboard position alignment (2026-11-13):** POS and each numeric or tied position are centered within the same 30px column; player names and avatars retain their placement.
 
 **Current Indi standings (2026-11-13):** Team round browsing affects Team match content only. Indi reads the current trip source for leaderboard scores, round context and win chances, retaining shared-ball standings handling. Player profiles retain their historical round selectors; returning to Team retains the chosen round.
 
-**Round selector frame (2026-11-13):** The Team round strip uses the same rounded maroon frame and outlined glowing selection as the Golf section selector. Its rounds scroll horizontally inside the frame, with about four choices and part of the next visible. Selecting a round moves the bubble and retains existing centering and round content behavior. Beneath the selector, the full supplied course name is centered above the format in a compact area with a 5px top gap, 4px vertical padding and 3px between lines; long names wrap without truncation and determine the height naturally. Reduced-motion preferences disable bubble animation.
+**Round selector frame (2026-11-13):** The Team round strip uses a maroon rounded rectangle with 12px corners and the same outlined glowing selection as the Golf section selector. Its rounds scroll horizontally inside the frame, with about four choices and part of the next visible. Selecting a round moves the bubble and retains existing centering and round content behavior. Beneath the selector, the full supplied course name is centered above the format in a compact area with a 5px top gap, 4px vertical padding and 3px between lines; long names wrap without truncation and determine the height naturally. Reduced-motion preferences disable bubble animation.
 
 **Golf navigation underline (2026-11-13):** The selected label has a centered glowing underline sized to 70% of its rendered word width. Equal-width buttons and navigation behavior remain unchanged.
 

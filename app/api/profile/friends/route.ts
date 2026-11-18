@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
-import { friendRequestCount, removeFriend, respondFriendRequest, sendFriendRequest } from "@/lib/profile/friendRequestsServer";
+import { friendRequestCount, myFriendRequests, removeFriend, respondFriendRequest, sendFriendRequest } from "@/lib/profile/friendRequestsServer";
 
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
 
-/** GET: how many friend requests are waiting on me (the red badge). 0 when signed out. */
-export async function GET() {
+/** GET: how many friend requests are waiting on me (the red badge). 0 when signed out.
+ *  GET ?requests=1: those requests themselves (the profile search bar shows them before you type). */
+export async function GET(request: Request) {
   const current = await getCurrentProfile();
+  if (new URL(request.url).searchParams.get("requests") === "1") {
+    if (current.status !== "ok") return NextResponse.json({ ok: false, code: "signed_out" }, { status: 401 });
+    const requests = await myFriendRequests(current.profile.profileId);
+    return requests.ok ? NextResponse.json({ ok: true, incoming: requests.value.incoming }, { headers: { "Cache-Control": "private, no-store" } })
+      : NextResponse.json({ ok: false, message: requests.message }, { status: requests.code === "not_installed" ? 503 : 500 });
+  }
   const count = current.status === "ok" ? await friendRequestCount(current.profile.profileId) : 0;
   return NextResponse.json({ ok: true, count }, { headers: { "Cache-Control": "private, no-store" } });
 }

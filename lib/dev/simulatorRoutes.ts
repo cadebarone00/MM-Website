@@ -329,11 +329,14 @@ export function simulatorPages(): SimulatorPage[] {
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [
-    { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true } },
-    { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false } },
-    { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false } },
-    { id: "profile-preview-public", label: "Someone else's Public profile", state: { profilePreview: "public", sampleStats: false } },
-    { id: "profile-preview-private", label: "Someone else's Private profile", state: { profilePreview: "private", sampleStats: false } },
+    { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true, profileSearch: undefined } },
+    { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-search-empty", label: "Search open · nothing typed (friend requests)", state: { profilePreview: "sample", sampleStats: true, profileSearch: "empty" } },
+    { id: "profile-search-results", label: "Search · results (Public + Private)", state: { profilePreview: "sample", sampleStats: true, profileSearch: "results" } },
+    { id: "profile-search-none", label: "Search · no results", state: { profilePreview: "sample", sampleStats: true, profileSearch: "none" } },
+    { id: "profile-preview-public", label: "Someone else's Public profile", state: { profilePreview: "public", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-private", label: "Someone else's Private profile (top only, \"Private Profile\" below)", state: { profilePreview: "private", sampleStats: false, profileSearch: undefined } },
   ] });
   for (const [path, label] of [["/dev/profile/settings", "Settings (sample)"], ["/dev/profile/edit", "Edit profile (sample)"]]) {
     const page = pages.find(item => item.path === path);
@@ -382,6 +385,8 @@ function teamDraftConditions(type?: (typeof TEAM_DRAFT_TYPES)[number]): Simulato
     team("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
     team("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
     team("when-reached", "Draft time reached", "When", { draftWhen: "reached" }),
+    team("viewer-organizer", "Viewing as the organizer (Start Draft Now)", "Viewing as", { draftViewer: "organizer" }),
+    team("viewer-player", "Viewing as a player (Waiting To Start at zero)", "Viewing as", { draftViewer: "player" }),
     team("picked-none", "No one picked yet", "Teams", { teamDraftPicked: "none" }),
     team("picked-half", "Half the players picked", "Teams", { teamDraftPicked: "half" }),
     team("partial-room", "Some players chosen (open room)", "Teams", { ...DRAFT_SIM_DEFAULTS, ...(type ? { teamDraftType: type, teamDraftPlayers: type === "3-Ball" ? 12 : 8 } : {}), teamDraftPicked: "half", draftWhen: "reached", draftRoom: "open", mockDraft: "off", mockMatch: "off" }),
@@ -407,6 +412,8 @@ function matchSelectionConditions(): SimulatorConditional[] {
     match("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
     match("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
     match("when-reached", "Start time reached", "When", { draftWhen: "reached" }),
+    match("viewer-organizer", "Viewing as the organizer (Start Draft Now)", "Viewing as", { draftViewer: "organizer" }),
+    match("viewer-player", "Viewing as a player (Waiting To Start at zero)", "Viewing as", { draftViewer: "player" }),
     match("open-round", "Round not played yet", "Round", { matchSelLocked: false }),
     match("locked", "Round already played (locked)", "Round", { matchSelLocked: true }),
     match("room-closed", "Match Room closed", "Match Room", { draftRoom: "closed" }),

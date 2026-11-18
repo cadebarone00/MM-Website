@@ -59,3 +59,5 @@
 .scheduleButton{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 12px;border:1px solid rgba(220,196,149,.6);border-radius:999px;background:rgba(220,196,149,.1);color:#edcf91;font:600 12px/1.2 var(--font-spectral),Georgia,serif;text-decoration:none}
 .scheduleButton:hover{background:rgba(220,196,149,.2)}
 .scheduleButton:focus-visible{outline:2px solid #edcf91;outline-offset:3px}
+/* Match Selection: the format on its own line under "Round x @ Course" (owner 2026-11-13). */
+.matchFormat{margin-top:-3px}

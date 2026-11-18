@@ -5084,3 +5084,38 @@ except the profile.
 **Done looks like:** add / remove up to 4 socials in Edit profile (dev preview + live); they show 2×2 under the bio and open
 the right page; Private profiles hide them from others; bad usernames are refused with a plain message; tests for the
 link-building rules + the SQL; checked in the browser.
+
+## Profile search bar + searched-profile views + conditionals (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; no SQL; Private profiles show bio + socials — owner approved the spec as written)
+
+**Already built (unchanged):** search finds golfers by name or @username, Public and Private profiles both (never Pending
+or closed accounts); tapping one opens `/profile/<username>`; someone else's Private profile hides the tabs.
+
+**Changes:**
+1. **Search bar at the top.** Tapping the search icon on your profile slides a search bar down at the very top of the
+   screen (no new page): a text box ("Search name or @username") + Cancel. As you type (2+ letters) the results list drops
+   down under it: photo / avatar, name, @username, a small "Private" tag on Private profiles, and the friend button
+   (Add friend / Requested / Accept / Friends) like today. Tap a result → their profile. Nothing typed yet → your waiting
+   friend requests (Accept / Decline), which used to be on the separate Find Golfers page. Cancel closes it.
+   `/profile/search` stays working (old links) but the profile no longer goes there.
+2. **Someone else's profile (searched up):**
+   - **Public:** the whole profile — top (photo, name, @username, Friends · Rounds · Handicap, bio, socials) and the bottom
+     (Overview, Rounds, Stats). Same as today.
+   - **Private:** **the whole top shows** — photo, name, @username, Friends · Rounds · Handicap, **bio and socials** (new:
+     today bio and socials are hidden on Private profiles). **The bottom shows only "Private Profile"** — no Overview,
+     Rounds or Stats tabs, no rounds, no stats. Golf trips are never shown to others either way.
+   - Your own profile always shows everything (it's yours).
+3. **Simulator conditionals (Profile group)**, all on the sample profile, no sign-in:
+   - My profile · sample stats / not enough rounds / no rounds (already there)
+   - **Search open · nothing typed (friend requests)** · **Search · results** · **Search · no results**
+   - Someone else's **Public** profile · Someone else's **Private** profile (already there, now with the new top/bottom rules)
+   The dev search searches a handful of sample golfers (Public and Private) so it works without a real account.
+
+**Where data is:** no database changes for search. Showing bio + socials on Private profiles is a rule change in the
+profile read model (`lib/profile/profileReadModel.ts`), not SQL.
+
+**Done looks like:** search bar opens/closes at the top, finds Public and Private golfers, opens their profile; Private
+profiles show the full top and only "Private Profile" below; the new conditionals switch each state in the simulator;
+tests for the privacy rule; checked in the browser.
+
+**Question for the owner:** confirm Private profiles should show the **bio and socials** to everyone (the top part), or
+keep those hidden and show only photo, name, @username and the numbers.

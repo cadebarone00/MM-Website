@@ -195,8 +195,9 @@ export function buildProfileReadModel(viewerId: ProfileId | null, subject: Profi
     const totals = data.rounds ? modernStats(data.rounds) : null;
     return {
       isOwner, access,
-      // The profile photo shows whatever the privacy (owner request 2026-10-26), like the name.
-      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: null, canEditBio: false, roundsVisibility: "private", links: [] },
+      // The whole top shows whatever the privacy (owner requests 2026-10-26 photo, 2026-11-13 bio + socials): name, photo,
+      // bio and socials. Only the bottom (Overview, Rounds, Stats) is hidden.
+      identity: { displayName: name, username: subject.username, initials: initialsFor(name), memberSince: null, avatarSrc: subject.avatarUrl ?? null, bio: subject.bio?.trim() || null, canEditBio: false, roundsVisibility: "private", links: subject.links ?? [] },
       rounds: { status: "hidden" }, trips: { status: "hidden" }, tournaments: { status: "hidden" }, teamHistory: [], legacy: null,
       // Only the counts: rounds played and handicap index (no averages, bests or anything from a round).
       modernStats: totals && { roundsPlayed: totals.roundsPlayed, eighteenHoleRounds: 0, average18: null, best18: null, handicapIndex: totals.handicapIndex, countingRounds: 0 },

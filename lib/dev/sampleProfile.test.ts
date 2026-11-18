@@ -44,10 +44,11 @@ test("someone else's Public profile follows the live privacy rules: no golf trip
   assert.equal(profile.rounds.status === "ok" && profile.rounds.value.length, 18);
 });
 
-test("someone else's Private profile: name and username only", () => {
+test("someone else's Private profile: the whole top (bio + socials too), none of the bottom", () => {
   const profile = sampleProfileReadModel("private", DEFAULT_SAMPLE_PROFILE, TODAY);
   assert.equal(profile.access, "private");
-  assert.equal(profile.identity.bio, null);
+  assert.ok(profile.identity.bio, "the bio shows");
+  assert.equal(profile.identity.links.length, 1, "the socials show");
   assert.deepEqual([profile.rounds, profile.trips, profile.tournaments], [{ status: "hidden" }, { status: "hidden" }, { status: "hidden" }]);
   assert.equal(profile.modernStats, null);
 });
@@ -57,4 +58,10 @@ test("the simulator accepts the profile previews and rejects anything else", () 
   for (const preview of ["sample", "few", "none", "public", "private"]) assert.equal(config(preview)?.state.profilePreview, preview);
   assert.equal(config("owner-of-everything"), null);
   assert.equal(parseSimulatorConfig({ source: "maroon", state: DEFAULT_SIMULATOR_STATE })?.state.profilePreview, undefined);
+});
+
+test("the simulator accepts the profile search states and rejects anything else", () => {
+  const config = (profileSearch: unknown) => parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, profileSearch } });
+  for (const state of ["empty", "results", "none"]) assert.equal(config(state)?.state.profileSearch, state);
+  assert.equal(config("open"), null);
 });

@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Search, Settings } from "lucide-react";
+import { Lock, Pencil, Search, Settings } from "lucide-react";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { SocialIcon } from "./SocialIcon";
+import { ProfileSearch, type ProfileSearchSource } from "./ProfileSearch";
 import { socialDisplay, socialLabel } from "@/lib/profile/profileSocials";
 import { FriendRequestBadge } from "./FriendRequestBadge";
 import { FriendToggle } from "./FriendToggle";
@@ -25,7 +26,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "rounds", label: "Rounds" },
   { key: "stats", label: "Stats" },
 ];
-const empty = "px-4 py-5 text-center text-cream-50/70";
 
 /**
  * A profile (the profile read model), laid out like a fantasy-app account screen: your own on /profile, or someone
@@ -34,27 +34,35 @@ const empty = "px-4 py-5 text-center text-cream-50/70";
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
 /** `links`: where the gear and the photo's pencil go (the dev profile preview points them at its sample screens). */
 /** `friendship` (someone else's profile, signed in): the friend button in the corner, switched on when we're friends. */
-export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string };
-  friendship?: { profileId: string; relation: Relation; tripMate: boolean } }) {
+/** `search` (dev profile preview only): where the search bar looks golfers up instead of the live account. */
+export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship, search }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string };
+  friendship?: { profileId: string; relation: Relation; tripMate: boolean }; search?: ProfileSearchSource }) {
   const [tab, setTab] = useState<Tab>("overview");
+  // The search bar (owner request 2026-11-13). The simulator's Profile conditionals can open it already typed in.
+  const simSearch = useSimulator()?.state.profileSearch;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [simClosed, setSimClosed] = useState<string | undefined>();
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
   const profile = sample ? withSampleRounds(real) : real;
   const { identity, legacy, isOwner } = profile;
   const isPrivate = profile.access === "private";
-  return (
-    // Extend the profile background through the bottom-menu padding. Owner request 2026-11-02: the top section is maroon
-    // and everything under it is cream (.profile-body in app/globals.css gives the tabs the light palette), so the maroon
-    // curve shows the same way on Overview, Rounds and Stats.
+  const showSearch = isOwner && (searchOpen || (simSearch !== undefined && simClosed !== simSearch));
+  return (<>
+    {showSearch && <ProfileSearch key={searchOpen ? "open" : simSearch} source={search} initialQuery={searchOpen ? "" : simSearch === "results" ? "ke" : simSearch === "none" ? "zzq" : ""}
+      onClose={() => { setSearchOpen(false); setSimClosed(simSearch); }} />}
+    {/* Extend the profile background through the bottom-menu padding. Owner request 2026-11-02: the top section is maroon
+        and everything under it is cream (.profile-body in app/globals.css gives the tabs the light palette), so the maroon
+        curve shows the same way on Overview, Rounds and Stats. */}
     <div className="profile-root flex min-h-screen min-w-0 flex-col bg-[#fbf8f1] text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       {/* The icon row starts on the app's icon line (--app-top-clearance, app/globals.css: 5px under the Dynamic Island /
           status bar) and everything else 60px lower, so nothing lands where the clock, battery or notch are. */}
       <header className="profile-hero relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-maroon-900 text-cream-50 px-5 pb-3" style={{ paddingTop: "calc(var(--app-top-clearance, 0px) + 60px)" }}>
-        {/* Find Golfers (search and friend requests), just left of the gear. */}
-        {isOwner && <Link href="/profile/search" aria-label="Find golfers" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute right-16 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
+        {/* Search (golfers + friend requests), just left of the gear: opens the search bar at the top. */}
+        {isOwner && <button type="button" onClick={() => setSearchOpen(true)} aria-label="Search golfers" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute right-16 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
           <Search size={26} aria-hidden="true" />
           <FriendRequestBadge />
-        </Link>}
+        </button>}
         {!isOwner && friendship && <FriendToggle profileId={friendship.profileId} name={identity.displayName} initial={friendship.relation} tripMate={friendship.tripMate} />}
         {isOwner && <Link href={links.settings} aria-label="Settings" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
           <Settings size={28} aria-hidden="true" />
@@ -113,7 +121,8 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
       </header>
 
       <main className="profile-body relative mx-auto -mt-6 w-full max-w-[640px] flex-1 px-4 pb-32 pt-12">
-        {isPrivate ? <p className={empty}>This profile is private.</p> : <>
+        {/* Someone else's Private profile: the whole top shows, the bottom is only this (owner request 2026-11-13). */}
+        {isPrivate ? <p className="flex flex-col items-center gap-2 py-10 text-center font-serif text-xl font-bold text-maroon-900"><Lock size={26} aria-hidden="true" className="text-maroon-700" />Private Profile</p> : <>
           {tab === "rounds" && (
             <section aria-label="Rounds" className="-mx-4 -mt-6 bg-maroon-900 text-cream-50">
               {/* LEGACY: the original Maroon handicap history (owner only), kept separate from modern rounds. */}
@@ -140,7 +149,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
         </>}
       </main>
     </div>
-  );
+  </>);
 }
 
 

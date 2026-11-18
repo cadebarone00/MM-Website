@@ -26,8 +26,10 @@ const ME = "00000000-0000-4000-8000-000000000001";
 const ROUNDS: Record<ProfilePreview, number> = { sample: 25, few: 2, none: 0, public: 18, private: 0 };
 const OTHERS: Record<"public" | "private", Omit<ProfileSubjectRow, "createdAt" | "legacyMaroonPlayerSlug" | "avatarUrl">> = {
   public: { id: "00000000-0000-4000-8000-000000000002", displayName: "Jake Parker", username: "jakeparker", roundsVisibility: "public", bio: "Plays fast, putts slow.", links: [{ platform: "instagram", title: "jakeparker", url: "https://instagram.com/jakeparker" }, { platform: "x", title: "jakeparker", url: "https://x.com/jakeparker" }] },
-  private: { id: "00000000-0000-4000-8000-000000000003", displayName: "Mike Chen", username: "mikechen", roundsVisibility: "private", bio: "Hidden from you: this profile is Private.", links: [{ platform: "instagram", title: "mikechen", url: "https://instagram.com/mikechen" }] },
+  private: { id: "00000000-0000-4000-8000-000000000003", displayName: "Mike Chen", username: "mikechen", roundsVisibility: "private", bio: "Scratch-ish on a good day. Keeps his rounds to himself.", links: [{ platform: "instagram", title: "mikechen", url: "https://instagram.com/mikechen" }] },
 };
+/** Sample golfers the dev search bar finds (each opens its own sample profile via ?view=). */
+export const SAMPLE_GOLFERS = (["public", "private"] as const).map((view) => ({ view, id: OTHERS[view].id, displayName: OTHERS[view].displayName, username: OTHERS[view].username }));
 /** The same shape get_profile_history returns. */
 const HISTORY = {
   restricted: false,

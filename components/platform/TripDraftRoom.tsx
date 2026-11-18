@@ -50,6 +50,8 @@ export type LiveDraftRoom = {
   /** This viewer may pick for that team (captain of it, or the organizer). */
   canPick: (team: number) => boolean;
   canStart: boolean;
+  /** The organizer is looking (they get Start Draft Now; everyone else Waiting To Start). */
+  isOrganizer?: boolean;
   busy: boolean;
   /** One status line under the header ("", waiting / error / complete). */
   message: string;
@@ -88,6 +90,7 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   const available = roster.filter(player => player.on === undefined);
   const turn = available.length ? teamDraftTurn(draftOrder, teams.map(team => team.length), start, capacity) : null;
   const isStarted = live ? live.started : started;
+  const countdownDone = !!countdown && Object.values(countdown).every(value => value === 0);
   const picking = !countError && (live ? turn !== null && live.canPick(turn) && !live.busy : canEdit) && isStarted && draftType === "Captain's Picks" && turn !== null;
   const label = (team: number) => `Team ${teamLetter(team)}`;
   // The list shows the players still available (no Available / Team pills).
@@ -95,6 +98,12 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   // Spots in each box: the team size, or for 2 Teams half the players (rounded up).
   const spots = size ?? Math.max(1, Math.ceil(roster.length / 2), ...teams.map(team => team.length));
   const done = draftType === "Captain's Picks" && turn === null && roster.some(player => player.on !== undefined);
+  // Under the countdown (owner 2026-11-13): the organizer gets "Start Draft Now" (plain words, no pill) until the draft starts;
+  // everyone else sees "Waiting To Start" once the countdown has run out. Its line is always there, so nothing moves.
+  const organizerView = live ? (live.isOrganizer ?? live.canStart) : canEdit;
+  const showCountdownStart = countdownDone && organizerView && !isStarted && !done && !countError;
+  const waitingToStart = !isStarted && !done && !organizerView && countdownDone;
+  const startNow = () => { if (live) live.onStart(); else if (canEdit && draftType === "Captain's Picks") setStarted(true); };
   const slotText = (player: (typeof roster)[number] | undefined, spot: number) => player
     ? <><strong>{player.name}</strong><small>{player.captain ? "Captain" : player.handicap === undefined ? "Team roster" : `HCP ${player.handicap}`}</small></>
     : <span className={styles.empty}>{spot === 0 && size ? "Captain spot" : "Open spot"}</span>;
@@ -124,17 +133,18 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   </>;
   return createPortal(<dialog ref={dialog} className={styles.room} onCancel={onClose} aria-labelledby="draft-room-title">
     {/* "Team Draft Room" centered with the countdown under it; the draft day over its time in the right corner. */}
-    <header className={`${styles.header} ${styles.headerCompact}`}>
+    <header className={`${styles.header} ${styles.headerCompact} ${styles.teamHeader}`}>
       {/* Our back button (owner 2026-11-13): the < instead of an X. */}
       <button type="button" className={`${styles.close} ${styles.backPlain}`} onClick={onClose} aria-label="Back"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></button>
       <div className={styles.titleBlock}><h1 id="draft-room-title" tabIndex={-1} style={{ outline: "none" }}>Team Draft Room</h1>
-      <div className={styles.timer} role="timer" aria-label={countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set"}>
+      {showCountdownStart ? <button type="button" className={`${styles.countdownPill} ${styles.countdownStart}`} disabled={draftType !== "Captain's Picks" || roster.length < 2 || !!live?.busy || (live ? !live.canStart : false)} onClick={startNow}>Start Team Draft</button> : <div className={`${styles.timer} ${styles.countdownPill}`} role="timer" aria-label={countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set"}>
         <span>{countdown ? `${countdown.days ? `${countdown.days}d ` : ""}${countdown.days || countdown.hours ? `${String(countdown.hours).padStart(2, "0")}:` : ""}${String(countdown.minutes).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}` : "?:?"}</span>
-      </div>
+      </div>}
+      <div className={styles.startLine}>{!countdownDone && organizerView && !isStarted && !done && !countError ? <button type="button" className={styles.startNow} disabled={draftType !== "Captain's Picks" || roster.length < 2 || !!live?.busy || (live ? !live.canStart : false)} onClick={startNow}>Start Draft Now</button>
+        : waitingToStart ? <p className={styles.waitingStart} role="status">Waiting To Start</p> : null}</div>
       </div>
       <div className={styles.cornerControls}>
         <p className={styles.cornerWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>
-        {!countError && (live ? live.canStart && !isStarted : canEdit && !started) && !done && <button type="button" className={`${styles.pick} ${styles.startDraft}`} disabled={draftType !== "Captain's Picks" || roster.length < 2 || live?.busy} onClick={() => { if (live) live.onStart(); else if (canEdit && draftType === "Captain's Picks") setStarted(true); }}>Start team draft</button>}
       </div>
     </header>
     {(live?.message || countError) && <p className={styles.liveStatus} role="status">{live?.message || countError}</p>}

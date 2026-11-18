@@ -101,12 +101,16 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   const remaining = data?.deadline && now !== null ? Date.parse(data.deadline) - (now + live.clockOffset) : null;
   const scheduled = source?.date ? Date.parse(`${source.date}T${source.time || "00:00"}`) : NaN;
   const countdown = remaining !== null ? clock(remaining) : !data?.started && Number.isFinite(scheduled) && now !== null ? clock(scheduled - now) : "--:--";
+  // Under the countdown (owner 2026-11-13): organizer → "Start Draft Now" (plain words) until it starts; everyone else →
+  // "Waiting To Start" once the start time has passed.
+  const notStarted = !!data && !data.started && !data.completed && !locked;
+  const timeUp = Number.isFinite(scheduled) && now !== null && scheduled - now <= 0;
   const whenParts = source?.when?.includes(" @ ") ? [source.when.slice(0, source.when.indexOf(" @ ")), source.when.slice(source.when.indexOf(" @ ") + 3).replace(/^0/, "")] : [source?.when || "Time not set"];
   const status = live.message || (!rounds.length ? "No rounds use Match Draft yet. Choose Match Draft for a round in Settings → Match Selection."
     : locked ? "This round has been played — its matches are locked."
     : data?.completed ? "Match selection complete — the matches are saved."
     : !data ? "Loading match selection…"
-    : !data.started ? (data.startError ?? (viewer?.isOrganizer ? (round?.type === "Randomized" ? "Tap Randomize to draw the matches." : "Tap Start when both captains are ready.") : "Waiting for the organizer to start."))
+    : !data.started ? (data.startError ?? (viewer?.isOrganizer ? (round?.type === "Randomized" ? "Tap Start Draft Now to draw the matches." : "Tap Start Draft Now when both captains are ready.") : "Waiting for the organizer to start."))
     : round?.type === "Response" ? (viewer && data.turn && mayActFor(viewer, data.turn.team) ? `Your turn: ${turnLabel}` : `${turnLabel} — you'll see it once it's submitted.`)
     : `Ranks: each captain ranks their team. You can't see the other team's ranks until both lock in.`);
   const group = data?.turn ? data.spots.filter(s => s.match === data.turn!.match && s.team === data.turn!.team) : [];
@@ -130,6 +134,8 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
       <button type="button" className={styles.close} onClick={onClose} aria-label="Close match selection room"><X size={22} /></button>
       <div className={styles.titleBlock}><h1 id="match-draft-title">Match Selection Room</h1>
         <div className={styles.timer} role="timer" aria-label={remaining !== null ? `${countdown} left on this ${round?.type === "Ranks" ? "ranking window" : "turn"}` : "Countdown to match selection"}><span>{countdown}</span></div>
+        <div className={styles.startLine}>{notStarted && viewer?.isOrganizer ? <button type="button" className={styles.startNow} disabled={live.busy || !!data?.startError} onClick={() => void live.act({ action: round?.type === "Randomized" ? "randomize" : "start" })}>Start Draft Now</button>
+          : notStarted && !viewer?.isOrganizer && timeUp ? <p className={styles.waitingStart} role="status">Waiting To Start</p> : null}</div>
       </div>
       <p className={styles.cornerWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>
     </header>
@@ -148,7 +154,6 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
       {rounds.length > 1 && <label className={styles.roundSelect}><span>Round</span><select aria-label="Match selection round" value={roundKey} onChange={event => { setRoundKey(event.target.value); setTarget(null); setExpanded(false); }}>
         {rounds.map(r => <option key={r.key} value={r.key}>Round {r.number} · {r.course} · {r.format}</option>)}</select></label>}
       <div className={styles.controlButtons}>
-        {data && !data.started && !locked && viewer?.isOrganizer && <button type="button" className={styles.pick} disabled={live.busy || !!data.startError} onClick={() => void live.act({ action: round?.type === "Randomized" ? "randomize" : "start" })}>{round?.type === "Randomized" ? "Randomize" : "Start match selection"}</button>}
         {active && round?.type === "Response" && data?.turn && viewer && mayActFor(viewer, data.turn.team) && <button type="button" className={styles.pick} disabled={live.busy || group.length < round.perSide} onClick={() => { setTarget(null); setExpanded(false); void live.act({ action: "submit" }); }}>{round.perSide === 1 ? "Submit single" : "Submit pairing"}</button>}
         {active && round?.type === "Ranks" && viewer && ([0, 1] as const).filter(team => mayActFor(viewer, team) && !data?.locked[team]).map(team => <button key={team} type="button" className={styles.pick} disabled={live.busy || !teamFull(team)} onClick={() => { setTarget(null); setExpanded(false); void live.act({ action: "lock", team }); }}>Lock in {viewer.isOrganizer ? label(team) : "ranks"}</button>)}
       </div>

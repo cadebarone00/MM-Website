@@ -1,0 +1,29 @@
+/* Profile search bar (2026-11-13): slides down from the very top over the profile, maroon like the profile's top. */
+.overlay{position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;background:var(--color-maroon-900);color:#f4efe6;font-family:var(--font-spectral),Georgia,serif;animation:drop .2s ease-out}
+@keyframes drop{from{translate:0 -24px;opacity:0}to{translate:0 0;opacity:1}}
+@media (prefers-reduced-motion:reduce){.overlay{animation:none}}
+.bar{display:flex;align-items:center;gap:12px;width:min(640px,100%);margin:0 auto;padding:calc(var(--app-top-clearance,0px) + 6px) 16px 10px}
+.field{display:flex;flex:1;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid rgba(220,196,149,.5);border-radius:12px;background:rgba(220,196,149,.1);color:#dcc495}
+.field input{flex:1;min-width:0;border:0;background:transparent;color:#f4efe6;font:500 16px var(--font-spectral),Georgia,serif;outline:none}
+.field input::placeholder{color:rgba(244,239,230,.5)}
+.field:focus-within{border-color:#dcc495}
+.cancel{min-height:44px;padding:0 2px;border:0;background:transparent;color:#dcc495;font:600 16px var(--font-spectral),Georgia,serif;cursor:pointer}
+.body{flex:1;overflow-y:auto;width:min(640px,100%);margin:0 auto;padding:4px 16px 120px}
+.heading{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#dcc495}
+.count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#b42318;color:#fff;font-size:11px;letter-spacing:0}
+.list{margin:0;padding:0;list-style:none}
+.list li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;border-bottom:1px solid rgba(244,239,230,.12)}
+.who{display:flex;flex:1;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
+.names{display:grid;min-width:0}
+.names b{overflow:hidden;font:600 16px/1.3 var(--font-spectral),Georgia,serif;white-space:nowrap;text-overflow:ellipsis}
+.names small{display:flex;align-items:center;gap:8px;overflow:hidden;font:500 13px/1.3 var(--font-spectral),Georgia,serif;color:rgba(244,239,230,.6);white-space:nowrap}
+.private{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border:1px solid rgba(220,196,149,.45);border-radius:999px;color:#dcc495;font-size:11px}
+.add,.decline{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:0 12px;border:0;border-radius:999px;background:#dcc495;color:var(--color-maroon-900);font:700 13px var(--font-spectral),Georgia,serif;cursor:pointer}
+.decline{width:36px;padding:0;background:transparent;border:1px solid rgba(244,239,230,.3);color:#f4efe6}
+.add:disabled,.decline:disabled{opacity:.5;cursor:default}
+.answer{display:flex;gap:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:0 10px;min-height:30px;border:1px solid rgba(244,239,230,.25);border-radius:999px;font:600 12px var(--font-spectral),Georgia,serif;color:rgba(244,239,230,.75)}
+.badgeFriends{border-color:rgba(220,196,149,.5);color:#dcc495}
+.note{margin:18px 0 0;text-align:center;font:500 14px/1.45 var(--font-spectral),Georgia,serif;color:rgba(244,239,230,.6)}
+.problem{margin:10px 0;padding:10px 12px;border-radius:10px;background:#9b1c1c;color:#fff;font:600 14px/1.4 var(--font-spectral),Georgia,serif}
+.overlay a:focus-visible,.overlay button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}

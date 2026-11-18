@@ -35,7 +35,7 @@
 .winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .winPct_left{color:var(--team-left-on-dark,#dcc495)}
 .winPct_right{color:var(--team-right-on-dark,#e89a9a)}
-.winArrow{position:absolute;top:0;font-size:15px;line-height:.85}
+.winArrow{position:absolute;top:50%;transform:translateY(-50%);font-size:inherit;line-height:1}
 .winPct_left .winArrow{right:calc(100% + 3px)}
 .winPct_right .winArrow{left:calc(100% + 3px)}
 .winBar{width:100%;display:grid;grid-template-columns:1fr 1fr;height:5px;border-radius:5px;background:color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent);overflow:hidden}
@@ -664,8 +664,8 @@
 /* Align numbers with the shared 16px box edge; avatars start 28px after the number column start. */
 .leaderboard .rank{justify-items:center}
 .leaderboard .playerCardTrigger{margin-left:-10px}
-.leaderboard .columnPlayer{padding-left:0;margin-left:-10px}
-@media(max-width:374px){.leaderboard .playerCardTrigger{margin-left:-6px}.leaderboard .columnPlayer{padding-left:0;margin-left:-6px}}
+.leaderboard .columnPlayer{padding-left:38px;margin-left:-10px}
+@media(max-width:374px){.leaderboard .playerCardTrigger{margin-left:-6px}.leaderboard .columnPlayer{padding-left:38px;margin-left:-6px}}
 /* Team stripe (owner 2026-11-13): ~30% shorter (40px → 28px) and the two team colors fade into each other in the
    middle. Names and "to win" move up to stay on the stripe; the scores below keep their place. */
 .teamStripeSummary::before{height:28px;background:linear-gradient(90deg,var(--team-left,#dcc495) 0 30%,var(--team-right,#e89a9a) 70% 100%)}
