@@ -702,10 +702,10 @@
 .matchBoardRow .boardBox .statusPlain{font-size:15px}
 .matchBoardRow .boardBox .statusPlain small{font-size:10px}
 .matchBoardRow .matchupCompact :is(.statusValue,.statusTime){font-size:15.2px}
-.matchBoardRow .matchupCompact .statusValue{font-size:10px}
+.matchBoardRow .matchupCompact .statusValue{font-size:12px}
 .matchBoardRow .boardBox .statusPlain:has(.statusValue){transform:translateY(3px)}
 .matchBoardRow .boardBox .statusPlain:has(.statusTime) small{font-size:8px}
-.matchBoardRow .matchBoardOpen{font-size:8px}
+.matchBoardRow .matchBoardOpen{font-family:var(--font-spectral),Georgia,serif;font-size:10px}
 .matchBoardRow .matchupCompact .teamMeta{font-size:11px}
 .matchBoardRow .boardBox>.stats{height:70px;--label:8px}
 .matchBoardRow .boardBox .win{gap:3px;margin-bottom:4px}
@@ -718,3 +718,10 @@
 /* Move each whole side so the lead fill stays centered on its names and score. */
 .matchBoardRow .boardBox:has(.winBar) .side{transform:translateY(4.5px)}
 .matchBoardRow .boardBox:has(.winBar) .roundStats{transform:translateY(5px)}
+
+/* Match status stays white; final F aligns with the centered names and results. */
+.matchBoardRow .boardBox .statusPlain,.matchBoardRow .boardBox .statusPlain small{color:#fff}
+.matchBoardRow .boardBox .statusPlain.matchFinal{position:absolute;left:50%;top:calc(50% + 7.5px);transform:translate(-50%,-50%);margin:0}
+
+/* Final and pre-round values match the 13px scores in match lead fills. */
+.matchBoardRow .matchupCompact .matchFinal .statusValue,.matchBoardRow .matchupCompact .statusTime{font-size:13px}

@@ -332,16 +332,25 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true, profileSearch: undefined } },
     { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false, profileSearch: undefined } },
     { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false, profileSearch: undefined } },
-    { id: "profile-search-empty", label: "Search open · nothing typed (friend requests)", state: { profilePreview: "sample", sampleStats: true, profileSearch: "empty" } },
-    { id: "profile-search-results", label: "Search · results (Public + Private)", state: { profilePreview: "sample", sampleStats: true, profileSearch: "results" } },
-    { id: "profile-search-none", label: "Search · no results", state: { profilePreview: "sample", sampleStats: true, profileSearch: "none" } },
-    { id: "profile-preview-public", label: "Someone else's Public profile", state: { profilePreview: "public", sampleStats: false, profileSearch: undefined } },
-    { id: "profile-preview-private", label: "Someone else's Private profile (top only, \"Private Profile\" below)", state: { profilePreview: "private", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-public", label: "Someone else's Public profile (Instagram layout)", state: { profilePreview: "public", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-private", label: "Someone else's Private profile (no Friends count, tabs greyed out)", state: { profilePreview: "private", sampleStats: false, profileSearch: undefined } },
   ] });
   for (const [path, label] of [["/dev/profile/settings", "Settings (sample)"], ["/dev/profile/edit", "Edit profile (sample)"]]) {
     const page = pages.find(item => item.path === path);
-    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: [] });
+    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: path === "/dev/profile/settings" ? [
+      { id: "settings-default", label: "Default (sample choices)", state: { settingsPreview: "default" } },
+      { id: "settings-all-off", label: "Notifications all off", state: { settingsPreview: "allOff" } },
+      { id: "settings-offer", label: "Organizer · an offer waiting", state: { settingsPreview: "offer" } },
+      { id: "settings-admin", label: "Organizer · content admin", state: { settingsPreview: "admin" } },
+    ] : [] });
   }
+  // Search page (2026-11-19, Instagram-style) on sample golfers.
+  const searchPage = pages.find(item => item.path === "/dev/profile/search");
+  if (searchPage) Object.assign(searchPage, { label: "Search (sample)", group: "Profile", parentId: profile?.id, conditions: [
+    { id: "profile-search-empty", label: "Before typing · friend requests, Recent, Suggested for you", state: { profileSearch: "empty" } },
+    { id: "profile-search-results", label: "2 letters typed (\"ke\") · results, Public + Private", state: { profileSearch: "results" } },
+    { id: "profile-search-none", label: "No results", state: { profileSearch: "none" } },
+  ] });
   // The real Profile (signed-in account): real data, or made-up rounds to preview the Stats tab and Compare.
   const realProfile = pages.find(page => page.path === "/profile");
   if (realProfile) Object.assign(realProfile, { label: "My profile (live account)", group: "Profile", conditions: [

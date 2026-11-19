@@ -127,7 +127,7 @@ export function mockMatchAct(store: MatchSelStore, roundKey: string, viewer: Mat
   const result = applySelection(item.round, next.rosters, item.state, matchViewer(next, viewer), input, now(next), options.random);
   if (result.error) return { store: add(next, { who, text: describe(`Tried to ${input.action} — refused: ${result.error}`), ok: false, probe: options.probe }), error: result.error };
   next = add({ ...next, rounds: { ...next.rounds, [roundKey]: { ...item, state: result.state } } }, { who, text: describe(result.event), ok: true });
-  if (result.state?.completedAt) next = add(next, { who: "Server", text: `All matches set — saved: ${selectionResults(item.round, result.state).map((m, i) => `M${i + 1} ${m.a.map(id => nameOf(next, id)).join("+")} v ${m.b.map(id => nameOf(next, id)).join("+")}`).join(" · ")}`, ok: true });
+  if (result.state?.confirmedAt) next = add(next, { who: "Server", text: `All matches set — saved: ${selectionResults(item.round, result.state).map((m, i) => `M${i + 1} ${m.a.map(id => nameOf(next, id)).join("+")} v ${m.b.map(id => nameOf(next, id)).join("+")}`).join(" · ")}`, ok: true });
   // The check "the other team can't see unsubmitted / unlocked picks": look at it from the other captain's side.
   const hiddenNow = (result.state?.spots ?? []).filter(spot => !spot.submitted);
   if (hiddenNow.length && hiddenNow.every(spot => visibleSpots(result.state, matchViewer(next, spot.team === 0 ? "captain-1" : "captain-0")).some(v => v.match === spot.match && v.team === spot.team && v.slot === spot.slot && v.hidden))) next = { ...next, hiddenVerified: true };

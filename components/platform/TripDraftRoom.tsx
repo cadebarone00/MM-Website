@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { DraftResetConfirm } from "./DraftResetConfirm";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronLeft, ChevronUp, Search } from "lucide-react";
 import type { MatchDraftPlayer } from "@/lib/platform/matchDraft";
 import { teamCountError, teamDraftCapacity, teamDraftSize, teamDraftTeamCount, teamDraftTurn, teamLetter } from "@/lib/platform/teamDraft";
 import { MaroonMark } from "@/components/brand/MaroonMark";
+import { DraftPlayerProfile } from "./DraftPlayerProfile";
 import styles from "./TripDraftRoom.module.css";
 
 /**
@@ -33,7 +36,7 @@ export type DraftPlayerStats = {
 const one = (value: number | null | undefined) => value === null || value === undefined ? "—" : value.toFixed(1);
 const percent = (value: number | null | undefined) => value === null || value === undefined ? "—" : `${Math.round(value)}%`;
 /** Handicap, Average score, Adjusted average, PPG, FWY%, GIR%, BPR (Birdies Per Round), in that order. */
-const statCells = (player: DraftRoomPlayer): [string, string][] => [
+export const statCells = (player: Pick<DraftRoomPlayer, "handicap" | "stats">): [string, string][] => [
   ["HCP", one(player.handicap)], ["AVG", one(player.stats?.average)], ["ADJ", one(player.stats?.adjusted)], ["PPG", one(player.stats?.ppg)],
   ["FWY%", percent(player.stats?.fairwayPct)], ["GIR%", percent(player.stats?.girPct)], ["BPR", one(player.stats?.birdiesPerRound)],
 ];
@@ -57,16 +60,21 @@ export type LiveDraftRoom = {
   message: string;
   onPick: (playerId: string) => void;
   onStart: () => void;
+  onReset?: () => void; onConfirm?: () => void; confirmed?: boolean;
 };
-export function TripDraftRoom({ players, draftType, draftOrder, countdown, when, onClose, onComplete, canEdit = false, teamType = "2 Teams", live, keepKey }: { live?: LiveDraftRoom; /** Simulator samples: keep picks for the browser tab under this name. */ keepKey?: string; players: DraftRoomPlayer[]; draftType: "Captain's Picks" | "Duck Race"; draftOrder: "Snake" | "Straight"; when: string; countdown?: { days: number; hours: number; minutes: number; seconds: number } | null; onClose: () => void; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; teamType?: string | null }) {
+export function TripDraftRoom({ players, draftType, draftOrder, countdown, when, onClose, onComplete, canEdit = false, teamType = "2 Teams", live, keepKey, editGolfHref }: { editGolfHref?: string; live?: LiveDraftRoom; /** Simulator samples: keep picks for the browser tab under this name. */ keepKey?: string; players: DraftRoomPlayer[]; draftType: "Captain's Picks" | "Duck Race"; draftOrder: "Snake" | "Straight"; when: string; countdown?: { days: number; hours: number; minutes: number; seconds: number } | null; onClose: () => void; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; teamType?: string | null }) {
+  const [resetOpen, setResetOpen] = useState(false);
+
+  const [confirmed, setConfirmed] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
   // Simulator samples keep their picks for the browser tab (sessionStorage), so opening a profile and coming back keeps them.
-  const kept = () => { try { return keepKey ? JSON.parse(window.sessionStorage.getItem(`draft-room:${keepKey}`) ?? "null") as { started: boolean; picks: Record<string, number> } | null : null; } catch { return null; } };
+  const kept = () => { try { return keepKey ? JSON.parse(window.sessionStorage.getItem(`draft-room:${keepKey}`) ?? "null") as { started: boolean; picks: Record<string, number>; resetInitial?: boolean } | null : null; } catch { return null; } };
+  const [resetInitial, setResetInitial] = useState(() => kept()?.resetInitial ?? false);
   const [started, setStarted] = useState(() => kept()?.started ?? false);
   const [picks, setPicks] = useState<Record<string, number>>(() => kept()?.picks ?? {});
-  useEffect(() => { if (!keepKey) return; try { window.sessionStorage.setItem(`draft-room:${keepKey}`, JSON.stringify({ started, picks })); } catch { /* storage blocked: picks last while the room is open */ } }, [keepKey, started, picks]);
+  useEffect(() => { if (!keepKey) return; try { window.sessionStorage.setItem(`draft-room:${keepKey}`, JSON.stringify({ started, picks, resetInitial })); } catch { /* storage blocked: picks last while the room is open */ } }, [keepKey, started, picks, resetInitial]);
   useEffect(() => {
     const element = dialog.current;
     element?.showModal();
@@ -83,14 +91,13 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   const capacity = teamDraftCapacity(teamType, unique.length);
   const countError = teamCountError(teamType, unique.length);
   const startTeam = (player: DraftRoomPlayer) => player.teamIndex ?? (player.team === "A" ? 0 : player.team === "B" ? 1 : undefined);
-  const roster = unique.map(player => ({ ...player, on: picks[player.name] ?? startTeam(player) })).map(player => ({ ...player, on: player.on !== undefined && player.on < teamCount ? player.on : undefined }));
+  const roster = unique.map(player => ({ ...player, on: picks[player.name] ?? (resetInitial && !player.captain ? undefined : startTeam(player)) })).map(player => ({ ...player, on: player.on !== undefined && player.on < teamCount ? player.on : undefined }));
   // Each team: captain first, then everyone else in the order they joined it.
   const teams = Array.from({ length: teamCount }, (_, team) => roster.filter(player => player.on === team).sort((a, b) => Number(!!b.captain) - Number(!!a.captain)));
   const start = Array.from({ length: teamCount }, (_, team) => unique.filter(player => player.captain && startTeam(player) === team).length);
   const available = roster.filter(player => player.on === undefined);
   const turn = available.length ? teamDraftTurn(draftOrder, teams.map(team => team.length), start, capacity) : null;
   const isStarted = live ? live.started : started;
-  const countdownDone = !!countdown && Object.values(countdown).every(value => value === 0);
   const picking = !countError && (live ? turn !== null && live.canPick(turn) && !live.busy : canEdit) && isStarted && draftType === "Captain's Picks" && turn !== null;
   const label = (team: number) => `Team ${teamLetter(team)}`;
   // The list shows the players still available (no Available / Team pills).
@@ -101,8 +108,10 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
   // Under the countdown (owner 2026-11-13): the organizer gets "Start Draft Now" (plain words, no pill) until the draft starts;
   // everyone else sees "Waiting To Start" once the countdown has run out. Its line is always there, so nothing moves.
   const organizerView = live ? (live.isOrganizer ?? live.canStart) : canEdit;
-  const showCountdownStart = countdownDone && organizerView && !isStarted && !done && !countError;
-  const waitingToStart = !isStarted && !done && !organizerView && countdownDone;
+
+
+  // The player whose tourney profile is open (tap a player in the list).
+  const [profile, setProfile] = useState<DraftRoomPlayer | null>(null);
   const startNow = () => { if (live) live.onStart(); else if (canEdit && draftType === "Captain's Picks") setStarted(true); };
   const slotText = (player: (typeof roster)[number] | undefined, spot: number) => player
     ? <><strong>{player.name}</strong><small>{player.captain ? "Captain" : player.handicap === undefined ? "Team roster" : `HCP ${player.handicap}`}</small></>
@@ -117,37 +126,33 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
       <button type="button" className={styles.handle} aria-expanded={expanded} aria-controls="draft-player-panel" onClick={() => setExpanded(value => !value)}><span className={styles.grabber} /><span>Players <small>{available.length} available</small></span>{expanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>
       <div id="draft-player-panel" className={styles.panel}>
         <label className={styles.search}><Search size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search players" aria-label="Search draft players" /></label>
-        <div className={styles.list}><div className={styles.listHead}><span>{picking ? `${label(turn!).toUpperCase()} PICKS · PLAYER` : "PLAYER"}</span></div>{/* Each player: number (no box, where Home / the leaderboard put it), avatar, then their own box — name (+ Draft) over a stats row. */}{visible.map((player, index) => <div key={player.name} className={styles.playerRow}>
-          <span className={styles.rowNumber}>{index + 1}</span>
-          <span className={styles.rowAvatar} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.rowMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
-          <div className={styles.playerBox}>
-            {/* The whole box opens their profile (what others may see follows their Public / Private setting); Draft sits above it. */}
-            {(player.profileHref || player.username) && <a className={styles.profileLink} href={player.profileHref || `/profile/${encodeURIComponent(player.username!)}`} aria-label={`Open ${player.name}'s profile`} />}
-            <div className={styles.playerBoxTop}><strong>{player.name}</strong>{picking && <button type="button" className={styles.pick} aria-label={`Draft ${player.name} to ${label(turn!)}`} onClick={() => { if (live) live.onPick(player.id ?? player.name); else if (canEdit && started) setPicks(current => ({ ...current, [player.name]: turn! })); }}>Draft</button>}</div>
-            <dl className={styles.statRow} aria-label={`${player.name} stats`}>{statCells(player).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
-          </div>
+        <div className={styles.list}><div className={styles.listHead}><span>{picking ? `${label(turn!).toUpperCase()} PICKS · PLAYER` : "PLAYER"}</span></div>{/* Each player (owner 2026-11-19): no number, no box — avatar + name, stats to the right (swipe for more), Draft on the right. */}{visible.map(player => <div key={player.name} className={styles.playerRow}>
+          {/* Tap the player (avatar + name) → their tourney profile (no trip rounds yet). */}
+          <button type="button" className={styles.playerWho} onClick={() => setProfile(player)} aria-label={`Open ${player.name}'s tourney profile`}>
+            <span className={styles.rowAvatar} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.rowMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+            <strong>{player.name}</strong>
+          </button>
+          {/* Stats to the right; swipe sideways for the rest. */}
+          <dl className={styles.statScroll} aria-label={`${player.name} stats`}>{statCells(player).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+          {/* Draft pinned on the right (its space is kept before the draft starts, so nothing shifts). */}
+          <span className={styles.rowAction}>{picking && <button type="button" className={styles.pick} aria-label={`Draft ${player.name} to ${label(turn!)}`} onClick={() => { if (live) live.onPick(player.id ?? player.name); else if (canEdit && started) setPicks(current => ({ ...current, [player.name]: turn! })); }}>Draft</button>}</span>
         </div>)}{visible.length === 0 && <p className={styles.message}>{search ? "No players match your search." : "No available players."}</p>}</div>
-        {!live && canEdit && onComplete && done && available.length === 0 && teams.every(team => team.length > 0) && <button type="button" className={styles.pick} onClick={() => onComplete(roster.map(player => ({ id: String(players.findIndex(source => source.name === player.name)), name: player.name, handicap: player.handicap, team: player.on === 0 ? "A" : "B" })))}>Complete team draft</button>}
       </div>
     </section>
   </>;
   return createPortal(<dialog ref={dialog} className={styles.room} onCancel={onClose} aria-labelledby="draft-room-title">
     {/* "Team Draft Room" centered with the countdown under it; the draft day over its time in the right corner. */}
-    <header className={`${styles.header} ${styles.headerCompact} ${styles.teamHeader}`}>
-      {/* Our back button (owner 2026-11-13): the < instead of an X. */}
+    <header className={`${styles.header} ${styles.headerCompact} ${styles.roomHeader}`}>
       <button type="button" className={`${styles.close} ${styles.backPlain}`} onClick={onClose} aria-label="Back"><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></button>
-      <div className={styles.titleBlock}><h1 id="draft-room-title" tabIndex={-1} style={{ outline: "none" }}>Team Draft Room</h1>
-      {showCountdownStart ? <button type="button" className={`${styles.countdownPill} ${styles.countdownStart}`} disabled={draftType !== "Captain's Picks" || roster.length < 2 || !!live?.busy || (live ? !live.canStart : false)} onClick={startNow}>Start Team Draft</button> : <div className={`${styles.timer} ${styles.countdownPill}`} role="timer" aria-label={countdown ? `${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, ${countdown.seconds} seconds until the draft` : "Draft time not set"}>
-        <span>{countdown ? `${countdown.days ? `${countdown.days}d ` : ""}${countdown.days || countdown.hours ? `${String(countdown.hours).padStart(2, "0")}:` : ""}${String(countdown.minutes).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}` : "?:?"}</span>
-      </div>}
-      <div className={styles.startLine}>{!countdownDone && organizerView && !isStarted && !done && !countError ? <button type="button" className={styles.startNow} disabled={draftType !== "Captain's Picks" || roster.length < 2 || !!live?.busy || (live ? !live.canStart : false)} onClick={startNow}>Start Draft Now</button>
-        : waitingToStart ? <p className={styles.waitingStart} role="status">Waiting To Start</p> : null}</div>
-      </div>
-      <div className={styles.cornerControls}>
-        <p className={styles.cornerWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>
-      </div>
+      <div className={styles.titleBlock}><h1 id="draft-room-title" tabIndex={-1} style={{ outline: "none" }}>Team Draft Room</h1></div><span aria-hidden />
     </header>
-    {(live?.message || countError) && <p className={styles.liveStatus} role="status">{live?.message || countError}</p>}
+    <section className={styles.roomBoard} aria-label="Team draft controls">
+      {!isStarted && !done && <p className={styles.boardWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>}
+      {done && organizerView && !(live?.confirmed ?? confirmed) ? <button type="button" className={styles.confirmSelections} disabled={live?.busy} onClick={() => { if (live) live.onConfirm?.(); else { setConfirmed(true); onComplete?.(roster.map(player => ({ id: String(players.findIndex(source => source.name === player.name)), name: player.name, handicap: player.handicap, team: player.on === 0 ? "A" as const : "B" as const }))); } }}>Confirm selections</button> : !isStarted && <div className={styles.timer} role="timer">{countdown ? `${countdown.days ? countdown.days + "d " : ""}${String(countdown.hours).padStart(2,"0")}:${String(countdown.minutes).padStart(2,"0")}:${String(countdown.seconds).padStart(2,"0")}` : "--:--"}</div>}
+      {(isStarted || done || countError || live?.message) && <p className={styles.boardInstructions} role="status">{countError || live?.message || (done ? (live?.confirmed ?? confirmed) ? "Selections confirmed." : "All selections ready for confirmation." : picking ? `${label(turn!)} picks next. Choose a player below.` : "Waiting for the captain.")}</p>}
+      {organizerView && !(live?.confirmed ?? confirmed) && <div className={styles.boardOrganizerActions}>{editGolfHref && <Link href={editGolfHref} onClick={onClose}>Edit golf setup</Link>}<button type="button" disabled={!!countError || !!live?.busy || (!isStarted && (draftType !== "Captain's Picks" || !!live && !live.canStart))} onClick={() => isStarted || done ? setResetOpen(true) : startNow()}>{isStarted || done ? "Reset" : "Start now"}</button></div>}
+      {resetOpen && <DraftResetConfirm busy={!!live?.busy} onCancel={() => setResetOpen(false)} onReset={() => { if (live) live.onReset?.(); else { setPicks({}); setStarted(false); setResetInitial(true); setConfirmed(false); } setResetOpen(false); }} />}
+    </section>
     <div className={styles.teamGrid} data-two={!size} aria-label="Team draft board">
       {/* 2 Teams: the team name sits above its column and every player gets their own box. Pairs / 3-Ball / 4-Ball: one box per team. */}
       {teams.map((team, index) => <section key={index} className={size ? styles.teamCard : styles.teamColumn} data-on-clock={picking && turn === index} aria-label={label(index)}>
@@ -156,5 +161,6 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
       </section>)}
     </div>
     {playersSheet}
+      {profile && <DraftPlayerProfile name={profile.name} avatarUrl={profile.avatarUrl} username={profile.username} stats={statCells(profile)} onClose={() => setProfile(null)} />}
   </dialog>, document.body);
 }

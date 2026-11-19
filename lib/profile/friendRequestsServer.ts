@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { profilePhotoUrl } from "./profilePhoto";
 import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email/sendEmail";
 import { friendIds, tripFriendIds } from "./friendsServer";
+import { wantsNotification } from "./preferencesServer";
 
 /**
  * Find Golfers and friend requests (supabase/profile_friends.sql). The signed-in profile id always comes from the
@@ -13,7 +14,8 @@ import { friendIds, tripFriendIds } from "./friendsServer";
 export type Relation = "friends" | "requested" | "incoming" | "none";
 /** `tripMate`: friends from a golf trip together (automatic, so they can't be removed). */
 /** `isPrivate`: their profile is Private (search still finds them; their profile then shows only the top). */
-export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation; tripMate: boolean; isPrivate: boolean }
+/** `mutuals` (suggestions only): how many of my friends are their friends. */
+export interface GolferResult { id: string; name: string; username: string | null; photoUrl: string | null; relation: Relation; tripMate: boolean; isPrivate: boolean; mutuals?: number }
 export interface FriendRequest { id: string; profileId: string; name: string; username: string | null; photoUrl: string | null }
 export type FriendsResult<T> = { ok: true; value: T } | { ok: false; code: "not_installed" | "refused" | "failed"; message: string };
 
@@ -32,14 +34,27 @@ export async function searchGolfers(me: string, query: string): Promise<FriendsR
   const found = await rpc<{ id: string; name: string; username: string | null; avatarPath: string | null; relation: Relation }[]>("search_golfers", { p_viewer: me, p_query: query.slice(0, 60) });
   if (!found.ok) return found;
   const tripMates = found.value.length ? await tripFriendIds(me) : new Set<string>();
-  // Which results are Public (rounds_visibility, player_rounds.sql); anything unknown counts as Private.
-  const publicIds = new Set<string>();
-  if (found.value.length) {
-    const { data } = await db().from("profiles").select("id, rounds_visibility").in("id", found.value.map((g) => g.id));
-    for (const row of (data ?? []) as { id: string; rounds_visibility?: string | null }[]) if (row.rounds_visibility === "public") publicIds.add(row.id);
-  }
+  const publicIds = await publicProfileIds(found.value.map((g) => g.id));
   return { ok: true, value: found.value.map((g) => ({ id: g.id, name: g.name, username: g.username, photoUrl: profilePhotoUrl(g.avatarPath),
     relation: tripMates.has(g.id) ? "friends" : g.relation, tripMate: tripMates.has(g.id) && g.relation !== "friends", isPrivate: !publicIds.has(g.id) })) };
+}
+
+/** Which of these profiles are Public (rounds_visibility, player_rounds.sql); anything unknown counts as Private. */
+async function publicProfileIds(ids: string[]): Promise<Set<string>> {
+  const publicIds = new Set<string>();
+  if (!ids.length) return publicIds;
+  const { data } = await db().from("profiles").select("id, rounds_visibility").in("id", ids);
+  for (const row of (data ?? []) as { id: string; rounds_visibility?: string | null }[]) if (row.rounds_visibility === "public") publicIds.add(row.id);
+  return publicIds;
+}
+
+/** Search page → Suggested for you (supabase/profile_suggestions.sql): friends of my friends first, then random golfers. */
+export async function suggestGolfers(me: string): Promise<FriendsResult<GolferResult[]>> {
+  const found = await rpc<{ id: string; name: string; username: string | null; avatarPath: string | null; mutuals: number }[]>("suggest_golfers", { p_viewer: me, p_limit: 12 });
+  if (!found.ok) return found;
+  const publicIds = await publicProfileIds(found.value.map((g) => g.id));
+  return { ok: true, value: found.value.map((g) => ({ id: g.id, name: g.name, username: g.username, photoUrl: profilePhotoUrl(g.avatarPath),
+    relation: "none", tripMate: false, isPrivate: !publicIds.has(g.id), mutuals: g.mutuals })) };
 }
 
 /** I ask `to` to be friends; a new request emails them (when email is set up). `origin`: the site the email links to. */
@@ -50,6 +65,8 @@ export async function sendFriendRequest(me: string, to: string, origin: string):
 }
 
 async function emailFriendRequest(me: string, to: string, origin: string) {
+  // Settings → Notifications → Friend requests → Email (supabase/profile_preferences.sql): off = no email.
+  if (!(await wantsNotification(to, "friendRequests", "email"))) return;
   const [{ data: from }, { data: account }] = await Promise.all([
     db().from("profiles").select("display_name").eq("id", me).maybeSingle(),
     db().auth.admin.getUserById(to),

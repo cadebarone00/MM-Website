@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FindGolfers } from "@/components/profile/FindGolfers";
+import { ProfileSearch } from "@/components/profile/ProfileSearch";
 import { FriendsList } from "@/components/profile/FriendsList";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { ContentTeamView, DeleteAccountView } from "@/components/settings/SettingsSubpages";
@@ -18,7 +18,7 @@ export function AppFindGolfers() {
   const [state, reload] = useAppData<FindGolfersData>("/api/app/profile?view=search");
   if (state.status !== "ok") return <AppStatus state={state} onRetry={reload} />;
   if (state.data.status !== "ok") return <AppStatus state={signInAgain} onRetry={reload} />;
-  return <FindGolfers incoming={state.data.incoming} setupMessage={state.data.setupMessage} />;
+  return <ProfileSearch />;
 }
 
 export function AppFriends() {

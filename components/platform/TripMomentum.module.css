@@ -53,6 +53,8 @@
 .draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
 
 .matchLabel{margin:0;color:var(--lm-ink-dcc495);font:500 12px/1.4 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.matchRoundHeading{font-size:16px}
+.matchSchedule{display:flex;flex-direction:column;align-items:center;gap:4px}
 
 .room:disabled{opacity:.45;cursor:default}
 

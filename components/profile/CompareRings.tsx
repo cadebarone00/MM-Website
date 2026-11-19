@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search, X } from "lucide-react";
-import { useRef } from "react";
 import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
 import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
+import { SAMPLE_GOLFERS, sampleGolfer } from "@/lib/dev/sampleProfile";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /**
@@ -37,7 +37,8 @@ const pillRow = "-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-1
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 type Loaded = { status: "idle" | "loading" } | { status: "ok"; person: Person; stats: RoundStats | null } | { status: "private" | "not_found" | "error"; person?: Person };
 
-export function CompareRings({ mine }: { mine: RoundStats }) {
+/** `initial`: someone to compare with straight away (their profile's Compare button). */
+export function CompareRings({ mine, initial }: { mine: RoundStats; initial?: Person | null }) {
   const [picked, setPicked] = useState<string[]>(DEFAULT);
   const sampleOn = useSimulator()?.state.sampleStats === true;
   const [people, setPeople] = useState<Person[]>([]);
@@ -73,6 +74,18 @@ export function CompareRings({ mine }: { mine: RoundStats }) {
     } catch { setLoaded({ status: "error", person }); }
   }
 
+  // Their profile's Compare button lands here with them picked. Dev sample golfers use their sample rounds (no account).
+  const started = useRef(false);
+  useEffect(() => {
+    if (!initial || started.current) return;
+    started.current = true;
+    // Dev profile preview (/dev/...): sample golfers compare on their sample rounds, never a real account.
+    const golfer = sampleOn || window.location.pathname.startsWith("/dev/") ? sampleGolfer(initial.username) : null;
+    void Promise.resolve().then(() => golfer
+      ? setLoaded({ status: "ok", person: { username: golfer.username, name: golfer.displayName }, stats: roundStats(sampleProfileRounds(golfer.rounds, golfer.skill, 31 + SAMPLE_GOLFERS.indexOf(golfer))) })
+      : compare(initial));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the page opens with someone to compare
+  }, [initial]);
   const them = loaded.status === "ok" ? loaded : null;
   const shown = METRICS.filter((m) => picked.includes(m.key));
   const toggle = (key: string) => setPicked((all) => all.includes(key) ? all.filter((k) => k !== key) : [...all, key]);

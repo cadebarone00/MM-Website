@@ -7,7 +7,7 @@ import { SignedOutNotice } from "@/components/auth/SignedOutNotice";
 import styles from "./page.module.css";
 
 /** Your profile (website). Loaded by loadMyProfileScreen, the same loader the app reads through /api/app/profile. */
-export default async function MyProfilePage() {
+export default async function MyProfilePage({ searchParams }: { searchParams: Promise<{ compare?: string | string[] }> }) {
   const { page, friends } = await loadMyProfileScreen();
   if (page.status === "signed-out") {
     if (!skipSignInWall()) redirect("/login");
@@ -15,5 +15,7 @@ export default async function MyProfilePage() {
   }
   // Signed in, but setup isn't finished (no profile row yet, or no username / name): finish it here.
   if (page.status === "no-profile") return <div className={styles.page}><ProfileForm mode="setup" initial={{ displayName: page.displayName, username: "", bio: "" }} /></div>;
-  return <div className={styles.page}><ProfileView profile={page.profile} friendsCount={friends} /></div>;
+  // "?compare=<username>": someone's Compare button — my Stats opens with them picked.
+  const compare = (await searchParams).compare;
+  return <div className={styles.page}><ProfileView profile={page.profile} friendsCount={friends} compare={typeof compare === "string" ? compare.slice(0, 40) : null} /></div>;
 }

@@ -11,7 +11,7 @@ import { CompareRings } from "./CompareRings";
 const card = "rounded-2xl border border-maroon-900/12 bg-white p-4 shadow-[0_1px_2px_rgba(29,11,17,.05)]";
 const heading = "m-0 font-condensed text-xs font-semibold uppercase tracking-[0.14em] text-maroon-700";
 
-export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[]; isOwner: boolean }) {
+export function ProfileStats({ rounds, isOwner, compareWith }: { rounds: ProfileHistoryRound[]; isOwner: boolean; compareWith?: { username: string; name: string } | null }) {
   const stats = roundStats(rounds);
   if (!stats) return <p className="px-4 py-5 text-center text-cream-50/70">{isOwner ? "Stats will show here once you finish rounds." : "No stats to show yet."}</p>;
   const showsHoleStats = stats.putting || stats.driving || stats.approach || stats.scrambling;
@@ -29,7 +29,7 @@ export function ProfileStats({ rounds, isOwner }: { rounds: ProfileHistoryRound[
         return [`Par ${par}s`, p ? p.average.toFixed(2) : "—"];
       })} />
     </div>
-    {isOwner && <CompareRings mine={stats} />}
+    {isOwner && <CompareRings mine={stats} initial={compareWith} />}
     {showsHoleStats && <div className={card}>
       <h3 className={heading}>Tee to green</h3>
       <div className="mt-3 grid gap-3">

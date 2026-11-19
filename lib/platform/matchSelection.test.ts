@@ -12,6 +12,20 @@ const playerB: SelectionViewer = { profileId: "b3", isOrganizer: false, captainO
 const T0 = Date.parse("2027-04-21T18:00:00Z");
 const ok = (result: { state: SelectionState | null; error: string | null }) => { assert.equal(result.error, null); return result.state!; };
 
+test("completed selections require organizer confirmation; reset requires a manual restart", () => {
+  const r = round("Randomized");
+  const selected = ok(applySelection(r, rosters, null, org, { action: "randomize" }, T0));
+  assert.equal(selected.confirmedAt, null);
+  assert.match(applySelection(r, rosters, selected, capA, { action: "confirm" }, T0).error!, /Only the organizer/);
+  assert.match(applySelection(r, rosters, selected, capA, { action: "reset" }, T0).error!, /Only the organizer/);
+  const reset = applySelection(r, rosters, selected, org, { action: "reset" }, T0);
+  assert.equal(reset.error, null); assert.equal(reset.state, null);
+  assert.match(applySelection(r, rosters, reset.state, org, { action: "confirm" }, T0).error!, /Complete every/);
+  const confirmed = ok(applySelection(r, rosters, selected, org, { action: "confirm" }, T0));
+  assert.ok(confirmed.confirmedAt);
+  assert.match(applySelection(r, rosters, confirmed, org, { action: "reset" }, T0).error!, /Confirmed matches/);
+});
+
 test("Response: Team A puts forward first in Match 1, Team B in Match 2; only the captain on turn may place and submit", () => {
   const r = round("Response");
   let s = ok(applySelection(r, rosters, null, org, { action: "start" }, T0));

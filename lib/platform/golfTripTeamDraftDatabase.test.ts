@@ -87,7 +87,7 @@ test("picks can't be changed afterwards: the app has no update/delete path, and 
   await pick(db, capA, trip, 1, p1, 0);
   await pick(db, capB, trip, 2, p2, 1);
   await pick(db, capB, trip, 3, p3, 1);
-  const done = await call<Draft>(db, "select complete_golf_trip_team_draft($1, $2, $3) as r", [capB, trip, JSON.stringify([[1, 3], [2, 4, 5]])]);
+  const done = await call<Draft>(db, "select complete_golf_trip_team_draft($1, $2, $3) as r", [org, trip, JSON.stringify([[1, 3], [2, 4, 5]])]);
   assert.ok(done.completedAt);
   const saved = (await db.query<{ settings: { submittedTeams: number[][]; draftCaptains: unknown }; revision: number }>("select settings, revision from golf_trip_setup where golf_trip_id = $1", [trip])).rows[0];
   assert.deepEqual(saved.settings.submittedTeams, [[1, 3], [2, 4, 5]]);

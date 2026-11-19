@@ -50,7 +50,8 @@ test("someone else's Private profile: the whole top (bio + socials too), none of
   assert.ok(profile.identity.bio, "the bio shows");
   assert.equal(profile.identity.links.length, 1, "the socials show");
   assert.deepEqual([profile.rounds, profile.trips, profile.tournaments], [{ status: "hidden" }, { status: "hidden" }, { status: "hidden" }]);
-  assert.equal(profile.modernStats, null);
+  // Only the counts show (rounds played, handicap index), never averages or bests.
+  assert.deepEqual(profile.modernStats && [profile.modernStats.average18, profile.modernStats.best18], [null, null]);
 });
 
 test("the simulator accepts the profile previews and rejects anything else", () => {
@@ -64,4 +65,12 @@ test("the simulator accepts the profile search states and rejects anything else"
   const config = (profileSearch: unknown) => parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, profileSearch } });
   for (const state of ["empty", "results", "none"]) assert.equal(config(state)?.state.profileSearch, state);
   assert.equal(config("open"), null);
+});
+
+test("sample golfers open by username: Public ones whole, Private ones top only", () => {
+  const sarah = sampleProfileReadModel("sample", DEFAULT_SAMPLE_PROFILE, TODAY, "sarahlopez");
+  assert.deepEqual([sarah.access, sarah.identity.displayName, sarah.rounds.status], ["public", "Sarah Lopez", "ok"]);
+  const tom = sampleProfileReadModel("sample", DEFAULT_SAMPLE_PROFILE, TODAY, "tomreed");
+  assert.deepEqual([tom.access, tom.rounds.status], ["private", "hidden"]);
+  assert.equal(sampleProfileReadModel("sample", DEFAULT_SAMPLE_PROFILE, TODAY, "nobody").isOwner, true, "unknown username = my own sample profile");
 });

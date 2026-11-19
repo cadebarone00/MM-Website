@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MOCK_DRAFT_PRESET_IDS, mockChecks, mockInstruction, mockPick, mockRead, mockStart, mockTurn, mockViewerId, newMockDraft, validMockViewer, type MockDraftStore } from "./mockDraft.ts";
+import { mockDraftControl, MOCK_DRAFT_PRESET_IDS, mockChecks, mockInstruction, mockPick, mockRead, mockStart, mockTurn, mockViewerId, newMockDraft, validMockViewer, type MockDraftStore } from "./mockDraft.ts";
 import { draftBoardFor } from "../platform/teamDraftPicks.ts";
 
 const available = (store: MockDraftStore) => draftBoardFor(store.members, store.captains, store.settings, store.draft.picks).available;
@@ -17,7 +17,7 @@ function runToEnd(store: MockDraftStore): MockDraftStore {
     store = mockPick(store, mockTurn(store).onClock!, available(store)[0], before + 1).store;
     if (before === 0) store = mockPick(store, mockTurn(store).onClock ?? "organizer", store.draft.picks[0].profileId, 2, "probe").store; // already drafted
   }
-  return store;
+  return mockDraftControl(store,"organizer","confirm").store;
 }
 
 test("every mock setup runs start → finish and every check passes", () => {

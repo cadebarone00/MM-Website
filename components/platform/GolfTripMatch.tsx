@@ -750,10 +750,11 @@ function MatchStatus({ status, plain = false }: { status: ReturnType<typeof matc
   // Before it starts: TEE TIME over the time. Once begun: THRU over the last hole both sides have finished (blank until
   // the first), then F once it's over (the score sits in the sides' fills).
   if (status.kind === "tee") return <span className={className} aria-label={`Tees off ${status.time}`}>
-    <small>TEE TIME</small><span className={styles.statusTime}>{status.time || "—"}</span>
+    <span className={styles.statusTime}>{status.time || "—"}</span>
   </span>;
-  return <span className={className} aria-label={status.kind === "final" ? `Final ${status.text}` : status.holes ? `Thru ${status.holes}` : "Started, no hole finished yet"}>
-    <small>THRU</small><span className={styles.statusValue}>{status.kind === "final" ? "F" : status.holes || "\u00a0"}</span>
+  if (status.kind === "final") return <span className={`${className} ${styles.matchFinal}`} aria-label={`Final ${status.text}`}><span className={styles.statusValue}>F</span></span>;
+  return <span className={className} aria-label={status.holes ? `Thru ${status.holes}` : "Started, no hole finished yet"}>
+    <small>THRU</small><span className={styles.statusValue}>{status.holes || "\u00a0"}</span>
   </span>;
 }
 

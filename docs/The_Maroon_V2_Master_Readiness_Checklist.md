@@ -322,6 +322,7 @@ Owner-approved scope: retire V1 shell, public tournament pages, player portal, f
 - [ ] **Beta Ready**  - [ ] **Launch Ready**
 - **Current reported implementation:** Not established.
 - **What must be done:** Publish accurate data-use disclosures, account deletion path, support contact and app-store required declarations.
+- **To do (owner request 2026-11-19, priority):** write the **Terms of Service** and **Privacy Policy** soon. Settings → Help & legal already links to both and shows "Coming soon" until they exist. LEGAL_REVIEW_REQUIRED.md says a lawyer should review before publishing.
 - **Evidence / owner / last verified:** _TBD_
 
 #### 50. Apple and Google developer enrollment

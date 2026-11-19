@@ -6,6 +6,22 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-19 - Organizer start, reset and confirmation (implemented locally; not deployed).** Both room boards show date/time 6px larger and countdown below, with organizer-only Start now/Reset at bottom right. Reset asks Are you sure? and Yes, reset, clears pending selections and requires manual restart. After the final pick, Confirm selections replaces the countdown for the organizer. Team confirmation saves teams; match confirmation publishes groups into existing Golf match assignments using existing tee times. Edit golf setup opens schedule settings. Confirmed assignments remain locked. Section 22, Mermaid and rendered workflow mapping updated. SQL installation and hosted verification remain outstanding; review: docs/draft-confirmation-review.md, review_required.
+
+**2026-11-19 - Draft room control boards and larger titles (implemented locally, not deployed).** Team Draft Room and Selection Room titles are 4px larger and lowered 4px; both use the plain back chevron. Countdown, start controls and schedule move into a 104px-high maroon/gold board beneath the header, approximately half the Home Big Board height. After starting, Team Draft displays picking instructions there; Selection Room displays its existing live instructions and turn timer. Section 22 updated; start permissions, selection rules and storage unchanged.
+
+**2026-11-19 - Match Selection card hierarchy and Selection Room name (implemented locally, not deployed).** Home Match Selection now leads with Round @ Course in 16px text (previously 12px), followed by the format, date and time on separate lines, then the countdown. Its Draft Room button and room title now read Selection Room. Team Draft retains its existing labeling and schedule layout. Section 22 updated; selection rules and workflow paths unchanged.
+
+**2026-11-19 - Match label font and size (presentation only; implemented locally, not deployed).** Match-number labels on Golf match cards now use Spectral, matching F, and increase from 8px to 10px. Section 22 updated; match-detail actions, status and workflow paths unchanged.
+
+**2026-11-19 - Tee-time value without heading (presentation only; implemented locally, not deployed).** Removed the TEE TIME heading above pre-round match times. The time remains visible at its existing size with its accessible Tees off label. Section 22 updated; progress logic and workflow paths unchanged.
+
+**2026-11-19 - Match final and tee-time values match scores (presentation only; implemented locally, not deployed).** Set the standalone F and pre-round tee-time value on Golf match cards to 13px, matching lead-fill scores. Active hole numbers remain 12px; labels and white status styling remain unchanged. Section 22 updated; status logic and workflow paths unchanged.
+
+**2026-11-18 - White match status and standalone final F (implemented locally, not deployed).** Match-card tee-time and progress text is white. Finished matches show only F, centered vertically with the names and lead-fill results, instead of THRU over F. Existing status logic already treats explicit results and mathematically clinched leads as final before hole 18; this behavior is retained. Section 22 updated; scoring calculations and workflow paths unchanged.
+
+**2026-11-18 - Larger match hole/F values (presentation only; implemented locally, not deployed).** Increased Golf match-card hole numbers and F from 10px to 12px. THRU labels, tee times and other match text remain unchanged. Section 22 updated; progress logic and workflow paths unchanged.
+
 **2026-11-18 - Completed countdown pill transition (implemented locally, not deployed).** At zero, the Team Draft Room countdown rectangle now becomes Start Team Draft for the organizer, retaining existing start eligibility checks. Preserved the existing early Start Draft Now action while the countdown runs and Waiting To Start for players at zero. The date/time remains aligned opposite Back. Section 22 updated; storage and workflow paths unchanged.
 
 **2026-11-13 - Team draft countdown-to-start pill (implemented locally, not deployed).** The Team Draft Room countdown now sits in a rounded rectangle beneath its title. At zero, it becomes Start Team Draft for an eligible organizer, using the existing start action and permission checks; before zero or without a schedule it stays a timer. The date/time stays on the right and aligns vertically with Back. Section 22 and Mermaid annotation updated; storage and overview mappings unchanged. Scope: existing draft controls only, no new data, audience or permissions; unresolved compliance reviews remain review_required.
@@ -733,6 +749,11 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  DraftStaged["Draft rooms: organizer starts; captains select"] --> DraftReview["All selections ready: organizer review"]
+  DraftReview -->|Confirm selections| DraftPublished["Saved teams or Golf match groups with existing tee times"]
+  DraftStaged -->|Reset, then Yes reset| DraftUnstarted["Clear pending picks; manual restart required"]
+  DraftReview -->|Reset, then Yes reset| DraftUnstarted
+  DraftUnstarted --> DraftStaged
   %% Team Draft countdown pill becomes its existing organizer start action at zero.
   %% Dev draft conditions can open half-picked teams or half-submitted singles/pairs match selection.
   %% Team round browsing does not rewind Indi; historical individual rounds remain in player profiles.
@@ -1286,6 +1307,10 @@ The separate test-season controls operate on a designated database season. This 
 
 **Golf overview pull lip (2026-11-13):** The overview pull control is a 38px-wide, 14px-high rounded lip extending 13px below the bottom outline, with a centered 12px grip line. A 10px bottom margin gives following content room. Tap, keyboard and vertical drag still expand or collapse the overview in every Golf section.
 
+**Match-number labels (2026-11-19):** The match-detail buttons use 10px Spectral, matching the font of the F status, while retaining their existing action.
+
+**Match status presentation (2026-11-18):** Tee time and active THRU/hole text are white. Final matches show a standalone white 13px F centered with the side results; THRU is omitted. Pre-round tee-time values appear without a TEE TIME heading and are 13px to match side scores; active hole values remain 12px. Existing matchStatus logic recognizes explicit results and a lead greater than holes remaining as final, even while players continue their round.
+
 **Odds direction alignment (2026-11-13):** The direction indicator beside the odds percentage inherits its text size and is vertically centered, leaving the percentage horizontally centered above its bar.
 
 **Lower match stats alignment (2026-11-13):** Both mirrored stat groups shift down 5px when an odds bar is present, centering the labels, divider and values between that bar and the card bottom without resizing the card.
@@ -1294,7 +1319,7 @@ The separate test-season controls operate on a designated database season. This 
 
 **Match lead-fill height (2026-11-13):** Match-list sides have a 45px minimum height, increased from 39px by about 15% for two-player teams. The box grows naturally by 6px; stats-strip dimensions and text sizes remain.
 
-**Golf match-box text (2026-11-13):** Compact match boards use 13px player names and side scores. The F or completed-hole number matches THRU at 10px in match rows (with the progress stack lowered 3px) and 9px in other compact boards. Tee-time sizes, existing wrapping and ellipsis behavior remain unchanged.
+**Golf match-box text (2026-11-13):** Compact match boards use 13px player names and side scores. The F or completed-hole number is 12px in match rows above the existing 10px THRU label, with the progress stack lowered 3px. Other compact boards retain 9px progress values. Tee-time sizes, existing wrapping and ellipsis behavior remain unchanged.
 
 **Games status selector (2026-11-13):** Active/Settled and Team/Indi share identical selector classes, background, text and compact 32px height. Both selectors use solid gold underlines centered at 80% of the selected tab width, resting on the frame bottom border and fading in when selected. They share the same frame and 12px rounded corners. Filtering remains unchanged.
 
@@ -1307,6 +1332,12 @@ The separate test-season controls operate on a designated database season. This 
 **Itinerary header layout (2026-11-13):** Day/date appears first, 8px beneath the main trip navigation; Add is right-aligned below its divider and before the day entries. Empty itineraries keep Add available.
 
 **Itinerary card appearance (2026-11-13):** Itinerary entries use Golf-style dark maroon surfaces, 16px rounded corners, soft top glow and shadows, distinguished by a warm white outline. Cream text and brighter RSVP/status accents remain readable on the dark surface. Existing detail dialogs, invitations and participation actions retain their behavior.
+
+**Organizer draft lifecycle (2026-11-19):** Both 104px room boards show schedule text at 16px, countdown beneath, and organizer-only Start now/Reset at the lower right. Reset requires Yes, reset, clears unconfirmed picks and returns to an unstarted state. Complete picks remain staged until the organizer presses Confirm selections. Saved Team confirmation commits submittedTeams; saved Match confirmation atomically commits matchSelectionResults, completedMatchDrafts and teeMatches so Golf displays the selected opponents/groupings with the existing tee times. Scoped development trips publish through their existing setup store; isolated mock/simulator samples confirm only their own test state. Existing confirmed/legacy assignments remain final. Organizer Edit golf setup opens view=schedule for course and tee-time changes. Updated SQL functions must be installed with the application; hosted deployment is unverified. Review: docs/draft-confirmation-review.md.
+
+**Room control boards (2026-11-19):** Team Draft Room and Selection Room use titles 4px larger/lower and matching plain back chevrons. Their 104px-high rounded maroon/gold control board is approximately half the Home Big Board height. It contains schedule/countdown/start controls before starting, then team picking instructions or match-selection instructions with its active timer. Long content can scroll inside the board. Start eligibility and draft persistence are unchanged.
+
+**Match Selection card layout (2026-11-19):** Round @ Course leads in 16px text, with format beneath, then separate date and time lines, followed by the countdown. The room-entry button and dialog title read Selection Room; the existing selection actions remain.
 
 **Team Draft Room countdown control (2026-11-13):** A 32px-high rounded rectangle below the room title contains the countdown. At zero it becomes Start Team Draft when existing organizer/start eligibility permits; starting still uses the same local or saved-trip action. Before zero, the existing organizer Start Draft Now action remains below the timer; players see Waiting To Start at zero and cannot start the draft. The right-hand date/time aligns with the Back button.
 

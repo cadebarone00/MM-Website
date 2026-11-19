@@ -73,6 +73,12 @@ begin
     or jsonb_typeof(p_state) <> 'object' or jsonb_typeof(coalesce(p_state->'spots', '[]'::jsonb)) <> 'array' then
     raise exception 'Invalid match selection.' using errcode = '22023';
   end if;
+  if (p_state = '{}'::jsonb or p_results is not null) and not exists(select 1 from golf_trip_members where golf_trip_id = p_trip and profile_id = p_profile and role = 'organizer' and invitation_status = 'accepted') then
+    raise exception 'Only the organizer can reset or confirm selections.' using errcode = '42501';
+  end if;
+  if p_results is not null and (p_state->>'confirmedAt' is null or p_state->>'completedAt' is null) then
+    raise exception 'Complete and confirm selections first.' using errcode = '22023';
+  end if;
   -- Every placed player is an accepted member, and nobody is placed twice.
   if exists(select 1 from jsonb_array_elements(coalesce(p_state->'spots', '[]'::jsonb)) s
       where not exists(select 1 from golf_trip_members m where m.golf_trip_id = p_trip and m.invitation_status = 'accepted' and m.profile_id::text = s->>'profileId'))
@@ -93,6 +99,9 @@ begin
         '{completedMatchDrafts}', (select coalesce(jsonb_agg(distinct k), '[]'::jsonb) from (select jsonb_array_elements_text(coalesce(settings->'completedMatchDrafts', '[]'::jsonb)) k union select p_round) keys)),
       revision = revision + 1, last_write_id = gen_random_uuid(), updated_at = now()
       where golf_trip_id = p_trip;
+  end if;
+  if p_results is not null then
+    update golf_trip_setup set settings = jsonb_set(settings, '{teeMatches}', coalesce(settings->'teeMatches', '{}'::jsonb) || jsonb_build_object(p_round, (select jsonb_object_agg((ord - 1)::text, result) from jsonb_array_elements(p_results) with ordinality as x(result, ord)))) where golf_trip_id = p_trip;
   end if;
   return jsonb_build_object('version', v_version);
 end;

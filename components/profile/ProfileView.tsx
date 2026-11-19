@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Lock, Pencil, Search, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChartNoAxesColumn, ChevronLeft, Lock, Pencil, Search, Settings } from "lucide-react";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { SocialIcon } from "./SocialIcon";
-import { ProfileSearch, type ProfileSearchSource } from "./ProfileSearch";
 import { socialDisplay, socialLabel } from "@/lib/profile/profileSocials";
 import { FriendRequestBadge } from "./FriendRequestBadge";
 import { FriendToggle } from "./FriendToggle";
@@ -29,95 +29,127 @@ const TABS: { key: Tab; label: string }[] = [
 
 /**
  * A profile (the profile read model), laid out like a fantasy-app account screen: your own on /profile, or someone
- * else's on /profile/<username>. Only the owner gets Settings and Edit; a Private profile shows other people its name only.
+ * else's on /profile/<username> (Instagram-style: Back, @username, buttons row). Only the owner gets Settings, Edit and
+ * Search; someone else's Private profile shows its top (no Friends count) and greyed-out tabs.
  */
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
-/** `links`: where the gear and the photo's pencil go (the dev profile preview points them at its sample screens). */
-/** `friendship` (someone else's profile, signed in): the friend button in the corner, switched on when we're friends. */
-/** `search` (dev profile preview only): where the search bar looks golfers up instead of the live account. */
-export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship, search }: { profile: ProfileReadModel; friendsCount?: number | null; links?: { settings: string; edit: string };
-  friendship?: { profileId: string; relation: Relation; tripMate: boolean }; search?: ProfileSearchSource }) {
-  const [tab, setTab] = useState<Tab>("overview");
-  // The search bar (owner request 2026-11-13). The simulator's Profile conditionals can open it already typed in.
-  const simSearch = useSimulator()?.state.profileSearch;
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [simClosed, setSimClosed] = useState<string | undefined>();
+/** `links`: where the gear, the pencil, the search icon, Back and Compare go (the dev profile preview points them at its sample screens). */
+/** `friendship` (someone else's profile): the Add friend button in the buttons row. `friendSave` (dev preview only): instead of the account. */
+type ProfileLinks = { settings: string; edit: string; search?: string; profile?: string };
+
+/** `compare` ("?compare=<username>" on my profile, from someone's Compare button): opens my Stats with them picked. */
+export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship, friendSave, compare = null }: { profile: ProfileReadModel; friendsCount?: number | null; links?: ProfileLinks;
+  friendship?: { profileId: string; relation: Relation; tripMate: boolean }; friendSave?: (off: boolean) => Promise<Relation>; compare?: string | null }) {
+  const router = useRouter();
+  const searchHref = links.search ?? "/profile/search";
+  const profileHref = links.profile ?? "/profile";
+  const compareName = real.isOwner ? compare : null;
+  const [tab, setTab] = useState<Tab>(real.isOwner && compareName ? "stats" : "overview");
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
   const profile = sample ? withSampleRounds(real) : real;
   const { identity, legacy, isOwner } = profile;
   const isPrivate = profile.access === "private";
-  const showSearch = isOwner && (searchOpen || (simSearch !== undefined && simClosed !== simSearch));
+  const handicap = profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex);
+  const rounds = String(profile.modernStats?.roundsPlayed ?? 0);
+  const friendsText = friendsCount === null ? "—" : String(friendsCount);
+  const stat = (label: string, value: string) => <><dt className="font-condensed text-[13px] text-cream-50/70">{label}</dt><dd className="m-0 font-serif text-[17px] font-bold leading-none">{value}</dd></>;
+  const avatar = identity.avatarSrc
+    ? <span className="flex h-[86px] w-[86px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream-50 shadow-[0_0_0_3px_var(--color-gold-300)]">
+      <Image src={identity.avatarSrc} alt="" width={86} height={86} unoptimized className="h-full w-full object-cover" />
+    </span>
+    : <ProfileAvatar name={identity.displayName || identity.username} size={86} />;
+  const bioAndSocials = <>
+    {identity.bio && <p className="mt-1 line-clamp-3 max-w-[90%] whitespace-pre-line font-condensed text-[13px] leading-snug text-cream-50/85">{identity.bio}</p>}
+    {/* Socials (up to 4), 2 across × 2 down under the bio; only the ones added show. */}
+    {identity.links.length > 0 && <ul className="mt-2.5 grid max-w-[90%] grid-cols-2 gap-x-4 gap-y-1.5" aria-label="Socials">
+      {identity.links.map((social) => <li key={social.platform} className="min-w-0">
+        <a href={social.url} target="_blank" rel="noopener noreferrer nofollow ugc" aria-label={`${socialLabel(social.platform)}: ${socialDisplay(social)}`}
+          className="flex min-w-0 items-center gap-1.5 font-condensed text-[13px] font-semibold text-gold-300 hover:underline">
+          <span className="shrink-0"><SocialIcon platform={social.platform} size={15} /></span><span className="truncate">{socialDisplay(social)}</span>
+        </a>
+      </li>)}
+    </ul>}
+  </>;
+  const iconTop = { top: "var(--app-top-clearance, 0px)" };
   return (<>
-    {showSearch && <ProfileSearch key={searchOpen ? "open" : simSearch} source={search} initialQuery={searchOpen ? "" : simSearch === "results" ? "ke" : simSearch === "none" ? "zzq" : ""}
-      onClose={() => { setSearchOpen(false); setSimClosed(simSearch); }} />}
     {/* Extend the profile background through the bottom-menu padding. Owner request 2026-11-02: the top section is maroon
         and everything under it is cream (.profile-body in app/globals.css gives the tabs the light palette), so the maroon
         curve shows the same way on Overview, Rounds and Stats. */}
     <div className="profile-root flex min-h-screen min-w-0 flex-col bg-[#fbf8f1] text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       {/* The icon row starts on the app's icon line (--app-top-clearance, app/globals.css: 5px under the Dynamic Island /
-          status bar) and everything else 60px lower, so nothing lands where the clock, battery or notch are. */}
-      <header className="profile-hero relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-maroon-900 text-cream-50 px-5 pb-3" style={{ paddingTop: "calc(var(--app-top-clearance, 0px) + 60px)" }}>
-        {/* Search (golfers + friend requests), just left of the gear: opens the search bar at the top. */}
-        {isOwner && <button type="button" onClick={() => setSearchOpen(true)} aria-label="Search golfers" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute right-16 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
-          <Search size={26} aria-hidden="true" />
-          <FriendRequestBadge />
-        </button>}
-        {!isOwner && friendship && <FriendToggle profileId={friendship.profileId} name={identity.displayName} initial={friendship.relation} tripMate={friendship.tripMate} />}
-        {isOwner && <Link href={links.settings} aria-label="Settings" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
-          <Settings size={28} aria-hidden="true" />
-        </Link>}
-        {/* Edit profile: top left, mirroring the gear (owner request 2026-11-02; it used to sit on the photo). */}
-        {identity.canEditBio && <Link href={links.edit} aria-label="Edit profile" style={{ top: "var(--app-top-clearance, 0px)" }} className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
-          <Pencil size={26} aria-hidden="true" />
-        </Link>}
+          status bar) and everything else lower, so nothing lands where the clock, battery or notch are. */}
+      <header className="profile-hero relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-maroon-900 text-cream-50 px-5 pb-3" style={{ paddingTop: `calc(var(--app-top-clearance, 0px) + ${isOwner ? 60 : 56}px)` }}>
+        {isOwner ? <>
+          {/* Search (golfers + friend requests), just left of the gear: opens the Search page. */}
+          <Link href={searchHref} aria-label="Search golfers" style={iconTop} className="absolute right-16 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
+            <Search size={26} aria-hidden="true" />
+            <FriendRequestBadge />
+          </Link>
+          <Link href={links.settings} aria-label="Settings" style={iconTop} className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
+            <Settings size={28} aria-hidden="true" />
+          </Link>
+          {/* Edit profile: top left, mirroring the gear (owner request 2026-11-02). */}
+          {identity.canEditBio && <Link href={links.edit} aria-label="Edit profile" style={iconTop} className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
+            <Pencil size={26} aria-hidden="true" />
+          </Link>}
+        </> : <>
+          {/* Someone else's profile, Instagram-style (owner request 2026-11-19): Back on the left, their @username centred. */}
+          <button type="button" aria-label="Back" style={iconTop} onClick={() => { if (window.history.length > 1) router.back(); else router.push(searchHref); }}
+            className="absolute left-2 flex h-11 w-11 items-center justify-center rounded-full text-cream-50 hover:text-gold-300">
+            <ChevronLeft size={30} aria-hidden="true" />
+          </button>
+          <h1 style={iconTop} className="absolute inset-x-16 m-0 flex h-11 items-center justify-center gap-1.5 truncate font-serif text-[17px] font-bold">
+            {isPrivate && <Lock size={14} aria-label="Private profile" className="shrink-0 text-gold-300" />}<span className="truncate">{identity.username}</span>
+          </h1>
+        </>}
         <div className="mx-auto w-full max-w-[640px]">
-          {/* Instagram-like proportions (owner request 2026-11-02): the photo on the left; beside it, centred on the
-              photo's height, the name and the @username just under it (smaller, gold), both left-aligned, then Friends · Rounds · Handicap
-              (every round on the profile, friends from golf trips, the handicap index from all counting rounds). */}
-          <div className="flex items-center gap-5">
-            {/* The photo; no photo = the avatar (initials, Golf pull-down board style — owner rule 2026-11-13). */}
-            {identity.avatarSrc
-              ? <span className="flex h-[86px] w-[86px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream-50 shadow-[0_0_0_3px_var(--color-gold-300)]">
-                <Image src={identity.avatarSrc} alt="" width={86} height={86} unoptimized className="h-full w-full object-cover" />
-              </span>
-              : <ProfileAvatar name={identity.displayName || identity.username} size={86} />}
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-left font-serif text-[18px] font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
-              <p className="mt-0.5 truncate text-left text-[13px] font-semibold leading-tight text-gold-300">@{identity.username}</p>
-              {/* Friends · Rounds · Handicap (owner order 2026-11-02) show on every profile, Private ones too. */}
-              <dl className="mt-2.5 grid grid-cols-3 text-center" aria-label="Profile numbers">
-                {([["Friends", friendsCount === null ? "—" : String(friendsCount)], ["Rounds", String(profile.modernStats?.roundsPlayed ?? 0)], ["Handicap", profile.modernStats?.handicapIndex == null ? "—" : String(profile.modernStats.handicapIndex)]] as const).map(([label, value]) => {
-                  const stat = <><dt className="font-condensed text-[13px] text-cream-50/70">{label}</dt><dd className="m-0 font-serif text-[17px] font-bold leading-none">{value}</dd></>;
-                  // My Friends number opens my friends list.
-                  return label === "Friends" && isOwner
-                    ? <Link key={label} href="/profile/friends" aria-label={`Friends: ${value}. See your friends`} className="flex flex-col-reverse items-center gap-0.5 rounded-lg text-cream-50 hover:text-gold-300">{stat}</Link>
-                    : <div key={label} className="flex flex-col-reverse items-center gap-0.5">{stat}</div>;
-                })}
+          {isOwner ? <>
+            {/* My profile (owner request 2026-11-02): the photo on the left; beside it the name, @username and Friends · Rounds · Handicap. */}
+            <div className="flex items-center gap-5">
+              {avatar}
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-left font-serif text-[18px] font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
+                <p className="mt-0.5 truncate text-left text-[13px] font-semibold leading-tight text-gold-300">@{identity.username}</p>
+                <dl className="mt-2.5 grid grid-cols-3 text-center" aria-label="Profile numbers">
+                  <Link href="/profile/friends" aria-label={`Friends: ${friendsText}. See your friends`} className="flex flex-col-reverse items-center gap-0.5 rounded-lg text-cream-50 hover:text-gold-300">{stat("Friends", friendsText)}</Link>
+                  <div className="flex flex-col-reverse items-center gap-0.5">{stat("Rounds", rounds)}</div>
+                  <div className="flex flex-col-reverse items-center gap-0.5">{stat("Handicap", handicap)}</div>
+                </dl>
+              </div>
+            </div>
+            <div className="mt-2">{bioAndSocials}</div>
+          </> : <>
+            {/* Their profile: photo, then Rounds · Friends · Handicap beside it (a Private profile hides its Friends count,
+                owner request 2026-11-19); their name, bio and socials under; then the buttons row. */}
+            <div className="flex items-center gap-5">
+              {avatar}
+              <dl className={`grid flex-1 text-center ${isPrivate ? "grid-cols-2" : "grid-cols-3"}`} aria-label="Profile numbers">
+                <div className="flex flex-col-reverse items-center gap-0.5">{stat("Rounds", rounds)}</div>
+                {!isPrivate && <div className="flex flex-col-reverse items-center gap-0.5">{stat("Friends", friendsText)}</div>}
+                <div className="flex flex-col-reverse items-center gap-0.5">{stat("Handicap", handicap)}</div>
               </dl>
             </div>
-          </div>
-          {/* Under the photo row: the bio (small, never more than 3 lines, stopping 10% short of the right edge, in the same font and size as the Friends / Rounds / Handicap labels). */}
-          {identity.bio && <p className="mt-3 line-clamp-3 max-w-[90%] whitespace-pre-line font-condensed text-[13px] leading-snug text-cream-50/85">{identity.bio}</p>}
-          {/* Edit profile → Socials (up to 4), 2 across × 2 down under the bio; only the ones added show. The read model
-              leaves them out of someone else's Private profile. */}
-          {identity.links.length > 0 && <ul className="mt-2.5 grid max-w-[90%] grid-cols-2 gap-x-4 gap-y-1.5" aria-label="Socials">
-            {identity.links.map((social) => <li key={social.platform} className="min-w-0">
-              <a href={social.url} target="_blank" rel="noopener noreferrer nofollow ugc" aria-label={`${socialLabel(social.platform)}: ${socialDisplay(social)}`}
-                className="flex min-w-0 items-center gap-1.5 font-condensed text-[13px] font-semibold text-gold-300 hover:underline">
-                <span className="shrink-0"><SocialIcon platform={social.platform} size={15} /></span><span className="truncate">{socialDisplay(social)}</span>
-              </a>
-            </li>)}
-          </ul>}
+            <h2 className="mt-3 truncate font-serif text-[16px] font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
+            {bioAndSocials}
+            {(friendship || !isPrivate) && <div className={`mt-3 grid gap-2 ${friendship && !isPrivate ? "grid-cols-2" : "grid-cols-1"}`}>
+              {friendship && <FriendToggle wide profileId={friendship.profileId} name={identity.displayName} initial={friendship.relation} tripMate={friendship.tripMate} save={friendSave} />}
+              {!isPrivate && <Link href={`${profileHref}?compare=${encodeURIComponent(identity.username)}`}
+                className="flex min-h-9 items-center justify-center gap-1.5 rounded-[10px] bg-cream-50/12 font-serif text-[14px] font-bold text-cream-50 hover:bg-cream-50/20">
+                <ChartNoAxesColumn size={16} aria-hidden="true" /> Compare
+              </Link>}
+            </div>}
+          </>}
         </div>
-        {!isPrivate && <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
-          {TABS.map((t) => (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={tab === t.key}
+        {/* The tabs. On someone else's Private profile they show greyed out and can't be tapped (owner request 2026-11-19). */}
+        <nav className="mx-auto mt-4 flex min-h-14 w-full max-w-[640px] justify-around" aria-label="Profile sections">
+          {TABS.map((t) => isPrivate
+            ? <span key={t.key} aria-disabled="true" className="flex min-h-14 flex-1 cursor-not-allowed items-center justify-center px-2 font-condensed text-lg font-medium tracking-wide text-cream-50/30">{t.label}</span>
+            : <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={tab === t.key}
               className={`relative flex min-h-14 flex-1 items-center justify-center px-2 font-condensed text-lg tracking-wide ${tab === t.key ? "font-bold text-cream-50 after:absolute after:bottom-1 after:h-[3px] after:w-8 after:rounded-full after:bg-gold-300" : "font-medium text-cream-50/65"}`}>
               {t.label}
-            </button>
-          ))}
-        </nav>}
+            </button>)}
+        </nav>
       </header>
 
       <main className="profile-body relative mx-auto -mt-6 w-full max-w-[640px] flex-1 px-4 pb-32 pt-12">
@@ -138,7 +170,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
           )}
           {tab === "stats" && (
             <section aria-label="Stats">
-              <ProfileStats rounds={profile.rounds.status === "ok" ? profile.rounds.value : []} isOwner={isOwner} />
+              <ProfileStats rounds={profile.rounds.status === "ok" ? profile.rounds.value : []} isOwner={isOwner} compareWith={isOwner && compareName ? { username: compareName, name: compareName } : null} />
             </section>
           )}
           {tab === "overview" && (

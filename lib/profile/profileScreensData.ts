@@ -5,6 +5,8 @@ import { friendCount } from "./friendsServer";
 import { getMyProfileForm } from "./profileEditServer";
 import { myPhotoPath, profilePhotoUrl } from "./profilePhoto";
 import { getMyRoundsVisibility } from "@/lib/platform/playerRoundsServer";
+import { getMyPreferences } from "./preferencesServer";
+import type { Preferences } from "./preferences";
 import { myOrganizerOffers } from "@/lib/account/accountDeletion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isRibbonSampleEnabled } from "@/lib/content/ribbonSample";
@@ -18,7 +20,6 @@ import { deletionPreview } from "@/lib/account/accountDeletion";
 import type { ContentTeam } from "@/components/settings/ContentTeam";
 import type { DeletionPreviewData } from "@/components/settings/DeleteAccountFlow";
 import type { OrganizerOfferItem } from "@/components/settings/OrganizerOffers";
-import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 import type { EditProfileInitial } from "@/components/profile/EditProfileScreen";
 
 /**
@@ -46,35 +47,28 @@ export async function loadEditProfile(): Promise<EditProfileData> {
   return { status: "ok", form: { ...form, photoUrl: profilePhotoUrl(photo.path), photoAvailable: photo.installed, visibility: privacy.status === "ok" ? privacy.visibility : null } };
 }
 
-const initialsOf = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "").join("") || "?";
-
+/** Settings (redo 2026-11-19): Account, Notifications, Golf preferences, Appearance, Organizer, Help & legal. Profile
+ *  things (photo, name, bio, Private profile) are in Edit profile, not here. `preferences` null = the SQL isn't run yet. */
 export interface SettingsData {
   signedIn: boolean;
   email: string | null;
-  /** Profile photo (only once the account has its profile). */
-  photo: { url: string | null; initials: string; available: boolean } | null;
-  fields: { displayName: string; username: string; bio: string; bioAvailable: boolean } | null;
+  preferences: Preferences | null;
   contentAdmin: boolean;
   offers: OrganizerOfferItem[];
-  privacy: RoundsVisibility | null;
 }
 export async function loadSettings(): Promise<SettingsData> {
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   const current = await getCurrentProfile();
-  // Privacy and the photo are profile settings, so they only show once the account has its profile.
   const ok = current.status === "ok" ? current.profile : null;
-  const [privacy, photo, fields, viewer, offers] = await Promise.all([
-    ok ? getMyRoundsVisibility(ok.profileId) : null,
-    ok ? myPhotoPath(ok.profileId) : null,
-    ok ? getMyProfileForm(ok.profileId) : null,
+  const [preferences, viewer, offers] = await Promise.all([
+    ok ? getMyPreferences(ok.profileId) : null,
     isRibbonSampleEnabled() ? null : contentViewer(),
     ok ? myOrganizerOffers(ok.profileId) : [],
   ]);
   return {
-    signedIn: Boolean(user), email: user?.email ?? null,
-    photo: ok && photo ? { url: profilePhotoUrl(photo.path), initials: initialsOf(ok.displayName || ok.username), available: photo.installed } : null,
-    fields, contentAdmin: isRibbonSampleEnabled() || (viewer ? canPublish(viewer) : false),
-    offers: offers.filter((offer) => !offer.declined), privacy: privacy?.visibility ?? null,
+    signedIn: Boolean(user), email: user?.email ?? null, preferences,
+    contentAdmin: isRibbonSampleEnabled() || (viewer ? canPublish(viewer) : false),
+    offers: offers.filter((offer) => !offer.declined),
   };
 }
 

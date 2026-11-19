@@ -2,18 +2,17 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import type { ProfileSearchSource } from "@/components/profile/ProfileSearch";
+import { ProfileSearch, type ProfileSearchSource } from "@/components/profile/ProfileSearch";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { updateSampleProfile, useSampleProfile } from "@/components/dev/useSampleProfile";
 import { EditProfileScreen } from "@/components/profile/EditProfileScreen";
+import { SettingsView } from "@/components/settings/SettingsView";
+import { DEFAULT_PREFERENCES, NOTIFICATION_TYPES, applyPreferenceChange, type Preferences } from "@/lib/profile/preferences";
+import type { SettingsData } from "@/lib/profile/profileScreensData";
+import { appMode } from "@/lib/theme/appMode";
 import { ProfileView } from "@/components/profile/ProfileView";
-import { PhotoSetting } from "@/components/settings/PhotoSetting";
-import { PrivacySetting } from "@/components/settings/PrivacySetting";
-import { ProfileFieldsSetting } from "@/components/settings/ProfileFieldsSetting";
-import { SettingsScreen } from "@/components/settings/SettingsScreen";
-import { SAMPLE_FRIENDS, SAMPLE_GOLFERS, sampleProfileReadModel } from "@/lib/dev/sampleProfile";
-import type { FriendRequest, GolferResult } from "@/lib/profile/friendRequestsServer";
-import { initialsFor } from "@/lib/profile/myProfile";
+import { SAMPLE_FRIENDS, SAMPLE_GOLFERS, sampleProfileReadModel, type SampleGolfer } from "@/lib/dev/sampleProfile";
+import type { FriendRequest, GolferResult, Relation } from "@/lib/profile/friendRequestsServer";
 import { profileEditFromBody } from "@/lib/profile/profileEdit";
 import { profileSocialsFromBody } from "@/lib/profile/profileSocials";
 import styles from "@/components/settings/Settings.module.css";
@@ -22,44 +21,62 @@ import styles from "@/components/settings/Settings.module.css";
  * DEV ONLY: the real Profile, Settings and Edit profile screens, run on the sample profile (lib/dev/sampleProfile.ts)
  * instead of a signed-in account. Saves go to the sample profile store (useSampleProfile), never to the server.
  */
-const LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/edit" };
+// "?view=public" / "?view=private" (a Team Draft sample player's box) or "?user=<username>" (a search result) picks
+// someone else's sample profile. Read with useSearchParams so following a link to it switches the profile straight away.
+const LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/edit", search: "/dev/profile/search", profile: "/dev/profile" };
 
-// "?view=public" / "?view=private" (a Team Draft sample player's box, or a search result, links here) picks someone else's profile.
-// Read with useSearchParams so following a search result to it switches the profile straight away.
-
-/** The search bar on sample golfers (no account): Jake Parker (Public), Mike Chen (Private, who has sent you a friend request). */
-function sampleSearch(): ProfileSearchSource {
-  let golfers: GolferResult[] = SAMPLE_GOLFERS.map((g) => ({ id: g.id, name: g.displayName, username: g.username, photoUrl: null, relation: g.view === "private" ? "incoming" : "none", tripMate: false, isPrivate: g.view === "private" }));
-  let incoming: FriendRequest[] = SAMPLE_GOLFERS.filter((g) => g.view === "private").map((g) => ({ id: `request-${g.id}`, profileId: g.id, name: g.displayName, username: g.username, photoUrl: null }));
-  return {
-    async search(query) {
-      const words = query.toLowerCase().replace(/^@/, "");
-      return golfers.filter((g) => g.name.toLowerCase().includes(words) || (g.username ?? "").toLowerCase().includes(words));
-    },
-    async incoming() { return incoming; },
-    async befriend(golfer) {
-      const relation = golfer.relation === "incoming" ? "friends" : "requested";
-      golfers = golfers.map((g) => g.id === golfer.id ? { ...g, relation } : g);
-      if (relation === "friends") incoming = incoming.filter((r) => r.profileId !== golfer.id);
-      return relation;
-    },
-    async answer(request, accept) {
-      incoming = incoming.filter((r) => r.id !== request.id);
-      golfers = golfers.map((g) => g.id === request.profileId ? { ...g, relation: accept ? "friends" : "none" } : g);
-    },
-    href: (username) => `/dev/profile?view=${SAMPLE_GOLFERS.find((g) => g.username === username)?.view ?? "public"}`,
-  };
+/** Sample "where we stand" with each sample golfer, kept for the browser tab so Search and their profiles agree. */
+const relations = new Map<string, Relation>(SAMPLE_GOLFERS.filter((g) => g.username === "mikechen").map((g) => [g.id, "incoming" as Relation]));
+let incoming: FriendRequest[] = SAMPLE_GOLFERS.filter((g) => g.username === "mikechen").map((g) => ({ id: `request-${g.id}`, profileId: g.id, name: g.displayName, username: g.username, photoUrl: null }));
+const asResult = (g: SampleGolfer): GolferResult => ({ id: g.id, name: g.displayName, username: g.username, photoUrl: null, relation: relations.get(g.id) ?? "none", tripMate: false, isPrivate: g.roundsVisibility === "private", mutuals: g.mutuals });
+function befriend(id: string, off: boolean): Relation {
+  const now = relations.get(id) ?? "none";
+  const next: Relation = off ? "none" : now === "incoming" ? "friends" : "requested";
+  relations.set(id, next);
+  if (next === "friends") incoming = incoming.filter((r) => r.profileId !== id);
+  return next;
 }
 
+/** The Search page on sample golfers (no account). Suggestions: golfers with mutual friends first, then the rest, shuffled. */
+const SAMPLE_SEARCH: ProfileSearchSource = {
+  async search(query) {
+    const words = query.toLowerCase().replace(/^@/, "");
+    return SAMPLE_GOLFERS.filter((g) => g.displayName.toLowerCase().includes(words) || g.username.includes(words)).map(asResult);
+  },
+  async suggest() {
+    const open = SAMPLE_GOLFERS.filter((g) => (relations.get(g.id) ?? "none") === "none");
+    return [...open.filter((g) => g.mutuals > 0).sort((x, y) => y.mutuals - x.mutuals), ...open.filter((g) => !g.mutuals).sort(() => Math.random() - 0.5)].slice(0, 8).map(asResult);
+  },
+  async incoming() { return incoming; },
+  async befriend(golfer) { return befriend(golfer.id, false); },
+  async answer(request, accept) {
+    incoming = incoming.filter((r) => r.id !== request.id);
+    relations.set(request.profileId, accept ? "friends" : "none");
+  },
+  href: (username) => `/dev/profile?user=${encodeURIComponent(username)}`,
+};
+
 export function DevProfilePreview() {
-  const view = useSearchParams().get("view");
+  const params = useSearchParams();
+  const view = params.get("view");
+  const user = params.get("user");
   const linked = view === "public" || view === "private" ? view : null;
-  const search = useMemo(() => sampleSearch(), []);
   const simulated = useSimulator()?.state.profilePreview;
   const preview = linked ?? simulated ?? "sample";
   const mine = useSampleProfile();
-  const profile = useMemo(() => sampleProfileReadModel(preview, mine, new Date().toISOString().slice(0, 10)), [preview, mine]);
-  return <ProfileView profile={profile} friendsCount={SAMPLE_FRIENDS} links={LINKS} search={search} />;
+  const profile = useMemo(() => sampleProfileReadModel(preview, mine, new Date().toISOString().slice(0, 10), user), [preview, mine, user]);
+  const golfer = profile.isOwner ? null : SAMPLE_GOLFERS.find((g) => g.username === profile.identity.username) ?? null;
+  const compare = params.get("compare");
+  return <ProfileView key={`${profile.identity.username}|${compare ?? ""}`} profile={profile} friendsCount={SAMPLE_FRIENDS} links={LINKS} compare={compare}
+    friendship={golfer ? { profileId: golfer.id, relation: relations.get(golfer.id) ?? "none", tripMate: false } : undefined}
+    friendSave={golfer ? async (off) => befriend(golfer.id, off) : undefined} />;
+}
+
+/** DEV ONLY: the Search page on sample golfers. The simulator's Search conditionals open it typed in. */
+export function DevSearchPreview() {
+  const state = useSimulator()?.state.profileSearch;
+  const query = state === "results" ? "ke" : state === "none" ? "zzq" : "";
+  return <ProfileSearch key={state ?? "open"} source={SAMPLE_SEARCH} backHref="/dev/profile" initialQuery={query} recentKey="maroon-dev-search-recent-v1" />;
 }
 
 /** The same checks the real save route makes (the database's username checks aren't simulated). */
@@ -76,17 +93,24 @@ const readPhoto = (file: File) => new Promise<string>((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
+const ALL_OFF = { ...DEFAULT_PREFERENCES, notifications: Object.fromEntries(NOTIFICATION_TYPES.map(({ id }) => [id, { push: false, email: false }])) as Preferences["notifications"] };
+const SAMPLE_OFFER = [{ tripId: "00000000-0000-4000-8000-000000000011", tripName: "Pinehurst Weekend", fromName: "Jake Parker", accepted: false, declined: false }];
+
+/** DEV ONLY: the real Settings on the sample profile. The simulator's Settings conditionals pick the sample state. */
 export function DevSettingsPreview() {
   const mine = useSampleProfile();
-  // Keys remount each card when the sample profile changes underneath it (e.g. after Edit profile).
-  return <SettingsScreen backHref="/dev/profile"
-    photo={<PhotoSetting key={mine.photoUrl ?? "none"} initialUrl={mine.photoUrl} initials={initialsFor(mine.displayName || mine.username)} available
-      onSave={async (file) => { const photoUrl = file ? await readPhoto(file) : null; updateSampleProfile({ photoUrl }); return photoUrl; }} />}
-    account={<ProfileFieldsSetting key={`${mine.displayName}|${mine.username}|${mine.bio}`} email="sample.golfer@example.com" bioAvailable
-      initial={{ displayName: mine.displayName, username: mine.username, bio: mine.bio }}
-      onSave={async (field, value) => { updateSampleProfile(checked({ [field]: value })); }} />}
-    privacy={<PrivacySetting key={mine.visibility} initial={mine.visibility} onSave={async (visibility) => { updateSampleProfile({ visibility }); }} />}
-    signOut={<p className={styles.note}>Sample profile: changes stay in this preview. Sign Out is on the live Settings.</p>} />;
+  const sim = useSimulator()?.state.settingsPreview ?? "default";
+  const data: SettingsData = {
+    signedIn: true, email: "sample.golfer@example.com", preferences: sim === "allOff" ? ALL_OFF : mine.preferences,
+    contentAdmin: sim === "admin", offers: sim === "offer" ? SAMPLE_OFFER : [],
+  };
+  // Keyed on the saved choices too: the first render (before this tab's saved sample is read) uses the defaults.
+  return <SettingsView key={`${sim}|${JSON.stringify(data.preferences)}`} data={data} appearance={appMode(undefined)} dev={{
+    backHref: "/dev/profile", deleteHref: "/dev/profile/delete-account",
+    savePreference: async (change) => { const preferences = applyPreferenceChange(mine.preferences, change); updateSampleProfile({ preferences }); return preferences; },
+    savePassword: async () => ({ ok: true }),
+    signOut: <p className={styles.note}>Sample profile: changes stay in this preview. Sign Out is on the live Settings.</p>,
+  }} />;
 }
 
 export function DevEditProfilePreview() {

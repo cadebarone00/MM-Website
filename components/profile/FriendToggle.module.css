@@ -6,3 +6,8 @@
 .toggle:disabled{opacity:.7}
 .toggle:focus-visible{outline:2px solid #c7a55e;outline-offset:3px}
 .problem{max-width:220px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;color:#f3b4a8;text-align:right}
+/* Instagram-style buttons row (2026-11-19): full width, rounded rectangle, filled gold until you're friends. */
+.wideWrap{display:grid;gap:4px;min-width:0}
+.toggle.wide{justify-content:center;width:100%;min-height:36px;border-radius:10px;background:#dcc495;color:var(--color-maroon-900);font:700 14px var(--font-spectral),Georgia,serif}
+.toggle.wide.on{border-color:rgba(244,239,230,.15);background:rgba(244,239,230,.12);color:#f4efe6}
+.wideWrap .problem{max-width:none;text-align:left}
