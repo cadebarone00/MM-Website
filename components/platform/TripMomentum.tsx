@@ -52,7 +52,7 @@ const subscribeReminders = (change: () => void) => {
 };
 
 /** Existing team draft and next match draft occupy separate Home cards. */
-export function TripDraftWidget({ draft, competitionTypes, startAt, editHref, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"], fallback = null, headingClassName, onTeamsComplete }: {
+export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: editHrefProp, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"], fallback = null, headingClassName, onTeamsComplete }: {
   competitionTypes?: HomeCompetitionTypes | null;
   onTeamsComplete?: (players: MatchDraftPlayer[]) => void;
   headingClassName?: string;
@@ -81,6 +81,8 @@ export function TripDraftWidget({ draft, competitionTypes, startAt, editHref, pl
   let matchRounds = matchDraftRounds(setup,rounds,players.length,playedThrough);
   // Simulator Home → Team Draft / Match Selection pages: a sample draft, roster and round (lib/dev/draftSim.ts).
   const sim = process.env.NODE_ENV === "development" && simulator ? draftSimFixture(simulator.state, startAt ?? localStamp(loadedAt)) : null;
+  // Simulator "Viewing as a player": no organizer powers (no Start Draft Now; Waiting To Start once the countdown ends).
+  const editHref = sim?.viewer === "player" ? undefined : editHrefProp;
   // Simulator Home → Team Draft → Mock draft (test run): the real Draft Room in saved-draft mode, talking to a pretend
   // server in browser storage (lib/dev/mockDraft.ts) as whoever the test panel says is holding the phone.
   const mockPreset = process.env.NODE_ENV === "development" && !sim && simulator?.state.mockDraft && simulator.state.mockDraft !== "off" ? simulator.state.mockDraft : null;
@@ -182,10 +184,17 @@ export function TripDraftWidget({ draft, competitionTypes, startAt, editHref, pl
     {showMatch && <section aria-label="Match selection"><h2 className={headingClassName}>Match Selection</h2><div className={styles.draftWidget}>
       {!rounds.length && <div className={styles.sectionStatus}><p>Add match-play rounds to set up match selection.</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Set up rounds</Link>}</div>}
       {robinRounds.length > 0 ? sides.length >= 2 ? <TripRoundRobin sides={sides} roster={robinRoster} results={setup.roundRobinResults as RoundRobinResults | undefined} onChange={writeRobin} courses={robinRounds.map(round => round.course)}/> : <div className={styles.sectionStatus}><p>{teamType ? "Complete team assignments first." : "Add at least two players first."}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Set up players</Link>}</div> : null}
-      {next && teamType === "2 Teams" ? <DraftStrip draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course+" - "+next.format+" - "+next.type} blockedReason={blockedReason} onOpen={()=>{ if (!blockedReason) setOpenRound(next.key); }}/> : applicableRounds.some(round => round.method !== "Round Robin") ? <div className={styles.sectionStatus}><p>{applicableRounds.every(round => round.number <= playedThrough || Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(round.key)) ? "Match selection complete" : teamType && !allTeamsReady ? "Complete team assignments first." : "Set up match selection"}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Match settings</Link>}</div> : null}
+      {next && teamType === "2 Teams" ? <DraftStrip draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course} matchFormat={next.format} blockedReason={blockedReason} onOpen={()=>{ if (!blockedReason) setOpenRound(next.key); }}/> : applicableRounds.some(round => round.method !== "Round Robin") ? <div className={styles.sectionStatus}><p>{applicableRounds.every(round => round.number <= playedThrough || Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(round.key)) ? "Match selection complete" : teamType && !allTeamsReady ? "Complete team assignments first." : "Set up match selection"}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Match settings</Link>}</div> : null}
     </div></section>}
     {!showTeam && !showMatch && fallback}
-    {openRound && teamsReady && !blockedReason && <TripMatchDraftRoom key={seenSimRoom ?? openRound} modal transport={matchTransport} rounds={matchRounds} players={matchPlayers} initialRound={openRound} teamNames={names} canEdit={!!editHref && !saved?.readOnly && teamsReady && !blockedReason} onClose={()=>setOpenRound(null)}/>}
+    {openRound && teamsReady && !blockedReason && <TripMatchDraftRoom key={seenSimRoom ?? openRound} modal transport={matchTransport} editGolfHref={editHref ? (() => { const url = new URL(editHref, "http://localhost"); url.searchParams.set("view", "schedule"); return url.pathname + url.search; })() : undefined} onConfirmed={data => {
+      if (realTrip || sim || mockMatch) return;
+      const groups = Array.from({ length: data.round.matches }, (_, match) => ({ a: data.spots.filter(spot => spot.match === match && spot.team === 0).sort((a,b) => a.slot-b.slot).map(spot => players.findIndex(player => player.name === data.members.find(member => member.profileId === spot.profileId)?.name)), b: data.spots.filter(spot => spot.match === match && spot.team === 1).sort((a,b) => a.slot-b.slot).map(spot => players.findIndex(player => player.name === data.members.find(member => member.profileId === spot.profileId)?.name)) }));
+      if (groups.some(group => [...group.a,...group.b].some(index => index < 0))) return;
+      writeDevSetup(scope, "teeMatches", { ...(setup.teeMatches as object ?? {}), [data.round.key]: Object.fromEntries(groups.map((group,index) => [index,group])) });
+      writeDevSetup(scope, "matchSelectionResults", { ...(setup.matchSelectionResults as object ?? {}), [data.round.key]: groups });
+      writeDevSetup(scope, "completedMatchDrafts", [...new Set([...(setup.completedMatchDrafts as string[] ?? []), data.round.key])]);
+    }} rounds={matchRounds} players={matchPlayers} initialRound={openRound} teamNames={names} canEdit={!!editHref && !saved?.readOnly && teamsReady && !blockedReason} onClose={()=>setOpenRound(null)}/>}
   </>;
 }
 
@@ -195,26 +204,29 @@ export function TripMomentum({ events, fallback }: { events: MomentumEvent[]; fa
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */
-function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLabel, onOpen, onComplete, blockedReason, canEdit = false, simRoomKey = null, liveTripId = null, keepKey, liveTransport }: { liveTransport?: TeamDraftTransport; keepKey?: string; liveTripId?: string | null; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; blockedReason?: string | null; simRoomKey?: string | null; players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number; matchLabel?: string; onOpen?: () => void }) {
+function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLabel, matchFormat, onOpen, onComplete, blockedReason, canEdit = false, simRoomKey = null, liveTripId = null, keepKey, liveTransport }: { /** Match Selection: the round's format, on its own line under "Round x @ Course". */ matchFormat?: string; liveTransport?: TeamDraftTransport; keepKey?: string; liveTripId?: string | null; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; blockedReason?: string | null; simRoomKey?: string | null; players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number; matchLabel?: string; onOpen?: () => void }) {
   const zone = useSyncExternalStore(subscribe, zoneName, () => "");
   const [roomOpen, setRoomOpen] = useState(false);
   // Simulator "Draft Room open": open the room (fresh) whenever the sample changes; close it when the sample says closed.
   const [seenSimRoom, setSeenSimRoom] = useState<string | null>(null);
   if (simRoomKey !== seenSimRoom) { setSeenSimRoom(simRoomKey); setRoomOpen(!!simRoomKey); }
   const scheduled = homeDraftHasSchedule(draft.date, draft.time);
-  const reached = !!(scheduled && matchRound && board.target && now && now >= board.target);
+  // Once the start time passes the countdown reads 00:00:00:00 (Team Draft too), so the room knows time is up ("Waiting To Start").
+  const reached = !!(scheduled && board.target && now && now >= board.target);
   const parts = reached ? {days:0,hours:0,minutes:0,seconds:0} : scheduled && board.target && now ? countdownParts(board.target, now.length === 16 ? `${now}:00` : now) : null;
   const units = [["Days", parts?.days], ["Hrs", parts?.hours], ["Mins", parts?.minutes], ["Secs", parts?.seconds]] as const;
   const liveDraft = useTeamDraft(liveTripId, roomOpen, liveTransport);
   const live = liveTripId ? liveDraftRoom(liveDraft) : undefined;
   const closeRoom = () => { setRoomOpen(false); if (live && !liveTransport && liveDraft.data?.draft.completedAt) window.location.reload(); }; // finished: Home picks up the saved teams
   return <div className={styles.draft}>
+    {/* Match Selection (owner 2026-11-13): "Round 2 @ Course name", then the format under it. */}
+    {matchLabel && <p className={`${styles.matchLabel} ${styles.matchRoundHeading}`}>{matchRound ? `Round ${matchRound} @ ${matchLabel.replace(/\s*·\s*/g, " ")}` : matchLabel}</p>}
+    {matchRound && matchFormat && <p className={`${styles.matchLabel} ${styles.matchFormat}`}>{matchFormat}</p>}
     <div className={styles.draftTop}>
       {!scheduled && editHref ? <Link href={editHref} className={styles.scheduleButton} aria-label={matchRound ? "Set match selection date and time" : "Set team draft date and time"}>No Date Set</Link>
-        : <span className={styles.draftWhen} role="status">{scheduled ? `${draftWhenLabel(draft.date, draft.time)}${zone ? ` ${zone}` : ""}` : "No Date Set"}</span>}
-      {scheduled && editHref && <Link href={editHref} className={styles.edit}>Edit</Link>}
+        : <span className={`${styles.draftWhen} ${matchRound ? styles.matchSchedule : ""}`} role="status">{scheduled ? matchRound ? <>{draftWhenLabel(draft.date, draft.time).split(" @ ").map((part, index) => <span key={index}>{part}{index === 1 && zone ? ` ${zone}` : ""}</span>)}</> : `${draftWhenLabel(draft.date, draft.time)}${zone ? ` ${zone}` : ""}` : "No Date Set"}</span>}
+      {/* No "Edit" in the top right any more (owner 2026-11-13): the date is changed in Settings. */}
     </div>
-    {matchLabel && <p className={styles.matchLabel}>{matchRound ? `Round ${matchRound} - ${matchLabel}` : matchLabel}</p>}
     <div className={styles.draftBottom}>
       <div className={styles.countdown} role="timer" aria-label={parts ? `${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the draft` : "Countdown to the draft"}>
         {units.map(([label, value], index) => <div key={label} className={styles.unitWrap}>
@@ -229,9 +241,9 @@ function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLab
     {blockedReason && <p className={styles.matchLabel} role="status">{blockedReason}</p>}
     <div className={styles.draftActions}>
       <button type="button" className={styles.room} disabled>Mock Draft</button>
-      <button type="button" className={styles.room} disabled={!!blockedReason} onClick={onOpen ?? (() => setRoomOpen(true))}>Draft Room</button>
+      <button type="button" className={styles.room} disabled={!!blockedReason} onClick={onOpen ?? (() => setRoomOpen(true))}>{matchRound ? "Selection Room" : "Draft Room"}</button>
     </div>
-    {roomOpen && <TripDraftRoom key={seenSimRoom ?? "room"} keepKey={keepKey} live={live} teamType={liveDraft.data?.settings.teamType ?? draft.teamType} canEdit={canEdit} onComplete={onComplete ? result => { onComplete(result); setRoomOpen(false); } : undefined}
+    {roomOpen && <TripDraftRoom editGolfHref={editHref ? (() => { const url = new URL(editHref,"http://localhost"); url.searchParams.set("view","schedule"); return url.pathname+url.search; })() : undefined} key={seenSimRoom ?? "room"} keepKey={keepKey} live={live} teamType={liveDraft.data?.settings.teamType ?? draft.teamType} canEdit={canEdit} onComplete={onComplete ? result => { onComplete(result); setRoomOpen(false); } : undefined}
       players={live && liveDraft.data ? draftRoomPlayersFrom(liveDraft.data) : players} draftType={liveDraft.data?.settings.method ?? draft.method ?? "Captain's Picks"} draftOrder={liveDraft.data?.settings.order ?? draft.type}
       countdown={parts} when={draftWhen(draft, board, zone).replace(` · ${draft.type}`, "")} onClose={closeRoom} />}
   </div>;
@@ -247,11 +259,11 @@ function liveDraftRoom(liveDraft: ReturnType<typeof useTeamDraft>): LiveDraftRoo
   const status = !data ? "Loading the draft…" : data.draft.completedAt ? "Draft complete — the teams are saved."
     : board?.countError ? board.countError
     : !ready ? (organizer ? "Every team needs a captain first (Settings → Players)." : "Waiting for the organizer to set captains.")
-    : !data.draft.startedAt ? (organizer ? "Tap Start team draft when everyone's ready." : "Waiting for the organizer to start the draft.") : "";
+    : !data.draft.startedAt ? (organizer ? "Tap Start Draft Now when everyone's ready." : "Waiting for the organizer to start the draft.") : "";
   return {
     started: !!data?.draft.startedAt && !data.draft.completedAt, busy: liveDraft.busy, message: liveDraft.message || status,
-    canPick: team => ready && (organizer || data!.viewer.captainOf === team), canStart: ready && organizer,
-    onPick: id => void liveDraft.pick(id), onStart: () => void liveDraft.start(),
+    canPick: team => ready && (organizer || data!.viewer.captainOf === team), canStart: ready && organizer, isOrganizer: organizer,
+    onPick: id => void liveDraft.pick(id), onStart: () => void liveDraft.start(), onReset: () => void liveDraft.reset(), onConfirm: () => void liveDraft.confirm(), confirmed: !!data?.draft.completedAt,
   };
 }
 

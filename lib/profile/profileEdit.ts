@@ -23,9 +23,15 @@ export function bioProblem(bio: string): string | null {
   return null;
 }
 
+/** Gender (supabase/profile_edit_v2.sql): private, only ever shown on your own Edit profile. "" = not set. */
+export const GENDERS = [{ value: "man", label: "Man" }, { value: "woman", label: "Woman" }, { value: "prefer_not_to_say", label: "Prefer not to say" }] as const;
+export type Gender = (typeof GENDERS)[number]["value"];
+export const genderLabel = (gender: Gender | "") => GENDERS.find((g) => g.value === gender)?.label ?? "";
+const isGender = (v: unknown): v is Gender | "" => v === "" || GENDERS.some((g) => g.value === v);
+
 export interface ProfileSetupInput { displayName: string; username: string }
-export interface ProfileEditInput { displayName?: string; username?: string; bio?: string }
-type Problem = { ok: false; field: "displayName" | "username" | "bio" | "body"; error: string };
+export interface ProfileEditInput { displayName?: string; username?: string; bio?: string; gender?: Gender | "" }
+type Problem = { ok: false; field: "displayName" | "username" | "bio" | "gender" | "body"; error: string };
 
 const record = (body: unknown): Record<string, unknown> | null => body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
 
@@ -73,6 +79,10 @@ export function profileEditFromBody(body: unknown): { ok: true; input: ProfileEd
     const problem = bioProblem(r.bio.trim());
     if (problem) return { ok: false, field: "bio", error: problem };
     input.bio = r.bio.trim();
+  }
+  if (r.gender !== undefined) {
+    if (!isGender(r.gender)) return { ok: false, field: "gender", error: "Choose Man, Woman or Prefer not to say." };
+    input.gender = r.gender;
   }
   if (!Object.keys(input).length) return { ok: false, field: "body", error: "Nothing to save." };
   return { ok: true, input };

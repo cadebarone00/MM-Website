@@ -25,6 +25,7 @@ export type SelectionState = {
   /** Ranks: when each team locked in. */
   locked: [string | null, string | null];
   completedAt: string | null;
+  confirmedAt?: string | null;
   spots: SelectionSpot[];
 };
 /** Each team's players (profile ids). */
@@ -32,6 +33,8 @@ export type SelectionRosters = [string[], string[]];
 export type SelectionViewer = { profileId: string; isOrganizer: boolean; captainOf: Side | null; team: Side | null };
 export type SelectionAction =
   | { action: "start" }
+  | { action: "reset" }
+  | { action: "confirm" }
   | { action: "place"; match: number; team: Side; slot: number; player: string }
   | { action: "remove"; match: number; team: Side; slot: number }
   | { action: "submit" }
@@ -122,6 +125,17 @@ export function catchUpSelection(round: SelectionRound, rosters: SelectionRoster
 export function applySelection(round: SelectionRound, rosters: SelectionRosters, state: SelectionState | null, viewer: SelectionViewer, input: SelectionAction, now: number, random: () => number = Math.random): { state: SelectionState | null; error: string | null; event: string } {
   const refuse = (error: string) => ({ state, error, event: "" });
   const at = iso(now);
+  if (input.action === "reset") {
+    if (!viewer.isOrganizer) return refuse("Only the organizer can reset match selection.");
+    if (state?.confirmedAt) return refuse("Confirmed matches cannot be reset here.");
+    return { state: null, error: null, event: "Reset match selection; organizer must start again" };
+  }
+  if (input.action === "confirm") {
+    if (!viewer.isOrganizer) return refuse("Only the organizer can confirm selections.");
+    if (!state?.completedAt || !done(round, state.spots)) return refuse("Complete every selection first.");
+    if (state.confirmedAt) return refuse("Selections are already confirmed.");
+    return { state: { ...state, confirmedAt: at }, error: null, event: "Confirmed selections" };
+  }
   if (input.action === "start" || input.action === "randomize") {
     if (!viewer.isOrganizer) return refuse(input.action === "start" ? "Only the organizer can start match selection." : "Only the organizer can randomize the matches.");
     if (state) return refuse(state.completedAt ? "This round's matches are already set." : "Match selection has already started.");
@@ -131,10 +145,10 @@ export function applySelection(round: SelectionRound, rosters: SelectionRosters,
     if (round.type === "Randomized") {
       const spots: SelectionSpot[] = ([0, 1] as const).flatMap(team => shuffle(rosters[team], random).slice(0, total(round))
         .map((profileId, index) => ({ match: Math.floor(index / round.perSide), team, slot: index % round.perSide, profileId, placedBy: viewer.profileId, placedAt: at, submitted: true })));
-      return { state: { startedAt: at, deadline: null, locked: [at, at], completedAt: at, spots }, error: null, event: "Randomized the matches" };
+      return { state: { startedAt: at, deadline: null, locked: [at, at], completedAt: at, confirmedAt: null, spots }, error: null, event: "Randomized the matches" };
     }
     const minutes = round.type === "Ranks" ? selectionMinutes(round.rankMinutes) : selectionMinutes(round.putForwardMinutes);
-    return { state: { startedAt: at, deadline: iso(now + minutes * 60000), locked: [null, null], completedAt: null, spots: [] }, error: null, event: `Started match selection (${round.type})` };
+    return { state: { startedAt: at, deadline: iso(now + minutes * 60000), locked: [null, null], completedAt: null, confirmedAt: null, spots: [] }, error: null, event: `Started match selection (${round.type})` };
   }
   if (!state) return refuse("Match selection hasn't started yet.");
   if (state.completedAt) return refuse("This round's matches are already set.");
@@ -217,7 +231,7 @@ export type MatchSelectionResponse = {
   rosters: SelectionRosters;
   captains: [string | null, string | null];
   teamNames: [string, string];
-  started: boolean; completed: boolean;
+  started: boolean; completed: boolean; confirmed: boolean;
   deadline: string | null;
   locked: [boolean, boolean];
   spots: VisibleSpot[];
@@ -232,7 +246,7 @@ export function selectionResponse(input: { round: SelectionRound; members: Selec
   const { round, state } = input;
   return {
     round: input.round, members: input.members, rosters: input.rosters, captains: input.captains, teamNames: input.teamNames,
-    started: !!state, completed: !!state?.completedAt, deadline: state?.deadline ?? null, locked: [!!state?.locked[0], !!state?.locked[1]],
+    started: !!state, completed: !!state?.completedAt, confirmed: !!state?.confirmedAt, deadline: state?.deadline ?? null, locked: [!!state?.locked[0], !!state?.locked[1]],
     spots: visibleSpots(state, input.viewer), turn: round.type === "Response" && state && !state.completedAt ? responseTurn(round, state.spots) : null,
     viewer: input.viewer, startError: selectionStartError(round, input.rosters), now: iso(input.now),
   };
@@ -250,5 +264,5 @@ export function selectionStateFromJson(value: unknown): SelectionState | null {
     return Number.isInteger(spot.match) && (spot.team === 0 || spot.team === 1) && Number.isInteger(spot.slot) && typeof spot.profileId === "string"
       ? [{ match: spot.match as number, team: spot.team as Side, slot: spot.slot as number, profileId: spot.profileId, placedBy: text(spot.placedBy), placedAt: text(spot.placedAt) ?? "", submitted: spot.submitted === true }] : [];
   }) : [];
-  return { startedAt: raw.startedAt as string, deadline: text(raw.deadline), locked: [text(locked[0]), text(locked[1])], completedAt: text(raw.completedAt), spots };
+  return { startedAt: raw.startedAt as string, deadline: text(raw.deadline), locked: [text(locked[0]), text(locked[1])], completedAt: text(raw.completedAt), confirmedAt: "confirmedAt" in raw ? text(raw.confirmedAt) : text(raw.completedAt), spots };
 }

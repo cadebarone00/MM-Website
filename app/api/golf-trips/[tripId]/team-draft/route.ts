@@ -55,6 +55,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   const refused = (error: { code?: string; message: string }) => NextResponse.json({ error: ["40001", "42501", "22023"].includes(error.code ?? "") ? error.message : "Couldn't save the pick." },
     { status: error.code === "40001" ? 409 : error.code === "42501" ? 403 : error.code === "22023" ? 400 : missing(error.code) ? 503 : 500 });
 
+  if (body.action === "reset" || body.action === "confirm") {
+    if (!loaded.viewer.isOrganizer) return NextResponse.json({ error: "Only the organizer can reset or confirm the draft." }, { status: 403 });
+    const board = draftBoardFor(loaded.members, loaded.setup.captains, loaded.setup.settings, loaded.draft.picks);
+    if (body.action === "confirm" && !board.done) return NextResponse.json({ error: "Complete all selections first." }, { status: 400 });
+    const { data, error } = body.action === "reset" ? await db.rpc("reset_golf_trip_team_draft", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId }) : await db.rpc("complete_golf_trip_team_draft", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId, p_teams: draftTeamsAsSetup(board, loaded.members) });
+    return error ? refused(error) : answer(loaded, savedDraftFromJson(data) ?? loaded.draft);
+  }
+
   if (body.action === "start") {
     if (!loaded.viewer.isOrganizer) return NextResponse.json({ error: "Only the organizer can start the draft." }, { status: 403 });
     if (loaded.setup.settings.method !== "Captain's Picks") return NextResponse.json({ error: "This draft type doesn't use picks." }, { status: 400 });
@@ -75,12 +83,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   const { data, error } = await db.rpc("make_golf_trip_team_draft_pick", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId, p_pick_number: body.pickNumber,
     p_player: body.player, p_team: board.turn, p_team_count: board.teamCount });
   if (error) return refused(error);
-  let draft = savedDraftFromJson(data) ?? loaded.draft;
-  // That was the last pick: save the teams as the trip's teams and close the draft.
-  const after = draftBoardFor(loaded.members, loaded.setup.captains, loaded.setup.settings, draft.picks);
-  if (after.done) {
-    const finished = await db.rpc("complete_golf_trip_team_draft", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId, p_teams: draftTeamsAsSetup(after, loaded.members) });
-    if (!finished.error) draft = savedDraftFromJson(finished.data) ?? draft;
-  }
+  const draft = savedDraftFromJson(data) ?? loaded.draft;
   return answer(loaded, draft);
 }

@@ -115,6 +115,7 @@ declare v_draft golf_trip_team_draft;
 begin
   select * into v_draft from golf_trip_team_draft where golf_trip_id = p_trip for update;
   if not golf_trip_team_draft_accepted(p_trip, p_profile) then raise exception 'Trip not found.' using errcode = '42501'; end if;
+  if not exists(select 1 from golf_trip_members where golf_trip_id = p_trip and profile_id = p_profile and role = 'organizer' and invitation_status = 'accepted') then raise exception 'Only the organizer can confirm teams.' using errcode = '42501'; end if;
   if v_draft.started_at is null then raise exception 'The draft hasn''t started yet.' using errcode = '22023'; end if;
   if v_draft.completed_at is not null then return get_golf_trip_team_draft(p_profile, p_trip); end if;
   if jsonb_typeof(p_teams) <> 'array' or exists(select 1 from jsonb_array_elements(p_teams) t where jsonb_typeof(t) <> 'array') then
@@ -149,4 +150,18 @@ begin
   end if;
 end $$;
 
+create or replace function public.reset_golf_trip_team_draft(p_profile uuid, p_trip uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  perform id from golf_trips where id = p_trip for update;
+  if not exists(select 1 from golf_trip_members where golf_trip_id = p_trip and profile_id = p_profile and role = 'organizer' and invitation_status = 'accepted') then raise exception 'Only the organizer can reset the draft.' using errcode = '42501'; end if;
+  perform golf_trip_id from golf_trip_team_draft where golf_trip_id = p_trip for update;
+  if exists(select 1 from golf_trip_team_draft where golf_trip_id = p_trip and completed_at is not null) then raise exception 'Confirmed teams cannot be reset here.' using errcode = '22023'; end if;
+  delete from golf_trip_team_draft_picks where golf_trip_id = p_trip;
+  update golf_trip_team_draft set started_at = null, started_by = null where golf_trip_id = p_trip;
+  return get_golf_trip_team_draft(p_profile, p_trip);
+end;
+$$;
+revoke all on function public.reset_golf_trip_team_draft(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.reset_golf_trip_team_draft(uuid, uuid) to service_role;
 commit;

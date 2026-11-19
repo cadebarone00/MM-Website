@@ -6,7 +6,7 @@ import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 import styles from "./Settings.module.css";
 
 const OPTIONS: { value: RoundsVisibility; label: string }[] = [{ value: "public", label: "Public" }, { value: "private", label: "Private" }];
-const EXPLAIN: Record<RoundsVisibility, string> = {
+export const PRIVACY_EXPLAIN: Record<RoundsVisibility, string> = {
   public: "Anyone can see your profile: your bio, rounds and public tournaments. Your golf trips stay private.",
   private: "Others see just your name. Your friends (anyone you've been on a golf trip with) can still see and compare your stats, and people you play with see your handicap index.",
 };
@@ -50,7 +50,7 @@ export function PrivacySetting({ initial, onSave }: { initial: RoundsVisibility;
       </button>
     </div>
     {info && <dl id="privacy-info" className={styles.infoPanel}>
-      {OPTIONS.map((option) => <div key={option.value}><dt>{option.label}</dt><dd>{EXPLAIN[option.value]}</dd></div>)}
+      {OPTIONS.map((option) => <div key={option.value}><dt>{option.label}</dt><dd>{PRIVACY_EXPLAIN[option.value]}</dd></div>)}
     </dl>}
     <div role="group" aria-label="Profile privacy" className={styles.segmented}>
       {OPTIONS.map((option) => <button key={option.value} type="button" aria-pressed={visibility === option.value} disabled={saving} onClick={() => choose(option.value)}>

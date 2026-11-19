@@ -53,9 +53,13 @@
 .draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
 
 .matchLabel{margin:0;color:var(--lm-ink-dcc495);font:500 12px/1.4 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.matchRoundHeading{font-size:16px}
+.matchSchedule{display:flex;flex-direction:column;align-items:center;gap:4px}
 
 .room:disabled{opacity:.45;cursor:default}
 
 .scheduleButton{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 12px;border:1px solid rgba(220,196,149,.6);border-radius:999px;background:rgba(220,196,149,.1);color:#edcf91;font:600 12px/1.2 var(--font-spectral),Georgia,serif;text-decoration:none}
 .scheduleButton:hover{background:rgba(220,196,149,.2)}
 .scheduleButton:focus-visible{outline:2px solid #edcf91;outline-offset:3px}
+/* Match Selection: the format on its own line under "Round x @ Course" (owner 2026-11-13). */
+.matchFormat{margin-top:-3px}

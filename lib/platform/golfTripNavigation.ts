@@ -11,7 +11,7 @@ export type CompetitionStructure = { individual: boolean; team: boolean };
 /**
  * The Golf tab's sections and their names for the trip's competition (owner's rules, 2026-10-06):
  * none → Overview · Games · Stats (stats are required or each player's choice, so the section is always there);
- * individual → Leaderboard · Games; team → Matches · Games; both → Leaderboard · Matches · Games — those add Stats after
+ * individual → Board · Games; team → Matches · Games; both → Board · Matches · Games — those add Stats after
  * Games while Player Stats is required (Organizer → Player Scoring).
  * `id` stays the shared section name (navigation / dev shortcuts); `label` is what the tab says.
  */
@@ -21,12 +21,12 @@ export function golfSections(structure: CompetitionStructure, stats = false, pre
   const { individual, team } = structure;
   const statsTab = stats ? [{ id: "Stats" as const, label: "Stats" }] : [];
   if (!individual && !team) return withPredict([{ id: "Overview", label: "Overview" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }]);
-  // Individual only: the same as no competition, with Overview called Leaderboard.
-  if (individual && !team) return withPredict([{ id: "Overview", label: "Leaderboard" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }]);
+  // Individual only: the same as no competition, with Overview called Board (owner 2026-11-13, was Leaderboard).
+  if (individual && !team) return withPredict([{ id: "Overview", label: "Board" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }]);
   // Team only: Overview (the tee sheet) and Match (the matchups), then Games · Stats.
   if (team && !individual) return withPredict([{ id: "Overview", label: "Overview" }, { id: "Competition", label: "Match" }, { id: "Games", label: "Games" }, { id: "Stats", label: "Stats" }]);
   return withPredict([
-    ...(individual ? [{ id: "Overview" as const, label: "Leaderboard" }] : []),
+    ...(individual ? [{ id: "Overview" as const, label: "Board" }] : []),
     ...(team ? [{ id: "Competition" as const, label: "Matches" }] : []),
     { id: "Games", label: "Games" },
     ...statsTab,

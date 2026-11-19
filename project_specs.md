@@ -5107,3 +5107,235 @@ The handicap (`lib/profile/profileReadModel.ts`) uses the counting rounds in `pl
   - The newest unpaired 9 shows "Waiting for 9"; paired 9s show "<differential> · 9+9".
   - One helper, `countingDifferentials` and `nineHolePairs` in `lib/platform/playerRounds.ts`, feeds every handicap: profile stats, round stats and the handicap summary.
   - This is the classic combine method. Today's WHS instead scores single 9s with an expected score; the owner chose combining.
+
+
+## Edit profile — Instagram-style screen (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; `supabase/profile_edit_v2.sql` RUN in production 2026-11-13, verified; simulator conditionals not added yet)
+
+**What it is:** `/profile/edit` (and its dev copy `/dev/profile/edit`) gets the look of Instagram's Edit profile
+(owner screenshot 2026-11-13): back arrow top-left, "Edit profile" title centered, a **Done** button top-right, then
+the photo + avatar at the top, then flat rows with the label on the left and the value on the right, separated by thin lines.
+Who uses it: any signed-in golfer editing their own profile. Mobile first.
+
+**Top of the screen:** two circles side by side — your **photo** (or initials) and your **avatar** — with
+"Edit picture or avatar" underneath. Tapping it opens a small sheet: Change photo / Remove photo (the same upload Settings
+already uses, `/api/account/photo`). The avatar is automatic (see Avatar below).
+
+**Rows (top to bottom):**
+1. **Name** — type in the row (same rules as today, ≤ 60 characters).
+2. **Username** — type in the row (same rules as today).
+3. **Bio** — type in the row, up to 3 lines / 150 characters (same as today).
+4. **Links** — shows how many links you have and a `>`. Tapping it opens a Links screen: add / edit / remove up to
+   **5 links** (a title + a web address, `https://` only). Links show on your profile under the bio.
+5. **Gender** — shows your choice and a `>`. Choices: Man / Woman / Prefer not to say. **Private: never shown to anyone else.**
+6. **Profile visibility** — Public / Private switch. It's the **same setting** as Settings → Privacy
+   (`profiles.rounds_visibility`), so changing it in either place changes both. Same explanation text.
+
+**Not included (owner said no):** Pronouns, Banners, Reorder grid, AI creator, Public business info / Facebook.
+
+**Owner changes 2026-11-13 (built):** no site header on this screen — "Edit profile" sits at the very top under the
+camera (SiteChrome treats /profile/edit as its own shell); the whole page is solid maroon (maroon-900, light mode too);
+**Done → Save**, dim until something changes, lit gold once you can press it (Name / Username / Bio / Gender).
+
+**Saving:** Name / Username / Bio / Gender save together when you tap **Done**. The back arrow leaves without saving
+(asks "Discard changes?" only if you changed something). Photo, Links and Profile visibility save right away when changed
+(like Settings does today).
+
+**Where data is stored (Supabase):**
+- Name, username, bio, photo, visibility: already exist — no change.
+- **Gender:** new column `profiles.gender` (`man` / `woman` / `prefer_not_to_say` / empty). Only the owner can read it.
+- **Links:** new table `profile_links` (profile, title, url, order). Shown to others only when the profile is Public.
+- New SQL file `supabase/profile_edit_v2.sql` — has to be run in production before this works there.
+
+**Settings page:** unchanged (its Profile / Photo / Privacy boxes keep working alongside this screen).
+
+**Done looks like:** the screen matches the screenshot's layout in our colours and font; each row saves and shows the
+saved value after a reload; Links show on the profile; gender never appears to other people; the visibility switch
+matches Settings; dev preview works with the sample profile; simulator conditionals for the states (saving, errors,
+no photo, no links, 5 links max); type check + tests pass; checked in the browser at phone width.
+
+**Avatar (owner answer 2026-11-13):** the avatar is **your initials in a circle** in the Golf tab's pull-down board style
+(`components/platform/GolfDayBoard.module.css` `.avatar`: thin gold ring, faint gold fill, gold Spectral initials). It's made
+automatically from your name — nothing to pick or upload. **The photo shows when you have one; the avatar shows when you don't.**
+This is the avatar style going forward: it becomes one shared `ProfileAvatar` component (photo-or-initials) used on this screen
+and the profile page now; other screens switch to it later, one at a time, when the owner asks.
+So: **no `avatar_key` column** — "Edit picture or avatar" opens Change photo / Remove photo, and the avatar circle updates
+by itself when you change your name.
+
+## Profile socials — 4 social profiles under the bio (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; `supabase/profile_socials.sql` RUN in production 2026-11-13, verified)
+
+**Owner answers:** pick the app + type your username (no "log in with" connecting); socials **replace** the plain Links
+from the Edit profile build; the profile shows only the socials you added (no reserved empty space).
+
+**What it is:** up to **4 social profiles** per golfer. On the profile they show **under the bio in 2 columns × 2 rows**:
+each box = the app's icon + your @username, tapping opens that profile in a new tab. 1 social = 1 box, 3 = two rows,
+none = nothing (no gap). Someone else's **Private** profile never shows them (same rule as Links today).
+
+**Apps you can pick (preloaded list):** Instagram, Facebook, YouTube, TikTok, LinkedIn, X (Twitter), Threads, Snapchat,
+Strava, and **Website** (any https address, for anything else). Each app can be added once.
+
+**Edit profile:** the **Links** row becomes **Socials** (shows "2 of 4" and `>`). Its screen lists your socials (icon,
+@username, remove) and **+ Add social**, which opens the list of apps; tap one, type your username (or paste your
+profile link — we pull the username out of it), tap Save. When you have 4, + Add social is greyed out. Saves right away,
+like Links does today.
+
+**How the link is made (you only type the username):** instagram.com/<name> · facebook.com/<name> · youtube.com/@<name> ·
+tiktok.com/@<name> · linkedin.com/in/<name> · x.com/<name> · threads.net/@<name> · snapchat.com/add/<name> ·
+strava.com/athletes/<number> · Website = the address you type. Usernames are checked for each app's allowed characters,
+so the link always goes to that app's own site.
+
+**Icons:** simple one-colour icons (gold on maroon) for each app, drawn in our style; no logos from other sites are loaded.
+
+**Where data is stored:** the same `profile_links` table, plus a `platform` column (which app); at most 4 per profile, one
+per app. New SQL file `supabase/profile_socials.sql` (run in production after `profile_edit_v2.sql`, which is already run).
+Any plain link saved before this becomes a "Website" social (and only the first 4 are kept).
+
+**Not included:** real account connecting / verifying it's your account; follower counts; showing socials anywhere
+except the profile.
+
+**Done looks like:** add / remove up to 4 socials in Edit profile (dev preview + live); they show 2×2 under the bio and open
+the right page; Private profiles hide them from others; bad usernames are refused with a plain message; tests for the
+link-building rules + the SQL; checked in the browser.
+
+## Profile search bar + searched-profile views + conditionals (owner request 2026-11-13) — APPROVED + BUILT 2026-11-13 (uncommitted; no SQL; Private profiles show bio + socials — owner approved the spec as written)
+
+**Already built (unchanged):** search finds golfers by name or @username, Public and Private profiles both (never Pending
+or closed accounts); tapping one opens `/profile/<username>`; someone else's Private profile hides the tabs.
+
+**Changes:**
+1. **Search bar at the top.** Tapping the search icon on your profile slides a search bar down at the very top of the
+   screen (no new page): a text box ("Search name or @username") + Cancel. As you type (2+ letters) the results list drops
+   down under it: photo / avatar, name, @username, a small "Private" tag on Private profiles, and the friend button
+   (Add friend / Requested / Accept / Friends) like today. Tap a result → their profile. Nothing typed yet → your waiting
+   friend requests (Accept / Decline), which used to be on the separate Find Golfers page. Cancel closes it.
+   `/profile/search` stays working (old links) but the profile no longer goes there.
+2. **Someone else's profile (searched up):**
+   - **Public:** the whole profile — top (photo, name, @username, Friends · Rounds · Handicap, bio, socials) and the bottom
+     (Overview, Rounds, Stats). Same as today.
+   - **Private:** **the whole top shows** — photo, name, @username, Friends · Rounds · Handicap, **bio and socials** (new:
+     today bio and socials are hidden on Private profiles). **The bottom shows only "Private Profile"** — no Overview,
+     Rounds or Stats tabs, no rounds, no stats. Golf trips are never shown to others either way.
+   - Your own profile always shows everything (it's yours).
+3. **Simulator conditionals (Profile group)**, all on the sample profile, no sign-in:
+   - My profile · sample stats / not enough rounds / no rounds (already there)
+   - **Search open · nothing typed (friend requests)** · **Search · results** · **Search · no results**
+   - Someone else's **Public** profile · Someone else's **Private** profile (already there, now with the new top/bottom rules)
+   The dev search searches a handful of sample golfers (Public and Private) so it works without a real account.
+
+**Where data is:** no database changes for search. Showing bio + socials on Private profiles is a rule change in the
+profile read model (`lib/profile/profileReadModel.ts`), not SQL.
+
+**Done looks like:** search bar opens/closes at the top, finds Public and Private golfers, opens their profile; Private
+profiles show the full top and only "Private Profile" below; the new conditionals switch each state in the simulator;
+tests for the privacy rule; checked in the browser.
+
+**Question for the owner:** confirm Private profiles should show the **bio and socials** to everyone (the top part), or
+keep those hidden and show only photo, name, @username and the numbers.
+
+## Instagram-style Search page + other people's profiles (owner request 2026-11-18) — APPROVED + BUILT 2026-11-19 (uncommitted; `supabase/profile_suggestions.sql` NOT run in production; FindGolfers.tsx no longer used)
+
+**Goal:** looking people up and viewing their profile should feel like Instagram, in our maroon / cream / gold look.
+
+### 1. Search page (`/profile/search`, dev copy `/dev/profile/search`)
+Its own page (replaces the drop-down search bar from 2026-11-13). The profile's 🔍 icon goes here.
+- **Top:** back arrow, then a rounded search box ("Search"), with Cancel while typing.
+- **Before you type:**
+  - **Friend requests** (if any) — Accept / Decline, as today.
+  - **Recent** — the last golfers you opened from search, newest first, each with an × to remove, and "Clear all".
+    Saved on this phone only (not in the database).
+  - **Suggested for you** — a handful of golfers you're not friends with yet, each with avatar, name, @username and an
+    **Add friend** button. Shuffled each time you open the page. (See question A for who counts.)
+- **After you type 2+ letters:** the results list drops in, Instagram-style rows: avatar, **@username** in bold, name under
+  it in grey, a 🔒 on Private profiles, and the friend button on the right. Public and Private both show.
+- **No results:** "No results for "…"".
+
+### 2. Someone else's profile — Instagram layout (`/profile/<username>`, dev `/dev/profile?view=public|private`)
+- **Top bar:** back arrow (left), their **@username** centred, nothing on the right.
+- **Header:** avatar (photo, else initials avatar) on the left; **Rounds · Friends · Handicap** to its right; then their
+  **name** (bold), **bio**, and **socials** (2 × 2) underneath — like Instagram's name/bio block.
+- **Buttons row (full width):** **Add friend** (gold; becomes Requested / Accept / Friends ✓) and **Compare** (opens the
+  stats comparison with you, Public profiles only).
+- **Public:** then the tabs **Overview · Rounds · Stats** and their content, as today.
+- **Private:** the same top bar, header and buttons; then a line and a centred 🔒 **Private Profile** — nothing else
+  (no tabs, rounds or stats). (See question B.)
+- Your **own** profile keeps its current look (edit, search, settings).
+
+### 3. Simulator conditionals (Profile group, no sign-in)
+- Search · **before typing** (requests, recents, suggestions)
+- Search · **2 letters typed** → results (Public + Private mixed)
+- Search · **no results**
+- **Public profile** (Instagram layout) · **Private profile** (Instagram layout)
+The dev sample grows to ~10 sample golfers (mix of Public and Private, some with photos-less avatars) so suggestions and
+results look real.
+
+### Data
+- Recents: this device only (browser storage).
+- Suggestions (live): **needs one small read-only SQL function** (`suggest_golfers`) that picks random active profiles
+  you aren't friends with — never Pending or closed accounts. Dev uses the sample golfers.
+- Nothing else changes in the database.
+
+### Done looks like
+Search page before / typing / no results all work in dev without signing in; tapping a golfer opens their profile with
+the back arrow; Public and Private profiles match the layout above; conditionals switch each state; tests; browser-checked.
+
+### Owner answers (2026-11-19)
+- **Suggestions:** people you may know first (friends of your friends, then golf-trip mates), topped up with random golfers.
+- **Private profile:** the top shows **without the Friends count** (Rounds · Handicap only). The bottom shows the three
+  tabs **Overview · Rounds · Stats greyed out and not tappable**, and under them 🔒 **Private Profile**. No rule change:
+  friends still can't open a Private profile.
+
+## Simulator: swipe through every screen (owner request 2026-11-19) — SPEC, awaiting approval
+
+**What it is:** in the dev simulator (`/dev`), step through screens one after another instead of clicking each page and
+condition. A "screen" = one page in one of its states (each page's Conditionals count as separate screens; a page with
+no conditionals is one screen).
+
+**How you move:**
+- **‹ and › buttons** under the phone, with a counter, e.g. "4 / 11 · Search (sample) · 2 letters typed".
+- **← / → arrow keys** on the keyboard.
+- **Swipe left / right** on the strip under the phone (the phone itself stays tappable, so you can still use the screen).
+- A switch **This group / All groups**: step through just the group you're in (e.g. Profile), or every page in the app.
+  At the end it wraps around to the start.
+
+**Not changed:** clicking pages / conditions still works the same; nothing outside `/dev` changes. Dev only, no database.
+
+**Done looks like:** ‹ › / arrow keys / swipe go through every screen of the Profile group in order and all groups when
+switched; the counter and the highlighted page/condition match the phone; tested in the browser.
+
+## Settings redo (owner request 2026-11-19) — APPROVED + BUILT 2026-11-19 (uncommitted; `supabase/profile_preferences.sql` NOT run in production)
+
+**Rule (owner, 2026-11-19):** the **pencil = Edit profile only** (photo, name, username, bio, socials, gender, Private
+profile — unchanged). **Settings (the gear)** = your account and how the app behaves. Nothing appears in both.
+
+### Settings (gear) — new contents, top to bottom
+0. **Account** — **Email** (shown, not editable) · **Password** › (Change password, as today) · **Devices** › (where you're
+   signed in, as today).
+1. **Notifications** — a switch for each: Friend requests · Trip invites · Draft starting · Your turn to pick · Scores
+   posted · Chat messages; each with **Push** and **Email**. Saved to your account.
+   *Honest note:* today only friend-request **emails** are actually sent; the rest are saved now and used as each alert is
+   built (phone push comes with the App Store app).
+2. **Golf preferences** — **Distance:** Yards / Meters · **Usual tees:** e.g. Blue / White / Gold (new rounds start on
+   these when the course has them) · **Score entry:** Simple (strokes only) / Full (strokes, putts, fairways, greens).
+   Saved to your account; each scoring / GPS screen reads them as it's updated.
+3. **Appearance** — Dark / Light (as today).
+4. **Organizer** — shown to **everyone** (owner answer A): what your settings look like when you organize. Items:
+   **Organizer offers** (tournament hand-offs waiting for you, else "No offers right now") · **Content team** (works for
+   content admins; for everyone else it shows greyed with "For content admins"). A line at the top: "When you organize a
+   tournament or trip, your organizer tools live here."
+5. **Help & legal** — **Contact us** (the existing /contact page) · **Terms of Service** · **Privacy Policy** (both
+   **"Coming soon"** for now — owner answer B; writing them is on the to-do list, readiness checklist #49) · **App version**.
+6. **Sign out**, then **Delete account** (red, at the very bottom).
+
+**Removed from Settings:** Profile photo, Name / Username / Bio, Privacy (all already in Edit profile).
+
+### Data
+New SQL `supabase/profile_preferences.sql`: one row per profile — notification switches + distance + usual tees + score
+entry; only the owner's server code reads / writes it. Friend-request emails start respecting the Email switch.
+
+### Dev
+`/dev/profile/settings` and `/dev/profile/edit` show the new layouts on the sample profile; simulator conditionals for
+Settings (default, notifications all off, organizer with an offer / without).
+
+### Done looks like
+Each Settings switch / choice saves and is still set after a reload (dev + live); Account rows work from Settings;
+nothing appears in both places; tests (incl. SQL); browser-checked.
+

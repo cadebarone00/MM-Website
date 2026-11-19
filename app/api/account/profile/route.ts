@@ -7,7 +7,7 @@ import { finishProfileSetup } from "@/lib/profile/profileInitialization";
  * POST  = Finish profile setup ({ displayName, username }) for a signed-in, verified login whose profile is missing or
  *         incomplete (Accounts V2: initialize, then set name + username). Calling it again once the profile is
  *         complete just returns that profile's username (nothing is created or overwritten).
- * PATCH = Edit my profile ({ displayName?, username?, bio? }).
+ * PATCH = Edit my profile ({ displayName?, username?, bio?, gender? }).
  * Who it is always comes from the session; nothing in the body can choose the profile.
  * Website cookie or app Bearer token (Phase 7B, lib/account/selfServiceRequest.ts); private, never cached.
  */

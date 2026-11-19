@@ -2,9 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 import { DEFAULT_SAMPLE_PROFILE, type SampleProfileEdits } from "@/lib/dev/sampleProfile";
+import { GENDERS } from "@/lib/profile/profileEdit";
+import { profileSocialsFromRows } from "@/lib/profile/profileSocials";
+import { preferencesFromRow } from "@/lib/profile/preferences";
 
 /** DEV ONLY: the sample profile's edits (Settings, Edit profile), one per browser tab (sessionStorage). Never a real account. */
-const KEY = "maroon-dev-sample-profile-v1";
+const KEY = "maroon-dev-sample-profile-v2";
 const listeners = new Set<() => void>();
 let state: SampleProfileEdits | null = null;
 
@@ -16,6 +19,9 @@ function parse(raw: string | null): SampleProfileEdits {
       displayName: text(value.displayName, DEFAULT_SAMPLE_PROFILE.displayName), username: text(value.username, DEFAULT_SAMPLE_PROFILE.username),
       bio: text(value.bio, DEFAULT_SAMPLE_PROFILE.bio), photoUrl: typeof value.photoUrl === "string" && value.photoUrl.startsWith("data:image/") ? value.photoUrl : null,
       visibility: value.visibility === "public" ? "public" : "private",
+      gender: GENDERS.find((g) => g.value === value.gender)?.value ?? "",
+      preferences: preferencesFromRow(value.preferences),
+      links: Array.isArray(value.links) ? profileSocialsFromRows(value.links) : DEFAULT_SAMPLE_PROFILE.links,
     };
   } catch { return DEFAULT_SAMPLE_PROFILE; }
 }

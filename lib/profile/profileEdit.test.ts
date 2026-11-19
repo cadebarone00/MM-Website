@@ -35,3 +35,12 @@ test("bio: 3 lines and 150 characters at most; typing past that is trimmed", asy
   assert.equal(limitBio("1\n2\n3\n4\n5"), "1\n2\n34 5");
   assert.equal(limitBio("x".repeat(200)).length, 150);
 });
+
+test("edit takes gender (Man / Woman / Prefer not to say, or empty to clear) and refuses anything else", () => {
+  assert.deepEqual(profileEditFromBody({ gender: "woman" }), { ok: true, input: { gender: "woman" } });
+  assert.deepEqual(profileEditFromBody({ gender: "" }), { ok: true, input: { gender: "" } });
+  for (const gender of ["robot", "Man", null, 3]) {
+    const r = profileEditFromBody({ gender });
+    assert.equal(!r.ok && r.field, "gender", String(gender));
+  }
+});

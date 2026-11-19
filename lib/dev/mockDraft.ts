@@ -103,11 +103,17 @@ export function mockPick(store: MockDraftStore, viewer: MockViewer, player: stri
     completed: !!store.draft.completedAt, settings: store.settings, player, pickNumber, picksSoFar: store.draft.picks.length });
   if (error) return { store: log(store, { who, text: `Tried to draft ${nameOf(store, player)} — refused: ${error}`, ok: false, kind: kind === "probe" ? "probe" : "refused" }), error };
   const pick: DraftPick = { pickNumber, profileId: player, team: board.turn!, pickedBy: id, pickedAt: new Date(Date.UTC(2027, 3, 20, 18, pickNumber)).toISOString() };
-  let next = log({ ...store, draft: { ...store.draft, picks: [...store.draft.picks, pick] } }, { who, text: `Drafted ${nameOf(store, player)} → Team ${teamLetter(board.turn!)}`, ok: true, kind: "pick" });
-  const after = boardOf(next);
-  if (after.done) next = log({ ...next, submittedTeams: draftTeamsAsSetup(after, next.members), draft: { ...next.draft, completedAt: new Date(Date.UTC(2027, 3, 20, 19)).toISOString() } },
-    { who: "Server", text: `Draft complete — teams saved (${after.teams.map((team, index) => `${teamLetter(index)}: ${team.map(member => nameOf(next, member)).join(", ")}`).join(" · ")})`, ok: true, kind: "complete" });
+  const next = log({ ...store, draft: { ...store.draft, picks: [...store.draft.picks, pick] } }, { who, text: `Drafted ${nameOf(store, player)} → Team ${teamLetter(board.turn!)}`, ok: true, kind: "pick" });
   return { store: next, error: null };
+}
+
+export function mockDraftControl(store: MockDraftStore, viewer: MockViewer, action: "reset" | "confirm"): { store: MockDraftStore; error: string | null } {
+  if (mockViewerId(store,viewer) !== store.organizer) return { store, error: "Only the organizer can reset or confirm." };
+  if (store.draft.completedAt) return { store, error: "Selections are already confirmed." };
+  if (action === "reset") return { store: { ...store, submittedTeams: null, draft: { startedAt: null, completedAt: null, picks: [] } }, error: null };
+  const board = boardOf(store);
+  if (!board.done || !store.draft.startedAt) return { store, error: "Complete all selections first." };
+  return { store: { ...store, submittedTeams: draftTeamsAsSetup(board,store.members), draft: { ...store.draft, completedAt: new Date().toISOString() } }, error: null };
 }
 
 /** The viewer who should act now, and who shouldn't (for probes and "Next pick automatically"). */
@@ -196,7 +202,7 @@ export function mockDraftTransport(preset: MockDraftPresetId, viewer: MockViewer
     load: async () => ({ ok: true, body: mockRead(readMockDraft(preset), viewer) as unknown }),
     send: async (payload: Record<string, unknown>) => {
       const store = readMockDraft(preset);
-      const result = payload.action === "start" ? mockStart(store, viewer) : mockPick(store, viewer, String(payload.player), Number(payload.pickNumber));
+      const result = payload.action === "reset" || payload.action === "confirm" ? mockDraftControl(store,viewer,payload.action) : payload.action === "start" ? mockStart(store, viewer) : mockPick(store, viewer, String(payload.player), Number(payload.pickNumber));
       writeMockDraft(result.store);
       return result.error ? { ok: false, body: { error: result.error } as unknown } : { ok: true, body: mockRead(result.store, viewer) as unknown };
     },

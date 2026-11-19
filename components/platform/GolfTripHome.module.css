@@ -257,17 +257,17 @@
 .itineraryDayStep{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
 .itineraryDayStep:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Info → Itinerary: each plan is a raised cream box (same look as Competition → Format round boxes). */
-.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(201,168,110,.6);border-radius:18px;background:radial-gradient(ellipse at 50% 0,rgba(94,20,40,.16),transparent 75%),#fbf8f1;color:var(--color-maroon-650);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 -1px 0 rgba(94,20,40,.08),0 8px 24px rgba(36,0,1,.22)}
-.itineraryBoxTime{overflow-wrap:anywhere;color:#805b24;font:500 13px/1.2 var(--font-barlow),sans-serif}
-.itineraryBoxKind{color:#805b24;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
-.itineraryBoxTitle{color:var(--color-maroon-650);font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
+.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(251,248,241,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(251,248,241,.12),transparent 70%),#240001;color:var(--lm-ink-fbf8f1);box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+.itineraryBoxTime{overflow-wrap:anywhere;color:#d4bfa9;font:500 13px/1.2 var(--font-barlow),sans-serif}
+.itineraryBoxKind{color:#d4bfa9;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.itineraryBoxTitle{color:var(--lm-ink-fbf8f1);font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
 .itineraryBoxTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .itineraryBoxTop .itineraryBoxKind{flex:none;text-align:right}
 /* Itinerary box: a header (time left, type right) in bigger maroon text over a line, the details under it; slimmer padding. */
 .itineraryBox.itineraryBox{gap:4px;padding:10px 14px}
-.itineraryBoxTop.itineraryBoxTop{align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid color-mix(in srgb,var(--color-maroon-650) 20%,transparent)}
-.itineraryBoxTop .itineraryBoxTime{color:var(--color-maroon-650);font:700 16px/1.2 var(--font-spectral),Georgia,serif}
-.itineraryBoxTop .itineraryBoxKind{color:var(--color-maroon-650);font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
+.itineraryBoxTop.itineraryBoxTop{align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid rgba(251,248,241,.22)}
+.itineraryBoxTop .itineraryBoxTime{color:var(--lm-ink-fbf8f1);font:700 16px/1.2 var(--font-spectral),Georgia,serif}
+.itineraryBoxTop .itineraryBoxKind{color:var(--lm-ink-fbf8f1);font:700 13px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em}
 /* Itinerary boxes are buttons that open the plan's sheet. */
 button.itineraryBox{box-sizing:border-box;min-width:0;width:100%;text-align:left;font:inherit;cursor:pointer}
 button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
@@ -312,7 +312,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
    Home / Golf / Venue / Info tabs sit in the same spot for one- and two-line names. Longer names stop at two lines with "…". */
 .title.title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;box-sizing:content-box;min-height:0;height:calc(2 * 1.1em);font-size:23px;align-content:center}
 /* Itinerary tab: "+ Add" pill centered right under the Itinerary tab (the 4th of the main tabs). */
-.itineraryAddRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:-14px;margin-bottom:-14px}
+.body.itineraryBody{margin-top:8px}
+.itineraryAddRow{display:flex;justify-content:flex-end;margin:0}
 .itineraryAddPill{grid-column:4;justify-self:center;display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .itineraryAddPill:focus-visible{outline:2px solid var(--lm-ink-fbf8f1);outline-offset:2px}
 /* Itinerary golf rounds: Sit out then Play (green) side by side in the header row, level with the tee time and inside
@@ -321,18 +322,18 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .itineraryBox[data-round=true] .itineraryBoxTop{padding-right:132px;min-height:24px}
 .rsvpButtons{position:absolute;top:9px;right:12px;display:flex;gap:6px}
 .rsvpPlay,.rsvpSit{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:24px;min-height:0;padding:0 10px;border-radius:999px;font:700 12px/1 var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
-.rsvpPlay{border:1.5px solid #2e7d32;background:transparent;color:#2e7d32}
+.rsvpPlay{border:1.5px solid #7fd39a;background:transparent;color:#7fd39a}
 .rsvpPlay[aria-pressed=true]{background:#2e7d32;color:#fff}
-.rsvpSit{border:1.5px solid #c62828;background:transparent;color:#c62828}
+.rsvpSit{border:1.5px solid #ff9a9a;background:transparent;color:#ff9a9a}
 .rsvpSit[aria-pressed=true]{border-color:#c62828;background:#c62828;color:#fff}
 .rsvpPlay:focus-visible,.rsvpSit:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Playing: a green tag bottom right. Sitting out: the box shows only its top row (no line, course or round). */
 .itineraryBox[data-rsvp=in]{position:relative;padding-bottom:28px}
-.itineraryPlaying{position:absolute;right:14px;bottom:10px;color:#2e7d32;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.itineraryPlaying{position:absolute;right:14px;bottom:10px;color:#7fd39a;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .itineraryBox[data-rsvp=out] .itineraryBoxTop.itineraryBoxTop{padding-bottom:0;margin-bottom:0;border-bottom:0}
 /* Play / Sit out and "Playing" in the box's own font (Spectral, like the tee time and course); locked once tee times start. */
 .rsvpPlay.rsvpPlay,.rsvpSit.rsvpSit{font:700 13px/1 var(--font-spectral),Georgia,serif}
-.itineraryInvitedBy{color:#8a6b3a;font:600 12px/1.3 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.itineraryInvitedBy{color:#d4bfa9;font:600 12px/1.3 var(--font-barlow),sans-serif;letter-spacing:.04em}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
@@ -354,17 +355,21 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .homeCompetition{display:grid;gap:10px;margin-top:10px}
 /* Golf → Team: a pill per round ("Round 1"…), 4 across with the 5th peeking in at the edge so you can tell it scrolls;
    the picked round's course · format under them. */
-.roundPicker{margin:0}
-.roundPills{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px}
+.roundPicker{margin:0 0 -4px}
+.roundSelector{padding:2px 4px;overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.roundPills{position:relative;isolation:isolate;display:flex;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:0}
+.roundPills::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:0;bottom:0;left:0;width:calc(100% / 4.4);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transform:translateX(calc(var(--round-index,0) * 100%));transition:transform 220ms ease;pointer-events:none}
 .roundPills::-webkit-scrollbar{display:none}
-.roundPill{flex:0 0 calc((100% - 4 * 6px) / 4.4);scroll-snap-align:start;box-sizing:border-box;white-space:nowrap;height:32px;padding:0 6px;border:1px solid rgba(201,168,110,.45);border-radius:999px;background:transparent;color:#d4bfa9;font:700 13px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
-.roundPillActive{border-color:#edcf91;background:#edcf91;color:var(--color-maroon-900)}
+.roundPill{flex:0 0 calc(100% / 4.4);scroll-snap-align:start;box-sizing:border-box;white-space:nowrap;height:26px;padding:0 6px;border:0;border-radius:12px;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font:700 12px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.roundPillActive{color:var(--lm-ink-dcc495);text-shadow:0 0 8px rgba(220,196,149,.25)}
+.roundPills:has(.roundPill:focus-visible){outline:2px solid #edcf91;outline-offset:-2px;border-radius:12px}
+@media(prefers-reduced-motion:reduce){.roundPills::before{transition:none}}
 .roundPill:focus-visible{outline:2px solid #edcf91;outline-offset:2px}
 /* Under the pills: course left-aligned, format right-aligned (owner 2026-11-10). */
-.roundPickerInfo{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:10px 0 0 !important;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fbf8f1}
-.roundPickerCourse,.roundPickerFormat{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.roundPickerCourse{text-align:left}
-.roundPickerFormat{flex:none;max-width:50%;text-align:right}
+.roundPickerInfo{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;box-sizing:border-box;min-height:0;margin:5px 0 0 !important;padding:4px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fbf8f1;text-align:center}
+.roundPickerCourse,.roundPickerFormat{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.roundPickerCourse{width:100%}
+.roundPickerFormat{font-size:13px;color:var(--lm-ink-dcc495)}
 /* Invite players: the link in a dark pill + Copy link, then one status line. Fixed height in every state. */
 .homeInviteRow{display:flex;align-items:center;gap:8px;height:42px;margin-top:10px;padding:0 4px 0 12px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 35%,transparent);border-radius:12px;background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent)}
 .homeInviteLink{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 13px/1 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 80%,transparent);user-select:all}
@@ -394,10 +399,6 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .golfTopSize:has([data-points-open]) section{height:auto}
 
 /* Predict pull-up: 85% tall over the same tinted blur as the Bell / chat sheets (owner 2026-11-13). */
-.predictSheet{position:fixed;inset:15dvh 0 0;height:85dvh;width:100%;max-width:560px;max-height:none;box-sizing:border-box;margin:0 auto;padding:16px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent);border-bottom:0;border-radius:20px 20px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:auto;animation:predictSheetUp .25s ease-out}
-.predictSheet::backdrop{background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);backdrop-filter:blur(4px);animation:sheetFade .25s ease both}
-@keyframes predictSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.predictSheet{animation:none}}
 
 .standingsNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;height:50px;margin:10px calc(-1 * var(--page-gutter));padding:8px var(--page-text-inset);border-block:1px solid #dcc49566;color:var(--lm-ink-dcc495);font:500 13px/1.35 var(--font-barlow),sans-serif}
 .standingsNotice strong{font-weight:700}
@@ -406,7 +407,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .standingsNotice button{flex:none;padding:6px 10px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:inherit;font:700 12px var(--font-barlow),sans-serif;cursor:pointer}
 
 /* The active round replaces its green participation label with red Live. */
-.itineraryPlaying[data-live=true]{color:#c62828}
+.itineraryPlaying[data-live=true]{color:#ff9a9a}
 /* Predict and Player Stats both off: nothing under the team scores, so the board shrinks to fit them. */
 .golfTop:has([data-board-compact]){--golf-board-height:100px}
 /* Predict on, Player Stats off: team scores, the win bar and the Predict button only, so the board is shorter. */
@@ -432,8 +433,10 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .sectionTabs.golfBoardTabs{gap:0}
 .sectionTabs.golfBoardTabs .tab{position:relative;flex:1 1 0;min-height:26px;margin:3px 2px;padding:0 2px;font-size:13.5px;border:1px solid transparent;border-radius:0;background:transparent;color:var(--lm-ink-dcc495)}
 .sectionTabs.golfBoardTabs .tab[aria-selected=true]{color:var(--lm-ink-dcc495);background:transparent;border-color:transparent}
-.sectionTabs.golfBoardTabs .tab::after{display:block;left:50%;right:auto;bottom:0;width:30px;height:2px;transform:translateX(-50%);border-radius:999px;background:var(--lm-ink-dcc495);opacity:0}
-.sectionTabs.golfBoardTabs .tab[aria-selected=true]::after{opacity:1;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45)}
+.sectionTabs.golfBoardTabs .tab::after{display:none}
+.golfTabLabel{position:relative;display:inline-block}
+.golfTabLabel::after{content:"";position:absolute;left:50%;bottom:-6px;width:70%;height:2px;transform:translateX(-50%);border-radius:999px;background:var(--lm-ink-dcc495);opacity:0}
+.sectionTabs.golfBoardTabs .tab[aria-selected=true] .golfTabLabel::after{opacity:1;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45)}
 
 /* Draft remains first under the Big Board for team competitions. */
 .homeDraft .accountHeading{margin-top:6px !important;margin-bottom:10px}
@@ -452,3 +455,30 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .homeTeamName span:last-child{font-variant-numeric:tabular-nums;font-size:13px}
 /* After the team draft (teams set) with no Match Selection coming up, the draft area has nothing in it: hide it. */
 .homeDraft:has(.homeCompetition:empty){display:none}
+
+/* Golf sections (Board · Games · Stats · Predict), owner 2026-11-13: the Team / Indi sliding pill, for any number of sections.
+   --count = how many, --index = the picked one (set inline). */
+.golfSectionSelector{grid-template-columns:repeat(var(--count,2),minmax(0,1fr))}
+.golfSectionSelector::before{width:calc((100% - 8px)/var(--count,2));transform:translateX(calc(var(--index,0)*100%))}
+.golfSectionSelector[data-none=true]::before{opacity:0}
+.golfSectionSelector .tab{padding:4px 2px;white-space:nowrap}
+.golfSectionSelector .tab[aria-selected=true]{background:transparent;color:var(--lm-ink-dcc495);text-shadow:0 0 8px rgba(220,196,149,.25)}
+/* Team / Indi and Active / Settled (owner 2026-11-13): no bubble, just a gold line under the picked side that slides
+   across, over a faint full-width line. */
+.slidingSelector.underlineSelector{padding:0;border:0;border-radius:0;background:transparent;box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--lm-ink-dcc495) 25%,transparent)}
+.slidingSelector.underlineSelector::before{top:auto;bottom:0;left:0;width:50%;height:2px;border:0;border-radius:1px;background:var(--lm-ink-dcc495);box-shadow:none}
+.slidingSelector.underlineSelector .tab{min-height:36px;border-radius:0;font-size:13px}
+/* Team / Indi only (owner 2026-11-13, later): keep the bubble around both, and the picked one gets just a short glowing gold
+   line under its word (no box). The line slides between them. */
+.slidingSelector.underlineSelector.bubbleUnderline{padding:2px 4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:none}
+.slidingSelector.underlineSelector.bubbleUnderline::before{bottom:6px;left:calc(4px + (100% - 8px)/4 - 18px);width:36px;border-radius:999px;transform:none;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45);transition:left 220ms ease}
+.slidingSelector.underlineSelector.bubbleUnderline[data-second=true]::before{left:calc(4px + 3*(100% - 8px)/4 - 18px)}
+.slidingSelector.underlineSelector.bubbleUnderline .tab{min-height:26px;padding-block:2px}
+.slidingSelector.underlineSelector.bubbleUnderline::before{bottom:3px}
+@media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline::before{transition:none}}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector{border-radius:12px}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector::before{left:4px;right:4px;bottom:0;width:auto;height:2px;transform:none;border-radius:0;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);box-shadow:none;transition:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector[data-second=true]::before{left:4px;transform:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{display:block;left:10%;right:10%;bottom:-3px;height:2px;border-radius:0;background:#dcc495;box-shadow:none;opacity:0;transition:opacity .15s ease}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab[aria-pressed=true]::after{opacity:1}
+@media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{transition:none}}

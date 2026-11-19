@@ -147,3 +147,52 @@ div.gameSheet{bottom:0;width:min(100%,560px);max-height:none;padding-bottom:0;bo
 /* Team picks (Vegas by hole, and pre-round teams): name, then ← →, like Daytona. */
 .daytona .arrowRow.teamPickRow.teamPickRow{grid-template-columns:minmax(0,1fr) 36px 36px}
 .middleM{font:800 14px/1 var(--font-barlow),sans-serif}
+/* New game (owner request 2026-11-13): the app's pull-up look. A maroon sheet 85% of the screen tall slides up over the
+   dimmed, blurred page (like Chats / the Bell); tap outside or X to close. Choices use the dark-card style: gold when picked. */
+div:has(> .newGameSheet){background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+div.gameSheet.newGameSheet{inset:auto 0 0;margin:0 auto;transform:none;width:min(100%,560px);height:85vh;height:85dvh;padding:26px 16px 0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-bottom:0;border-radius:28px 28px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);box-shadow:0 -12px 60px #0006;animation:newGameUp .38s cubic-bezier(.22,1,.36,1) both}
+div.gameSheet.newGameSheet::before{content:"";position:absolute;top:9px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:rgba(220,196,149,.45)}
+@keyframes newGameUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){div.gameSheet.newGameSheet{animation:none}}
+.newGameSheet .sheetBody{color:var(--lm-ink-fbf8f1)}
+.newGameSheet .sheetTitle{color:var(--lm-ink-ffffff)}
+.newGameSheet .sheetSetting>span{font-size:12px;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
+.newGameSheet .sheetChoices button{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);border-color:color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent);color:var(--lm-ink-ffffff)}
+.newGameSheet .sheetChoices button[aria-pressed=true]{background:#dcc495;border-color:var(--lm-ink-dcc495);color:var(--brand-2a0d16)}
+.newGameSheet .sheetChoices button:disabled{opacity:.4;cursor:default}
+.newGameSheet .sheetPlayer{border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);background:color-mix(in srgb,var(--lm-ink-ffffff) 5%,transparent)}
+.newGameSheet .sheetPlayer input{accent-color:#dcc495}
+.newGameSheet .sheetPlayer small,.newGameSheet .sheetHint{color:var(--lm-ink-dcc495)}
+.newGameSheet .gameOption .sheetGame{border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 20%,transparent);background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent);color:var(--lm-ink-ffffff)}
+.newGameSheet .gameOption .sheetGame:hover{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent)}
+.newGameSheet .gameOption .sheetGame[aria-pressed=true]{border:1px solid var(--lm-ink-dcc495);background:#dcc495;color:var(--brand-2a0d16)}
+.newGameSheet .gameInfo{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent);color:var(--lm-ink-dcc495)}
+.newGameSheet .gameOption:has(.sheetGame[aria-pressed=true]) .gameInfo{border-color:color-mix(in srgb,var(--brand-2a0d16) 50%,transparent);color:var(--brand-2a0d16)}
+.newGameSheet .sheetFooter{background:linear-gradient(to top,var(--lm-bg-240001) 75%,transparent)}
+.newGameSheet .createButton{background:#dcc495;color:var(--brand-2a0d16)}
+.newGameSheet .createButton small{color:color-mix(in srgb,var(--brand-2a0d16) 70%,transparent)}
+.newGameSheet .createArrow{background:var(--brand-2a0d16);color:#dcc495}
+.newGameSheet .createPrompt{border-color:color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent);background:color-mix(in srgb,var(--lm-ink-ffffff) 4%,transparent);color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent)}
+/* New game layout (owner request 2026-11-13): round and game steppers like the Golf tab's course header (small gold
+   line over a big serif name, < > either side), two switches side by side, players, then Set game (dim until ready). */
+.stepper{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:6px;padding:10px 0 12px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 14%,transparent);text-align:center}
+.stepArrow{display:grid;place-items:center;min-height:44px;padding:0;border:0;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
+.stepArrow:disabled{opacity:.3;cursor:default}
+.stepArrow:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:6px}
+.stepText{display:grid;gap:3px;min-width:0}
+.stepText p{margin:0;font:500 12.4px/1.15 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent)}
+.stepText strong{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;font:700 18px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stepText .gameInfo{flex:none}
+.switchRow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.switchCell{display:grid;gap:6px;justify-items:start}
+.switchCell>span{font:700 12px var(--font-barlow),sans-serif;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
+.newGameSwitch{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0;border:0;background:transparent;color:var(--lm-ink-fbf8f1);font:600 13px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.newGameSwitch:disabled{opacity:.4;cursor:default}
+.newGameSwitch:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px;border-radius:999px}
+.newGameTrack{display:flex;align-items:center;width:44px;height:26px;padding:2px;box-sizing:border-box;border-radius:999px;background:color-mix(in srgb,var(--lm-ink-ffffff) 22%,transparent);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:background .15s ease}
+.newGameTrack[data-on=true]{justify-content:flex-end;background:#dcc495}
+.newGameThumb{width:22px;height:22px;border-radius:50%;background:#f9f5ef;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.setGame{width:100%;min-height:54px;border:0;border-radius:16px;background:#dcc495;color:var(--brand-2a0d16);font:800 17px var(--font-barlow),sans-serif;cursor:pointer}
+.setGame:disabled{background:color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);color:color-mix(in srgb,var(--lm-ink-ffffff) 45%,transparent);cursor:default}
+.setGame:not(:disabled):active{transform:scale(.98)}
+.setGame:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}

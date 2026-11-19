@@ -1,0 +1,4 @@
+/* The avatar (owner rule 2026-11-13): your photo, or your initials in the Golf tab pull-down board's style
+   (components/platform/GolfDayBoard.module.css .avatar) — thin gold ring, faint gold fill, gold Spectral initials. */
+.avatar{display:grid;place-items:center;flex:none;overflow:hidden;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:rgba(220,196,149,.12);color:var(--lm-ink-dcc495);font-family:var(--font-spectral),Georgia,serif;font-weight:600;line-height:1}
+.avatar img{width:100%;height:100%;object-fit:cover}

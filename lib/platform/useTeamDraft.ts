@@ -26,6 +26,8 @@ export type LiveTeamDraft = {
   message: string;
   busy: boolean;
   start: () => Promise<void>;
+  reset: () => Promise<void>;
+  confirm: () => Promise<void>;
   pick: (profileId: string) => Promise<void>;
 };
 
@@ -90,6 +92,8 @@ export function useTeamDraft(tripId: string | null, open: boolean, transport?: T
   return {
     data, message, busy,
     start: () => send({ action: "start" }),
+    reset: () => send({ action: "reset" }),
+    confirm: () => send({ action: "confirm" }),
     pick: (profileId: string) => send({ action: "pick", player: profileId, pickNumber: (data?.draft.picks.length ?? 0) + 1 }),
   };
 }

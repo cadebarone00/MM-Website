@@ -141,3 +141,72 @@ button.vsBox{cursor:pointer}
 .controlButtons{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
 .clearSpot{margin:10px 0 0;padding:6px 10px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 50%,transparent);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:600 11px var(--font-barlow),sans-serif;cursor:pointer}
 .placedTag{font:500 11px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495)}
+
+/* Team Draft Room + countdown centered on the screen (owner 2026-11-13): equal side columns, whatever sits in the corners. */
+.headerCompact{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.headerCompact .cornerControls,.headerCompact .cornerControls .startDraft{max-width:100px}
+.headerCompact .backPlain{display:grid;place-items:center;width:44px;height:44px;margin-left:-10px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:var(--lm-ink-fbf8f1)}
+.headerCompact .backPlain:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
+.headerCompact.teamHeader{align-items:start}
+.teamHeader .titleBlock{padding-top:10px}
+.teamHeader .cornerControls{min-height:44px;justify-content:center}
+.teamHeader .countdownPill{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:32px;width:100%;margin:6px 0 0;padding:6px 10px;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.2),transparent 70%),#240001;color:var(--lm-ink-dcc495);font:700 13px/1.2 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums}
+.countdownStart{cursor:pointer}
+.countdownStart:disabled{opacity:.45;cursor:default}
+
+/* Under the room countdown (owner 2026-11-13): organizer's "Start Draft Now" (plain words, no pill) / everyone else's "Waiting To Start". One fixed line. */
+.startLine{display:flex;align-items:center;justify-content:center;height:20px;margin-top:4px}
+.startNow{padding:2px 6px;border:0;background:transparent;color:var(--lm-ink-dcc495);font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;cursor:pointer}
+.startNow:hover:not(:disabled){color:#f4dba8;text-decoration:underline;text-underline-offset:3px}
+.startNow:disabled{opacity:.45;cursor:default}
+.startNow:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:4px}
+.waitingStart{margin:0;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 70%,transparent);font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+/* Players pull-up (owner 2026-11-19): the avatar sits inside the player's box next to the name, and the box reaches closer to the number. */
+.playerRow{grid-template-columns:18px minmax(0,1fr);gap:6px}
+.boxName{display:flex;align-items:center;gap:8px;min-width:0}
+.boxName .rowAvatar{flex:none}
+.boxName strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.headerCompact.roomHeader{align-items:center;padding-bottom:8px;border-bottom:0}
+.roomHeader .titleBlock{padding-top:4px}
+.headerCompact.roomHeader h1{font-size:clamp(18px,calc(4vw + 4px),22px)}
+.roomBoard{box-sizing:border-box;flex:none;height:104px;margin:4px 16px 8px;padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px;overflow:auto;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,232,181,.12)}
+.boardWhen{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0;color:var(--lm-ink-dcc495);font:500 10px/1.3 var(--font-barlow),sans-serif}
+.boardControls{display:flex;flex-direction:column;align-items:center}
+.roomBoard .timer{margin:0;font-size:15px}
+.roomBoard .countdownPill{margin:0;padding:4px 12px;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:transparent;color:var(--lm-ink-dcc495);font:700 13px/1.2 var(--font-barlow),sans-serif;min-height:30px}
+.boardInstructions{margin:0;text-align:center;color:var(--lm-ink-fbf8f1);font:600 12px/1.4 var(--font-barlow),sans-serif}
+.roomBoard .startLine{height:18px;margin-top:2px}
+.roomBoard .startLine:empty{display:none}
+.roomBoard{position:relative;padding:6px 14px 28px;gap:4px}
+.roomBoard .boardWhen{flex-direction:column;align-items:center;gap:2px;font-size:16px}
+.boardOrganizerActions{position:absolute;bottom:7px;left:12px;right:12px;display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.boardOrganizerActions a{margin-right:auto;color:var(--lm-ink-dcc495);font:600 10px/1.2 var(--font-barlow),sans-serif}
+.boardOrganizerActions button,.confirmSelections{padding:4px 10px;border:1px solid rgba(201,168,110,.6);border-radius:8px;background:rgba(201,168,110,.1);color:var(--lm-ink-dcc495);font:700 11px/1.2 var(--font-barlow),sans-serif;cursor:pointer}
+.confirmSelections{min-height:30px;font-size:13px}
+.resetDialog{max-width:300px;padding:20px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:#240001;color:#fbf8f1}
+.resetDialog::backdrop{background:#0009}
+.resetDialog h2{margin:0;font-size:20px}
+.resetDialog p{font-size:14px}
+.resetDialog>div{display:flex;justify-content:flex-end;gap:12px}
+.resetDialog button{padding:7px 12px;border:1px solid #dcc495;border-radius:8px;background:transparent;color:#dcc495;cursor:pointer}
+
+/* Players pull-up (owner 2026-11-19): our maroon; no number, no box — avatar + name, stats to the right that swipe sideways, Draft / Place pinned right. */
+.peekSheet{background:var(--lm-bg-240001)}
+.playerRow{grid-template-columns:minmax(0,42%) minmax(0,1fr) 58px;gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent)}
+.playerWho{display:flex;align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.playerWho:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px;border-radius:8px}
+.playerWho .rowAvatar{flex:none;width:36px;height:36px;border-radius:9px}
+.playerWho strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.statScroll{display:flex;gap:14px;min-width:0;margin:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.statScroll::-webkit-scrollbar{display:none}
+.statScroll>div{flex:none;min-width:30px;text-align:center;scroll-snap-align:start}
+.statScroll dt{color:color-mix(in srgb,var(--lm-ink-dcc495) 75%,transparent);font:600 8px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.statScroll dd{margin:2px 0 0;color:var(--lm-ink-fbf8f1);font:700 12px/1.2 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rowAction{display:flex;justify-content:flex-end}
+.rowAction .pick{padding:5px 10px}
+/* The tourney profile pop-up's stats (no trip rounds yet). */
+.draftProfileStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 8px;margin:0;padding:18px 20px}
+.draftProfileStats>div{text-align:center}
+.draftProfileStats dt{color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent);font:600 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.draftProfileStats dd{margin:4px 0 0;color:var(--lm-ink-fbf8f1);font:700 18px/1.1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}

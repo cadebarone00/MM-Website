@@ -33,6 +33,8 @@ const round = (type: SelectionRound["type"], perSide: number, matches: number, e
 export const MOCK_MATCH_PRESETS = [
   { id: "response-singles", label: "Response · Singles 4 v 4", round: round("Response", 1, 4), perTeam: 4 },
   { id: "response-pairs", label: "Response · Pairs (2 v 2), 4 per team", round: round("Response", 2, 2), perTeam: 4 },
+  { id: "response-singles-partial", label: "Some selected · Singles (2 of 4 matches)", round: round("Response", 1, 4), perTeam: 4, partial: true },
+  { id: "response-pairs-partial", label: "Some selected · Pairs (1 of 2 matches)", round: round("Response", 2, 2), perTeam: 4, partial: true },
   { id: "ranks-singles", label: "Ranks · Singles 4 v 4", round: round("Ranks", 1, 4), perTeam: 4 },
   { id: "ranks-pairs", label: "Ranks · Pairs (2 v 2), 4 per team", round: round("Ranks", 2, 2), perTeam: 4 },
   { id: "randomized", label: "Randomized · Singles 4 v 4", round: round("Randomized", 1, 4), perTeam: 4 },
@@ -49,8 +51,20 @@ export function newMockMatch(id: MockMatchPresetId): MatchSelStore {
   const preset = MOCK_MATCH_PRESETS.find(item => item.id === id) ?? MOCK_MATCH_PRESETS[0];
   const members: SelectionMember[] = [{ profileId: "mm-org", name: "Cade (organizer)" }, ...NAMES.slice(0, preset.perTeam * 2).map((name, index) => ({ profileId: `mm-${index}`, name, handicap: 4 + index }))];
   const rosters: SelectionRosters = [members.slice(1, 1 + preset.perTeam).map(m => m.profileId), members.slice(1 + preset.perTeam).map(m => m.profileId)];
-  return { key: `mock:${id}`, members, rosters, captains: [rosters[0][0], rosters[1][0]], teamNames: ["Maroon", "White"], organizer: "mm-org",
+  let store: MatchSelStore = { key: `mock:${id}`, members, rosters, captains: [rosters[0][0], rosters[1][0]], teamNames: ["Maroon", "White"], organizer: "mm-org",
     rounds: { [preset.round.key]: { round: preset.round, locked: "locked" in preset && preset.locked, state: null } }, clockOffset: 0, log: [] };
+  // Use the real selection rules to submit half the matches, leaving the remaining slots open.
+  if ("partial" in preset && preset.partial) {
+    const target = Math.floor(preset.round.matches / 2) * 2 * preset.round.perSide;
+    for (let step = 0; step < 100 && (store.rounds[preset.round.key].state?.spots.filter(spot => spot.submitted).length ?? 0) < target; step++) {
+      const next = mockMatchNext(store);
+      if (!next) break;
+      const result = mockMatchAct(store, preset.round.key, next.viewer, next.input, { random: () => 0.42 });
+      if (result.error) throw new Error(result.error);
+      store = result.store;
+    }
+  }
+  return store;
 }
 
 /** A pretend store for a simulator sample / dev trip: its own players, teams and rounds; the first player per team captains. */
@@ -113,7 +127,7 @@ export function mockMatchAct(store: MatchSelStore, roundKey: string, viewer: Mat
   const result = applySelection(item.round, next.rosters, item.state, matchViewer(next, viewer), input, now(next), options.random);
   if (result.error) return { store: add(next, { who, text: describe(`Tried to ${input.action} — refused: ${result.error}`), ok: false, probe: options.probe }), error: result.error };
   next = add({ ...next, rounds: { ...next.rounds, [roundKey]: { ...item, state: result.state } } }, { who, text: describe(result.event), ok: true });
-  if (result.state?.completedAt) next = add(next, { who: "Server", text: `All matches set — saved: ${selectionResults(item.round, result.state).map((m, i) => `M${i + 1} ${m.a.map(id => nameOf(next, id)).join("+")} v ${m.b.map(id => nameOf(next, id)).join("+")}`).join(" · ")}`, ok: true });
+  if (result.state?.confirmedAt) next = add(next, { who: "Server", text: `All matches set — saved: ${selectionResults(item.round, result.state).map((m, i) => `M${i + 1} ${m.a.map(id => nameOf(next, id)).join("+")} v ${m.b.map(id => nameOf(next, id)).join("+")}`).join(" · ")}`, ok: true });
   // The check "the other team can't see unsubmitted / unlocked picks": look at it from the other captain's side.
   const hiddenNow = (result.state?.spots ?? []).filter(spot => !spot.submitted);
   if (hiddenNow.length && hiddenNow.every(spot => visibleSpots(result.state, matchViewer(next, spot.team === 0 ? "captain-1" : "captain-0")).some(v => v.match === spot.match && v.team === spot.team && v.slot === spot.slot && v.hidden))) next = { ...next, hiddenVerified: true };

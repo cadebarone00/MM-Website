@@ -329,16 +329,28 @@ export function simulatorPages(): SimulatorPage[] {
   // Profile group. First (the default): the real profile screens on a sample profile, no sign-in needed.
   const profile = pages.find(page => page.path === "/dev/profile");
   if (profile) Object.assign(profile, { label: "Profile (sample)", group: "Profile", conditions: [
-    { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true } },
-    { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false } },
-    { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false } },
-    { id: "profile-preview-public", label: "Someone else's Public profile", state: { profilePreview: "public", sampleStats: false } },
-    { id: "profile-preview-private", label: "Someone else's Private profile", state: { profilePreview: "private", sampleStats: false } },
+    { id: "profile-preview-sample", label: "My profile · sample stats (25 rounds)", state: { profilePreview: "sample", sampleStats: true, profileSearch: undefined } },
+    { id: "profile-preview-few", label: "My profile · not enough rounds for a handicap (2 rounds)", state: { profilePreview: "few", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-none", label: "My profile · no rounds yet", state: { profilePreview: "none", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-public", label: "Someone else's Public profile (Instagram layout)", state: { profilePreview: "public", sampleStats: false, profileSearch: undefined } },
+    { id: "profile-preview-private", label: "Someone else's Private profile (no Friends count, tabs greyed out)", state: { profilePreview: "private", sampleStats: false, profileSearch: undefined } },
   ] });
   for (const [path, label] of [["/dev/profile/settings", "Settings (sample)"], ["/dev/profile/edit", "Edit profile (sample)"]]) {
     const page = pages.find(item => item.path === path);
-    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: [] });
+    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: path === "/dev/profile/settings" ? [
+      { id: "settings-default", label: "Default (sample choices)", state: { settingsPreview: "default" } },
+      { id: "settings-all-off", label: "Notifications all off", state: { settingsPreview: "allOff" } },
+      { id: "settings-offer", label: "Organizer · an offer waiting", state: { settingsPreview: "offer" } },
+      { id: "settings-admin", label: "Organizer · content admin", state: { settingsPreview: "admin" } },
+    ] : [] });
   }
+  // Search page (2026-11-19, Instagram-style) on sample golfers.
+  const searchPage = pages.find(item => item.path === "/dev/profile/search");
+  if (searchPage) Object.assign(searchPage, { label: "Search (sample)", group: "Profile", parentId: profile?.id, conditions: [
+    { id: "profile-search-empty", label: "Before typing · friend requests, Recent, Suggested for you", state: { profileSearch: "empty" } },
+    { id: "profile-search-results", label: "2 letters typed (\"ke\") · results, Public + Private", state: { profileSearch: "results" } },
+    { id: "profile-search-none", label: "No results", state: { profileSearch: "none" } },
+  ] });
   // The real Profile (signed-in account): real data, or made-up rounds to preview the Stats tab and Compare.
   const realProfile = pages.find(page => page.path === "/profile");
   if (realProfile) Object.assign(realProfile, { label: "My profile (live account)", group: "Profile", conditions: [
@@ -382,8 +394,11 @@ function teamDraftConditions(type?: (typeof TEAM_DRAFT_TYPES)[number]): Simulato
     team("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
     team("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
     team("when-reached", "Draft time reached", "When", { draftWhen: "reached" }),
+    team("viewer-organizer", "Viewing as the organizer (Start Draft Now)", "Viewing as", { draftViewer: "organizer" }),
+    team("viewer-player", "Viewing as a player (Waiting To Start at zero)", "Viewing as", { draftViewer: "player" }),
     team("picked-none", "No one picked yet", "Teams", { teamDraftPicked: "none" }),
     team("picked-half", "Half the players picked", "Teams", { teamDraftPicked: "half" }),
+    team("partial-room", "Some players chosen (open room)", "Teams", { ...DRAFT_SIM_DEFAULTS, ...(type ? { teamDraftType: type, teamDraftPlayers: type === "3-Ball" ? 12 : 8 } : {}), teamDraftPicked: "half", draftWhen: "reached", draftRoom: "open", mockDraft: "off", mockMatch: "off" }),
     team("picked-all", "Everyone picked", "Teams", { teamDraftPicked: "all" }),
     team("room-closed", "Draft Room closed", "Draft Room", { draftRoom: "closed" }),
     team("room-open", "Draft Room open", "Draft Room", { draftRoom: "open" }),
@@ -397,6 +412,8 @@ function matchSelectionConditions(): SimulatorConditional[] {
   return [
     { id: "match-sel-source", label: "From trip data", section: "Show", state: { draftSim: "off" } },
     match("sample", "Sample match selection (start here)", "Show", { ...DRAFT_SIM_DEFAULTS }),
+    { id: "match-sel-partial-singles", label: "Some matches selected · Singles (open room)", section: "Progress", state: { draftSim: "off", mockDraft: "off", mockMatch: "response-singles-partial", mockMatchViewer: "organizer" } },
+    { id: "match-sel-partial-pairs", label: "Some matches selected · Pairs (open room)", section: "Progress", state: { draftSim: "off", mockDraft: "off", mockMatch: "response-pairs-partial", mockMatchViewer: "organizer" } },
     ...MATCH_SEL_TYPES.map(type => match("type-" + type.toLowerCase(), type, "Type", { matchSelType: type })),
     match("singles", "Singles (1 v 1)", "Format", { matchSelFormat: "singles" }),
     match("pairs", "Pairs (2 v 2)", "Format", { matchSelFormat: "pairs" }),
@@ -404,6 +421,8 @@ function matchSelectionConditions(): SimulatorConditional[] {
     match("when-unset", "No date set yet", "When", { draftWhen: "unset" }),
     match("when-countdown", "Countdown running (about a day away)", "When", { draftWhen: "countdown" }),
     match("when-reached", "Start time reached", "When", { draftWhen: "reached" }),
+    match("viewer-organizer", "Viewing as the organizer (Start Draft Now)", "Viewing as", { draftViewer: "organizer" }),
+    match("viewer-player", "Viewing as a player (Waiting To Start at zero)", "Viewing as", { draftViewer: "player" }),
     match("open-round", "Round not played yet", "Round", { matchSelLocked: false }),
     match("locked", "Round already played (locked)", "Round", { matchSelLocked: true }),
     match("room-closed", "Match Room closed", "Match Room", { draftRoom: "closed" }),

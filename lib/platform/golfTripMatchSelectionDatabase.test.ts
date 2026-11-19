@@ -28,7 +28,7 @@ async function setup() {
 const call = async <T>(db: PGlite, sql: string, params: unknown[]) => (await db.query<{ r: T }>(sql, params)).rows[0].r;
 const read = (db: PGlite, who: string, trip: string) => call<{ version: number; state: unknown; completedAt: string | null } | null>(db, "select get_golf_trip_match_selection($1, $2, '1-0') as r", [who, trip]);
 const save = (db: PGlite, who: string, trip: string, version: number, spots: { profileId: string }[], results: unknown = null, type = "Response") =>
-  call<{ version: number }>(db, "select save_golf_trip_match_selection($1, $2, '1-0', $3, $4, $5, $6) as r", [who, trip, version, type, JSON.stringify({ startedAt: "t", spots }), results === null ? null : JSON.stringify(results)]);
+  call<{ version: number }>(db, "select save_golf_trip_match_selection($1, $2, '1-0', $3, $4, $5, $6) as r", [who, trip, version, type, JSON.stringify({ startedAt: "t", spots, completedAt: results ? "t" : null, confirmedAt: results ? "t" : null }), results === null ? null : JSON.stringify(results)]);
 
 test("members read; outsiders get nothing; only the organizer starts a round", async () => {
   const { db, trip, org, a1, outsider } = await setup();
@@ -58,12 +58,25 @@ test("only accepted members can be placed, each once; outsiders can't save", asy
 test("finishing saves the matches with the round, marks it done, and nothing can change after", async () => {
   const { db, trip, org, a1, b1 } = await setup();
   await save(db, org, trip, 0, []);
-  await save(db, a1, trip, 1, [{ profileId: a1 }, { profileId: b1 }], [{ a: [1], b: [2] }]);
+  await assert.rejects(save(db, a1, trip, 1, [{ profileId: a1 }, { profileId: b1 }], [{ a: [1], b: [2] }]), /Only the organizer/);
+  await save(db, org, trip, 1, [{ profileId: a1 }, { profileId: b1 }], [{ a: [1], b: [2] }]);
   assert.ok((await read(db, a1, trip))!.completedAt);
   const settings = (await db.query<{ s: { matchSelectionResults: unknown; completedMatchDrafts: unknown } }>("select settings as s from golf_trip_setup where golf_trip_id = $1", [trip])).rows[0].s;
   assert.deepEqual(settings.matchSelectionResults, { "1-0": [{ a: [1], b: [2] }] });
   assert.deepEqual(settings.completedMatchDrafts, ["1-0"]);
+  assert.deepEqual((settings as typeof settings & { teeMatches: unknown }).teeMatches, { "1-0": { "0": { a: [1], b: [2] } } });
   await assert.rejects(save(db, org, trip, 2, []), /already set/);
+});
+
+test("pending match selections reset only for the organizer and require a new start", async () => {
+  const { db, trip, org, a1 } = await setup();
+  await save(db, org, trip, 0, [{ profileId: a1 }]);
+  const reset = (who: string) => db.query("select save_golf_trip_match_selection($1,$2,'1-0',1,'Response','{}',null)", [who,trip]);
+  await assert.rejects(reset(a1), /Only the organizer/);
+  await reset(org);
+  assert.deepEqual((await read(db,org,trip))!.state, {});
+  const settings = (await db.query<{ settings: Record<string,unknown> }>("select settings from golf_trip_setup where golf_trip_id=$1",[trip])).rows[0].settings;
+  assert.equal(settings.teeMatches, undefined);
 });
 
 test("the browser can't read picks — only the version numbers, for Realtime", async () => {

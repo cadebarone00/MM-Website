@@ -37,13 +37,15 @@ export type DraftSimState = {
   matchSelFormat?: "singles" | "pairs";
   matchSelPerTeam?: (typeof MATCH_SEL_PER_TEAM)[number];
   matchSelLocked?: boolean;
+  /** Who's looking at Home: the organizer (Start Draft Now) or a player (Waiting To Start once the countdown ends). */
+  draftViewer?: "organizer" | "player";
 };
 
 /** What a sample uses for any key not picked yet (also what the simulator lights up as chosen). */
 export const DRAFT_SIM_DEFAULTS: Required<Omit<DraftSimState, "draftSim">> = {
   draftWhen: "countdown", draftRoom: "closed",
   teamDraftType: "2 Teams", teamDraftMethod: "Captain's Picks", teamDraftOrder: "Snake", teamDraftPlayers: 8, teamDraftPicked: "none",
-  matchSelType: "Response", matchSelFormat: "singles", matchSelPerTeam: "4", matchSelLocked: false,
+  matchSelType: "Response", matchSelFormat: "singles", matchSelPerTeam: "4", matchSelLocked: false, draftViewer: "organizer",
 };
 
 /** True when every draft key present is one of its allowed values (the simulator rejects anything else). */
@@ -53,7 +55,7 @@ export function validDraftSim(state: Record<string, unknown>): boolean {
     ["teamDraftType", TEAM_DRAFT_TYPES], ["teamDraftMethod", ["Captain's Picks", "Duck Race"]], ["teamDraftOrder", ["Snake", "Straight"]],
     ["teamDraftPlayers", TEAM_DRAFT_PLAYER_COUNTS], ["teamDraftPicked", TEAM_DRAFT_PICKED],
     ["matchSelType", MATCH_SEL_TYPES], ["matchSelFormat", ["singles", "pairs"]], ["matchSelPerTeam", MATCH_SEL_PER_TEAM],
-    ["matchSelLocked", [true, false]],
+    ["matchSelLocked", [true, false]], ["draftViewer", ["organizer", "player"]],
   ];
   return allowed.every(([key, values]) => state[key] === undefined || values.includes(state[key]));
 }
@@ -93,6 +95,8 @@ export type DraftSimFixture = {
   roomKey: string | null;
   /** Names this sample (open or closed), so its picks are kept for the browser tab (profile → back keeps them). */
   sampleKey: string;
+  /** Who's viewing (simulator "Viewing as"). */
+  viewer: "organizer" | "player";
 };
 
 /** The sample for the chosen draft page, or null when the simulator isn't showing one. `now` = trip wall time. */
@@ -123,7 +127,7 @@ export function draftSimFixture(state: DraftSimState, now: string): DraftSimFixt
       ...(on[index] !== undefined ? size ? { teamIndex: on[index], captain: index < teams } : { team: on[index] ? "B" as const : "A" as const } : {}) }));
     return {
       team: { teamType: s.teamDraftType, selection: "Draft", ...at(s.draftWhen, now), type: s.teamDraftOrder, method: s.teamDraftMethod },
-      players, roomKey, sampleKey: key, matchRounds: [],
+      players, roomKey, sampleKey: key, viewer: s.draftViewer, matchRounds: [],
       // Match Selection is for 2 Teams only.
       matchPlayers: size ? [] : players.flatMap((player, index) => player.team ? [{ id: String(index), name: player.name, handicap: player.handicap, team: player.team }] : []),
     };
@@ -136,7 +140,7 @@ export function draftSimFixture(state: DraftSimState, now: string): DraftSimFixt
   const teamAt = shift(now, -2 * 3600);
   return {
     team: { teamType: "2 Teams", selection: "Draft", date: teamAt.slice(0, 10), time: teamAt.slice(11, 16), type: "Snake", method: "Captain's Picks" },
-    players, roomKey, sampleKey: key,
+    players, roomKey, sampleKey: key, viewer: s.draftViewer,
     matchPlayers: players.map((player, index) => ({ id: String(index), ...player })),
     matchRounds: [{
       key: "sim-match-" + s.matchSelType + "-" + s.matchSelFormat + "-" + s.matchSelPerTeam + (s.matchSelLocked ? "-locked" : ""),

@@ -35,7 +35,7 @@
 .winPct{position:relative;font:700 13px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
 .winPct_left{color:var(--team-left-on-dark,#dcc495)}
 .winPct_right{color:var(--team-right-on-dark,#e89a9a)}
-.winArrow{position:absolute;top:0;font-size:15px;line-height:.85}
+.winArrow{position:absolute;top:50%;transform:translateY(-50%);font-size:inherit;line-height:1}
 .winPct_left .winArrow{right:calc(100% + 3px)}
 .winPct_right .winArrow{left:calc(100% + 3px)}
 .winBar{width:100%;display:grid;grid-template-columns:1fr 1fr;height:5px;border-radius:5px;background:color-mix(in srgb,var(--lm-ink-ffffff) 12%,transparent);overflow:hidden}
@@ -325,6 +325,7 @@
 .summaryFillLeft .teamName,.summaryFillLeft .summaryScore{color:var(--team-left-text,var(--color-maroon-900))}
 .summaryFillRight .teamName,.summaryFillRight .summaryScore{color:var(--team-right-text,var(--color-maroon-900))}
 .predictRow{grid-column:1/-1;align-self:end;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px}
+.predictRow.teamStatsRow{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 /* Predict: a rectangle the same height as the stat boxes beside it. */
 .predictRow .predictPill{align-self:stretch;padding:0 16px;border-radius:8px}
 .summaryStats{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:0 2px;border:0;border-radius:0;background:transparent}
@@ -505,6 +506,12 @@
 .matchListHeading .teamNames{padding:0 2px;border:0}
 .matchListHeading .matchScoringControl,.leaderboardListHeading .matchScoringControl{position:static;order:-1;justify-self:start;justify-content:flex-start;align-items:center;height:auto}
 .leaderboardListHeading .columns{min-height:28px;border-top:0}
+.leaderboardListHeading .scoringRow{padding:0;border-top:0}
+.scoringSlot{grid-column:-4/-1;display:flex;justify-content:center;min-width:0}
+.scoringSlotSkins{grid-column:-5/-1}
+.scoringSlot .scoringSlider{flex:none;width:132px;padding:2px;border-radius:12px}
+.scoringSlot .scoringSlider::before{top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/2);border-radius:9px}
+.scoringSlot .scoringSlider button{min-height:20px;padding:0 6px;border-radius:9px;font-size:10px;line-height:20px}
 .matchScoringControl .scoringLabel{min-height:20px;font-size:9px}
 .matchScoringControl .scoring{padding:1px}
 .matchScoringControl .scoring button{min-height:16px;padding:0 8px;font-size:9px}
@@ -600,8 +607,9 @@
 .boardBox .statusPlain small{font-size:9px}
 .boardBox .winPct{font-size:12px}
 .boardBox .roundStat dd{font-size:15px}
-.matchupCompact .teamName{font-size:15px}
-.matchupCompact .boxStanding{font-size:16px}
+.matchupCompact .teamName{font-size:13px}
+.matchupCompact .boxStanding{font-size:13px}
+.matchupCompact .statusValue{font-size:9px}
 .matchupCompact .teamMeta{font:600 12px/1.3 var(--font-barlow),sans-serif}
 .roundInfo .summaryLabel{font-size:10px}
 .roundInfo .roundInfoCourse{font-size:18px}
@@ -610,7 +618,10 @@
 
 .leaderboardAvatar{flex:none;display:grid;place-items:center;box-sizing:border-box;width:30px;height:30px;overflow:hidden;border-radius:50%;background:#fbf8f1;color:var(--color-maroon-900);font:700 12px/1 var(--font-barlow),sans-serif}
 .leaderboardAvatar img{width:100%;height:100%;object-fit:cover}
-.playerCardTrigger .golfer{min-width:0}
+.playerCardTrigger .golfer{flex:1;min-width:0}
+.winOdds{display:flex;align-items:center;gap:5px;min-width:0;height:13px}
+.winOddsLine{flex:0 1 auto;min-width:3px;max-width:calc(100% - 34px);height:2px;border-radius:1px;background:var(--lm-ink-dcc495)}
+.winOddsPct{flex:none;font:600 10px/1 var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495);font-variant-numeric:tabular-nums}
 .playerCardTrigger .tee{overflow-wrap:anywhere}
 
 .leaderboard .rank{background:transparent;border-radius:0;color:var(--lm-ink-dcc495)}
@@ -634,20 +645,83 @@
 
 .leaderboardListHeading .columns{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent)}
 .leaderboardListHeading .columnLabel{padding-bottom:0;border-bottom:0}
-.columnPosition{text-align:left}
+.columnPosition{text-align:center}
 
 /* Team summary: fixed 50/50 colors across a thin top strip, labels and points below. */
 .boardBox .summaryTeams.teamStripeSummary{position:relative;padding:8px 14px 0;gap:8px}
-.teamStripeSummary::before{content:"";position:absolute;inset:0 0 auto;height:8px;background:linear-gradient(90deg,var(--team-left,#dcc495) 0 50%,var(--team-right,#e89a9a) 50% 100%);pointer-events:none}
+.teamStripeSummary::before{content:"";position:absolute;inset:0 0 auto;height:40px;background:linear-gradient(90deg,var(--team-left,#dcc495) 0 50%,var(--team-right,#e89a9a) 50% 100%);pointer-events:none}
 .boardBox .teamStripeSummary .summaryFill{align-items:center;height:72px;margin:0;padding:10px 0 4px;border-radius:0;background:transparent;box-shadow:none;text-align:center}
-.boardBox .teamStripeSummary .summaryFill .teamName{color:var(--lm-ink-fbf8f1)}
-.boardBox .teamStripeSummary .summaryFill .summaryScore{align-self:center;margin:5px 0 0;color:var(--lm-ink-fbf8f1)}
-.boardBox .teamStripeSummary .summaryToWin{margin-top:20px}
+.boardBox .teamStripeSummary .summaryFill .teamName{position:relative;color:var(--team-left-text,var(--color-maroon-900))}
+.boardBox .teamStripeSummary .summaryFillRight .teamName{color:var(--team-right-text,var(--color-maroon-900))}
+.boardBox .teamStripeSummary .summaryFill .summaryScore{align-self:center;margin:17px 0 0;color:var(--lm-ink-fbf8f1)}
+.boardBox .teamStripeSummary .summaryToWin{position:relative;margin-top:10px;gap:17px}
+.boardBox .teamStripeSummary .toWinSplit{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:52px;text-align:center}
+.toWinSplit span:first-child{color:var(--team-left-text,var(--color-maroon-900))}
+.toWinSplit span:last-child{color:var(--team-right-text,var(--color-maroon-900))}
 .boardBox .teamStripeSummary .teamPoints{align-self:stretch;color:var(--lm-ink-fbf8f1)}
 [data-points-open] .boardBox .teamStripeSummary .summaryFill{height:auto;min-height:72px}
 
 /* Align numbers with the shared 16px box edge; avatars start 28px after the number column start. */
-.leaderboard .rank{justify-items:start}
+.leaderboard .rank{justify-items:center}
 .leaderboard .playerCardTrigger{margin-left:-10px}
-.leaderboard .columnPlayer{padding-left:0;margin-left:-10px}
-@media(max-width:374px){.leaderboard .playerCardTrigger{margin-left:-6px}.leaderboard .columnPlayer{padding-left:0;margin-left:-6px}}
+.leaderboard .columnPlayer{padding-left:38px;margin-left:-10px}
+@media(max-width:374px){.leaderboard .playerCardTrigger{margin-left:-6px}.leaderboard .columnPlayer{padding-left:38px;margin-left:-6px}}
+/* Team stripe (owner 2026-11-13): ~30% shorter (40px → 28px) and the two team colors fade into each other in the
+   middle. Names and "to win" move up to stay on the stripe; the scores below keep their place. */
+.teamStripeSummary::before{height:28px;background:linear-gradient(90deg,var(--team-left,#dcc495) 0 30%,var(--team-right,#e89a9a) 70% 100%)}
+.boardBox .teamStripeSummary .summaryFill{padding-top:0}
+.boardBox .teamStripeSummary .summaryFill .summaryScore{margin-top:27px}
+.boardBox .teamStripeSummary .summaryToWin{margin-top:0}
+.boardBox .teamStripeSummary .toWinSplit{margin-bottom:10px}
+/* Team stripe text (owner 2026-11-13): team names and TO WIN in the leaderboard's name font (Spectral); TO WIN as one
+   tight gold label; the points-to-win number sits right under the colors. */
+.boardBox .teamStripeSummary .summaryFill .teamName{font:700 16px/28px var(--font-spectral),Georgia,serif !important;letter-spacing:0;text-transform:none}
+.boardBox .teamStripeSummary .summaryFill{padding-top:0;margin-top:-8px}
+.boardBox .teamStripeSummary .summaryToWin{margin-top:-8px;gap:0}
+.boardBox .teamStripeSummary .toWinSplit{display:flex;justify-content:center;gap:4px;width:auto;height:28px;margin:0;align-items:center;font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.02em}
+.boardBox .teamStripeSummary .toWinSplit span{color:var(--lm-ink-dcc495)}
+.boardBox .teamStripeSummary .summaryFill .teamName{flex:none;height:28px}
+.boardBox .teamStripeSummary .summaryFill .summaryScore{margin-top:20px}
+/* The fill starts 8px higher (on the stripe), so it is 8px taller: the board keeps its size. */
+.boardBox .teamStripeSummary .summaryFill{height:80px}
+[data-points-open] .boardBox .teamStripeSummary .summaryFill{height:auto;min-height:80px}
+/* TO WIN (owner 2026-11-13): under the colors, smaller, with the number right below it. */
+.boardBox .teamStripeSummary .toWinSplit{height:auto;margin:32px 0 2px;font-size:10px;line-height:1;letter-spacing:.06em}
+/* Team stripe (owner 2026-11-13): each team color fades into the board's maroon toward the middle, and TO WIN sits
+   at the top in that maroon, with the number right under it. */
+.teamStripeSummary::before{background:linear-gradient(90deg,var(--team-left,#dcc495) 0 22%,transparent 45% 55%,var(--team-right,#e89a9a) 78% 100%)}
+.boardBox .teamStripeSummary .toWinSplit{height:auto;margin:10px 0 2px}
+
+/* Golf → Team match boxes (owner 2026-11-13): about 20% shorter so more matches fit on screen. The lead fill is 30% shorter
+   (56px → 39px), the stats strip tighter, and every text 1px smaller except the player names. Only the match list's boxes
+   (.matchBoardRow), never the big board at the top. */
+.matchBoardRow .boardBox{min-height:0}
+.matchBoardRow .matchupCompact .teams{padding-top:6px}
+.matchBoardRow .matchupCompact .side{min-height:45px;padding-top:2px;padding-bottom:2px}
+.matchBoardRow .matchupCompact .boxStanding{font-size:13px}
+.matchBoardRow .boardBox .statusPlain{font-size:15px}
+.matchBoardRow .boardBox .statusPlain small{font-size:10px}
+.matchBoardRow .matchupCompact :is(.statusValue,.statusTime){font-size:15.2px}
+.matchBoardRow .matchupCompact .statusValue{font-size:12px}
+.matchBoardRow .boardBox .statusPlain:has(.statusValue){transform:translateY(3px)}
+.matchBoardRow .boardBox .statusPlain:has(.statusTime) small{font-size:8px}
+.matchBoardRow .matchBoardOpen{font-family:var(--font-spectral),Georgia,serif;font-size:10px}
+.matchBoardRow .matchupCompact .teamMeta{font-size:11px}
+.matchBoardRow .boardBox>.stats{height:70px;--label:8px}
+.matchBoardRow .boardBox .win{gap:3px;margin-bottom:4px}
+.matchBoardRow .boardBox .winPct{font-size:11px}
+.matchBoardRow .boardBox .roundStat{gap:11px}
+.matchBoardRow .boardBox .roundStat dd{font-size:14px}
+/* Keep the middle column compact; the 45px sides provide room for two player names and grow the match box naturally. */
+.matchBoardRow .boxStatusLabelled{gap:1px}
+.matchBoardRow .matchBoardOpen{padding:0 4px}
+/* Move each whole side so the lead fill stays centered on its names and score. */
+.matchBoardRow .boardBox:has(.winBar) .side{transform:translateY(4.5px)}
+.matchBoardRow .boardBox:has(.winBar) .roundStats{transform:translateY(5px)}
+
+/* Match status stays white; final F aligns with the centered names and results. */
+.matchBoardRow .boardBox .statusPlain,.matchBoardRow .boardBox .statusPlain small{color:#fff}
+.matchBoardRow .boardBox .statusPlain.matchFinal{position:absolute;left:50%;top:calc(50% + 7.5px);transform:translate(-50%,-50%);margin:0}
+
+/* Final and pre-round values match the 13px scores in match lead fills. */
+.matchBoardRow .matchupCompact .matchFinal .statusValue,.matchBoardRow .matchupCompact .statusTime{font-size:13px}
