@@ -2,6 +2,7 @@
 
 import { roundRobinSchedule, roundRobinStandings, type RoundRobinResults, type RoundRobinSide } from "@/lib/platform/roundRobin";
 import styles from "./TripRoundRobin.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 export function TripRoundRobin({ sides, roster, results, onChange, courses = [] }: {
   sides: RoundRobinSide[]; roster: string; results?: RoundRobinResults; onChange?: (value: RoundRobinResults) => void; courses?: string[];
@@ -24,14 +25,14 @@ export function TripRoundRobin({ sides, roster, results, onChange, courses = [] 
       {rotation.matches.map(match => <div className={styles.match} key={match.id}>
         <span>{names.get(match.home)} <span className={styles.versus}>vs</span> {names.get(match.away)}</span>
         {onChange ? <label className={styles.result}>Result
-          <select aria-label={`Result: ${names.get(match.home)} vs ${names.get(match.away)}`} value={outcomes[match.id] ?? ""} onChange={event => {
+          <AppSelect aria-label={`Result: ${names.get(match.home)} vs ${names.get(match.away)}`} value={outcomes[match.id] ?? ""} onChange={event => {
             const next = { ...outcomes };
             if (event.target.value) next[match.id] = event.target.value as "home" | "away" | "tie";
             else delete next[match.id];
             onChange({ roster, outcomes: next });
           }}>
             <option value="">Not played</option><option value="home">{names.get(match.home)} wins</option><option value="away">{names.get(match.away)} wins</option><option value="tie">Tie</option>
-          </select>
+          </AppSelect>
         </label> : <span className={styles.outcome}>{outcomes[match.id] === "tie" ? "Tied" : outcomes[match.id] ? `${names.get(outcomes[match.id] === "home" ? match.home : match.away)} won` : "Not played"}</span>}
       </div>)}
       {rotation.bye && <p className={styles.note}>Bye: {names.get(rotation.bye)}</p>}

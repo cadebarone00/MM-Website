@@ -3,6 +3,7 @@
 import { useState } from "react";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import { EditorActions, Field, type EditorProps } from "../editorKit";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 export function RulesEditor({ setup, saving, onSave, onCancel }: EditorProps) {
   const s = setup.scoring;
@@ -21,7 +22,7 @@ export function RulesEditor({ setup, saving, onSave, onCancel }: EditorProps) {
         <Field label="Points for a halve"><input type="number" step="0.5" min={0} max={10} value={form.pointsForHalve} onChange={(event) => setForm({ ...form, pointsForHalve: event.target.value })} /></Field>
       </div>
       <div className={base.columns}>
-        <Field label="Handicaps"><select value={form.handicap} onChange={(event) => setForm({ ...form, handicap: event.target.value as "gross" | "net" })}><option value="gross">Gross (no strokes)</option><option value="net">Net (strokes given)</option></select></Field>
+        <Field label="Handicaps"><AppSelect value={form.handicap} onChange={(event) => setForm({ ...form, handicap: event.target.value as "gross" | "net" })}><option value="gross">Gross (no strokes)</option><option value="net">Net (strokes given)</option></AppSelect></Field>
         <Field label="Handicap allowance %"><input type="number" min={0} max={100} value={form.allowancePercent} disabled={form.handicap === "gross"} onChange={(event) => setForm({ ...form, allowancePercent: event.target.value })} /></Field>
       </div>
       {check("allowEarlyFinish", "Matches end once decided (e.g. 3&2)")}

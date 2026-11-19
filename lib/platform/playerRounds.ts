@@ -10,7 +10,8 @@ import type { RoundsVisibility } from "./playerRoundsPrivacy";
 /** Where a shot finished (the Scoring sheet's arrows). "center" = fairway / green hit. */
 export type ShotResult = "up" | "left" | "center" | "right" | "down";
 /** legacy = imported from the original Maroon system (supabase/legacy_round_import.sql). */
-export type RoundSource = "trip" | "tournament" | "personal" | "history" | "legacy";
+/** Where a round came from. "tourney" = a code tournament (Tourneys), "league" = a league (supabase/rounds_everywhere.sql). */
+export type RoundSource = "trip" | "tournament" | "personal" | "history" | "legacy" | "tourney" | "league";
 /** Penalty taps on the Scoring sheet (fairway / green). */
 export interface HolePenalties { fairway: boolean; green: boolean }
 /** Organizer change log (Player & Attest add-on, decisions 9–10). */
@@ -90,7 +91,8 @@ export function handicapEligibility(round: Pick<PlayerRound, "holesPlayed" | "fo
   { counts: true; differential: number } | { counts: false; reason: string } {
   if (round.enteredBy === "organizer") return { counts: false, reason: "Entered by organizer" };
   if (TEAM_FORMAT.test(round.format)) return { counts: false, reason: `${round.format} isn't an own ball format` };
-  if (round.holesPlayed === 9) return { counts: false, reason: "9-hole rounds will count once 9-hole scoring is added" };
+  // A 9 on its own isn't a handicap round: it counts when combined with another 9 (nineHolePairs).
+  if (round.holesPlayed === 9) return { counts: false, reason: "9 holes: counts when combined with another 9" };
   if (round.holes.length !== round.holesPlayed) return { counts: false, reason: "Not every hole was scored" };
   const { tee } = round;
   if (!tee || tee.rating === null || tee.slope === null || tee.slope < 55 || tee.slope > 155) return { counts: false, reason: "No course rating for this tee" };
@@ -127,10 +129,49 @@ export function cardFromHoles(holes: PlayerRoundHole[]): ScoredCard {
     ...(holes.some((h) => h.penalties) ? { penalties: holes.map((h) => h.penalties ?? { fairway: false, green: false }) } : {}) };
 }
 
-/** Index from the most recent 20 counting rounds (newest first); low index replays them oldest first. */
+type HandicapRound = Pick<PlayerRound, "id" | "datePlayed" | "holesPlayed" | "format" | "tee" | "holes" | "total" | "enteredBy" | "countsForHandicap" | "differential">
+  & { removedFromProfile?: boolean };
+
+/** A 9-hole round that will count once it's combined with another: the player's own ball, all 9 holes, a rated tee. */
+export function nineHoleQualifies(round: HandicapRound): boolean {
+  if (round.holesPlayed !== 9 || round.removedFromProfile || round.enteredBy === "organizer" || TEAM_FORMAT.test(round.format) || round.holes.length !== 9) return false;
+  const { tee } = round;
+  return Boolean(tee && tee.rating !== null && tee.slope !== null && tee.slope >= 55 && tee.slope <= 155);
+}
+/** A 9-hole course rating: courses list an 18-hole rating, so half of it (a rating under 50 is already a 9-hole one). */
+const nineRating = (rating: number) => rating < 50 ? rating : rating / 2;
+
+/**
+ * 9-hole rounds count in pairs (owner decision 2026-11-13): qualifying 9s are combined oldest first (1st + 2nd, 3rd + 4th …)
+ * into one 18-hole differential = (both scores − both 9-hole ratings) × 113 ÷ their average slope, dated the second 9.
+ * The newest unpaired 9 waits for the next one. Map: each 9-hole round's id → its pair, or "waiting".
+ */
+export function nineHolePairs(rounds: HandicapRound[]): Map<string, { differential: number; with: string; datePlayed: string } | "waiting"> {
+  const nines = rounds.filter(nineHoleQualifies).sort((a, b) => a.datePlayed.localeCompare(b.datePlayed) || a.id.localeCompare(b.id));
+  const pairs = new Map<string, { differential: number; with: string; datePlayed: string } | "waiting">();
+  for (let i = 0; i < nines.length; i += 2) {
+    const first = nines[i], second = nines[i + 1];
+    if (!second) { pairs.set(first.id, "waiting"); break; }
+    const rating = nineRating(first.tee!.rating!) + nineRating(second.tee!.rating!);
+    const slope = Math.round((first.tee!.slope! + second.tee!.slope!) / 2);
+    const differential = calculateDifferential(first.total + second.total, rating, slope);
+    pairs.set(first.id, { differential, with: second.id, datePlayed: second.datePlayed });
+    pairs.set(second.id, { differential, with: first.id, datePlayed: second.datePlayed });
+  }
+  return pairs;
+}
+
+/** Every differential that counts, newest first: 18-hole rounds that count, and each pair of 9s as one. */
+export function countingDifferentials(rounds: HandicapRound[]): number[] {
+  const eighteens = rounds.filter((round) => !round.removedFromProfile && round.countsForHandicap && round.differential !== null)
+    .map((round) => ({ date: round.datePlayed, id: round.id, differential: round.differential as number }));
+  const combined: { date: string; id: string; differential: number }[] = [];
+  for (const [id, pair] of nineHolePairs(rounds)) if (pair !== "waiting" && id < pair.with) combined.push({ date: pair.datePlayed, id, differential: pair.differential });
+  return [...eighteens, ...combined].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).map((d) => d.differential);
+}
+
+/** Index from the most recent 20 counting differentials (newest first; two 9s make one); low index replays them oldest first. */
 export function handicapSummary(rounds: PlayerRound[]) {
-  const counting = rounds.filter((round) => !round.removedFromProfile && round.countsForHandicap && round.differential !== null)
-    .sort((a, b) => b.datePlayed.localeCompare(a.datePlayed) || b.id.localeCompare(a.id));
-  const newestFirst = counting.map((round) => round.differential as number);
-  return { index: calculateHandicapIndex(newestFirst.slice(0, 20)), lowIndex: calculateLowIndex([...newestFirst].reverse()), counting: counting.length };
+  const newestFirst = countingDifferentials(rounds);
+  return { index: calculateHandicapIndex(newestFirst.slice(0, 20)), lowIndex: calculateLowIndex([...newestFirst].reverse()), counting: newestFirst.length };
 }

@@ -4997,3 +4997,113 @@ No leftovers, no uneven teams.
 
 **Done looks like:** tests for the rule (each type, good and bad counts); mock draft + simulator conditionals show the
 refusal; Settings note and no uneven switch; lint/types clean; browser-checked.
+
+## Feature: Upload to TestFlight from GitHub (no Mac needed) — spec 2026-11-13, approved + built 2026-11-13 (uncommitted)
+
+**What it does / who uses it.**
+- The owner's Mac can't run Xcode 26, which Apple has required for uploads since April 2026, so the app is built and uploaded on GitHub's own Macs (`macos-26`, with Xcode 26).
+- The owner (or Cade) opens GitHub → **Actions** → **Upload to TestFlight** → **Run workflow**. About 20–30 minutes later the build is in TestFlight.
+- The repo is public, so these builds are free.
+
+**What gets built:**
+- **`.github/workflows/testflight.yml`.** It starts only by hand (no automatic runs), with one upload at a time and a 60-minute limit. It:
+  1. Gets the code, then installs Node 22 and the project's packages (`npm ci`).
+  2. Builds the app's screens with the public Supabase values (`MAROON_APP_BUILD=1 next build`), then `npx cap sync ios`.
+  3. Sets the build number to GitHub's run number, so every upload gets a new one automatically (Apple refuses repeats). The same number goes into the app's update check: `APP_BUILD` in `lib/app/appVersion.ts` reads `NEXT_PUBLIC_APP_BUILD`, defaulting to 1.
+  4. Has Xcode archive and sign the app (Release) using the App Store Connect key, with automatic signing, so no certificates are handled by hand.
+  5. Exports and uploads it to App Store Connect (TestFlight).
+  6. Always deletes the key file from GitHub's Mac at the end, even if a step fails.
+- **`ios/ExportOptions.plist`:** the upload settings (App Store Connect, upload, automatic signing). It contains no secrets.
+
+**Third-party services:**
+- **GitHub Actions:** free for public repos.
+- **Apple App Store Connect API:** a key the owner makes, Admin access.
+
+**Secrets** (GitHub → Settings → Secrets and variables → Actions; never in the code):
+- `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` (the key file's text), `APPLE_TEAM_ID`.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. These are public values; they're secrets only so they live in one place.
+
+**Out of scope:** automatic uploads on every push, App Store (public) submission, and Android.
+
+**Done =**
+- The workflow file is checked: its YAML is valid, the commands match `build:app`, and the steps are walked through against Apple's `xcodebuild` options.
+- After the owner adds the secrets, one manual run uploads build 1 to TestFlight.
+- This can only be fully proven by a real run on GitHub, which needs the Apple key and secrets first.
+
+**Progress (2026-11-13): built.**
+- **Files:** `.github/workflows/testflight.yml`, `ios/ExportOptions.plist`, and `APP_BUILD` reading `NEXT_PUBLIC_APP_BUILD`.
+- **Rehearsed** in a clean copy with no `.env`, only the public values: `npm ci`, the app build (94 screens) and `cap sync ios` (5 plugins) all pass. The YAML is valid.
+- **Not yet proven:** the signing and upload steps need GitHub's Xcode 26 and the owner's Apple key, so the first real run is the test.
+  - **Archive:** reports say Xcode, using the API key, makes its own development certificate ("Created via API").
+  - **Export:** Apple's cloud signing handles the distribution signature.
+  - **If the archive step refuses** (no development certificate), the fallback is to keep one signing certificate in GitHub secrets.
+- **Optional secret:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. If that key is limited to website addresses, the app's maps won't load until the app is allowed too.
+
+## Feature: Every qualifying round counts, with a letter showing where it came from — spec 2026-11-13, approved 2026-11-13 (letters P / T / L / C; leagues count automatically; trips fixed too); building
+
+**What it does / who uses it.** The owner asked (2026-11-13) for two things: every handicap-qualifying round from all four ways of playing should reach the golfer's Profile → Rounds and handicap, and each round card should show a small letter for where it came from.
+
+**Today (checked 2026-11-13):**
+
+| Way of playing | Saved to Profile → Rounds? | Can count toward handicap? |
+|---|---|---|
+| Play (solo / with friends) | yes, on Submit & Save | yes, if it qualifies |
+| Golf Trip | yes, on card submit | **never**: trip rounds don't store the tee's rating and slope, so they're always "No course rating for this tee" |
+| Tourney (code tournaments) | **no** | no |
+| League | **no** | no |
+
+The handicap (`lib/profile/profileReadModel.ts`) uses the counting rounds in `player_rounds`: the best 8 of the latest 20 differentials.
+
+**Qualifying rule:** the same rule everywhere, today's `handicapEligibility` in `lib/platform/playerRounds.ts`.
+- **What counts:** own ball (not scramble, alternate shot and so on), all 18 holes scored, and a tee with a course rating and slope (slope 55–155). Organizer-entered rounds don't count.
+- **Differential:** (score − rating) × 113 ÷ slope, to one decimal.
+- **Rounds that don't qualify** are still saved to the profile, labeled with why they don't count. That's how Play and Trips work today.
+
+**What gets built:**
+1. **Tourneys:** when a player submits their round card, it's saved to their profile. The course, tee, rating and slope come from that round's setup, and the format is "Stroke play". Re-submitting never makes a second copy, and the round stays if the tourney is deleted.
+2. **Leagues:** when a group's scorer submits the group card, every player in the group gets the round in their profile. The scorer is the attester, so they count automatically (owner's choice). Course, tee, rating and slope come from the league.
+3. **Golf Trips:**
+   - When the organizer confirms a round's pars from the course (Trip Settings), the tee's course rating and slope are saved too. They come from the same course data the pars come from.
+   - Trip cards submitted after that count when they qualify. Rounds with pars typed by hand still don't count, because there's no rating.
+   - Cards already submitted are re-checked once, with no duplicates.
+4. **Backfill:** tourney cards and league groups already submitted are saved to profiles once.
+5. **The letter:** each round card in Profile → Rounds gets a small round badge before the date: **P** (Play), **T** (Trip), **L** (League) and **C** (Tourney, for Competition; old-system tournament rounds get C too) (owner's choice). Past-trip and old Maroon rounds keep their wording with no letter.
+
+**Data (`supabase/rounds_everywhere.sql`, to run in Supabase):**
+- `player_rounds.source` also allows `'tourney'` and `'league'`. Their keys are `tourney:<id>:<round>:<player>` and `league:<id>:<player>`.
+- New columns on `golf_trip_rounds`: `par_tee_rating` and `par_tee_slope`.
+- `trip_submission_round` uses them.
+- Tourney submit and league submit call the same `publish_player_round` that trips use.
+- The file is tested against Postgres before the owner runs it, and is safe to run twice.
+
+**Server:** the trip Round Pars confirm route sends the rating and slope with the pars. No other new routes.
+
+**Out of scope:**
+- 9-hole rounds counting (still "will count once 9-hole scoring is added").
+- The WHS adjusted gross score (net double bogey cap). Today's rule uses the actual total; that's a separate decision.
+- Imported past trips (no hole-by-hole own-ball rounds).
+
+**Done =**
+- A qualifying round from Play, a trip (course pars confirmed), a tourney or a league shows in Profile → Rounds with its letter and changes the handicap.
+- A non-qualifying one shows with its reason.
+- Nothing is saved twice.
+- The full test suite, typecheck, lint and `build:app` pass.
+
+**Progress (2026-11-13): built, uncommitted. To run in Supabase: `supabase/rounds_everywhere.sql`.**
+- **Database:** tourney card submit and league group submit save each player's round to `player_rounds` (through `publish_player_round`, quietly, so a card always submits).
+  - Trip rounds count once the organizer confirms course pars from one rated tee: new `par_tee_rating` and `par_tee_slope` columns, cleared when the course, tee or pars change.
+  - Earlier tourney cards and league groups are saved once.
+  - Tested against Postgres with the real files (`lib/platform/roundsEverywhereDatabase.test.ts`, 5 tests).
+- **App:**
+  - The round sources `tourney` and `league` were added.
+  - Profile → Rounds shows the letter badge: P, T, L, and C (tourney and old-system tournament).
+  - The trip Round Pars confirm sends the one tee's rating and slope (`coursePars`).
+  - The profile preview's sample rounds show every letter.
+- **Not changed:** 9-hole rounds, adjusted gross score, and imported past trips.
+  - Trips whose pars were confirmed before this file need their pars confirmed again to save the rating.
+  - Cards submitted before the rating was saved stay "not counted".
+- **Owner change (2026-11-13): 9-hole rounds count in pairs.**
+  - Qualifying 9s (own ball, all 9 holes, a rated tee) are combined oldest first: the 1st with the 2nd, the 3rd with the 4th, and so on. Each pair becomes one 18-hole differential = (both scores − both 9-hole ratings) × 113 ÷ their average slope, dated the second 9. A listed rating over 50 is halved.
+  - The newest unpaired 9 shows "Waiting for 9"; paired 9s show "<differential> · 9+9".
+  - One helper, `countingDifferentials` and `nineHolePairs` in `lib/platform/playerRounds.ts`, feeds every handicap: profile stats, round stats and the handicap summary.
+  - This is the classic combine method. Today's WHS instead scores single 9s with an expected score; the owner chose combining.

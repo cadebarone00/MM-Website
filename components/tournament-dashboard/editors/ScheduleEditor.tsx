@@ -8,6 +8,7 @@ import { TimePicker } from "@/components/platform/TimePicker";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
 import { EditorActions, Field, type EditorProps } from "../editorKit";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type ScheduleRow = { number: number; playDate: string; startType: string; startTime: string };
 
@@ -22,11 +23,11 @@ export function ScheduleEditor({ setup, saving, onSave, onCancel }: EditorProps)
         <div className={`${styles.row} ${styles.row3}`} key={row.number}>
           <Field label={`Round ${row.number} date`}><DatePicker min={startDate ?? undefined} max={endDate ?? undefined} value={row.playDate} onChange={(event) => update(index, { playDate: event.target.value })} /></Field>
           <Field label="Start">
-            <select value={row.startType} onChange={(event) => update(index, { startType: event.target.value })}>
+            <AppSelect value={row.startType} onChange={(event) => update(index, { startType: event.target.value })}>
               <option value="">Decide later</option>
               <option value="tee_times">Tee times</option>
               <option value="shotgun">Shotgun start</option>
-            </select>
+            </AppSelect>
           </Field>
           <Field label={row.startType === "shotgun" ? "Shotgun time" : "First tee time"}><TimePicker label={row.startType === "shotgun" ? "Shotgun time" : "First tee time"} value={row.startTime} onChange={startTime => update(index, { startTime })} /></Field>
           <span />

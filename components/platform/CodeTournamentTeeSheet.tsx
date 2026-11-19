@@ -9,6 +9,7 @@ import wheelStyles from "./TeeTimePicker.module.css";
 import { DEFAULT_TIMING, randomTeeSheet, roundTeeSheet, scoreTeeSheet, teeSlot, teeTimeLabel, type CodeTournament, type TeeSheet, type TeeStart, type TeeTiming } from "@/lib/platform/codeTournaments";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import styles from "./CodeTournament.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const EVERY = [7, 8, 9, 10, 12, 15];
 const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
@@ -141,10 +142,10 @@ export function TeeSheetEditor({ t, round, sheet, holes, onCancel, onSave }: { t
         </div>
         <ul className={styles.teePlayers}>
           {g.players.map((id) => <li key={id}><span>{name(id)}</span>
-            <select aria-label={`Move ${name(id)}`} value={i} onChange={(e) => move(id, Number(e.target.value))}>
+            <AppSelect aria-label={`Move ${name(id)}`} value={i} onChange={(e) => move(id, Number(e.target.value))}>
               {draft.groups.map((_, k) => <option key={k} value={k}>Group {k + 1}</option>)}
               <option value={draft.groups.length}>New group</option>
-            </select></li>)}
+            </AppSelect></li>)}
         </ul>
       </li>)}
     </ol>

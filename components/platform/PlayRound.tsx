@@ -16,6 +16,7 @@ import type { PlayerRound, ScoredCard } from "@/lib/platform/playerRounds";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { SharedRound } from "@/lib/platform/sharedRoundsServer";
 import styles from "./PlayRound.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 /** The round in progress, kept on this phone so a refresh or closed app doesn't lose it. `sharedId` = an invite round in the database. */
 const STORAGE_KEY = "maroonPersonalRound";
@@ -204,9 +205,9 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
           </div>
           <p className={styles.blurb}>Optional, from the tee box on the course&apos;s scorecard. Without them the round is saved but doesn&apos;t count toward your handicap.</p>
         </div> : <label className={styles.field}><span>Tee box</span>
-          {course.tees.length ? <select value={tee} onChange={(event) => setTee(Number(event.target.value))}>
+          {course.tees.length ? <AppSelect value={tee} onChange={(event) => setTee(Number(event.target.value))}>
             {course.tees.map((t, i) => <option key={i} value={i}>{t.name}{t.rating != null && t.slope != null ? ` · ${t.rating} / ${t.slope}` : " · no rating"}</option>)}
-          </select> : <p className={styles.note}>No tee boxes listed for this course.</p>}
+          </AppSelect> : <p className={styles.note}>No tee boxes listed for this course.</p>}
         </label>}
         <fieldset className={styles.field}><legend>Holes</legend>
           <div className={styles.choices}>{([["18", "18 holes"], ["front", "Front 9"], ["back", "Back 9"]] as const).map(([value, label]) =>

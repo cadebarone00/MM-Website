@@ -20,6 +20,12 @@ const stranger = await fake.addUser({ name: "stranger" });
 const host = await fake.addUser({ name: "host", isHost: true });
 
 // The organizer studio is neutral: the platform's name, never The Maroon Tournament's chrome.
+/** Pick an option in the app's dropdown (components/platform/AppSelect.tsx): tap it, then tap the option in its sheet. */
+async function choose(trigger, option) {
+  await trigger.click();
+  await trigger.page().getByRole("option", { name: option, exact: typeof option === "string" }).click();
+}
+
 async function assertStudioChrome(p, where) {
   assert.match(await p.locator("header").first().innerText(), /tournament studio/i, `${where}: studio header`);
   const body = await p.locator("body").innerText();
@@ -107,13 +113,13 @@ try {
     await page.getByLabel("Destination", { exact: true }).fill("Horseshoe Bay, TX");
   }, "Basics saved.");
   await openAndSave("Edit teams", async () => {
-    await page.getByRole("combobox", { name: /^Competition/ }).selectOption("teams");
+    await choose(page.getByRole("button", { name: /^Competition/ }), /^Teams?$|Team/);
     await page.getByLabel("Team 1 name", { exact: true }).fill("Blue");
     await page.getByLabel("Team 2 name", { exact: true }).fill("Gold");
   }, "Teams saved.");
   await openAndSave("Edit rules", async () => {}, "Rules saved.");
   await openAndSave("Edit rounds", async () => {
-    for (const [i, format] of ["Fourball", "Foursome", "Singles"].entries()) await page.getByRole("combobox", { name: new RegExp(`^Round ${i + 1} format`) }).selectOption(format);
+    for (const [i, format] of ["Fourball", "Foursome", "Singles"].entries()) await choose(page.getByRole("button", { name: new RegExp(`^Round ${i + 1} format`) }), format);
   }, "Rounds saved.");
   assert.equal(await stage(), "Ready to Publish");
 
@@ -131,7 +137,7 @@ try {
     for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "+ Add a player", exact: true }).click();
     for (let i = 0; i < 4; i++) {
       await page.getByLabel(`Player ${i + 1} name`, { exact: true }).fill(`Golfer ${i + 1}`);
-      await page.getByRole("combobox", { name: /^Team/ }).nth(i).selectOption({ label: i < 2 ? "Blue" : "Gold" });
+      await choose(page.getByRole("button", { name: /^Team/ }).nth(i), i < 2 ? "Blue" : "Gold");
     }
   }, "Players saved.");
 

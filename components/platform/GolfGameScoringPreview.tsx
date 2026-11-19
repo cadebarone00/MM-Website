@@ -4,6 +4,7 @@ import { useState } from "react";
 import { calculateGame, previewScores, scoreHole, sixesPairing, wolfForHole, setupTeams, scoringConfig, needsGrossScores, type GameSetup, type HoleInput } from "@/lib/platform/game-engine";
 import { GAME_PREVIEW_PLAYERS, GAME_PREVIEW_ROUNDS } from "@/lib/platform/golfTripGames";
 import styles from "./GolfTripGames.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const name = (id: string) => id === "team-1" ? "Team 1" : id === "team-2" ? "Team 2" : GAME_PREVIEW_PLAYERS.find(player => player.id === id)?.name ?? id;
 export function GolfGameScoringPreview({ setup, onStart }: { setup: GameSetup; onStart?: () => void }) {
@@ -48,12 +49,12 @@ export function GolfGameScoringPreview({ setup, onStart }: { setup: GameSetup; o
     <h4>DEV scoring preview</h4><p>Local scores only. Handicap {handicap ? "On: enter provided preview net scores" : "Off: gross scores"}. Reload resets play.</p>
     {round && <><p><strong>{GAME_PREVIEW_ROUNDS.find(item => item.id === round.id)?.course ?? round.id} · Hole {hole}/{round.holes}</strong></p>
       {sides && <p>{setup.id === "round-robin" ? `Six-hole segment ${Math.ceil(hole / 6)}: ` : ""}Team 1: {sides[0].map(name).join(" + ")} vs Team 2: {sides[1].map(name).join(" + ")}</p>}
-      {setup.id === "wolf" && <label className={styles.label}>Wolf: {name(wolf)}<select value={partner} onChange={event => setPartner(event.target.value)}><option value="lone">Lone Wolf</option>{scoringConfig(setup, "wolf").blindEnabled && <option value="blind" disabled={partner !== "blind" && Object.values(scores).some(score => score.gross !== "" || score.net !== "")}>Blind Wolf (choose before scores)</option>}{setup.participants.filter(id => id !== wolf).map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>}
+      {setup.id === "wolf" && <label className={styles.label}>Wolf: {name(wolf)}<AppSelect value={partner} onChange={event => setPartner(event.target.value)}><option value="lone">Lone Wolf</option>{scoringConfig(setup, "wolf").blindEnabled && <option value="blind" disabled={partner !== "blind" && Object.values(scores).some(score => score.gross !== "" || score.net !== "")}>Blind Wolf (choose before scores)</option>}{setup.participants.filter(id => id !== wolf).map(id => <option key={id} value={id}>{name(id)}</option>)}</AppSelect></label>}
       {["wolf", "vegas", "skins"].includes(setup.id) && <label className={styles.label}>Hole par<input type="number" min={3} max={6} value={par} onChange={event => { const next = event.target.valueAsNumber; if (Number.isInteger(next) && next >= 3 && next <= 6) setPar(next); }} /></label>}
       {setup.participants.map(id => <div key={id} className={styles.scoreRow}><strong>{name(id)}</strong>
         <label className={styles.label}>{handicap ? "Preview net" : "Gross"}<input type="number" min={handicap ? -99 : 1} max={99} step={1} value={scores[id][handicap ? "net" : "gross"]} onChange={event => { const field = handicap ? "net" : "gross"; setScores(current => ({ ...current, [id]: { ...current[id], [field]: event.target.value } })); }} /></label>
         {needsGross && <label className={styles.label}>Gross for bonuses / flips<input type="number" min={1} max={99} step={1} value={scores[id].gross} onChange={event => setScores(current => ({ ...current, [id]: { ...current[id], gross: event.target.value } }))} /></label>}
-        {setup.id === "coin-flip" && <label className={styles.label}>Flip<select value={flips[id]} onChange={event => setFlips(current => ({ ...current, [id]: event.target.value as "heads" | "tails" }))}><option value="heads">Heads</option><option value="tails">Tails</option></select></label>}
+        {setup.id === "coin-flip" && <label className={styles.label}>Flip<AppSelect value={flips[id]} onChange={event => setFlips(current => ({ ...current, [id]: event.target.value as "heads" | "tails" }))}><option value="heads">Heads</option><option value="tails">Tails</option></AppSelect></label>}
       </div>)}
       <div className={styles.choices}><button type="button" onClick={simulate}>Simulate hole scores</button><button type="button" onClick={save}>Record hole</button></div>
     </>}

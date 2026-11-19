@@ -5,6 +5,7 @@ import { useState } from "react";
 import { deletionSummary, resultMessage, tripOutcomeText, type DeletionCounts, type DeletionState, type HandoffState, type TripOutcome } from "@/lib/account/deletionCopy";
 import settings from "./Settings.module.css";
 import styles from "./DeleteAccount.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 export type DeletionTrip = {
   tripId: string; name: string; startDate: string; endDate: string; ended: boolean; outcome: TripOutcome;
@@ -114,11 +115,11 @@ export function DeleteAccountFlow({ initial, actions = serverActions }: { initia
           {canAsk && (trip.eligible.length > 0
             ? <div className={styles.row}>
               <label className="sr-only" htmlFor={`successor-${trip.tripId}`}>Ask a member to take over {trip.name}</label>
-              <select id={`successor-${trip.tripId}`} className={styles.select} value={choice[trip.tripId] ?? ""} disabled={busyTrip === trip.tripId}
+              <AppSelect id={`successor-${trip.tripId}`} className={styles.select} value={choice[trip.tripId] ?? ""} disabled={busyTrip === trip.tripId}
                 onChange={(event) => setChoice((c) => ({ ...c, [trip.tripId]: event.target.value }))}>
                 <option value="">Ask someone to take over…</option>
                 {trip.eligible.map((member) => <option key={member.memberId} value={member.memberId}>{member.name}</option>)}
-              </select>
+              </AppSelect>
               <button type="button" className={settings.secondary} disabled={!choice[trip.tripId] || busyTrip === trip.tripId}
                 onClick={() => tripAction(trip.tripId, () => actions.offer(trip.tripId, choice[trip.tripId]))}>Ask</button>
             </div>

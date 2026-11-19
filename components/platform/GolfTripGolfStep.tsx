@@ -5,6 +5,7 @@ import { Minus, Plus } from "lucide-react";
 import { golfTripDraftSnapshot, parseGolfTripDraft, shortTripDate, tripDates } from "@/lib/platform/golfTripDraft";
 import { SetupStepForm } from "./SetupStepForm";
 import styles from "./CreateTournament.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 /** Without trip dates (Trip Basics skipped), golf days still go up to this. */
 const FALLBACK_MAX_DAYS = 14;
@@ -60,10 +61,10 @@ export function GolfTripGolfStep() {
         {days.map((day, index) => <div key={index} className={styles.dayRow}>
           <span className={styles.dayName}>Day {index + 1}</span>
           {dates.length > 0
-            ? <select className={`${styles.input} ${styles.compact}`} name={`day${index + 1}Date`} value={day.date}
+            ? <AppSelect className={`${styles.input} ${styles.compact}`} name={`day${index + 1}Date`} value={day.date}
                 aria-label={`Day ${index + 1} date`} onChange={(event) => updateDay(index, { date: event.target.value })}>
                 {dates.map((date) => <option key={date} value={date}>{shortTripDate(date)}</option>)}
-              </select>
+              </AppSelect>
             : <span />}
           <div className={styles.circles} role="radiogroup" aria-label={`Day ${index + 1} rounds`}>
             {([1, 2] as const).map((count) => <label key={count} className={styles.circle}>

@@ -13,17 +13,20 @@ const PAR = [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const course = (holes = PAR) => ({
   name: "Test Links", address: { city: "Austin", state: "TX" },
   holes: holes.map((par, i) => ({ number: i + 1, par, tees: i === 0 ? [{ name: "Red", par: 5 }, { name: "Blue" }] : i === 1 ? [{ name: "Junior", par: 7 }] : [] })),
-  teeSets: [{ id: "b", name: "Blue" }, { id: "r", name: "Red" }],
+  teeSets: [{ id: "b", name: "Blue", ratings: [{ gender: "men", courseRating: 71.4, slopeRating: 128 }] }, { id: "r", name: "Red" }],
 }) as unknown as GolfCourse;
 const SNAPSHOT = { pars: PAR, source: "course", courseRef: "og-1", courseName: "Test Links", tee: "Blue", confirmedBy: "Cade", confirmedAt: "2026-10-16T19:00:00Z", lockedAt: null };
 
 test("course pars come through scoringCourse(), with a tee's own par applied hole by hole", () => {
-  assert.deepEqual(coursePars("og-1", course(), null), { ok: true, pars: PAR, tee: null });
-  assert.deepEqual(coursePars("og-1", course(), { tee: "Blue", perHole: false, holeTees: {} }), { ok: true, pars: PAR, tee: "Blue" });
+  assert.deepEqual(coursePars("og-1", course(), null), { ok: true, pars: PAR, tee: null, rating: null, slope: null });
+  // One tee: its rating + slope come along so the trip round can count toward handicap (rounds_everywhere.sql).
+  assert.deepEqual(coursePars("og-1", course(), { tee: "Blue", perHole: false, holeTees: {} }), { ok: true, pars: PAR, tee: "Blue", rating: 71.4, slope: 128 });
   const red = coursePars("og-1", course(), { tee: "Red", perHole: false, holeTees: {} });
   assert.ok(red.ok); assert.equal(red.pars[0], 5, "Red plays hole 1 as a par 5"); assert.deepEqual(red.pars.slice(1), PAR.slice(1));
   const mixed = coursePars("og-1", course(), { tee: "Blue", perHole: true, holeTees: { 1: "Red" } });
   assert.ok(mixed.ok); assert.equal(mixed.pars[0], 5); assert.equal(mixed.tee, "Red / Blue");
+  assert.deepEqual([mixed.rating, mixed.slope], [null, null], "mixed tees have no single rating, so the round can't count");
+  assert.ok(red.ok); assert.deepEqual([red.rating, red.slope], [null, null], "a tee with no rating on file");
   assert.deepEqual(coursePars("og-1", course(), { tee: "Junior", perHole: false, holeTees: {} }), { ok: false, reason: "tee-par" }, "never stores a par 7");
   assert.deepEqual(coursePars("og-1", course(PAR.slice(0, 9)), null), { ok: false, reason: "no-scorecard" }, "a 9-hole card is not stretched to 18");
   assert.deepEqual(coursePars("og-1", course(PAR.map((p, i) => (i === 4 ? 2 : p))), null), { ok: false, reason: "no-scorecard" });

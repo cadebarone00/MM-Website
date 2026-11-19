@@ -7,6 +7,7 @@ import { useState } from "react";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
 import { EditorActions, Field, type EditorProps } from "../editorKit";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const ZONES = ["America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Mazatlan", "Europe/London", "UTC"];
 
@@ -33,11 +34,11 @@ export function BasicsEditor({ setup, saving, onSave, onCancel }: EditorProps) {
       <div className={base.columns}>
         <Field label="Timezone"><input list="dashboard-timezones" value={form.timezone} onChange={set("timezone")} /><datalist id="dashboard-timezones">{ZONES.map((zone) => <option key={zone} value={zone} />)}</datalist></Field>
         <Field label="Who can see it once published">
-          <select value={form.visibility} onChange={set("visibility")}>
+          <AppSelect value={form.visibility} onChange={set("visibility")}>
             <option value="private">Private — invited participants</option>
             <option value="unlisted">Unlisted — anyone with the link</option>
             <option value="public">Public — discoverable by everyone</option>
-          </select>
+          </AppSelect>
         </Field>
       </div>
     </div>

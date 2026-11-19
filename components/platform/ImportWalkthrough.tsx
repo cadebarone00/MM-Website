@@ -11,6 +11,7 @@ import {
   type DraftProblem, type DraftStep, type ImportSummary, type PastFormat, type PastTripKind, type TripDraft, type WinnerMethod,
 } from "@/lib/platform/pastTripModel";
 import styles from "./ImportWalkthrough.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type Step = DraftStep | "review";
 const STEP_LABELS: Record<Step, string> = { kind: "Kind", basics: "Basics", rounds: "Rounds", players: "Players", matches: "Matches", scores: "Scores", review: "Review" };
@@ -151,9 +152,9 @@ function Walkthrough({ endpoint = "/api/golf-trips/import", backHref = "/golf-tr
           <DatePicker aria-label="End date" value={draft.endDate} min={draft.startDate || undefined} max={dayBefore(today())} onChange={(e) => update((d) => { d.endDate = e.target.value; })} /></span></label>
       </div>
       {kind !== "team" && <label className={styles.field}>Individual winner decided by
-        <select data-empty={!draft.method} value={draft.method ?? ""} onChange={(e) => update((d) => { d.method = (e.target.value || null) as WinnerMethod | null; })}>
+        <AppSelect data-empty={!draft.method} value={draft.method ?? ""} onChange={(e) => update((d) => { d.method = (e.target.value || null) as WinnerMethod | null; })}>
           <option value="">Pick one</option>{WINNER_METHODS.map((m) => <option key={m}>{m}</option>)}
-        </select></label>}
+        </AppSelect></label>}
     </div>}
 
     {step === "rounds" && kind && <div className={styles.stack}>
@@ -165,9 +166,9 @@ function Walkthrough({ endpoint = "/api/golf-trips/import", backHref = "/golf-tr
             d.scores = d.scores.filter((s) => s.round !== r.number);
           })}><Trash2 size={16} aria-hidden="true" /></button></div>
         <label className={styles.field}>Date
-          <select data-empty={!r.date} value={r.date ?? ""} onChange={(e) => update((d) => { d.rounds[i].date = e.target.value || null; })}>
+          <AppSelect data-empty={!r.date} value={r.date ?? ""} onChange={(e) => update((d) => { d.rounds[i].date = e.target.value || null; })}>
             <option value="">Not sure</option>{days.map((day) => <option key={day} value={day}>{dayLabel(day)}</option>)}
-          </select></label>
+          </AppSelect></label>
         <div className={styles.field}>Course
           {typing.has(r.number)
             ? <input aria-label={`Round ${r.number} course name`} value={r.course} maxLength={200} placeholder="Course name" autoFocus onChange={(e) => update((d) => { d.rounds[i].course = e.target.value; })} />
@@ -177,9 +178,9 @@ function Walkthrough({ endpoint = "/api/golf-trips/import", backHref = "/golf-tr
         </div>
         <div className={`${styles.row2} ${kind !== "team" ? styles.formatRow : ""}`}>
           <label className={styles.field}>Format
-            <select data-empty={!r.format} value={r.format ?? ""} onChange={(e) => update((d) => { d.rounds[i].format = (e.target.value || null) as PastFormat | null; })}>
+            <AppSelect data-empty={!r.format} value={r.format ?? ""} onChange={(e) => update((d) => { d.rounds[i].format = (e.target.value || null) as PastFormat | null; })}>
               <option value="">Pick one</option>{formatsFor(kind).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
-            </select></label>
+            </AppSelect></label>
           {kind !== "team" && <label className={styles.field}>Par
             <input inputMode="numeric" value={r.par ?? ""} placeholder="72" onChange={(e) => update((d) => { d.rounds[i].par = numberOrNull(e.target.value); })} /></label>}
         </div>
@@ -232,10 +233,10 @@ function Walkthrough({ endpoint = "/api/golf-trips/import", backHref = "/golf-tr
             <div className={styles.sides}>
               {([0, 1] as const).flatMap((s) => [s === 1 && <span key="vs" className={styles.vs}>VS</span>, <div key={s} className={styles.side}>
                 <span className={styles.sideLabel}>{label(s)}</span>
-                {Array.from({ length: per }, (_, slot) => <select key={slot} aria-label={`${label(s)} player ${slot + 1}`} data-empty={!m.sides[s][slot]} value={m.sides[s][slot] ?? ""}
+                {Array.from({ length: per }, (_, slot) => <AppSelect key={slot} aria-label={`${label(s)} player ${slot + 1}`} data-empty={!m.sides[s][slot]} value={m.sides[s][slot] ?? ""}
                   onChange={(e) => update((d) => { const slots = Array.from({ length: per }, (_, k) => d.matches[i].sides[s][k] ?? ""); slots[slot] = e.target.value; d.matches[i].sides[s] = slots.filter(Boolean); })}>
                   <option value="">Pick player</option>{side(s).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>)}
+                </AppSelect>)}
               </div>])}
             </div>
             <div className={styles.winner} role="group" aria-label="Who won">
@@ -275,9 +276,9 @@ function Walkthrough({ endpoint = "/api/golf-trips/import", backHref = "/golf-tr
           </dl>
         </div>
         <label className={styles.field}>Which player is you?
-          <select data-empty={!me} value={me} onChange={(e) => setMe(e.target.value)}>
+          <AppSelect data-empty={!me} value={me} onChange={(e) => setMe(e.target.value)}>
             <option value="">I didn&apos;t play</option>{named.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select></label>
+          </AppSelect></label>
         <p className={styles.hint}>Everyone else is added without an account. Send each of them an invite link from the trip&apos;s Settings → Members so it shows up for them too.</p>
       </>}
     </div>}

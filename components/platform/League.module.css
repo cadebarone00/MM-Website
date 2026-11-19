@@ -101,3 +101,6 @@
 .leagueList small{display:block;margin-top:2px;font:500 13px var(--font-barlow),sans-serif;color:#c9a86e}
 /* On the dark page the main button is gold (Play a round's maroon button is made for its cream cards). */
 .create{background:#dcc495;color:var(--color-maroon-950);text-decoration:none}
+/* DEV ONLY (/dev/samples): each sample's letter (P / T / C / L), as on Profile → Rounds. */
+.sampleRow{display:flex;align-items:center;gap:12px;min-width:0}
+.sampleLetter{display:grid;flex:none;place-items:center;width:28px;height:28px;border:1px solid #c9a86e99;border-radius:50%;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}

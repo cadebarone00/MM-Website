@@ -10,6 +10,7 @@ import type { ScoringCourse } from "@/lib/platform/personalRound";
 import styles from "./PlayRound.module.css";
 import own from "./CodeTournament.module.css";
 import { InvitePlayersCard } from "./InvitePlayersCard";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type NewRound = { setup: CodeRoundSetup; date: string };
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -112,9 +113,9 @@ export function AddRound({ onCancel, onAdd, minDate, labels = { kicker: "Add a r
             onAdd({ date, setup: { course: { ref: course.ref, name: course.name, place: course.place, par: course.par.slice(0, holes), ...(course.strokeIndex && { strokeIndex: course.strokeIndex.slice(0, holes) }) }, tee: chosenTee } }); }}>
           <p className={styles.blurb}>{holes} holes · Par {course.par.slice(0, holes).reduce((sum, p) => sum + p, 0)}</p>
           <label className={styles.field}><span>Tee box</span>
-            {course.tees.length ? <select value={tee} onChange={(event) => setTee(Number(event.target.value))}>
+            {course.tees.length ? <AppSelect value={tee} onChange={(event) => setTee(Number(event.target.value))}>
               {course.tees.map((t, i) => <option key={i} value={i}>{t.name}{t.rating != null && t.slope != null ? ` · ${t.rating} / ${t.slope}` : ""}</option>)}
-            </select> : <p className={styles.note}>No tee boxes listed for this course.</p>}
+            </AppSelect> : <p className={styles.note}>No tee boxes listed for this course.</p>}
           </label>
           <label className={styles.field}><span>Date</span><DatePicker value={date} min={minDate} onChange={(event) => setDate(event.target.value || date)} /></label>
           <button type="submit" className={styles.primary}>{labels.button} <Check size={16} aria-hidden="true" /></button>

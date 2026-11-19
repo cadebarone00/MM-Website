@@ -11,6 +11,7 @@ import type { PushChoice } from "@/lib/platform/scoreEdits";
 import { roundRow } from "@/lib/platform/tripRoundState";
 import notificationStyles from "./GolfTripNotifications.module.css";
 import toggleStyles from "./GolfTripCompetition.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const message = (e: unknown) => e instanceof Error ? e.message : String(e);
 
@@ -51,10 +52,10 @@ export function OrganizerScores({ roundNumbers, organizerId, scheduledToday = fa
         const locked = submitted.some((r) => r.profileId === player.profileId && r.groupId === group.id);
         return <div key={`${group.id}|${player.profileId}`} className={notificationStyles.row}>
           <span className={notificationStyles.label}>{nameOf(player.profileId)} — attested by</span>
-          <select aria-label={`Attester for ${nameOf(player.profileId)}`} value={player.attesterProfileId ?? ""} disabled={locked || group.players.length < 2}
+          <AppSelect aria-label={`Attester for ${nameOf(player.profileId)}`} value={player.attesterProfileId ?? ""} disabled={locked || group.players.length < 2}
             onChange={(event) => { try { swapAttester(group.players, player.profileId, event.target.value); run({ type: "swapAttester", groupId: group.id, profileId: player.profileId, attesterProfileId: event.target.value }); } catch (e) { setError(message(e)); } }}>
             {group.players.filter((p) => p.profileId !== player.profileId).map((p) => <option key={p.profileId} value={p.profileId}>{nameOf(p.profileId)}</option>)}
-          </select>
+          </AppSelect>
         </div>;
       }))}
     </section>
@@ -108,12 +109,12 @@ function OverrideCard({ round, name, onSave }: { round: PlayerRound; name: strin
   return <details className={notificationStyles.row} style={{ display: "block" }}>
     <summary>{name} · {round.total}{round.edits?.length ? ` · ${round.edits.length} change${round.edits.length === 1 ? "" : "s"}` : ""}</summary>
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-      <select aria-label="Hole" value={hole} onChange={(e) => setHole(Number(e.target.value))}>{round.holes.map((h) => <option key={h.number} value={h.number}>Hole {h.number} (now {h.strokes})</option>)}</select>
-      <select aria-label="What to change" value={field} onChange={(e) => { setField(e.target.value as EditableField); setValue(""); }}>
-        {(["strokes", "putts", "fairway", "green"] as const).map((f) => <option key={f} value={f}>{f}</option>)}</select>
+      <AppSelect aria-label="Hole" value={hole} onChange={(e) => setHole(Number(e.target.value))}>{round.holes.map((h) => <option key={h.number} value={h.number}>Hole {h.number} (now {h.strokes})</option>)}</AppSelect>
+      <AppSelect aria-label="What to change" value={field} onChange={(e) => { setField(e.target.value as EditableField); setValue(""); }}>
+        {(["strokes", "putts", "fairway", "green"] as const).map((f) => <option key={f} value={f}>{f}</option>)}</AppSelect>
       {numeric
         ? <input aria-label="New value" type="number" min={field === "strokes" ? 1 : 0} max={field === "strokes" ? 20 : 10} value={value} onChange={(e) => setValue(e.target.value)} />
-        : <select aria-label="New value" value={value} onChange={(e) => setValue(e.target.value)}><option value="">—</option>{(["center", "left", "right", "up", "down"] as const).map((s) => <option key={s} value={s}>{s === "center" ? "hit" : s}</option>)}</select>}
+        : <AppSelect aria-label="New value" value={value} onChange={(e) => setValue(e.target.value)}><option value="">—</option>{(["center", "left", "right", "up", "down"] as const).map((s) => <option key={s} value={s}>{s === "center" ? "hit" : s}</option>)}</AppSelect>}
       <input aria-label={`Reason for changing ${name}'s card`} placeholder="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
       <button type="button" disabled={!reason.trim() || (field === "strokes" && parsed === null)} onClick={() => { if (onSave(hole, field, parsed, reason)) { setValue(""); setReason(""); } }}>Save change</button>
     </div>

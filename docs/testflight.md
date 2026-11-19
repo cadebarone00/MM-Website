@@ -1,4 +1,12 @@
-# Putting The Maroon on TestFlight (new Mac)
+# Putting The Maroon on TestFlight
+
+**No Mac needed:** GitHub builds and uploads the app (`.github/workflows/testflight.yml`). After the one-time setup —
+the App ID `site.themaroon.app`, the app in App Store Connect, an App Store Connect API key (Admin), and the repository
+secrets listed at the top of that file — go to GitHub → **Actions** → **Upload to TestFlight** → **Run workflow**. About
+20–30 minutes later the build is in App Store Connect → TestFlight. The steps below are the same thing done by hand on
+a Mac with Xcode 26.
+
+## By hand, on a Mac
 
 TestFlight is Apple's app for sending test versions to your friends before the app is in the App Store.
 

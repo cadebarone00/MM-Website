@@ -106,7 +106,8 @@ create unique index if not exists player_rounds_submission_idx on public.player_
 -- where each came from (provenance: { system, recordId, playerSlug, seasonYear, round, ... }). Only the import tool
 -- writes them; see supabase/legacy_round_import.sql.
 alter table public.player_rounds drop constraint if exists player_rounds_source_check;
-alter table public.player_rounds add constraint player_rounds_source_check check (source in ('trip', 'tournament', 'personal', 'history', 'legacy'));
+-- 'tourney' and 'league': supabase/rounds_everywhere.sql (kept here so re-running this file doesn't drop them).
+alter table public.player_rounds add constraint player_rounds_source_check check (source in ('trip', 'tournament', 'personal', 'history', 'legacy', 'tourney', 'league'));
 alter table public.player_rounds add column if not exists provenance jsonb;
 alter table public.player_rounds add column if not exists imported_at timestamptz;
 alter table public.player_rounds drop constraint if exists player_rounds_legacy_provenance;

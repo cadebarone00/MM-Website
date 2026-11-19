@@ -69,12 +69,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
   const form = parsFromForm(body.pars as (string | number | null)[]);
   if (!form.ok) return NextResponse.json({ error: form.error }, { status: 400, headers });
   const roundCourse = view.trip.rounds.find((r) => r.roundNumber === round)?.courseName ?? null;
-  let meta = { ref: null as string | null, name: roundCourse, tee: null as string | null };
+  let meta = { ref: null as string | null, name: roundCourse, tee: null as string | null, rating: null as number | null, slope: null as number | null };
   if (body.source === "course") {
     const course = await loadRoundCoursePars(view.trip, round);
     if (course.status !== "ok") return NextResponse.json({ error: "This round's course scorecard isn't available. Enter the pars by hand." }, { status: 409, headers });
     if (course.pars.some((par, i) => par !== form.pars[i])) return NextResponse.json({ error: "The course scorecard changed. Reload the pars and check them again." }, { status: 409, headers });
-    meta = { ref: course.ref, name: course.name, tee: course.tee };
+    meta = { ref: course.ref, name: course.name, tee: course.tee, rating: course.rating, slope: course.slope };
   }
   const saved = await confirmRoundPars(view.viewer.profileId, tripId, round, form.pars, body.source, meta);
   if (saved === "failed") return NextResponse.json({ error: "Couldn't save the pars. Try again." }, { status: 503, headers });

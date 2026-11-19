@@ -6,6 +6,7 @@ import { PlayerInvite } from "./PlayerInvite";
 import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.css";
 import styles from "../TournamentDashboard.module.css";
 import { EditorActions, Field, asInput, type EditorProps } from "../editorKit";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type PlayerRow = { id: string | null; name: string; email: string; handicap: string; teamKey: string };
 
@@ -56,7 +57,7 @@ export function PlayersEditor({ setup, saving, onSave, onCancel, apiBase }: Edit
           <Field label="Email (optional)"><input type="email" value={player.email} onChange={(event) => update(index, { email: event.target.value })} /></Field>
           <Field label="Handicap"><input type="number" step="0.1" min={-10} max={54} value={player.handicap} onChange={(event) => update(index, { handicap: event.target.value })} /></Field>
           {teams.length > 0
-            ? <Field label="Team"><select value={player.teamKey} onChange={(event) => update(index, { teamKey: event.target.value })}><option value="">Unassigned</option>{teams.map((team) => <option key={team.key} value={team.key}>{team.name}</option>)}</select></Field>
+            ? <Field label="Team"><AppSelect value={player.teamKey} onChange={(event) => update(index, { teamKey: event.target.value })}><option value="">Unassigned</option>{teams.map((team) => <option key={team.key} value={team.key}>{team.name}</option>)}</AppSelect></Field>
             : <span className={base.muted}>No teams</span>}
           <button type="button" className={styles.removeButton} onClick={() => setPlayers((rows) => rows.filter((_, i) => i !== index))} aria-label={`Remove player ${index + 1}`}>Remove</button>
           {apiBase && player.id && !invitesOff && <PlayerInvite apiBase={apiBase} playerId={player.id} name={player.name} status={statuses?.[player.id]} username={profiles[player.id] ?? null} onInvited={() => setStatusVersion((v) => v + 1)} />}

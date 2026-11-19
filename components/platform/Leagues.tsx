@@ -44,6 +44,11 @@ export function LeaguesHome() {
         <Link href="/leagues/new" className={`${styles.primary} ${league.create}`}><Plus size={16} aria-hidden="true" /> Create a league</Link>
         <JoinCodeCard kind="league" />
       </div>
+      {/* Preview servers only (npm run dev / dev:app): the sample league, so the screens can be seen without a real one. */}
+      {process.env.NODE_ENV === "development" && <ul className={league.leagueList}><li><Link href="/dev/leagues">
+        <span><strong>Thursday Night League</strong><small>Example league · preview only, nothing saved</small></span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link></li></ul>}
       {error ? <p className={styles.error} role="alert">{error}</p>
         : !leagues ? <p className={styles.note}>Loading your leagues…</p>
         : !leagues.length ? <div className={league.empty}><Handshake size={28} aria-hidden="true" /><p>No leagues yet. Create one, or join with the code from your organizer.</p></div>

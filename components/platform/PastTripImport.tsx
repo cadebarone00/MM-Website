@@ -8,6 +8,7 @@ import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { pastTripTemplate, type PastTripKind } from "@/lib/platform/pastTripTemplates";
 import type { ImportProblem, ImportSummary } from "@/lib/platform/pastTripImport";
 import styles from "./PastTripImport.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const KINDS: { kind: PastTripKind; label: string; title: string; icon: typeof User; about: string }[] = [
   { kind: "individual", label: "Individual", title: "Individual trip", icon: User, about: "Everyone plays for themselves." },
@@ -150,10 +151,10 @@ export function PastTripImport({ endpoint = "/api/golf-trips/import", walkthroug
             </dl>
           </div>
           <label className={styles.field}>Which player is you?
-            <select value={me} onChange={(event) => setMe(event.target.value)} disabled={busy}>
+            <AppSelect value={me} onChange={(event) => setMe(event.target.value)} disabled={busy}>
               <option value="">I didn&apos;t play</option>
               {step.summary.players.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
+            </AppSelect>
           </label>
           <p className={styles.note}>Everyone else is added without an account. Send each of them an invite link from the trip&apos;s Settings → Members so it shows up for them too.</p>
           <button type="button" className={styles.primary} onClick={() => save(step.file)} disabled={busy}>{busy ? "Adding…" : "Add trip"}</button>

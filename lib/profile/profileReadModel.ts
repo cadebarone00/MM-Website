@@ -2,6 +2,7 @@ import type { ArchivedHandicapRound, HandicapSummary } from "../handicap/types";
 import { calculateHandicapIndex } from "../handicap/whs";
 import type { PlayerScorecard, Team, Tournament } from "../data/types";
 import type { ProfileHistoryRound } from "../platform/playerRoundsRows";
+import { countingDifferentials } from "../platform/playerRounds";
 import { DEFAULT_ROUNDS_VISIBILITY, type RoundsVisibility } from "../platform/playerRoundsPrivacy";
 import { playPath } from "../platform/tournamentHome";
 import type { ProfileId } from "./profileIdentity";
@@ -141,8 +142,8 @@ export function teamHistory(tournaments: ProfileTournamentEdition[], legacyYears
 export function modernStats(rounds: ProfileHistoryRound[]): ModernStats | null {
   if (!rounds.length) return null;
   const eighteens = rounds.filter((r) => r.holesPlayed === 18).map((r) => r.total);
-  const counting = rounds.filter((r) => r.countsForHandicap && r.differential !== null)
-    .sort((a, b) => b.datePlayed.localeCompare(a.datePlayed) || b.id.localeCompare(a.id)).map((r) => r.differential as number);
+  // 18-hole rounds that count, and each pair of 9-hole rounds combined into one (countingDifferentials).
+  const counting = countingDifferentials(rounds);
   return {
     roundsPlayed: rounds.length, eighteenHoleRounds: eighteens.length,
     average18: eighteens.length ? Math.round((eighteens.reduce((a, b) => a + b, 0) / eighteens.length) * 10) / 10 : null,
