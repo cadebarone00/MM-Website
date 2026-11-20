@@ -4,5 +4,6 @@
  * dev server). The website build never sets them.
  */
 export const isAppBuild = process.env.NEXT_PUBLIC_MAROON_APP === "1";
-/** The live server the app gets its data from. */
-export const appApiBase = (process.env.NEXT_PUBLIC_MAROON_API_BASE || "https://themaroon.site").replace(/\/+$/, "");
+/** The live server the app gets its data from. The www address: themaroon.site redirects there, and the app's requests
+ *  can't follow a redirect (they fail as "no internet connection"). */
+export const appApiBase = (process.env.NEXT_PUBLIC_MAROON_API_BASE || "https://www.themaroon.site").replace(/\/+$/, "");

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts", "capacitor-web/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", ".next-*", "out", "capacitor-web/dev"]
+  "exclude": ["node_modules", ".next", ".next-*", "out", "capacitor-web/dev", "capacitor-web/_next", "ios/App/App/public", "android/app/src/main/assets/public"]
 }
