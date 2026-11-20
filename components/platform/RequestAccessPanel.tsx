@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { FieldError, MyAccess, MyAccessRequest } from "@/lib/platform/accessRequests";
 import styles from "./AccessRequests.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return <label className={styles.field}><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>;
@@ -88,7 +89,7 @@ export function RequestAccessPanel({ initialAccess, name, email, years }: { init
       <Field label="Email" hint="From your account. We'll use it to reply about this request."><input value={email} readOnly aria-readonly="true" /></Field>
       <Field label="Tournament or group name"><input name="groupName" maxLength={80} required /></Field>
       <div className={styles.columns}>
-        <Field label="Tournament year"><select name="seasonYear" defaultValue={years[1]}>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></Field>
+        <Field label="Tournament year"><AppSelect name="seasonYear" defaultValue={years[1]}>{years.map((year) => <option key={year} value={year}>{year}</option>)}</AppSelect></Field>
         <Field label="Approximate players"><input name="expectedPlayers" type="number" min={2} max={500} inputMode="numeric" required /></Field>
       </div>
       <Field label="Location (optional)"><input name="destination" maxLength={120} placeholder="e.g. Horseshoe Bay, TX" /></Field>

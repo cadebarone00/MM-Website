@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { parsFromForm, type TripRoundPars as Snapshot } from "@/lib/platform/tripRoundPars";
 import type { RoundCourseLoad } from "@/lib/platform/tripRoundParsServer";
 import styles from "./TripRoundPars.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 /**
  * H5C Part 1 — Trip Settings → a round → Course Yardage, under the tee boxes (saved trips, organizer only).
@@ -98,10 +99,10 @@ export function TripRoundPars({ tripId, roundNumber }: { tripId: string; roundNu
       <ul className={styles.groups}>
         {ready.groups.map((group) => <li key={group.id}>
           <span>Group {group.groupNumber}{group.players.length ? ` · ${group.players.join(", ")}` : ""}</span>
-          <select aria-label={`Group ${group.groupNumber} starting hole`} value={group.startHole} disabled={!ready.installed || group.locked || busy}
+          <AppSelect aria-label={`Group ${group.groupNumber} starting hole`} value={group.startHole} disabled={!ready.installed || group.locked || busy}
             onChange={(event) => void post({ action: "start-hole", groupId: group.id, startHole: Number(event.target.value) }, `Group ${group.groupNumber} starts on hole ${event.target.value}.`)}>
             {HOLES.map((hole) => <option key={hole} value={hole}>Hole {hole}</option>)}
-          </select>
+          </AppSelect>
         </li>)}
       </ul>
     </>}

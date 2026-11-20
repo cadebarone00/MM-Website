@@ -6,6 +6,7 @@ import { DIRECTION_MARK, scoreShape, sumOf } from "./GolfTripScoring";
 import scoringStyles from "./GolfTripScoring.module.css";
 import tripStyles from "./GolfTripHome.module.css";
 import styles from "./OrganizerScorecard.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 export interface CardHole { strokes: number | null; putts: number | null; fairway: ShotResult | null; green: ShotResult | null }
 type Field = keyof CardHole;
@@ -42,13 +43,13 @@ export function OrganizerScorecard({ name, par, holes, editable, competition, on
     ? <td className={`${scoringStyles.section} ${extra}`}>{shown}</td>
     : <td className={`${scoringStyles.section} ${extra} ${styles.editCell}`} data-changed={changed(i, field) || undefined}>
       {shown}
-      <select className={styles.picker} aria-label={`Hole ${i + 1} ${field === "strokes" ? "score" : field}`} value={String(draft[i][field] ?? "")}
+      <AppSelect className={styles.picker} aria-label={`Hole ${i + 1} ${field === "strokes" ? "score" : field}`} value={String(draft[i][field] ?? "")}
         onChange={event => {
           const raw = event.target.value;
           set(i, field, raw === "" ? null : field === "strokes" || field === "putts" ? Number(raw) : raw as ShotResult);
         }}>
         {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+      </AppSelect>
     </td>;
   const numbers = (from: number, to: number) => [{ value: "", label: "—" }, ...range(from, to + 1).map(n => ({ value: String(n), label: String(n) }))];
   const shots = [{ value: "", label: "—" }, ...SHOTS.map(shot => ({ value: shot, label: `${DIRECTION_MARK[shot]} ${SHOT_NAMES[shot]}` }))];

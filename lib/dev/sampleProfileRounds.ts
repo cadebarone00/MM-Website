@@ -15,6 +15,9 @@ function random(seed: number) {
   return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
 }
 
+const SOURCES = [{ source: "personal" }, { source: "trip", sourceLabel: "Pinehurst Weekend" }, { source: "league", sourceLabel: "Thursday Night League" },
+  { source: "personal" }, { source: "tourney", sourceLabel: "Club Championship" }] as const;
+
 export function sampleProfileRounds(count = 25, skill = 0, seed = 7): ProfileHistoryRound[] {
   const next = random(seed);
   return Array.from({ length: count }, (_, n): ProfileHistoryRound => {
@@ -37,10 +40,11 @@ export function sampleProfileRounds(count = 25, skill = 0, seed = 7): ProfileHis
     const date = `${month > 0 ? 2026 : 2025}-${String(((month - 1 + 12) % 12) + 1).padStart(2, "0")}-${String(3 + (n * 5) % 25).padStart(2, "0")}`;
     const counts = !nine;
     return {
-      id: `sample-${seed}-${n}`, source: legacy ? "legacy" : "personal", sourceLabel: legacy ? "Maroon Tournament" : undefined, datePlayed: date,
+      // A mix of where rounds come from, so Profile → Rounds shows each letter (P Play, T Trip, L League, C Tourney).
+      id: `sample-${seed}-${n}`, ...(legacy ? { source: "legacy", sourceLabel: "Maroon Tournament" } : SOURCES[n % SOURCES.length]), datePlayed: date,
       course: { ref: null, name: COURSES[n % COURSES.length], place: "Sample" }, tee: { name: "Blue", rating: 71.6, slope: 128 },
       holesPlayed: nine ? 9 : 18, format: "Stroke Play", holes, total,
-      countsForHandicap: counts, notCountedReason: counts ? null : "9-hole rounds will count once 9-hole scoring is added",
+      countsForHandicap: counts, notCountedReason: counts ? null : "9 holes: counts when combined with another 9",
       differential: counts ? Math.round(((total - 71.6) * 113 / 128) * 10) / 10 : null, enteredBy: "player", status: "submitted",
     } as ProfileHistoryRound;
   });

@@ -17,13 +17,13 @@ import playStyles from "./PlayRound.module.css";
 import homeStyles from "./GolfTripHome.module.css";
 import tourney from "./CodeTournament.module.css";
 import styles from "./League.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type Section = "Leaderboard" | "Skins" | "Pairs" | "Group" | "Tee Times";
 const firstName = (name: string) => name.split(" ")[0];
 /** "T2" when more than one shares the place, as on golf leaderboards. */
 const place = (position: number | null, all: (number | null)[]) => position == null ? "–" : all.filter((p) => p === position).length > 1 ? `T${position}` : String(position);
 /** "2026-11-12" → "Thu, Nov 12". */
-const dayLabel = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
 /** How often the page checks for everyone else's scores. */
 const POLL_MS = 5000;
@@ -115,14 +115,13 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
     </div>
     <h1 className={tourney.name}>{league.name}</h1>
     <header className={styles.courseBar}>
-      <p>{!live ? "Final" : league.date === new Date().toLocaleDateString("en-CA") ? "Today" : dayLabel(league.date)} · {league.players.length} {league.players.length === 1 ? "player" : "players"}{league.groups.length ? ` · ${league.groups.length} ${league.groups.length === 1 ? "group" : "groups"}` : ""}</p>
       <h2>{league.course.name}</h2>
     </header>
     {problem && <p className={tourney.status} role="alert">{problem}</p>}
     <div className={styles.tabs} role="tablist" aria-label="League sections">
       {sections.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name} className={styles.tab} onClick={() => setSection(name)}>{name}</button>)}
     </div>
-    {tab === "Leaderboard" ? <Leaderboard league={league} meId={meId} onScoring={isOrganizer && live ? (scoring) => void settings({ scoring }) : undefined} />
+    {tab === "Leaderboard" ? <Leaderboard league={league} meId={meId} />
       : tab === "Skins" ? <SkinsView league={league} isOrganizer={isOrganizer && live} onCarryover={(carryover) => void settings({ skins: { ...league.skins, carryover } })} />
       : tab === "Pairs" ? <PairsView league={league} meId={meId} />
       : tab === "Group" && myGroup ? <GroupGame league={league} group={myGroup} meId={meId} editable={live && !myGroup.submitted} onGame={(next) => void game(myGroup, { game: next, inputs: [] })} />
@@ -135,15 +134,12 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
   </main>;
 }
 
-/** The first screen: everyone's total strokes so far, Gross or Net. Only the organizer gets the Gross / Net switch
- *  (it's the league's setting); everyone else sees the league the way the organizer set it. */
-function Leaderboard({ league, onScoring, meId }: { league: League; onScoring?: (s: LeagueScoring) => void; meId: string }) {
+/** The first screen: everyone's total strokes so far, Gross or Net, as the organizer set it in League Settings (the last
+ *  column says which). */
+function Leaderboard({ league, meId }: { league: League; meId: string }) {
   const scoring = league.scoring;
   const rows = leaderboard(league, scoring);
   return <section aria-label="Leaderboard">
-    {onScoring && <div className={styles.toggle} role="radiogroup" aria-label="Scoring">
-      {(["Gross", "Net"] as const).map((s) => <button key={s} type="button" role="radio" aria-checked={scoring === s} onClick={() => onScoring(s)}>{s}</button>)}
-    </div>}
     <table className={styles.board}>
       <thead><tr><th scope="col">Pos</th><th scope="col">Player</th><th scope="col">To par</th><th scope="col">Thru</th><th scope="col">{scoring}</th></tr></thead>
       <tbody>{rows.map((r) => <tr key={r.profileId} data-me={r.profileId === meId || undefined}>
@@ -288,7 +284,7 @@ function GroupGame({ league, group, meId, editable, onGame }: { league: League; 
 
 /**
  * League Settings (organizer): the join code to share; the tee times (make them, move players, pick each group's scorer);
- * skins; the pairs game (format, gross / net, winner segments, draw rule, draw and lock); then Copy, End and Delete.
+ * the leaderboard's Gross / Net; skins; the pairs game (format, gross / net, winner segments, draw rule, draw and lock); then Copy, End and Delete.
  */
 function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onCopy, onDelete }: { league: League; sample: boolean; problem: string | null; onClose: () => void;
   onSettings: (next: Partial<Pick<League, "scoring" | "skins" | "pairs">>) => Promise<Reply>; act: Act; onCopy: (date: string) => Promise<string | null>; onDelete: () => Promise<string | null> }) {
@@ -308,6 +304,11 @@ function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onC
     <InviteCodeCard kind="league" id={league.id} code={league.code} name={league.name} canEmail={!sample && live} />
 
     {live && <TeeTimesEditor league={league} onGroups={(groups) => void act({ action: "groups", groups })} />}
+
+    {live && <section className={styles.card} aria-labelledby="leaderboard-settings">
+      <h2 id="leaderboard-settings">Leaderboard</h2>
+      <Choice label="Scoring" value={league.scoring} options={[{ id: "Gross", name: "Gross" }, { id: "Net", name: "Net" }]} onPick={(v) => void onSettings({ scoring: v as LeagueScoring })} />
+    </section>}
 
     {live && <section className={styles.card} aria-labelledby="skins-settings">
       <h2 id="skins-settings">Skins</h2>
@@ -372,18 +373,18 @@ function TeeTimesEditor({ league, onGroups }: { league: League; onGroups: (group
     if (groups.length && !window.confirm("Make new tee times for everyone? The groups you have now are replaced.")) return;
     save(makeTeeTimes(league.players.map((p) => p.profileId), timing));
   };
-  const target = (id: string, current: number | null) => <select className={styles.select} aria-label={`Move ${nameOf(id)}`} value="" onChange={(e) => move(id, Number(e.target.value))}>
+  const target = (id: string, current: number | null) => <AppSelect className={styles.select} aria-label={`Move ${nameOf(id)}`} value="" onChange={(e) => move(id, Number(e.target.value))}>
     <option value="" disabled>{current == null ? "Add to…" : "Move to…"}</option>
     {groups.map((g, j) => j !== current && g.players.length < 5 && <option key={j} value={j}>Group {j + 1}</option>)}
     <option value={groups.length}>New group</option>
-  </select>;
+  </AppSelect>;
 
   return <section className={styles.card} aria-labelledby="tee-times-settings">
     <h2 id="tee-times-settings">Tee Times</h2>
     <div className={styles.timing}>
       <label><span>First tee time</span><input type="time" className={styles.select} value={timing.first} onChange={(e) => setTiming({ ...timing, first: e.target.value || timing.first })} /></label>
-      <label><span>Every</span><select className={styles.select} value={timing.every} onChange={(e) => setTiming({ ...timing, every: Number(e.target.value) })}>{EVERY.map((m) => <option key={m} value={m}>{m} min</option>)}</select></label>
-      <label><span>Start</span><select className={styles.select} value={timing.start} onChange={(e) => setTiming({ ...timing, start: e.target.value as TeeTiming["start"] })}>{STARTS.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+      <label><span>Every</span><AppSelect className={styles.select} value={timing.every} onChange={(e) => setTiming({ ...timing, every: Number(e.target.value) })}>{EVERY.map((m) => <option key={m} value={m}>{m} min</option>)}</AppSelect></label>
+      <label><span>Start</span><AppSelect className={styles.select} value={timing.start} onChange={(e) => setTiming({ ...timing, start: e.target.value as TeeTiming["start"] })}>{STARTS.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</AppSelect></label>
     </div>
     <div className={styles.actions}>
       <button type="button" className={tourney.organizerButton} disabled={!league.players.length} onClick={make}><Shuffle size={15} aria-hidden="true" /> {groups.length ? "Re-make tee times" : "Make tee times"}</button>
@@ -397,8 +398,8 @@ function TeeTimesEditor({ league, onGroups }: { league: League; onGroups: (group
       <h3>Group {i + 1}{league.groups[i]?.submitted ? " · Card in" : ""}</h3>
       <div className={styles.timing}>
         <label><span>Time</span><input type="time" className={styles.select} value={g.time} onChange={(e) => edit(i, { time: e.target.value })} /></label>
-        <label><span>Hole</span><select className={styles.select} value={g.hole} onChange={(e) => edit(i, { hole: Number(e.target.value) })}>{Array.from({ length: 18 }, (_, h) => <option key={h} value={h + 1}>{h + 1}</option>)}</select></label>
-        <label><span>Scorer</span><select className={styles.select} value={g.scorer} onChange={(e) => edit(i, { scorer: e.target.value })}>{g.players.map((id) => <option key={id} value={id}>{nameOf(id)}</option>)}</select></label>
+        <label><span>Hole</span><AppSelect className={styles.select} value={g.hole} onChange={(e) => edit(i, { hole: Number(e.target.value) })}>{Array.from({ length: 18 }, (_, h) => <option key={h} value={h + 1}>{h + 1}</option>)}</AppSelect></label>
+        <label><span>Scorer</span><AppSelect className={styles.select} value={g.scorer} onChange={(e) => edit(i, { scorer: e.target.value })}>{g.players.map((id) => <option key={id} value={id}>{nameOf(id)}</option>)}</AppSelect></label>
       </div>
       <ul>{g.players.map((id) => <li key={id}><span>{nameOf(id)}</span>{target(id, i)}</li>)}</ul>
     </div>)}

@@ -1,5 +1,6 @@
 import { calculateHandicapIndex, calculateLowIndex } from "@/lib/handicap/whs";
 import type { ProfileHistoryRound } from "@/lib/platform/playerRoundsRows";
+import { countingDifferentials } from "@/lib/platform/playerRounds";
 
 /**
  * Profile → Stats: everything the saved rounds can honestly tell us, worked out in one place so it's easy to test.
@@ -54,7 +55,7 @@ export function roundStats(rounds: ProfileHistoryRound[]): RoundStats | null {
   const newestFirst = [...rounds].sort((a, b) => b.datePlayed.localeCompare(a.datePlayed) || b.id.localeCompare(a.id));
   const eighteens = newestFirst.filter((r) => r.holesPlayed === 18);
   const nines = newestFirst.filter((r) => r.holesPlayed === 9);
-  const counting = newestFirst.filter((r) => r.countsForHandicap && r.differential !== null).map((r) => r.differential as number);
+  const counting = countingDifferentials(newestFirst);
   const fullCards = eighteens.filter((r) => r.holes.length === 18 && r.holes.every((h) => Number.isInteger(h.par) && Number.isInteger(h.strokes)));
   const capped = fullCards.map((r) => r.holes.reduce((s, h) => s + Math.min(h.strokes, h.par + 2), 0));
   const best = eighteens.reduce<ProfileHistoryRound | null>((low, r) => !low || r.total < low.total ? r : low, null);

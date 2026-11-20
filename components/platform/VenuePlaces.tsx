@@ -7,6 +7,7 @@ import { distanceLabel, distanceMiles, isAppleDevice, mapsLink, PLACE_CATEGORIES
 import { SAMPLE_CENTER, samplePlaces } from "@/lib/dev/samplePlaces";
 import { PLACES_CREDIT } from "@/lib/platform/placeAreas";
 import styles from "./VenuePlaces.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const ICONS: Record<PlaceCategory, LucideIcon> = { food: Utensils, bars: Beer, golf: Flag, coffee: Coffee, todo: Ticket };
 export type VenueStage = "list" | "loading" | "category" | "saved" | "empty" | "no-destination";
@@ -128,13 +129,13 @@ function PlacesView({ destination, center, loading, places, saved, added, onSave
     <dialog ref={dialog} className={styles.filterSheet} aria-labelledby="venue-filter-title" onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <form className={styles.filterForm} onSubmit={(event) => { event.preventDefault(); setFilters({ ...draft }); setCategory(draftCategory); dialog.current?.close(); }}>
         <div className={styles.filterHeader}><h2 id="venue-filter-title">Filters</h2><button type="button" aria-label="Close filters" onClick={() => dialog.current?.close()}><X size={22} aria-hidden /></button></div>
-        <label>Location<select value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })}><option value="">Trip area · {place}</option>{places.map((p) => <option value={p.id} key={p.id}>Near {p.name}</option>)}</select></label>
+        <label>Location<AppSelect value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })}><option value="">Trip area · {place}</option>{places.map((p) => <option value={p.id} key={p.id}>Near {p.name}</option>)}</AppSelect></label>
         <label>Within miles<input type="number" min="0.1" step="any" placeholder="Any distance" value={draft.miles} onChange={(e) => setDraft({ ...draft, miles: e.target.value })} /></label>
         <p className={styles.filterHelp}>Straight-line distance from your selected location, using places available for this trip.</p>
-        <label>Category<select value={draftCategory ?? ""} onChange={(e) => setDraftCategory((e.target.value || null) as PlaceCategory | null)}><option value="">All categories</option>{PLACE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</select></label>
-        <label>Minimum Maroon Rating<select value={draft.minimum} onChange={(e) => setDraft({ ...draft, minimum: e.target.value })}><option value="">Any rating</option>{[3, 3.5, 4, 4.5].map((n) => <option key={n} value={n}>{n.toFixed(1)} stars & up</option>)}</select></label>
+        <label>Category<AppSelect value={draftCategory ?? ""} onChange={(e) => setDraftCategory((e.target.value || null) as PlaceCategory | null)}><option value="">All categories</option>{PLACE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</AppSelect></label>
+        <label>Minimum Maroon Rating<AppSelect value={draft.minimum} onChange={(e) => setDraft({ ...draft, minimum: e.target.value })}><option value="">Any rating</option>{[3, 3.5, 4, 4.5].map((n) => <option key={n} value={n}>{n.toFixed(1)} stars & up</option>)}</AppSelect></label>
         <label className={styles.filterCheck}><input type="checkbox" checked={draft.savedOnly} onChange={(e) => setDraft({ ...draft, savedOnly: e.target.checked })} />Saved by our group</label>
-        <label>Sort by<select value={draft.sort} onChange={(e) => setDraft({ ...draft, sort: e.target.value })}><option value="recommended">Recommended</option><option value="nearest">Nearest</option><option value="rating">Highest Maroon Rating</option></select></label>
+        <label>Sort by<AppSelect value={draft.sort} onChange={(e) => setDraft({ ...draft, sort: e.target.value })}><option value="recommended">Recommended</option><option value="nearest">Nearest</option><option value="rating">Highest Maroon Rating</option></AppSelect></label>
         <div className={styles.filterActions}><button type="button" className={styles.maps} onClick={() => { setDraft({ ...DEFAULT_FILTERS }); setDraftCategory(null); }}>Reset</button><button type="submit" className={styles.add}>Apply filters</button></div>
       </form>
     </dialog>

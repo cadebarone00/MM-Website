@@ -20,7 +20,9 @@ import styles from "@/components/platform/GolfTripMatch.module.css";
 const shortDay = (iso: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 const toPar = (n: number) => n === 0 ? "E" : n > 0 ? `+${n}` : String(n);
 
-export function ProfileRoundSheet({ round, name, avatarUrl, onClose }: { round: ProfileHistoryRound; name: string; avatarUrl: string | null; onClose: () => void }) {
+export function ProfileRoundSheet({ round, name, avatarUrl, nineHolePair, onClose }: { round: ProfileHistoryRound; name: string; avatarUrl: string | null;
+  /** A 9-hole round's pair (its combined differential) or "waiting" (nineHolePairs); none for anything else. */ nineHolePair?: { differential: number } | "waiting"; onClose: () => void }) {
+  const differential = round.countsForHandicap && round.differential !== null ? round.differential : nineHolePair && nineHolePair !== "waiting" ? nineHolePair.differential : null;
   const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -95,8 +97,8 @@ export function ProfileRoundSheet({ round, name, avatarUrl, onClose }: { round: 
           <h4>{round.holesPlayed} holes</h4>
           <dl className={styles.snapshotPill}>
             <div><dt>Score</dt><dd>{round.total}</dd></div>
-            {/* The differential when the round counts; "—" when it doesn't (the Rounds list says why), so both pills stay one size. */}
-            <div><dt>Handicap</dt><dd aria-label={round.countsForHandicap && round.differential !== null ? undefined : "Not counted"}>{round.countsForHandicap && round.differential !== null ? round.differential.toFixed(1) : "—"}</dd></div>
+            {/* The differential when the round counts (a paired 9: the pair's combined one); "—" when it doesn't, so both pills stay one size. */}
+            <div><dt>Handicap</dt><dd aria-label={differential !== null ? undefined : nineHolePair === "waiting" ? "Counts once another 9-hole round comes in" : "Not counted"}>{differential !== null ? differential.toFixed(1) : "—"}</dd></div>
           </dl>
         </div>
       </div>

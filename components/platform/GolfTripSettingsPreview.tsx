@@ -65,6 +65,7 @@ import { TripInviteLinkCard } from "./TripInviteLinkCard";
 import { TripDetailsForm } from "./TripDetailsForm";
 import type { TravelMode } from "@/lib/platform/golfTripDetails";
 import { TIPS_SEEN_KEY, clearSeen } from "@/lib/platform/tripTour";
+import { AppSelect } from "@/components/platform/AppSelect";
 const GAME_GROUPS = {
   Individual: [{ id: "skins", name: "Skins", description: "Play for the lowest net score on the hole or the round.", players: "1-4 players" }],
   Matches: SIDE_GAME_REGISTRY.filter(game => game.id !== "skins").map(game => ({ id: game.id, name: game.name, description: game.description, players: `${game.supportedGroupSizes.join(" / ")} players` })),
@@ -877,11 +878,11 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
                           const idFor = (player: { key: string }) => playerIds?.[Number(player.key.slice(0, player.key.indexOf(":")))] || player.key;
                           return <label key={team} className={styles.totalPlayers}>
                             <span className={styles.typeHeading}>{teamLabel}</span>
-                            <select className={styles.draftInput} aria-label={`${teamLabel} captain`} value={draftCaptains[String(team)] ?? ""}
+                            <AppSelect className={styles.draftInput} aria-label={`${teamLabel} captain`} value={draftCaptains[String(team)] ?? ""}
                               onChange={event => { const value = event.target.value; setDraftCaptains(current => { const next = { ...current }; if (value) next[String(team)] = value; else delete next[String(team)]; return next; }); }}>
                               <option value="">Choose a captain</option>
                               {joinedPlayers.map(player => <option key={player.key} value={idFor(player)} disabled={Object.entries(draftCaptains).some(([other, id]) => id === idFor(player) && other !== String(team))}>{player.name}</option>)}
-                            </select>
+                            </AppSelect>
                           </label>;
                         })}
                         <p className={styles.statNote}>Captains start on their team and make its picks in the Draft Room. The organizer can pick for any team.</p>

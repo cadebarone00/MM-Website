@@ -7,6 +7,7 @@ import { FORMAT_NAMES } from "@/lib/platform/savedTripSetup";
 import { presetById } from "@/lib/platform/tripFormatPresets";
 import { SetupStepForm } from "../SetupStepForm";
 import styles from "./TripFormatsStep.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const subscribeNever = () => () => {};
 /** The Maroon picture (owner's photo). Until it's saved at public/images/the-maroon.jpg, a same-size placeholder shows. */
@@ -59,10 +60,10 @@ export function TripFormatsStep() {
         {roundCount === 0 && <p className={styles.note}>No rounds yet. You can pick formats in Settings once rounds are added.</p>}
         {Array.from({ length: roundCount }, (_, index) => <label key={index} className={styles.roundRow}>
           <span>Round {index + 1}</span>
-          <select name={`round${index + 1}Format`} className={styles.select} defaultValue="">
+          <AppSelect name={`round${index + 1}Format`} className={styles.select} defaultValue="">
             <option value="">Decide later</option>
             {FORMAT_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
-          </select>
+          </AppSelect>
         </label>)}
       </div>}
     </div>

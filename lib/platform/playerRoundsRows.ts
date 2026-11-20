@@ -13,7 +13,7 @@ export function playerRoundPayload(round: PlayerRound, sourceLabel: string | nul
 }
 export type PlayerRoundPayload = ReturnType<typeof playerRoundPayload>;
 
-const SOURCES: RoundSource[] = ["trip", "tournament", "personal", "history", "legacy"];
+const SOURCES: RoundSource[] = ["trip", "tournament", "personal", "history", "legacy", "tourney", "league"];
 const isObject = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const text = (value: unknown) => typeof value === "string" ? value : null;
 const num = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;

@@ -7,6 +7,7 @@ import { RibbonPostCard, StatusPill } from "./RibbonPostCard";
 import { RibbonEditor } from "./RibbonEditor";
 import { TripPromosPreview } from "./TripPreview";
 import styles from "./Ribbon.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const SAMPLE_ROLES: { value: string; label: string; role: ContentRole }[] = [
   { value: "admin", label: "Admin (Cade / Cam)", role: "admin" },
@@ -39,9 +40,9 @@ export function RibbonAdminBar() {
         <button type="button" aria-pressed={previewAsPlayer} onClick={() => ribbon.setPreviewAsPlayer(true)}>Player</button>
       </div>}
       {sample && <label className={styles.sample}>Sample data · nothing is saved · Try as
-        <select value={SAMPLE_ROLES.find((r) => r.role === role)?.value} onChange={(e) => ribbon.setSampleRole(SAMPLE_ROLES.find((r) => r.value === e.target.value)!.role)}>
+        <AppSelect value={SAMPLE_ROLES.find((r) => r.role === role)?.value} onChange={(e) => ribbon.setSampleRole(SAMPLE_ROLES.find((r) => r.value === e.target.value)!.role)}>
           {SAMPLE_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select></label>}
+        </AppSelect></label>}
     </div>}
     {role === "invited" && <div className={styles.invite} role="region" aria-label="Content team invite">
       <h2>You&apos;ve been invited to post on The Maroon</h2>

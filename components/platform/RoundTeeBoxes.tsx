@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import toggleStyles from "./GolfTripCompetition.module.css";
 import styles from "./RoundTeeBoxes.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 /** A round's tees: one tee box for every hole, or (Set per hole) a tee chosen hole by hole. */
 export type RoundTees = { tee: string | null; perHole: boolean; holeTees: Record<number, string>; locked?: boolean; savedCourseRef?: string };
@@ -75,9 +76,9 @@ export function RoundTeeBoxes({ courseRef, value: savedValue, onChange: commit, 
       <td className={styles.par}>{shown(parOf(number))}</td>
       <td className={styles.spacer} />
       <td className={styles.tee}>{value.perHole && choices.length > 0
-        ? <select disabled={locked} aria-label={`Hole ${number} tee`} value={tee ?? ""} onChange={event => onChange({ ...value, holeTees: { ...value.holeTees, [number]: event.target.value } })}>
+        ? <AppSelect disabled={locked} aria-label={`Hole ${number} tee`} value={tee ?? ""} onChange={event => onChange({ ...value, holeTees: { ...value.holeTees, [number]: event.target.value } })}>
           {choices.map(name => <option key={name} value={name}>{name}</option>)}
-        </select>
+        </AppSelect>
         : tee ?? "—"}</td>
       <td className={styles.yards}>{shown(yardsOn(number))}</td>
     </tr>;
@@ -93,12 +94,12 @@ export function RoundTeeBoxes({ courseRef, value: savedValue, onChange: commit, 
   return <section className={styles.tees} aria-label="Tee boxes">
     <div className={styles.group} role="group" aria-label="Tee box">
       <span className={styles.heading}>Tee box</span>
-      {data ? <select className={styles.roundSelect} aria-label="Round tee box" value={mixed ? "__mixed__" : roundTee ?? ""} disabled={locked || !tees.length}
+      {data ? <AppSelect className={styles.roundSelect} aria-label="Round tee box" value={mixed ? "__mixed__" : roundTee ?? ""} disabled={locked || !tees.length}
         onChange={event => onChange({ ...value, tee: event.target.value })}>
         {mixed && <option value="__mixed__" disabled>Mixed{mixedYards === null ? "" : ` (${mixedYards.toLocaleString("en-US")} yds)`}</option>}
         {!tees.length && <option value="">No tee boxes available</option>}
         {data.teeSets.map(set => <option key={set.name} value={set.name}>{set.name}{set.totalYards ? ` (${set.totalYards.toLocaleString("en-US")} yds)` : ""}</option>)}
-      </select> : <span className={styles.loading} role="status">Loading tee boxes...</span>}
+      </AppSelect> : <span className={styles.loading} role="status">Loading tee boxes...</span>}
     </div>
     {saveButton}
     {correction && <div className={styles.note}>

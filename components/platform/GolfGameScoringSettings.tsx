@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { DEFAULT_SCORING, editGameSettings, initialGameSettings, ninePointWarnings, type ScoringGameId, type ScoringSettings } from "@/lib/platform/game-engine";
 import styles from "./GolfTripSettingsPreview.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 const LABELS: Record<string, string> = {
   holeWin: "Hole win points", holeTie: "Hole tie points", matchWin: "Round / match win bonus", matchTie: "Match tie points", handicap: "Handicap", playoff: "Playoff",
@@ -46,7 +47,7 @@ export function GolfGameScoringSettings({ game }: { game: ScoringGameId }) {
               <span aria-live="polite">{value}</span>
               <button type="button" aria-label={`More ${labelFor(key)}`} disabled={value >= POINT_MAX} onClick={() => change(key, Math.min(POINT_MAX, value + POINT_STEP))}><Plus size={14} strokeWidth={2.5} aria-hidden /></button>
             </div>
-              : <select aria-label={labelFor(key)} value={value} onChange={event => change(key, event.target.value)}><option value="none">No points</option><option value="carryover">Carryover</option></select>}
+              : <AppSelect aria-label={labelFor(key)} value={value} onChange={event => change(key, event.target.value)}><option value="none">No points</option><option value="carryover">Carryover</option></AppSelect>}
         </div>;
       })}
       </fieldset>

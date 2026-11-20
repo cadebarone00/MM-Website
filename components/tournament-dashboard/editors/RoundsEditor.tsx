@@ -5,6 +5,7 @@ import base from "@/components/tournament-draft/TournamentDraftWorkspace.module.
 import { FORMATS, FORMAT_KEYS } from "@/lib/platform/formats";
 import styles from "../TournamentDashboard.module.css";
 import { EditorActions, Field, asInput, type EditorProps } from "../editorKit";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 type RoundRow = { day: string; label: string; format: string; courseId: string };
 
@@ -20,16 +21,16 @@ export function RoundsEditor({ setup, saving, onSave, onCancel }: EditorProps) {
       <div className={styles.rows}>{rounds.map((round, index) =>
         <div className={`${styles.row} ${styles.row4}`} key={index}>
           <Field label={`Round ${index + 1} format`}>
-            <select value={round.format} disabled={individual} onChange={(event) => update(index, { format: event.target.value })}>
+            <AppSelect value={round.format} disabled={individual} onChange={(event) => update(index, { format: event.target.value })}>
               <option value="">TBD — decide later</option>
               {FORMAT_KEYS.map((key) => <option key={key} value={key}>{FORMATS[key].label}</option>)}
-            </select>
+            </AppSelect>
           </Field>
           <Field label="Course">
-            <select value={round.courseId} onChange={(event) => update(index, { courseId: event.target.value })}>
+            <AppSelect value={round.courseId} onChange={(event) => update(index, { courseId: event.target.value })}>
               <option value="">{setup.courses.length ? "Choose later" : "Add courses first"}</option>
               {setup.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}
-            </select>
+            </AppSelect>
           </Field>
           <Field label="Day"><input type="number" min={1} max={14} value={round.day} onChange={(event) => update(index, { day: event.target.value })} /></Field>
           <Field label="Label"><input value={round.label} maxLength={40} placeholder="Morning" onChange={(event) => update(index, { label: event.target.value })} /></Field>

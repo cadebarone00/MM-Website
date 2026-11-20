@@ -55,7 +55,7 @@ export function tripRoundParsFromJson(value: unknown): TripRoundPars | null {
 export interface RoundTeeChoice { tee: string | null; perHole: boolean; holeTees: Record<number, string> }
 
 export type CourseParsResult =
-  | { ok: true; pars: number[]; tee: string | null }
+  | { ok: true; pars: number[]; tee: string | null; /** The one tee's course rating and slope (null for mixed tees or none on file). */ rating: number | null; slope: number | null }
   | { ok: false; reason: "no-scorecard" | "tee-par" };
 
 /**
@@ -73,7 +73,9 @@ export function coursePars(ref: string, course: GolfCourse, tees: RoundTeeChoice
   });
   if (!validTripPars(pars)) return { ok: false, reason: "tee-par" };
   const named = tees?.perHole ? [...new Set(Array.from({ length: HOLES }, (_, i) => teeFor(i + 1)).filter(Boolean))] : [tees?.tee ?? null].filter(Boolean);
-  return { ok: true, pars, tee: named.length ? named.join(" / ") : null };
+  // One tee for the whole round: its rating + slope, so the round can count toward handicap (mixed tees have no single rating).
+  const rated = named.length === 1 ? scoring.tees.find((t) => t.name === named[0]) : undefined;
+  return { ok: true, pars, tee: named.length ? named.join(" / ") : null, rating: rated?.rating ?? null, slope: rated?.slope ?? null };
 }
 
 /**

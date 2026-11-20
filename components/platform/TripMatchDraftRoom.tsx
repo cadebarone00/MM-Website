@@ -15,6 +15,7 @@ import { statCells } from "./TripDraftRoom";
 import { DraftPlayerProfile } from "./DraftPlayerProfile";
 import { teeTimeLabel } from "@/lib/platform/codeTournaments";
 import styles from "./TripDraftRoom.module.css";
+import { AppSelect } from "@/components/platform/AppSelect";
 export type { MatchDraftRound } from "@/lib/platform/matchDraft";
 
 const tick = (update: () => void) => { const id = window.setInterval(update, 1000); return () => window.clearInterval(id); };
@@ -168,8 +169,8 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
       {!round && !live.message && rounds.length > 0 && <p className={styles.message}>Loading…</p>}
     </div>
     <div className={styles.controlBar}>
-      {rounds.length > 1 && <label className={styles.roundSelect}><span>Round</span><select aria-label="Match selection round" value={roundKey} onChange={event => { setRoundKey(event.target.value); setTarget(null); setExpanded(false); }}>
-        {rounds.map(r => <option key={r.key} value={r.key}>Round {r.number} · {r.course} · {r.format}</option>)}</select></label>}
+      {rounds.length > 1 && <label className={styles.roundSelect}><span>Round</span><AppSelect aria-label="Match selection round" value={roundKey} onChange={event => { setRoundKey(event.target.value); setTarget(null); setExpanded(false); }}>
+        {rounds.map(r => <option key={r.key} value={r.key}>Round {r.number} · {r.course} · {r.format}</option>)}</AppSelect></label>}
       <div className={styles.controlButtons}>
         {active && round?.type === "Response" && data?.turn && viewer && mayActFor(viewer, data.turn.team) && <button type="button" className={styles.pick} disabled={live.busy || group.length < round.perSide} onClick={() => { setTarget(null); setExpanded(false); void live.act({ action: "submit" }); }}>{round.perSide === 1 ? "Submit single" : "Submit pairing"}</button>}
         {active && round?.type === "Ranks" && viewer && ([0, 1] as const).filter(team => mayActFor(viewer, team) && !data?.locked[team]).map(team => <button key={team} type="button" className={styles.pick} disabled={live.busy || !teamFull(team)} onClick={() => { setTarget(null); setExpanded(false); void live.act({ action: "lock", team }); }}>Lock in {viewer.isOrganizer ? label(team) : "ranks"}</button>)}

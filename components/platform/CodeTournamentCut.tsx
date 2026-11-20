@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cutLabel, type TournamentCut } from "@/lib/platform/codeTournaments";
+import { AppSelect } from "@/components/platform/AppSelect";
 
 /** "+4" / "4" / "E" / "-2" → a to-par number; null if it isn't one. */
 const toPar = (text: string) => { const t = text.trim().toUpperCase(); if (t === "E") return 0; return /^[+-]?\d{1,3}$/.test(t) ? Number(t) : null; };
@@ -44,8 +45,8 @@ export function CutFields({ initial, rounds, net, onChange, css }: { initial: To
           : <label className={css.field}><span>Cut number (to par)</span>
           <input inputMode="text" placeholder="e.g. +4" value={score} onChange={(e) => set({ score: e.target.value })} /></label>}
         {rounds > 2 && <label className={css.field}><span>Cut after</span>
-          <select value={round} onChange={(e) => set({ after: Number(e.target.value) })}>
-            {Array.from({ length: rounds - 1 }, (_, i) => <option key={i} value={i + 1}>Round {i + 1}</option>)}</select></label>}
+          <AppSelect value={round} onChange={(e) => set({ after: Number(e.target.value) })}>
+            {Array.from({ length: rounds - 1 }, (_, i) => <option key={i} value={i + 1}>Round {i + 1}</option>)}</AppSelect></label>}
         <p className={css.blurb}>{kind === "top"
           ? `The top ${whole(players) ?? "—"} players${net ? " on net" : ""} after Round ${round}, plus anyone tied with the last spot, play on.`
           : `Players at ${toPar(score) === null ? "—" : cutLabel(toPar(score)!)} or better${net ? " (net)" : ""} after Round ${round} play on.`} Everyone else misses the cut.</p>

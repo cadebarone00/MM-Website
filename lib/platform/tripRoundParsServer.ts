@@ -14,7 +14,7 @@ import { coursePars, roundCoursePick, type CourseParsResult } from "./tripRoundP
 export type RoundCourseLoad =
   | { status: "no-course" }
   | { status: "not-found" | "unavailable" | "no-scorecard" | "tee-par"; ref: string; name: string; tee: string | null }
-  | { status: "ok"; ref: string; name: string; tee: string | null; pars: number[] };
+  | { status: "ok"; ref: string; name: string; tee: string | null; pars: number[]; rating: number | null; slope: number | null };
 
 /** The round's course + tee from Trip Settings, and its pars through scoringCourse() (course library first, then OpenGolf). */
 export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: number): Promise<RoundCourseLoad> {
@@ -28,7 +28,7 @@ export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: numb
     course ??= (await createOpenGolfProvider().getCourseDetail(pick.ref))?.course ?? null;
     if (!course) return { status: "not-found", ref: pick.ref, name: pick.name, tee: teeName };
     const result: CourseParsResult = coursePars(pick.ref, course, pick.tees);
-    return result.ok ? { status: "ok", ref: pick.ref, name: pick.name, tee: result.tee, pars: result.pars }
+    return result.ok ? { status: "ok", ref: pick.ref, name: pick.name, tee: result.tee, pars: result.pars, rating: result.rating, slope: result.slope }
       : { status: result.reason, ref: pick.ref, name: pick.name, tee: teeName };
   } catch (error) {
     console.error("Round course pars failed:", error instanceof Error ? error.message : error);
@@ -36,14 +36,23 @@ export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: numb
   }
 }
 
-/** Organizer saves the round's pars. False = refused (not organizer, bad pars, or the round already has a score). */
+/**
+ * Organizer saves the round's pars. False = refused (not organizer, bad pars, or the round already has a score).
+ * Course pars from one tee also save that tee's rating + slope (supabase/rounds_everywhere.sql), so trip rounds can count
+ * toward handicap; without that file the pars still save.
+ */
 export async function confirmRoundPars(profileId: string, tripId: string, roundNumber: number, pars: number[],
-  source: "course" | "manual", course: { ref: string | null; name: string | null; tee: string | null }): Promise<boolean | "failed"> {
-  const { data, error } = await createSupabaseServiceRoleClient().rpc("confirm_trip_round_pars", {
+  source: "course" | "manual", course: { ref: string | null; name: string | null; tee: string | null; rating?: number | null; slope?: number | null }): Promise<boolean | "failed"> {
+  const db = createSupabaseServiceRoleClient();
+  const { data, error } = await db.rpc("confirm_trip_round_pars", {
     p_profile: profileId, p_trip: tripId, p_round: roundNumber, p_pars: pars, p_source: source,
     p_course_ref: course.ref, p_course_name: course.name, p_tee: course.tee,
   });
   if (error) { console.error("confirm_trip_round_pars failed:", error.message); return "failed"; }
+  if (data === true && source === "course" && course.rating != null && course.slope != null) {
+    const rated = await db.rpc("set_trip_round_tee_rating", { p_profile: profileId, p_trip: tripId, p_round: roundNumber, p_rating: course.rating, p_slope: course.slope });
+    if (rated.error) console.error("set_trip_round_tee_rating failed:", rated.error.message);
+  }
   return data === true;
 }
 
