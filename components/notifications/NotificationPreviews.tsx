@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, ListOrdered, LockKeyhole, Mail, Megaphone, MessageCircle, Plane, Timer, Trophy, UserPlus, Users, X, type LucideIcon } from "lucide-react";
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { createElement, useLayoutEffect, useRef, type ReactNode } from "react";
 import { appleSystem, androidSystem } from "@/lib/fonts/notifications";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
@@ -343,7 +343,10 @@ const ICONS: Record<NotificationIcon, LucideIcon> = {
   flame: Flame, calendarClock: CalendarClock, clipboardCheck: ClipboardCheck, alertTriangle: AlertTriangle, trophy: Trophy, userPlus: UserPlus,
   check: Check, x: X, mail: Mail, link: Link2, plane: Plane, megaphone: Megaphone, users: Users, listOrdered: ListOrdered, timer: Timer, messageCircle: MessageCircle,
 };
-export const kindIcon = (kind: NotificationKind): LucideIcon => ICONS[catalogEntry(kind).icon];
+/** A type's icon (master list). Drawn with createElement: the icon is picked from a fixed table, not made during render. */
+export function KindIcon({ kind, size = 18 }: { kind: NotificationKind; size?: number }) {
+  return createElement(ICONS[catalogEntry(kind).icon], { size, "aria-hidden": true });
+}
 
 /** A plain app screen behind the in-app previews: the trip's maroon top bar with the bell. */
 function AppScreen({ children, banner, notes = SAMPLE_NOTIFICATIONS }: { children?: ReactNode; banner?: ReactNode; notes?: AppNotification[] }) {
@@ -367,9 +370,8 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
     {sorted.length === 0
       ? <p className={styles.listEmpty}>No notifications yet. Scores, tee times and requests for your groups will show up here.</p>
       : <ul>{sorted.map(note => {
-        const Icon = kindIcon(note.kind);
         return <li key={note.id} className={note.read ? undefined : styles.unread}>
-          <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
+          <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
           <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, now)}</p></div>
           {!note.read && <i className={styles.dot} aria-label="Unread" />}
         </li>;
@@ -379,9 +381,8 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
 
 /** Slides down over the app while it's open; tap opens the link. */
 export function TopBanner({ note }: { note: AppNotification }) {
-  const Icon = kindIcon(note.kind);
   return <div className={styles.topBanner} role="status">
-    <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
+    <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
     <div><p className={styles.listTitle}>{note.title}</p><p className={styles.topBannerBody}>{note.body}</p></div>
   </div>;
 }
@@ -391,7 +392,6 @@ export function TopBanner({ note }: { note: AppNotification }) {
  * the top banner. Used by the All types page (NotificationCatalog.tsx). `surfaces` = where the type shows (catalog).
  */
 export function NotificationSurfaces({ note, surfaces }: { note: AppNotification; surfaces: readonly ("phone" | "bell" | "banner")[] }) {
-  const Icon = kindIcon(note.kind);
   return <div className={`${appleSystem.variable} ${androidSystem.variable} ${styles.surfaces}`}>
     {surfaces.includes("phone") && <>
       <figure className={`${styles.surface} ${styles.wallpaper}`}><figcaption>iPhone</figcaption><PhoneNotification note={note} /></figure>
@@ -405,7 +405,7 @@ export function NotificationSurfaces({ note, surfaces }: { note: AppNotification
     </>}
     {surfaces.includes("bell") && <figure className={`${styles.surface} ${styles.surfaceApp} ${styles.list}`}><figcaption>Bell list</figcaption>
       <ul><li className={styles.unread}>
-        <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
+        <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
         <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</p></div>
         <i className={styles.dot} aria-label="Unread" />
       </li></ul>

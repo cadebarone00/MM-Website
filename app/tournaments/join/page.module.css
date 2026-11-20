@@ -39,4 +39,4 @@
 }
 
 /* Light mode: the page title sits on the photo, so it stays light. */
-:global(html[data-mode="light"]) .pageHeader > header { color: #fbf8f1; }
+:global(html[data-mode="light"]) .pageHeader > header { color: var(--lm-ink-fbf8f1, #fbf8f1); }

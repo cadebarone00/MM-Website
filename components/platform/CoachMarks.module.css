@@ -5,5 +5,5 @@
 .text{margin:0;font:600 14px/1.4 var(--font-barlow),sans-serif}
 .row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
 .count{font:600 12px var(--font-barlow),sans-serif;opacity:.75}
-.button{height:34px;padding:0 16px;border:0;border-radius:10px;background:#240001;color:#fbf8f1;font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
+.button{height:34px;padding:0 16px;border:0;border-radius:10px;background:var(--lm-bg-240001, #240001);color:var(--lm-ink-fbf8f1, #fbf8f1);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .button:focus-visible{outline:2px solid #fbf8f1;outline-offset:2px}

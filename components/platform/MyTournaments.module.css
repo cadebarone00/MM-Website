@@ -3,7 +3,7 @@
 .intro h1 { font-family: var(--font-spectral), Georgia, serif; color: var(--color-maroon-700); font-size: clamp(30px, 4vw, 42px); line-height: 1.2; margin: 0 0 8px; }
 .intro p { margin: 0; color: #6f655b; font-size: 16px; }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 7px; font-size: 14px; font-weight: 600; white-space: nowrap; }
-.primary { background: var(--color-maroon-700); color: #ffffff; border: 1px solid var(--color-maroon-700); }
+.primary { background: var(--mode-surface-color-maroon-700, var(--color-maroon-700)); color: var(--lm-ink-ffffff, #ffffff); border: 1px solid var(--color-maroon-700); }
 .primary:hover { background: var(--brand-6b1114); }
 .secondary { border: 1px solid var(--lm-ink-cbbfac); color: var(--color-maroon-700); background: #ffffff; }
 .primary:focus-visible, .secondary:focus-visible { outline: 3px solid #ad8434; outline-offset: 3px; }
@@ -22,8 +22,8 @@
 .progress { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #6f655b; }
 .progress progress { appearance: none; flex: 1; min-width: 0; height: 8px; border: 0; border-radius: 10px; overflow: hidden; background: #e5dccd; }
 .progress progress::-webkit-progress-bar { background: #e5dccd; }
-.progress progress::-webkit-progress-value { background: var(--color-maroon-700); }
-.progress progress::-moz-progress-bar { background: var(--color-maroon-700); }
+.progress progress::-webkit-progress-value { background: var(--mode-surface-color-maroon-700, var(--color-maroon-700)); }
+.progress progress::-moz-progress-bar { background: var(--mode-surface-color-maroon-700, var(--color-maroon-700)); }
 .progress span { white-space: nowrap; }
 .meta { margin: 0; font-size: 14px; color: #6f655b; line-height: 1.6; overflow-wrap: anywhere; }
 .meta span { font-size: 12px; color: #8a7f72; }

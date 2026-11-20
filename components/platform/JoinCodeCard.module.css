@@ -6,7 +6,7 @@
 .input{flex:1;min-width:0;min-height:48px;padding:0 14px;border:1px solid color-mix(in srgb,var(--color-maroon-800) 14.9%,transparent);border-radius:12px;background:#f8f6f2;color:var(--color-maroon-800);font:600 16px var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}
 .input::placeholder{letter-spacing:0;text-transform:none;font-weight:400}
 .input:focus-visible{outline:3px solid var(--lm-ink-c9a86e);outline-offset:1px}
-.button{flex:none;min-height:48px;padding:0 20px;border:0;border-radius:12px;background:var(--color-maroon-700);color:#fbf8f1;font:700 16px/1 var(--font-barlow),sans-serif;cursor:pointer}
+.button{flex:none;min-height:48px;padding:0 20px;border:0;border-radius:12px;background:var(--mode-surface-color-maroon-700, var(--color-maroon-700));color:var(--lm-ink-fbf8f1, #fbf8f1);font:700 16px/1 var(--font-barlow),sans-serif;cursor:pointer}
 .button:disabled{opacity:.5;cursor:default}
 .button:focus-visible{outline:3px solid var(--lm-ink-c9a86e);outline-offset:2px}
 .error{margin:8px 0 0;color:#a3122a;font:400 14px/1.4 var(--font-barlow),sans-serif}

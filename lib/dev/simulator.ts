@@ -54,6 +54,9 @@ export const SIMULATOR_STATES = [
   { id: "notifications", label: "Notifications state", kind: "pending", note: "No notification-state adapter yet." },
 ] as const;
 export type SimulatorState = {
+  /** Team colors used only by fictional trip scenarios. */
+  scenarioTeamAColor?: string;
+  scenarioTeamBColor?: string;
   tripLength?: number;
   tripMoment?: "30-days" | "day-before" | "during" | "complete";
   tripDay?: number;
@@ -88,6 +91,8 @@ export type SimulatorState = {
   profileSearch?: "empty" | "results" | "none";
   /** Settings preview (/dev/profile/settings): default, every notification off, an organizer offer waiting, or a content admin. */
   settingsPreview?: "default" | "allOff" | "offer" | "admin";
+  /** The on-screen phone keyboard drawn when a text field is tapped (set by the simulator from the device preset). */
+  keyboard?: "ios" | "android" | "off";
   dualDraftMomentum?: boolean;
   playerRoleViewer?: "organizer" | "captain-a" | "captain-b" | "player";
   matchDraftPreview?: "off" | "Response" | "Ranks" | "Randomized";
@@ -225,6 +230,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.profilePreview !== undefined && !PROFILE_PREVIEWS.includes(state.profilePreview as ProfilePreview)) return null;
   if (state.profileSearch !== undefined && !["empty", "results", "none"].includes(String(state.profileSearch))) return null;
   if (state.settingsPreview !== undefined && !["default", "allOff", "offer", "admin"].includes(String(state.settingsPreview))) return null;
+  if (state.keyboard !== undefined && !["ios", "android", "off"].includes(String(state.keyboard))) return null;
   if (state.playerRoleViewer !== undefined && !["organizer","captain-a","captain-b","player"].includes(String(state.playerRoleViewer))) return null;
   if (state.matchDraftPreview !== undefined && !["off", "Response", "Ranks", "Randomized"].includes(String(state.matchDraftPreview))) return null;
   if (state.dualDraftMomentum !== undefined && typeof state.dualDraftMomentum !== "boolean") return null;

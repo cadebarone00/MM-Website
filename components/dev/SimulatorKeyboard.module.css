@@ -1,0 +1,41 @@
+/* DEV ONLY: the simulator's phone keyboard (SimulatorKeyboard.tsx). Drawn on top of everything at the bottom of the phone. */
+.keyboard{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:flex;flex-direction:column;box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;animation:up .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.ios{padding:0 3px;background:#d1d4db;color:#000}
+.android{padding:0 6px;background:#1f2125;color:#e3e3e3;font-family:Roboto,"Google Sans",system-ui,sans-serif}
+
+.suggest{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;flex:none;height:44px;text-align:center;font-size:16px}
+.suggest > span + span{border-left:1px solid rgba(0,0,0,.12)}
+.android .suggest{height:40px;font-size:15px}
+.android .suggest > span + span{border-left-color:rgba(255,255,255,.12)}
+.dim{opacity:.55}
+.suggestNote{grid-column:1/-1;font-size:14px;opacity:.7}
+
+.rows,.pad{display:flex;flex-direction:column;justify-content:space-evenly;flex:1;gap:0}
+.row{display:flex;justify-content:center;gap:6px;padding:0 0 0}
+.android .row{gap:5px}
+.key{flex:1 1 0;min-width:0;height:42px;padding:0;border:0;border-radius:5px;background:#fff;color:inherit;font-size:22px;line-height:1;box-shadow:0 1px 0 rgba(0,0,0,.35);cursor:pointer}
+.key:active{background:#aeb3be}
+.android .key{height:44px;border-radius:7px;background:#3c4043;font-size:20px;box-shadow:none}
+.android .key:active{background:#5f6368}
+.mod{background:#abb0ba;font-size:15px}
+.android .mod{background:#2d3034}
+.on{background:#fff;font-weight:700}
+.android .on{background:#8ab4f8;color:#1f2125}
+.wide{flex:1.6 1 0}
+.space{flex:5 1 0;font-size:16px}
+.primary{background:#0a84ff;color:#fff;font-size:16px}
+.android .primary{background:#8ab4f8;color:#1f2125;border-radius:999px}
+/* The second row of letters is indented on iOS, like the real keyboard. */
+.ios .rows > .row:nth-child(2){padding:0 18px}
+
+.padKey{display:flex;flex-direction:column;align-items:center;justify-content:center;height:46px;font-size:24px}
+.padKey b{font-weight:400}
+.padKey small{font-size:10px;letter-spacing:.12em}
+
+.iosBottom{display:flex;align-items:center;justify-content:space-between;flex:none;height:46px;padding:0 22px;font-size:22px;position:relative}
+.home{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:999px;background:#000}
+.androidBottom{display:flex;align-items:center;justify-content:space-between;flex:none;height:44px;padding:0 28px;font-size:16px;opacity:.75}
+.homePill{width:108px;height:4px;border-radius:999px;background:#e3e3e3}
+@media (prefers-reduced-motion:reduce){.keyboard{animation:none}}

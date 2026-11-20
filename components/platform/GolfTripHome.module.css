@@ -67,7 +67,7 @@
 /* Every Golf-tab board (tournament / individual / Matches / Games) wears the Home Big Board's look: gold outline, dark
    maroon, the gold light from the top. The lead fills (team-color blocks) still run to the board's edges inside it. */
 .golfTop :is(.golfTopSize,.golfTopFill) section{border:1px solid rgba(201,168,110,.6);border-radius:16px;
-  background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;
+  background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),var(--lm-bg-240001);
   box-shadow:0 10px 28px color-mix(in srgb,#000 35%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
 .overview{display:flex;flex-direction:column;gap:12px}
 /* Phones: the strip runs to the screen edges (content stays put via the slide padding), so the Match slide's team
@@ -124,15 +124,15 @@
    80% of the screen tall, full width with rounded top corners, sliding up from the bottom over a dimmed page; serif title, cream text, gold icons. */
 .slideOverlay{display:flex;align-items:flex-end;justify-content:center;z-index:900;background:color-mix(in srgb,var(--lm-bg-050406) 55%,transparent);animation:sheetFade .2s ease-out both}
 .slideSheet{width:100%;max-width:520px;height:80dvh;max-height:none;overflow-y:auto;box-sizing:border-box;padding:22px 20px calc(18px + env(safe-area-inset-bottom));border:0;border-radius:28px 28px 0 0;
-  background:var(--lm-bg-240001,#240001);color:#fbf8f1;box-shadow:0 -16px 40px rgba(0,0,0,.35);animation:sheetUp .28s cubic-bezier(.2,.8,.2,1) both}
-.slideSheet .sheetClose{top:18px;right:14px;color:#fbf8f1}
-.slideTitle{margin:0 44px 6px 0;padding-bottom:14px;border-bottom:1px solid rgba(251,248,241,.12);font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:#fbf8f1}
+  background:var(--lm-bg-240001,#240001);color:var(--lm-ink-fbf8f1);box-shadow:0 -16px 40px rgba(0,0,0,.35);animation:sheetUp .28s cubic-bezier(.2,.8,.2,1) both}
+.slideSheet .sheetClose{top:18px;right:14px;color:var(--lm-ink-fbf8f1)}
+.slideTitle{margin:0 44px 6px 0;padding-bottom:14px;border-bottom:1px solid rgba(251,248,241,.12);font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:var(--lm-ink-fbf8f1)}
 .slideSheet .sheetActionList{padding-top:4px}
-.slideSheet .sheetActionRow{min-height:52px;padding:12px 4px;border-bottom:1px solid rgba(251,248,241,.08);color:#fbf8f1}
+.slideSheet .sheetActionRow{min-height:52px;padding:12px 4px;border-bottom:1px solid rgba(251,248,241,.08);color:var(--lm-ink-fbf8f1)}
 .slideSheet .sheetActionRow:last-child{border-bottom:0}
 .slideSheet .sheetActionRow:hover{background:rgba(251,248,241,.06)}
-.slideSheet .sheetActionIcon{color:#dcc495;opacity:1}
-.slideSheet .sheetActionText{color:#fbf8f1;font-size:17px}
+.slideSheet .sheetActionIcon{color:var(--lm-ink-dcc495);opacity:1}
+.slideSheet .sheetActionText{color:var(--lm-ink-fbf8f1);font-size:17px}
 @media(prefers-reduced-motion:reduce){.slideOverlay,.slideSheet{animation:none}}
 .notificationsAnchor{position:relative}
 /* Bell (and chat, GolfTripChat.module.css): one slide-up sheet, 85% of the screen tall, over the bottom menu (z 100),
@@ -151,7 +151,7 @@
 .deletePrompt{margin:0;color:var(--lm-ink-ffffff);font:700 20px/1.2 var(--font-spectral),Georgia,serif;text-align:center}
 .deleteDialog .cancelButton,.deleteDialog .deleteButton{min-height:42px;padding:0 18px;border-radius:10px;cursor:pointer;font:700 14px/1 var(--font-barlow),sans-serif}
 .deleteDialog .cancelButton{background:transparent;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent);color:var(--lm-ink-fbf8f1)}
-.deleteDialog .deleteButton{background:#c62828;border:1px solid #c62828;color:#fff}
+.deleteDialog .deleteButton{background:#c62828;border:1px solid #c62828;color:var(--lm-ink-ffffff)}
 .toast{position:fixed;top:calc(16px + var(--app-top-clearance));left:50%;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:min(320px,calc(100vw - 24px));padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--lm-bg-161211) 96%,transparent);box-shadow:0 10px 24px rgba(0,0,0,.28);transform:translateX(-50%) translateY(0);opacity:1;transition:transform .35s ease,opacity .35s ease;z-index:40}
 .toast div{display:flex;flex-direction:column;gap:2px;color:var(--lm-ink-ffffff)}
 .toast strong{font:700 14px/1 var(--font-barlow),sans-serif}
@@ -173,7 +173,7 @@
 .confirmActions{display:flex;gap:10px}
 .cancelButton{background:transparent;border:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent);color:var(--lm-ink-fbf8f1)}
 .cancelButton:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
-.deleteButton{background:#c62828;border:1px solid #c62828;color:#fff}
+.deleteButton{background:#c62828;border:1px solid #c62828;color:var(--lm-ink-ffffff)}
 .deleteButton:hover{background:#b71c1c}
 .cancelButton:disabled,.deleteButton:disabled{opacity:.6;cursor:default}
 .dangerButton:focus-visible,.cancelButton:focus-visible,.deleteButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
@@ -257,9 +257,9 @@
 .itineraryDayStep{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-dcc495);cursor:pointer}
 .itineraryDayStep:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Info → Itinerary: each plan is a raised cream box (same look as Competition → Format round boxes). */
-.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(251,248,241,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(251,248,241,.12),transparent 70%),#240001;color:var(--lm-ink-fbf8f1);box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
-.itineraryBoxTime{overflow-wrap:anywhere;color:#d4bfa9;font:500 13px/1.2 var(--font-barlow),sans-serif}
-.itineraryBoxKind{color:#d4bfa9;font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.itineraryBox{display:grid;gap:2px;padding:14px 16px;border:1px solid rgba(251,248,241,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(251,248,241,.12),transparent 70%),var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+.itineraryBoxTime{overflow-wrap:anywhere;color:var(--lm-ink-d4bfa9);font:500 13px/1.2 var(--font-barlow),sans-serif}
+.itineraryBoxKind{color:var(--lm-ink-d4bfa9);font:700 12px/1.2 var(--font-barlow),sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .itineraryBoxTitle{color:var(--lm-ink-fbf8f1);font:700 17px/1.2 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
 .itineraryBoxTop{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .itineraryBoxTop .itineraryBoxKind{flex:none;text-align:right}
@@ -323,9 +323,9 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .rsvpButtons{position:absolute;top:9px;right:12px;display:flex;gap:6px}
 .rsvpPlay,.rsvpSit{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:24px;min-height:0;padding:0 10px;border-radius:999px;font:700 12px/1 var(--font-barlow),sans-serif;text-align:center;cursor:pointer}
 .rsvpPlay{border:1.5px solid #7fd39a;background:transparent;color:#7fd39a}
-.rsvpPlay[aria-pressed=true]{background:#2e7d32;color:#fff}
+.rsvpPlay[aria-pressed=true]{background:#2e7d32;color:var(--lm-ink-ffffff)}
 .rsvpSit{border:1.5px solid #ff9a9a;background:transparent;color:#ff9a9a}
-.rsvpSit[aria-pressed=true]{border-color:#c62828;background:#c62828;color:#fff}
+.rsvpSit[aria-pressed=true]{border-color:#c62828;background:#c62828;color:var(--lm-ink-ffffff)}
 .rsvpPlay:focus-visible,.rsvpSit:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 /* Playing: a green tag bottom right. Sitting out: the box shows only its top row (no line, course or round). */
 .itineraryBox[data-rsvp=in]{position:relative;padding-bottom:28px}
@@ -333,7 +333,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .itineraryBox[data-rsvp=out] .itineraryBoxTop.itineraryBoxTop{padding-bottom:0;margin-bottom:0;border-bottom:0}
 /* Play / Sit out and "Playing" in the box's own font (Spectral, like the tee time and course); locked once tee times start. */
 .rsvpPlay.rsvpPlay,.rsvpSit.rsvpSit{font:700 13px/1 var(--font-spectral),Georgia,serif}
-.itineraryInvitedBy{color:#d4bfa9;font:600 12px/1.3 var(--font-barlow),sans-serif;letter-spacing:.04em}
+.itineraryInvitedBy{color:var(--lm-ink-d4bfa9);font:600 12px/1.3 var(--font-barlow),sans-serif;letter-spacing:.04em}
 .itineraryPlaying.itineraryPlaying{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:.04em;text-transform:none}
 .rsvpPlay:disabled,.rsvpSit:disabled{opacity:.5;cursor:default}
 /* Golf sections (Leaderboard / Games / Stats…): equal gaps between the words, not equal boxes. */
@@ -356,7 +356,8 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 /* Golf → Team: a pill per round ("Round 1"…), 4 across with the 5th peeking in at the edge so you can tell it scrolls;
    the picked round's course · format under them. */
 .roundPicker{margin:0 0 -4px}
-.roundSelector{padding:2px 4px;overflow:hidden;border:1px solid rgba(201,168,110,.6);border-radius:12px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.roundSelector{overflow:hidden}
+@media(max-width:592px){.roundSelector{margin-inline:calc(-1 * var(--page-gutter))}}
 .roundPills{position:relative;isolation:isolate;display:flex;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:0}
 .roundPills::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:0;bottom:0;left:0;width:calc(100% / 4.4);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transform:translateX(calc(var(--round-index,0) * 100%));transition:transform 220ms ease;pointer-events:none}
 .roundPills::-webkit-scrollbar{display:none}
@@ -366,7 +367,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 @media(prefers-reduced-motion:reduce){.roundPills::before{transition:none}}
 .roundPill:focus-visible{outline:2px solid #edcf91;outline-offset:2px}
 /* Under the pills: course left-aligned, format right-aligned (owner 2026-11-10). */
-.roundPickerInfo{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;box-sizing:border-box;min-height:0;margin:5px 0 0 !important;padding:4px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:#fbf8f1;text-align:center}
+.roundPickerInfo{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;box-sizing:border-box;min-height:0;margin:5px 0 0 !important;padding:4px;font:600 15px/1.3 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1);text-align:center}
 .roundPickerCourse,.roundPickerFormat{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}
 .roundPickerCourse{width:100%}
 .roundPickerFormat{font-size:13px;color:var(--lm-ink-dcc495)}
@@ -416,7 +417,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 :global(html[data-mode="light"]) .account{background:linear-gradient(#f3eee6 120px,#f7f8f7 120px)}
 
 .leaderboardBoard{min-width:0}
-.slidingSelector{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.slidingSelector{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),var(--lm-bg-240001)}
 .slidingSelector::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/2);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transition:transform 220ms ease}
 .slidingSelector[data-second=true]::before{transform:translateX(100%)}
 .slidingSelector .tab{position:relative;min-width:0;min-height:30px;margin:0;padding:4px 12px;border:0;border-radius:12px;background:transparent;color:color-mix(in srgb,var(--lm-ink-fbf8f1) 60%,transparent);font-size:12px;text-align:center;text-shadow:none;transition:color 220ms ease}
@@ -467,7 +468,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .slidingSelector.underlineSelector .tab{min-height:36px;border-radius:0;font-size:13px}
 /* Team / Indi only (owner 2026-11-13, later): keep the bubble around both, and the picked one gets just a short glowing gold
    line under its word (no box). The line slides between them. */
-.slidingSelector.underlineSelector.bubbleUnderline{padding:2px 4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:none}
+.slidingSelector.underlineSelector.bubbleUnderline{padding:2px 4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),var(--lm-bg-240001);box-shadow:none}
 .slidingSelector.underlineSelector.bubbleUnderline::before{bottom:6px;left:calc(4px + (100% - 8px)/4 - 18px);width:36px;border-radius:999px;transform:none;box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45);transition:left 220ms ease}
 .slidingSelector.underlineSelector.bubbleUnderline[data-second=true]::before{left:calc(4px + 3*(100% - 8px)/4 - 18px)}
 .slidingSelector.underlineSelector.bubbleUnderline .tab{min-height:26px;padding-block:2px}
@@ -479,3 +480,5 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{display:block;left:10%;right:10%;bottom:-3px;height:2px;border-radius:0;background:#dcc495;box-shadow:none;opacity:0;transition:opacity .15s ease}
 .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab[aria-pressed=true]::after{opacity:1}
 @media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{transition:none}}
+
+:global(html[data-mode="light"]) .golfTop :is(.golfTopSize,.golfTopFill) section,:global(html[data-mode="light"]) :is(.itineraryBox,.slidingSelector,.slidingSelector.underlineSelector.bubbleUnderline){background:radial-gradient(120% 70% at 50% -18%,rgba(107,30,42,.16),transparent 70%),#fbf8f1;box-shadow:0 4px 16px rgba(36,0,1,.08)}

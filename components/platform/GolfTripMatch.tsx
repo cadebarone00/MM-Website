@@ -136,7 +136,7 @@ function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatc
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
 /** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
-export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, winChances }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView;
+export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, winChances, hidePlayerDividers = false }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView; hidePlayerDividers?: boolean;
   /** Each player's chance (0–1) of winning the trip's individual competition, by name — net and gross (Predict's model). When given,
    *  it replaces the @username line under each name. "loading" = still being worked out: the line's space is kept, empty. */
   winChances?: { net: Map<string, number>; gross: Map<string, number> } | "loading";
@@ -203,7 +203,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, wi
 
   const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
-  return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
+  return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard} ${hidePlayerDividers ? styles.noPlayerDividers : ""}`}>
     <div>
       <div className={styles.leaderboardListHeading}>
         {/* Gross/Net (owner 2026-11-13): centered over the score columns (TOT → TDY), in the Team/Indi sliding style. It spans the
@@ -560,7 +560,7 @@ export function GolfTournamentSummary({ match, tripStats }: { match: GolfMatchPr
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined}>
       <div className={`${styles.summaryTeams} ${styles.summaryTap} ${styles.teamStripeSummary}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
-        {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
+        {/* Team colors glow from the upper corners behind the standings. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
           <p className={styles.summaryScore}>{team ? halves(team.points[i]) : side.score || "—"}</p>

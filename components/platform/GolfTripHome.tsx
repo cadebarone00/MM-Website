@@ -209,7 +209,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   });
   const teamColorVars = Object.fromEntries((["left", "right"] as const).flatMap((side, team) => {
     const color = teamColor(teamColorIds[team]);
-    return color ? [[`--team-${side}`, color.base], [`--team-${side}-text`, color.text], [`--team-${side}-on-dark`, color.onDark]] : [];
+    return color ? [[`--team-${side}`, color.base], [`--team-${side}-text`, color.text], [`--team-${side}-on-dark`, color.onDark], [`--team-${side}-glow`, color.id === "maroon" ? "#b13b50" : color.onDark]] : [];
   })) as CSSProperties;
   const scoring = previewMatch?.formatDef?.scoringMethod;
   const structure: CompetitionStructure = !competitive ? { individual: false, team: false }
@@ -591,7 +591,7 @@ function GolfSlides({ weather, previewMatch: sourceMatch, schedule, now, structu
         {name === "Overview"
           ? noComp && !inAppScoring ? null
           : teamOnly && previewMatch ? <GolfTeeSheet match={previewMatch} sittingOut={sittingOut} />
-          : leaderboardMatch ? <GolfTripLeaderboard match={leaderboardMatch} byToday={noComp} tripStats={tripStats} winChances={winChances} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
+          : leaderboardMatch ? <GolfTripLeaderboard hidePlayerDividers match={leaderboardMatch} byToday={noComp} tripStats={tripStats} winChances={winChances} /> : <Card title="Score Overview"><Empty>Your leaderboard and round scores will show here</Empty></Card>
           : previewMatch && roundMatch ? <GolfTripCompetitionMatchPreview key={previewMatch.round} initialMatch={previewMatch} matchOffset={matchOffset} viewRound={previewMatch.round} roundStarted={roundStarted && previewMatch.round === sourceMatch?.round} draftScope={rsvpKey} /> : <Card title="Competition"><Empty>Your matchups will show here</Empty></Card>}
       </div>)}
     </div>

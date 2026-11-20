@@ -96,11 +96,11 @@
 .homeActions{display:grid;gap:10px;margin:8px 0 18px}
 .empty{display:grid;justify-items:center;gap:10px;margin:28px 0;text-align:center;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
 .leagueList{display:grid;gap:8px;margin:0 0 16px;padding:0;list-style:none}
-.leagueList a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #b99c6b77;border-radius:14px;color:#f4efe6;text-decoration:none}
+.leagueList a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #b99c6b77;border-radius:14px;color:var(--lm-ink-f4efe6, #f4efe6);text-decoration:none}
 .leagueList strong{display:block;font:600 17px var(--font-spectral),Georgia,serif}
 .leagueList small{display:block;margin-top:2px;font:500 13px var(--font-barlow),sans-serif;color:#c9a86e}
 /* On the dark page the main button is gold (Play a round's maroon button is made for its cream cards). */
 .create{background:#dcc495;color:var(--color-maroon-950);text-decoration:none}
 /* DEV ONLY (/dev/samples): each sample's letter (P / T / C / L), as on Profile → Rounds. */
 .sampleRow{display:flex;align-items:center;gap:12px;min-width:0}
-.sampleLetter{display:grid;flex:none;place-items:center;width:28px;height:28px;border:1px solid #c9a86e99;border-radius:50%;font:700 13px var(--font-barlow),sans-serif;color:#dcc495}
+.sampleLetter{display:grid;flex:none;place-items:center;width:28px;height:28px;border:1px solid #c9a86e99;border-radius:50%;font:700 13px var(--font-barlow),sans-serif;color:var(--lm-ink-dcc495, #dcc495)}

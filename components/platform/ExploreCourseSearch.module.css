@@ -56,9 +56,9 @@
 .scorecardScroll{overflow-x:auto;border-radius:10px;border:1px solid var(--lm-ink-e6dccb)}
 .scorecardTable{width:100%;border-collapse:collapse;font:500 11px/1 var(--font-barlow),sans-serif;font-variant-numeric:tabular-nums;color:#2b211d;text-align:center}
 .scorecardTable th,.scorecardTable td{padding:7px 1px;min-width:0;border-top:1px solid var(--lm-ink-efe6d8)}
-.scorecardTable thead th{border-top:0;background:var(--color-maroon-650);color:#f3e6c9;font-weight:700}
+.scorecardTable thead th{border-top:0;background:var(--mode-surface-color-maroon-650, var(--color-maroon-650));color:#f3e6c9;font-weight:700}
 .scorecardTable th[scope=row]{position:sticky;left:0;min-width:0;padding:7px 4px 7px 6px;text-align:left;background:#f6f0e6;font-weight:700;white-space:nowrap}
-.scorecardTable thead th[scope=row]{background:var(--color-maroon-650)}
+.scorecardTable thead th[scope=row]{background:var(--mode-surface-color-maroon-650, var(--color-maroon-650))}
 .scorecardTable td:last-child,.scorecardTable thead th:last-child{font-weight:700;background:#f6f0e6}
 .scorecardTable thead th:last-child{background:var(--brand-4a1726)}
 .scorecardPar td{font-weight:700}

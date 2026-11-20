@@ -10,14 +10,14 @@
 .sheet{overflow-y:auto !important}
 .titleRow{display:flex;align-items:center;gap:2px;margin-right:40px}
 .titleRow .title{margin-right:0}
-.back{display:grid;place-items:center;flex:none;width:32px;height:32px;margin:0 0 10px -4px;padding:0;border:0;border-radius:50%;background:transparent;color:#fbf8f1;cursor:pointer}
+.back{display:grid;place-items:center;flex:none;width:32px;height:32px;margin:0 0 10px -4px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-fbf8f1, #fbf8f1);cursor:pointer}
 .back:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
-.title{margin:0 40px 14px 4px;font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:#fbf8f1}
+.title{margin:0 40px 14px 4px;font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:var(--lm-ink-fbf8f1, #fbf8f1)}
 .fields{display:flex;flex-direction:column;gap:12px;padding:0 4px}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.label{font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#dcc495}
-.input{box-sizing:border-box;width:100%;min-width:0;height:44px;padding:0 12px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 15px/1 var(--font-barlow),sans-serif;color-scheme:dark}
+.label{font:700 11px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-dcc495, #dcc495)}
+.input{box-sizing:border-box;width:100%;min-width:0;height:44px;padding:0 12px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:var(--lm-ink-fbf8f1, #fbf8f1);font:500 15px/1 var(--font-barlow),sans-serif;color-scheme:dark}
 .input::placeholder{color:rgba(251,248,241,.4)}
 .input:focus{outline:none;border-color:#c9a86e}
 .input[aria-invalid=true]{border-color:#f3b4a8}
@@ -27,7 +27,7 @@
 .choice button[aria-pressed=true]{background:#c9a86e;color:#240001}
 .actions{position:sticky;bottom:-10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding:10px 4px 10px;background:var(--lm-bg-240001,#240001)}
 .cancel,.save{height:44px;border-radius:12px;font:700 15px/1 var(--font-barlow),sans-serif;cursor:pointer}
-.cancel{border:1px solid rgba(251,248,241,.35);background:transparent;color:#fbf8f1}
+.cancel{border:1px solid rgba(251,248,241,.35);background:transparent;color:var(--lm-ink-fbf8f1, #fbf8f1)}
 .save{border:0;background:#c9a86e;color:#240001}
 .cancel:focus-visible,.save:focus-visible,.choice button:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
 .save:disabled{opacity:.45;cursor:default}
@@ -36,7 +36,7 @@
 /* Invite people (after Save & Invite): a row per trip member — initials, name, tick box. */
 .inviteEmpty{margin:0 4px;font:500 14px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
 .inviteList{display:flex;flex-direction:column;gap:6px;padding:0 4px}
-.inviteRow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;text-align:left;font:inherit;cursor:pointer}
+.inviteRow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:var(--lm-ink-fbf8f1, #fbf8f1);text-align:left;font:inherit;cursor:pointer}
 .inviteRow[aria-pressed=true]{border-color:#c9a86e}
 .inviteRow:disabled{cursor:default;opacity:.7}
 .inviteRow:focus-visible{outline:2px solid #c49b54;outline-offset:2px}

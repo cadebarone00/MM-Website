@@ -15,7 +15,7 @@
 .field :focus-visible, .primary:focus-visible, .secondary:focus-visible { outline: 3px solid #ad8434; outline-offset: 2px; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 7px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.primary { background: var(--color-maroon-700); color: #ffffff; border: 1px solid var(--color-maroon-700); }
+.primary { background: var(--mode-surface-color-maroon-700, var(--color-maroon-700)); color: var(--lm-ink-ffffff, #ffffff); border: 1px solid var(--color-maroon-700); }
 .primary:disabled, .secondary:disabled { opacity: .6; cursor: default; }
 .secondary { background: #ffffff; color: var(--color-maroon-700); border: 1px solid var(--lm-ink-cbbfac); }
 .errors { padding: 14px 16px; border: 1px solid var(--lm-ink-d7a39a); border-radius: 7px; background: #fff1ed; color: #8a2020; font-size: 14px; }

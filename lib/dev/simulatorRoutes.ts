@@ -113,7 +113,6 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "join-invalid", label: "Link not working", state: { tripBuilderStage: "join-invalid" } },
   ] });
   // Dynamic setup route has a real, fixed Golf Trip branch.
-  pages.push({ id: "trip-setup", path: "/tournaments/create/golf-trip", label: "Golf Trip setup", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
   // Trip Builder steps (Flights, Transportation and Review are no longer in the flow, owner 2026-11-03).
   const stepLabels: Record<string, string> = { dates: "Dates + travel", players: "People + competing", teams: "Team structure", golf: "Where are you playing", courses: "Courses", format: "Formats", lodging: "Lodging + Create" };
   for (const step of Object.keys(stepLabels)) {
@@ -385,7 +384,7 @@ export function simulatorPages(): SimulatorPage[] {
     pages.splice(profileAt, 0, ...profileList);
   }
   if (requests) pages.push(...pages.splice(pages.indexOf(requests), 1));
-  const onboardingOrder = ["/tournaments/create/golf-trip", "/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
+  const onboardingOrder = ["/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
   const reviewGroups = ["Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);

@@ -8,8 +8,8 @@ import { TRIP_BUILDER_START, TRIP_BUILDER_STEPS, clampRoundsToDates, firstMissin
 import styles from "./CreateTournament.module.css";
 
 /**
- * One Golf Trip questionnaire step inside SetupSheet: the fields, then Back, then Next at the bottom (just over
- * the bottom menu). Next lights up once every `required` field is filled in validly (and `complete`, for answers
+ * One Golf Trip questionnaire step inside SetupSheet: the fields, then Back and Next side by side right under them,
+ * then Skip for now (like sign-up, so the keyboard has room below). Next lights up once every `required` field is filled in validly (and `complete`, for answers
  * that aren't plain fields), then keeps this step's answers in the draft and moves on.
  *
  * Trip Builder steps pass `step`: Back / Next follow the step order for this draft (Teams and Format only when
@@ -68,9 +68,11 @@ export function SetupStepForm({ step, nextHref, backHref, complete = true, skip,
   const back = previous ? previous === "start" ? TRIP_BUILDER_START : stepPath(previous) : backHref ?? TRIP_BUILDER_START;
   return <form ref={formRef} className={styles.stepForm} onInput={check} onChange={check} onSubmit={next} noValidate>
     {children}
+    <div className={styles.stepButtons}>
+      <Link href={back} className={styles.back}>Back</Link>
+      <button type="submit" className={`${styles.continue} ${styles.start}`} disabled={!valid || !complete}>{nextLabel}</button>
+    </div>
     {skip && <button type="button" className={styles.skip} onClick={() => go(skip)}>Skip for now</button>}
-    <Link href={back} className={styles.back}>Back</Link>
-    <button type="submit" className={`${styles.continue} ${styles.start}`} disabled={!valid || !complete}>{nextLabel}</button>
   </form>;
 }
 

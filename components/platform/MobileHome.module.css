@@ -9,12 +9,12 @@
 .accountRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 25px 10px}.accountRow p{font-size:12px;color:#d6c5ca;margin:0}.accountRow a{display:flex;align-items:center;gap:9px;min-height:44px;font-size:13px}
 .discover{max-width:1120px;margin:0 auto;overflow:hidden;border-radius:22px 22px 0 0;background:#e6e2db;color:var(--app-maroon)}
 .filters{display:flex;align-items:center;justify-content:space-around;gap:8px;min-height:76px;padding:9px 18px}.filters button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;max-width:180px;padding:6px 4px;border:0;border-radius:16px;background:transparent;color:var(--app-maroon);font:500 13px var(--font-barlow),sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:#fffdf8;box-shadow:0 2px 8px color-mix(in srgb,var(--color-maroon-950) 6.3%,transparent)}
-.feature{position:relative;isolation:isolate;min-height:460px;color:#fffdf8}.feature>img{object-fit:cover;z-index:-2}.feature:after{position:absolute;content:"";inset:0;background:linear-gradient(180deg,#111d16bb,#14221a55 65%,#14221a70);z-index:-1}.featureCopy{padding:28px 25px 120px;max-width:560px}.feature h2{font:400 clamp(34px,9vw,54px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em;margin:18px 0 12px}.description{max-width:280px;font-size:14px;line-height:1.6;margin:0;color:#f4efe6}.featureCopy>a{display:inline-flex;align-items:center;gap:16px;min-height:48px;border-bottom:1px solid #fff8;margin-top:16px;font-size:13px}
+.feature{position:relative;isolation:isolate;min-height:460px;color:#fffdf8}.feature>img{object-fit:cover;z-index:-2}.feature:after{position:absolute;content:"";inset:0;background:linear-gradient(180deg,#111d16bb,#14221a55 65%,#14221a70);z-index:-1}.featureCopy{padding:28px 25px 120px;max-width:560px}.feature h2{font:400 clamp(34px,9vw,54px)/1.08 var(--font-spectral),Georgia,serif;letter-spacing:-.045em;margin:18px 0 12px}.description{max-width:280px;font-size:14px;line-height:1.6;margin:0;color:var(--lm-ink-f4efe6, #f4efe6)}.featureCopy>a{display:inline-flex;align-items:center;gap:16px;min-height:48px;border-bottom:1px solid #fff8;margin-top:16px;font-size:13px}
 .home a:focus-visible,.home button:focus-visible{outline:3px solid #b99c6b;outline-offset:3px}.cardAction:focus-visible{outline-offset:-4px}
 @media(max-width:600px){.filters{gap:2px;padding:9px 8px}.filters button{font-size:12px}.tripCard{flex-basis:calc(100% - 12px)}.tripPhoto{height:190px}.tagline{padding-bottom:19px}.feature{min-height:440px}}
 @media(min-width:601px){.tripCard{flex:1}.tagline{padding-top:12px}.accountRow{padding-top:10px;padding-bottom:18px}.featureCopy{padding:40px 40px 125px}.feature>img{object-position:center 60%}}
 /* Big page title, matching the Tourneys title (JoinTournament.module.css .title). */
-.pageTitle{margin:0;padding:8px 24px 22px;font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;color:#fbf8f1;letter-spacing:-.02em}
+.pageTitle{margin:0;padding:8px 24px 22px;font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;color:var(--lm-ink-fbf8f1, #fbf8f1);letter-spacing:-.02em}
 @media(max-width:400px){.pageTitle{font-size:34px}}
 /* Single tournament card: full width, both actions under the photo. Stacked
    on phones ("Create Tournament" won't fit half a phone width), side by side
@@ -45,7 +45,7 @@ button.cardAction{width:100%;border:0;background:transparent;font-family:inherit
 
 /* Light mode: the page goes white with dark text. The photos keep their dark fade and light words; the Play a round
    bar, the Tournament / Golf Trip buttons and the round invites stay maroon; Explore below is already light. */
-:global(html[data-mode="light"]) .home{background:#fff;color:var(--color-maroon-950)}
+:global(html[data-mode="light"]) .home{background:#fbf8f1;color:var(--color-maroon-950)}
 :global(html[data-mode="light"]) .accountRow p{color:#5d4f47}
 :global(html[data-mode="light"]) .accountRow a{color:var(--color-maroon-700)}
 :global(html[data-mode="light"]) .tripCard,:global(html[data-mode="light"]) .playCard{box-shadow:0 6px 18px rgba(36,0,1,.14)}
@@ -53,9 +53,9 @@ button.cardAction{width:100%;border:0;background:transparent;font-family:inherit
    with cream text, so they stand out on the white page. */
 :global(html[data-mode="light"]) .tripOverlay{color:#fbf8f1}
 :global(html[data-mode="light"]) .roundCard{border-color:var(--color-maroon-700)}
-:global(html[data-mode="light"]) .roundCard .cardActions{background:var(--color-maroon-700)}
-:global(html[data-mode="light"]) .roundCard .cardAction{color:#fbf8f1}
+:global(html[data-mode="light"]) .roundCard .cardActions{background:var(--mode-surface-color-maroon-700, var(--color-maroon-700))}
+:global(html[data-mode="light"]) .roundCard .cardAction{color:var(--lm-ink-fbf8f1, #fbf8f1)}
 :global(html[data-mode="light"]) .roundCard .cardAction>span{background:#fbf8f1;color:var(--color-maroon-700)}
-:global(html[data-mode="light"]) .playCard{border-color:var(--color-maroon-700);background:var(--color-maroon-700);color:#fbf8f1}
+:global(html[data-mode="light"]) .playCard{border-color:var(--color-maroon-700);background:var(--mode-surface-color-maroon-700, var(--color-maroon-700));color:var(--lm-ink-fbf8f1, #fbf8f1)}
 /* Play: the Join card (JoinCodeCard) under the Play a round card. */
 .joinCard{margin:12px 24px 0}

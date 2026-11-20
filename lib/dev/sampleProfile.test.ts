@@ -74,3 +74,9 @@ test("sample golfers open by username: Public ones whole, Private ones top only"
   assert.deepEqual([tom.access, tom.rounds.status], ["private", "hidden"]);
   assert.equal(sampleProfileReadModel("sample", DEFAULT_SAMPLE_PROFILE, TODAY, "nobody").isOwner, true, "unknown username = my own sample profile");
 });
+
+test("the simulator accepts the phone keyboard setting (iOS / Android / off) and rejects anything else", () => {
+  const config = (keyboard: unknown) => parseSimulatorConfig({ source: "maroon", state: { ...DEFAULT_SIMULATOR_STATE, keyboard } });
+  for (const kind of ["ios", "android", "off"]) assert.equal(config(kind)?.state.keyboard, kind);
+  assert.equal(config("windows"), null);
+});

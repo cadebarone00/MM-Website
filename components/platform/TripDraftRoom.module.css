@@ -183,12 +183,12 @@ button.vsBox{cursor:pointer}
 .boardOrganizerActions a{margin-right:auto;color:var(--lm-ink-dcc495);font:600 10px/1.2 var(--font-barlow),sans-serif}
 .boardOrganizerActions button,.confirmSelections{padding:4px 10px;border:1px solid rgba(201,168,110,.6);border-radius:8px;background:rgba(201,168,110,.1);color:var(--lm-ink-dcc495);font:700 11px/1.2 var(--font-barlow),sans-serif;cursor:pointer}
 .confirmSelections{min-height:30px;font-size:13px}
-.resetDialog{max-width:300px;padding:20px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:#240001;color:#fbf8f1}
+.resetDialog{max-width:300px;padding:20px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:var(--lm-bg-240001, #240001);color:var(--lm-ink-fbf8f1, #fbf8f1)}
 .resetDialog::backdrop{background:#0009}
 .resetDialog h2{margin:0;font-size:20px}
 .resetDialog p{font-size:14px}
 .resetDialog>div{display:flex;justify-content:flex-end;gap:12px}
-.resetDialog button{padding:7px 12px;border:1px solid #dcc495;border-radius:8px;background:transparent;color:#dcc495;cursor:pointer}
+.resetDialog button{padding:7px 12px;border:1px solid #dcc495;border-radius:8px;background:transparent;color:var(--lm-ink-dcc495, #dcc495);cursor:pointer}
 
 /* Players pull-up (owner 2026-11-19): our maroon; no number, no box — avatar + name, stats to the right that swipe sideways, Draft / Place pinned right. */
 .peekSheet{background:var(--lm-bg-240001)}
@@ -220,3 +220,5 @@ button.vsBox{cursor:pointer}
 .vsHead .vsTeam:first-child{grid-column:1}.vsHead .vsTeam:last-child{grid-column:3}
 .vsMatchHead{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:2px}
 .vsTee{color:color-mix(in srgb,var(--lm-ink-fbf8f1) 70%,transparent);font:600 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}
+
+:global(html[data-mode="light"]) :is(.teamHeader .countdownPill,.roomBoard,.resetDialog){background:radial-gradient(120% 70% at 50% -18%,rgba(107,30,42,.16),transparent 70%),#fbf8f1;color:#240001;box-shadow:0 4px 16px rgba(36,0,1,.08)}

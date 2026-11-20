@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { usePathname, useRouter } from "next/navigation";
 import { isSimulatorPath, parseSimulatorConfig, sameSimulatorNavigation, SIMULATOR_CHANNEL, type SimulatorConfig } from "@/lib/dev/simulator";
 import type { GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
+import { SimulatorKeyboard } from "./SimulatorKeyboard";
 
 const SimulatorContext = createContext<SimulatorConfig | null>(null);
 export const useSimulator = () => useContext(SimulatorContext);
@@ -53,5 +54,7 @@ export function SimulatorBridge({ children }: { children: ReactNode }) {
     lastReport.current = "";
     window.parent.postMessage({ channel: SIMULATOR_CHANNEL, type: "location", location: { path: pathname } }, window.location.origin);
   }, [pathname]);
-  return <SimulatorContext.Provider value={config}><NavigationReporter.Provider value={config ? reportNavigation : undefined}>{children}</NavigationReporter.Provider></SimulatorContext.Provider>;
+  return <SimulatorContext.Provider value={config}><NavigationReporter.Provider value={config ? reportNavigation : undefined}>{children}
+    {config && config.state.keyboard && config.state.keyboard !== "off" && <SimulatorKeyboard kind={config.state.keyboard} />}
+  </NavigationReporter.Provider></SimulatorContext.Provider>;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SetupNextStep } from "@/components/platform/SetupNextStep";
+import { GolfTripStart } from "@/components/platform/tour/GolfTripStart";
 import { setupTypeFromParam } from "@/lib/platform/setupTypes";
 import { getCurrentProfile, tripProfileId } from "@/lib/profile/currentProfile";
 
@@ -10,7 +11,7 @@ export default async function SetupNextStepPage({ params }: { params: Promise<{ 
   const { type: param } = await params;
   const type = setupTypeFromParam(param);
   if (!type) notFound();
-  // Trip Builder (2026-11-03): Welcome to Golf Trips → Get Started (the Learn screen the first time).
-  const profileId = type.key === "golf-trip" ? tripProfileId(await getCurrentProfile()) ?? "guest" : "guest";
-  return <SetupNextStep type={type} profileId={profileId} />;
+  // Golf Trip (owner request 2026-11-20): no setup screen. Learn about Golf Trips the first time, then the first question.
+  if (type.key === "golf-trip") return <GolfTripStart profileId={tripProfileId(await getCurrentProfile()) ?? "guest"} />;
+  return <SetupNextStep type={type} />;
 }

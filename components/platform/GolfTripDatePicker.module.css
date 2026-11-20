@@ -8,17 +8,17 @@
 @keyframes slideUp{from{transform:translateY(100%)}}
 @media (prefers-reduced-motion:reduce){.overlay,.sheet{animation:none}}
 .top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid rgba(251,248,241,.12)}
-.title{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:#fbf8f1}
+.title{margin:0;font:700 20px/1.2 var(--font-spectral),Georgia,serif;letter-spacing:.04em;color:var(--lm-ink-fbf8f1, #fbf8f1)}
 .current{margin:6px 0 0;font-size:14px;color:rgba(251,248,241,.65)}
-.close{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:#fbf8f1;cursor:pointer}
+.close{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:var(--lm-ink-fbf8f1, #fbf8f1);cursor:pointer}
 .monthBar{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-bottom:10px;border-bottom:1px solid rgba(251,248,241,.12);font:600 16px var(--font-spectral),Georgia,serif}
-.monthBar button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:#dcc495;cursor:pointer}
+.monthBar button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:var(--lm-ink-dcc495, #dcc495);cursor:pointer}
 .monthBar button:disabled{color:rgba(251,248,241,.25);cursor:default}
 /* The month name (no arrow; owner 2026-11-02) opens the Month / Year sheet when tapped. */
-.monthBar .monthName{display:inline-flex;align-items:center;gap:4px;width:auto;height:32px;padding:0 8px;border-radius:8px;color:#fbf8f1;font:inherit}
+.monthBar .monthName{display:inline-flex;align-items:center;gap:4px;width:auto;height:32px;padding:0 8px;border-radius:8px;color:var(--lm-ink-fbf8f1, #fbf8f1);font:inherit}
 /* Everything under the date line; the Month / Year sheet slides up over exactly this part, out to the screen edges. */
 .body{position:relative}
-.jump{position:absolute;inset:0 -20px calc(-18px - env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 calc(16px + env(safe-area-inset-bottom));border-top:1px solid rgba(220,196,149,.35);border-radius:24px 24px 0 0;background:var(--lm-bg-240001,#240001);color:#fbf8f1;box-shadow:0 -10px 30px rgba(0,0,0,.45);animation:slideUp .28s cubic-bezier(.2,.8,.2,1)}
+.jump{position:absolute;inset:0 -20px calc(-18px - env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 calc(16px + env(safe-area-inset-bottom));border-top:1px solid rgba(220,196,149,.35);border-radius:24px 24px 0 0;background:var(--lm-bg-240001,#240001);color:var(--lm-ink-fbf8f1, #fbf8f1);box-shadow:0 -10px 30px rgba(0,0,0,.45);animation:slideUp .28s cubic-bezier(.2,.8,.2,1)}
 .jumpWheels{margin:0 auto 22px}
 @media (prefers-reduced-motion:reduce){.jump{animation:none}}
 /* Weekday labels + six fixed 36px week rows, whatever the month. */
@@ -28,10 +28,10 @@
 .dayCell[data-range=true]::before{content:"";position:absolute;inset:0;background:rgba(220,196,149,.2)}
 .dayCell[data-range=true][data-start=true]::before{left:50%}
 .dayCell[data-range=true][data-end=true]::before{right:50%}
-.day{position:relative;justify-self:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:#fbf8f1;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.day{position:relative;justify-self:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-fbf8f1, #fbf8f1);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
 .day:disabled{color:rgba(251,248,241,.22);cursor:default}
 .day[aria-pressed=true]{background:#dcc495;color:var(--color-maroon-900,#240001)}
-.set{display:block;min-width:180px;min-height:46px;margin:18px auto 0;padding:0 28px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:#dcc495;font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.set{display:block;min-width:180px;min-height:46px;margin:18px auto 0;padding:0 28px;border:1.5px solid #dcc495;border-radius:999px;background:transparent;color:var(--lm-ink-dcc495, #dcc495);font:700 13px/1 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
 .set:active{background:#dcc495;color:var(--color-maroon-900,#240001)}
 .set:disabled{opacity:.4;cursor:default}
 .close:focus-visible,.monthBar button:focus-visible,.day:focus-visible,.set:focus-visible{outline:2px solid #dcc495;outline-offset:2px}

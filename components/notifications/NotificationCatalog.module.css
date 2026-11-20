@@ -1,5 +1,5 @@
 /* /dev/notifications/types: the notification master list. Maroon-900 page, cream text; Spectral, Barlow for tiny caps. */
-.page{box-sizing:border-box;min-height:100vh;min-height:100svh;padding:16px 16px calc(32px + env(safe-area-inset-bottom));background:var(--color-maroon-900);color:var(--color-cream-100,#f5efe2);font-family:var(--font-spectral),Georgia,serif}
+.page{box-sizing:border-box;min-height:100vh;min-height:100svh;padding:16px 16px calc(32px + env(safe-area-inset-bottom));background:var(--lm-bg-240001, var(--color-maroon-900));color:var(--color-cream-100,#f5efe2);font-family:var(--font-spectral),Georgia,serif}
 .header{margin:4px 2px 18px}
 .eyebrow,.groupTitle,.approved,.notApproved,.facts dt,.versionTag{font-family:var(--font-barlow),sans-serif;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
 .eyebrow{margin:0;font-size:11px;color:var(--lm-ink-dcc495)}

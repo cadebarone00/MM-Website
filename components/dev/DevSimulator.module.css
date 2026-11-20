@@ -64,3 +64,5 @@
 /* Busy data's own controls, tucked under its card. */
 .busyControls{margin:-2px 0 6px 4px;padding-bottom:12px}
 .busyControls label:first-child{margin-top:0}
+
+.appearanceToggle{display:flex;flex:none;padding:3px;border:1px solid #dfe2e8;border-radius:8px;background:#f5f6f8}.appearanceToggle button{border:0;border-radius:5px;background:transparent;color:#697180;padding:6px 8px;font:600 10px/1 system-ui,sans-serif;white-space:nowrap;cursor:pointer}.appearanceToggle button[aria-pressed="true"]{background:#fff;color:#671329;box-shadow:0 1px 4px #0002}

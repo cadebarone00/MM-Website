@@ -4,12 +4,12 @@
   --tab-glow:radial-gradient(120% 90% at 50% 125%,rgba(201,168,110,.38),transparent 70%)}
 @media(min-width:1024px){.tab,.sheet{--tab-bottom:24px}} /* no bottom menu on big screens */
 
-.tab{position:fixed;right:0;bottom:var(--tab-bottom);z-index:101;width:var(--tab-w);height:var(--tab-h);padding:0 0 0 4px;border:1px solid rgba(201,168,110,.45);border-right:0;border-radius:16px 0 0 16px;background:var(--tab-glow),#240001;color:#fbf8f1;box-shadow:0 6px 18px color-mix(in srgb,var(--lm-bg-000000) 35%,transparent);font:700 16px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
+.tab{position:fixed;right:0;bottom:var(--tab-bottom);z-index:101;width:var(--tab-w);height:var(--tab-h);padding:0 0 0 4px;border:1px solid rgba(201,168,110,.45);border-right:0;border-radius:16px 0 0 16px;background:var(--tab-glow),var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);box-shadow:0 6px 18px color-mix(in srgb,var(--lm-bg-000000) 35%,transparent);font:700 16px/1 var(--font-spectral),Georgia,serif;cursor:pointer}
 .tab:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
 
 /* The full-screen Feed: dramatic maroon with the gold glow at the TOP. Closed, it's clipped down to exactly the tab;
    open, the clip grows to the whole screen. */
-.sheet{position:fixed;inset:0;z-index:110;isolation:isolate;display:flex;flex-direction:column;background:#240001;color:#fbf8f1;overflow:hidden;
+.sheet{position:fixed;inset:0;z-index:110;isolation:isolate;display:flex;flex-direction:column;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);overflow:hidden;
   clip-path:circle(0 at 22px 70px);
   visibility:hidden;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s .5s}
 .sheet[data-open]{clip-path:circle(150vmax at 22px 70px);visibility:visible;transition:clip-path .38s cubic-bezier(.2,.8,.2,1),visibility 0s}
@@ -20,8 +20,8 @@
 /* Feed title + close, up in the glow. */
 .header{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:560px;box-sizing:border-box;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px 0;opacity:0;transition:opacity .12s}
 .sheet[data-open] .header{opacity:1;transition:opacity .25s .2s}
-.title{margin:0;font:700 28px/1.1 var(--font-spectral),Georgia,serif;color:#fbf8f1}
-.close{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:color-mix(in srgb,#fbf8f1 10%,transparent);color:#fbf8f1;cursor:pointer}
+.title{margin:0;font:700 28px/1.1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
+.close{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:color-mix(in srgb,#fbf8f1 10%,transparent);color:var(--lm-ink-fbf8f1);cursor:pointer}
 .close:hover{background:color-mix(in srgb,#fbf8f1 16%,transparent)}
 .close:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 
@@ -33,3 +33,7 @@
 .body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:env(safe-area-inset-bottom)}
 
 @media(prefers-reduced-motion:reduce){.sheet,.sheet[data-open],.sheet::before,.header,.panel,.sheet[data-open] .panel{transition:none}}
+
+:global(html[data-mode="light"]) .tab{background:radial-gradient(120% 70% at 50% -18%,rgba(107,30,42,.16),transparent 70%),#fbf8f1;box-shadow:0 4px 16px rgba(36,0,1,.08)}
+
+:global(html[data-mode="light"]) .sheet::before{background:radial-gradient(120% 55% at 50% -12%,rgba(107,30,42,.16),transparent 70%)}

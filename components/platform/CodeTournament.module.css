@@ -112,7 +112,7 @@ button.deleteCard h2{color:#a1121f}
 .confirmError{color:#a1121f !important;font-weight:600 !important}
 .confirmActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:6px}
 .confirmActions .organizerButton{justify-content:center;border-color:#b99c6b;background:transparent;color:#240001}
-.confirmDelete{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:0;border-radius:999px;background:#c62828;color:#fff;font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
+.confirmDelete{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:0;border-radius:999px;background:#c62828;color:var(--lm-ink-ffffff, #fff);font:700 13px var(--font-barlow),sans-serif;cursor:pointer}
 .confirmDelete:disabled,.confirmActions .organizerButton:disabled{opacity:.6}
 
 /* Create page (light Play-a-round page): the rounds added so far, and the code once it's made. */

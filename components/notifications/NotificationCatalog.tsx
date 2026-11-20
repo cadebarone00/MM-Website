@@ -6,7 +6,7 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { NOTIFICATION_CATALOG, NOTIFICATION_SWITCHES, type CatalogEntry, type NotificationKind, type NotificationSwitch } from "@/lib/notifications/catalog";
 import { sampleNotesForType, sampleSheetSource, sampleWordings, sheetCounts } from "@/lib/dev/sampleNotificationTypes";
 import type { NotificationWording } from "@/lib/dev/sampleNotifications";
-import { NotificationSurfaces, kindIcon } from "./NotificationPreviews";
+import { KindIcon, NotificationSurfaces } from "./NotificationPreviews";
 import styles from "./NotificationCatalog.module.css";
 
 const SURFACE_LABEL = { phone: "Phone", bell: "Bell", banner: "Banner" } as const;
@@ -43,14 +43,13 @@ export function NotificationCatalog() {
 
 function TypeCard({ entry, open, wording: initialWording, onToggle }: { entry: CatalogEntry; open: boolean; wording: NotificationWording; onToggle: () => void }) {
   const kind = entry.kind as NotificationKind;
-  const Icon = kindIcon(kind);
   const [wording, setWording] = useState<NotificationWording>(initialWording);
   const versions = sampleWordings(kind);
   const sheet = entry.wording ? null : sheetCounts(kind);
   const note = sampleNotesForType(kind, wording)[0];
   return <article className={`${styles.card} ${open ? styles.cardOpen : ""}`}>
     <button type="button" className={styles.cardHead} aria-expanded={open} onClick={onToggle}>
-      <span className={styles.icon}><Icon size={18} aria-hidden /></span>
+      <span className={styles.icon}><KindIcon kind={kind} /></span>
       <span className={styles.name}>{entry.name}</span>
       <span className={entry.approved ? styles.approved : styles.notApproved}>{entry.approved ? "Approved" : "Not approved"}</span>
       <ChevronDown size={18} className={styles.chevron} aria-hidden />

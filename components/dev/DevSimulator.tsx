@@ -11,6 +11,7 @@ import { HighlightScenarioControls } from "./HighlightScenarioControls";
 import { normalizeTripScenario } from "@/lib/dev/tripScenario";
 import { HapticsVisualizer } from "./HapticsVisualizer";
 import { DesignReview } from "./DesignReview";
+import { applyMode, appMode, type AppMode } from "@/lib/theme/appMode";
 import { lightTap } from "@/lib/haptics";
 import { DRAFT_SIM_DEFAULTS } from "@/lib/dev/draftSim";
 import { MockDraftPanel } from "./MockDraftPanel";
@@ -35,6 +36,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const [sizeText, setSizeText] = useState({ width: String(initialPreset.width), height: String(initialPreset.height) });
   const [insets, setInsets] = useState({ top: initialPage.standalone ? 0 : initialPreset.top as number, bottom: initialPage.standalone ? 0 : initialPreset.bottom as number });
   const [showSafeAreas, setShowSafeAreas] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(true);
   const [zoom, setZoom] = useState("fit");
   const [available, setAvailable] = useState({ width: 700, height: 850 });
   const [source, setSource] = useState<SimulatorSource>("maroon");
@@ -46,12 +48,25 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   // GPS test: the open GPS screen's state (null when the phone isn't showing one).
   const [gps, setGps] = useState<SimulatorGpsState | null>(null);
   const iframe = useRef<HTMLIFrameElement>(null);
+  const [appearance, setAppearance] = useState<AppMode>("dark");
+  const appearanceObserver = useRef<MutationObserver | null>(null);
+  useEffect(() => { setAppearance(appMode(document.documentElement.getAttribute("data-mode"))); return () => appearanceObserver.current?.disconnect(); }, []);
+  const setSimulatorAppearance = (mode: AppMode) => {
+    applyMode(mode); setAppearance(mode);
+    try { const root = iframe.current?.contentDocument?.documentElement; if (root) { if (mode === "light") root.setAttribute("data-mode", "light"); else root.removeAttribute("data-mode"); } } catch { /* Other-origin previews cannot be controlled. */ }
+  };
+  const observeAppearance = () => {
+    appearanceObserver.current?.disconnect();
+    try { const root = iframe.current?.contentDocument?.documentElement; if (!root) return; setAppearance(appMode(root.getAttribute("data-mode"))); const observer = new MutationObserver(() => setAppearance(appMode(root.getAttribute("data-mode")))); observer.observe(root, { attributes: true, attributeFilter: ["data-mode"] }); appearanceObserver.current = observer; } catch { /* Other-origin previews cannot be inspected. */ }
+  };
   const [screen, setScreen] = useState<HTMLDivElement | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const caption = useRef<HTMLDivElement>(null);
   const command = useRef(0);
   const bridgeReady = useRef(false);
-  const config = useMemo<SimulatorConfig>(() => ({ source, state, navigation }), [source, state, navigation]);
+  // The phone keyboard (2026-11-20): iOS for the iPhone presets, Android for the Pixel ones; the side panel can hide it.
+  const keyboard: "ios" | "android" | "off" = !showKeyboard ? "off" : device.startsWith("pixel") ? "android" : "ios";
+  const config = useMemo<SimulatorConfig>(() => ({ source, state: { ...state, keyboard }, navigation }), [source, state, navigation, keyboard]);
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
   // A page from another local dev server: if that server isn't running, the phone says how to start it (not an error page).
   const [downOrigin, setDownOrigin] = useState<string | null>(null);
@@ -243,6 +258,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
+      <div className={styles.appearanceToggle} role="group" aria-label="App appearance">{(["light", "dark"] as const).map(mode => <button key={mode} type="button" aria-pressed={appearance === mode} onClick={() => setSimulatorAppearance(mode)}>{mode === "light" ? "Light mode" : "Dark mode"}</button>)}</div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
     <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset || mockMatchPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
@@ -256,6 +272,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
             {(["width", "height"] as const).map(edge => <label key={edge}>{edge === "width" ? "Width" : "Height"}<div className={styles.unitInput}><input type="number" aria-label={`Viewport ${edge}`} min={edge === "width" ? 240 : 320} max={edge === "width" ? 1600 : 1800} value={sizeText[edge]} onChange={event => editSize(edge, event.target.value)} onBlur={event => editSize(edge, event.target.value, true)} /><span>px</span></div></label>)}
           </div>
           <label>Display scale<select aria-label="Display scale" value={zoom} onChange={event => setZoom(event.target.value)}><option value="fit">Fit to workspace</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option></select></label>
+          <label className={styles.checkbox}><input type="checkbox" checked={showKeyboard} onChange={event => setShowKeyboard(event.target.checked)} />Show phone keyboard when typing</label>
           <details className={styles.advanced}><summary>Safe-area testing</summary><div className={styles.pair}>{(["top", "bottom"] as const).map(edge => <label key={edge}>{edge === "top" ? "Top inset" : "Bottom inset"}<input type="number" aria-label={`Safe-area ${edge}`} min={0} max={100} value={insets[edge]} onChange={event => setInsets(current => ({ ...current, [edge]: bounded(event.target.value, 0, 100, 0) }))} /></label>)}</div><label className={styles.checkbox}><input type="checkbox" checked={showSafeAreas} onChange={event => setShowSafeAreas(event.target.checked)} />Show inset guides</label><p>Editable insets exercise existing safe-area CSS. Display scale keeps the CSS viewport unchanged.</p></details>
         </section>
         {supportsFixtures && source === "maroon" && <details className={styles.inspector}><summary>Unmapped Tournament Data</summary><pre>{JSON.stringify(unmapped, null, 2)}</pre></details>}
@@ -312,7 +329,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
               <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height, ...(desktopPreview ? { borderRadius: 4 } : {}) }}>
               <iframe ref={iframe} title={selectedPage.standalone ? `${selectedPage.group} preview` : "Mobile application preview"} src={frameSrc} width={size.width} height={size.height}
                 style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
-                className={`${styles.frame} ${desktopPreview ? styles.desktopFrame : ""}`} onLoad={() => { setReady(true); sendConfig(); }} />
+                className={`${styles.frame} ${desktopPreview ? styles.desktopFrame : ""}`} onLoad={() => { setReady(true); observeAppearance(); sendConfig(); }} />
               {selectedPage.origin && downOrigin === selectedPage.origin && <div role="status" style={{ position: "absolute", inset: 0, display: "grid", placeContent: "center", gap: 12, padding: 24, background: "#240001", color: "#fbf8f1", textAlign: "center", fontFamily: "var(--font-barlow), sans-serif" }}>
                 <strong style={{ font: "400 26px/1.2 var(--font-spectral), Georgia, serif" }}>The auth test server isn&apos;t running</strong>
                 <p style={{ margin: 0, fontSize: 14, color: "#e1cec4" }}>These screens come from {selectedPage.origin} (MM-Website-authdev, maroon-auth-dev). In that folder run <code>node authdev-start.mjs</code>, then check again.</p>

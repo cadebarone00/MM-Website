@@ -5389,7 +5389,7 @@ slot when no `size` is given; initials scale with the circle). Not switched, on 
 - 11 Public tournament site: OPEN QUESTION for owner — it is a light, per-tournament-branded page; gold initials on its
   near-white background would be very hard to read.
 
-## Simulator: phone keyboard (owner request 2026-11-19) — SPEC, awaiting approval
+## Simulator: phone keyboard (owner request 2026-11-19) — APPROVED + BUILT 2026-11-20 (uncommitted; components/dev/SimulatorKeyboard.tsx)
 
 **What it is:** in the dev simulator (`/dev`), whenever you tap anywhere you type (search boxes, Edit profile fields,
 sign-up / log-in, chat, socials, trip forms…), an on-screen keyboard slides up from the bottom of the phone, so you can
@@ -5417,7 +5417,7 @@ see how each screen looks with the keyboard open — on **iPhone** and **Android
 iPhone and for Pixel; the screen shortens; email / number fields get their own layouts; tapping keys types; the switch hides
 it; tested in the browser.
 
-## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, AWAITING APPROVAL)
+## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, approved; steps 1–2 BUILT 2026-11-20, uncommitted)
 
 **Why.** Notifications live in 5 places that don't agree: the 12 kinds in `lib/notifications/types.ts`, the 6 Settings
 switches in `lib/profile/preferences.ts` (only 1–2 match a kind; friend requests, draft, your pick and chat have no kind),
@@ -5474,3 +5474,29 @@ any new wording (all new lines are marked Not approved until you OK them).
 V1/V2/V3; tests check every type has a switch, an icon, a safe tap link, 3 wordings within the push length limits, and
 every switch has at least one type; TypeScript, lint and the full test suite pass; checked in the browser at phone width.
 Nothing sent, no SQL. Steps 1–2 = one commit, step 3 = a second commit after you OK the fix list.
+
+**Built 2026-11-20 (steps 1–2, uncommitted).** `lib/notifications/catalog.ts` (+ `catalog.test.ts`): 16 types, 8 switches,
+organizer messages always on (owner didn't pick; plan default). `types.ts` and `lib/profile/preferences.ts` now read it;
+Settings gains Big moments + Travel reminders, "Scores posted" shows as Round updates (same saved id).
+`supabase/profile_preferences.sql` (still NOT run in production) accepts the two new switch ids. Previews: new
+`/dev/notifications/types` (`components/notifications/NotificationCatalog.tsx`), Type + Wording choices on Phone, In-app and
+All types (`lib/dev/sampleNotificationTypes.ts` reads the Highlights snapshot; kept out of `lib/dev/simulator.ts`). Chat
+uses the message itself as the body (its 3 versions only change the title line). Step 3 (UI pass) not started.
+
+
+## Golf Trip create: skip the setup screen, Learn first time only, sign-up-style question pages, Settings → Tutorials (owner request 2026-11-20) — APPROVED + BUILT 2026-11-20 (uncommitted; GetStartedButton.tsx removed, TripWizardArt.tsx now unused)
+
+**1. Create goes straight in (no setup screen, no animation).** Tapping **Create a Golf Trip** no longer shows the "Golf Trip setup / Welcome to Golf Trips" screen.
+- **First time** (this account on this device): opens **Learn about Golf Trips** (`/golf-trips/new/learn`). Tapping **Skip for now** or finishing the tour marks it seen, and it never shows again from Create.
+- **Every time after that:** opens the first question ("What's the trip?", `/golf-trips/new`) directly.
+- How: the Create buttons (Golf Trips page, empty-list row, Create menu) and the old `/tournaments/create/golf-trip` address all go through the same first-time check (the one Get Started uses today). Back from the first question → Golf Trips page.
+
+**2. Question pages laid out like Sign up.** Every trip question page (What's the trip?, dates, players, golf, courses, teams, format, lodging, transportation, flights, review) drops the cream animation band at the top. Like the sign-up screens: maroon page, progress line, title, the fields, then **Next** right under the fields and **Back** under that — all at the top of the page, nothing pinned to the bottom, so the phone keyboard has room to pop up underneath without covering anything. Steps with long content (e.g. review list) still scroll.
+
+**2b. Follow-up (owner 2026-11-20, BUILT):** the page starts ~40px lower (clears the iPhone Dynamic Island), and **Back** (smaller, outlined, left) and **Next** (right) sit side by side in one row right under the last choice; Skip for now sits under that row. Same on Review (Back + Create Golf Trip).
+
+**3. Settings → Tutorials.** New **Tutorials** section in Settings (website + app) with a **Golf Trips** row → the guided Golf Trips tour; when it ends (or Skip) it returns to Settings. Built so more tutorials can be added as rows later. Signed-out visitors see it too.
+
+**Not changing:** the Learn page and tour content, the questions themselves and what they save, Join a Trip, other tournament types. No database changes.
+
+**Done =** first Create → Learn; Skip → first question; second Create → first question directly; question pages have everything at the top with Next under the fields and no animation; Settings → Tutorials → Golf Trips plays the tour and returns to Settings; typecheck + lint + tests pass; checked in the browser at phone size.
