@@ -5037,6 +5037,7 @@ refusal; Settings note and no uneven switch; lint/types clean; browser-checked.
   - **Archive:** reports say Xcode, using the API key, makes its own development certificate ("Created via API").
   - **Export:** Apple's cloud signing handles the distribution signature.
   - **If the archive step refuses** (no development certificate), the fallback is to keep one signing certificate in GitHub secrets.
+- **First real run (2026-11-20):** Archive failed with "No profiles for 'site.themaroon.app' were found" (signing the archive needs a development profile, and the team has no registered iPhones). Fix: the archive is now built unsigned, and the upload step signs it for the App Store with Apple's cloud signing (no devices needed).
 - **Optional secret:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. If that key is limited to website addresses, the app's maps won't load until the app is allowed too.
 
 ## Feature: Every qualifying round counts, with a letter showing where it came from — spec 2026-11-13, approved 2026-11-13 (letters P / T / L / C; leagues count automatically; trips fixed too); building
