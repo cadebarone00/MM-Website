@@ -6,6 +6,7 @@ import { momentumHeadline, momentumSubheading } from "@/lib/platform/momentumCop
 import { teamColor } from "@/lib/platform/teamColors";
 import { courseDisplayName } from "@/lib/platform/courseShortName";
 import type { AppNotification, LeaderboardRow, LiveRoundActivity } from "@/lib/notifications/types";
+import { NOTIFICATION_CATALOG } from "@/lib/notifications/catalog";
 
 /** Every preview screen in the group. The first id of each surface is its default. */
 export const NOTIFICATION_PREVIEWS = {
@@ -62,20 +63,20 @@ export const ALL_NOTIFICATION_PREVIEWS: readonly string[] = Object.values(NOTIFI
 
 /** The preview's clock, fixed so screenshots stay the same. */
 export const SAMPLE_NOW = new Date("2026-10-16T21:41:00.000Z");
-const minutesAgo = (minutes: number) => new Date(SAMPLE_NOW.getTime() - minutes * 60000).toISOString();
-const trip = { groupId: "sample-desert-classic", groupName: "Desert Classic" };
+export const minutesAgo = (minutes: number) => new Date(SAMPLE_NOW.getTime() - minutes * 60000).toISOString();
+export const SAMPLE_TRIP = { groupId: "sample-desert-classic", groupName: "Desert Classic" };
 const link = `/golf-trips/00000000-0000-4000-8000-000000000001#momentum`;
 
 export const SAMPLE_NOTIFICATIONS: AppNotification[] = [
-  { ...trip, id: "s1", kind: "highlight", title: momentumHeadline("birdie_3"), body: momentumSubheading("birdie_3", "Jake Parker"), link, createdAt: minutesAgo(0), read: false },
-  { ...trip, id: "s2", kind: "highlight", title: momentumHeadline("early_match_win"), body: momentumSubheading("early_match_win", "Mike Chen", "3&2"), link, createdAt: minutesAgo(6), read: false },
-  { ...trip, id: "s3", kind: "opponentSubmitted", title: "Jake submitted Round 2", body: "Check his card against yours before you submit.", link, createdAt: minutesAgo(18), read: false },
-  { ...trip, id: "s4", kind: "teeTime", title: "Tee time in 30 minutes", body: "Round 2 · PGA West Stadium · 2:10 PM", link, createdAt: minutesAgo(95), read: true },
-  { ...trip, id: "s5", kind: "joinRequest", title: "Alex Rivera wants to join", body: "Desert Classic · tap to accept or decline", link, createdAt: minutesAgo(60 * 26), read: true },
+  { ...SAMPLE_TRIP, id: "s1", kind: "highlight", title: momentumHeadline("birdie_3"), body: momentumSubheading("birdie_3", "Jake Parker"), link, createdAt: minutesAgo(0), read: false },
+  { ...SAMPLE_TRIP, id: "s2", kind: "highlight", title: momentumHeadline("early_match_win"), body: momentumSubheading("early_match_win", "Mike Chen", "3&2"), link, createdAt: minutesAgo(6), read: false },
+  { ...SAMPLE_TRIP, id: "s3", kind: "opponentSubmitted", title: "Jake submitted Round 2", body: "Check his card against yours before you submit.", link, createdAt: minutesAgo(18), read: false },
+  { ...SAMPLE_TRIP, id: "s4", kind: "teeTime", title: "Tee time in 30 minutes", body: "Round 2 · PGA West Stadium · 2:10 PM", link, createdAt: minutesAgo(95), read: true },
+  { ...SAMPLE_TRIP, id: "s5", kind: "joinRequest", title: "Alex Rivera wants to join", body: "Desert Classic · tap to accept or decline", link, createdAt: minutesAgo(60 * 26), read: true },
 ];
 
 export const SAMPLE_LIVE_ROUND: LiveRoundActivity = {
-  ...trip, round: 2, course: courseDisplayName("PGA West Stadium Course"), playerName: "Cade Barone", toPar: -2, thru: 12, holes: 18,
+  ...SAMPLE_TRIP, round: 2, course: courseDisplayName("PGA West Stadium Course"), playerName: "Cade Barone", toPar: -2, thru: 12, holes: 18,
   position: "T2", match: null, state: "live", teeTime: null, result: null, updatedAt: minutesAgo(2),
 };
 
@@ -125,3 +126,12 @@ export const SAMPLE_PAIRS = {
 
 /** After the last round, lost: shows gray (wins show gold). */
 export const SAMPLE_LOST: LiveRoundActivity = { ...SAMPLE_TEAM_STEPS.final, match: { status: "Lost 2&1", opponents: ["Collin Ross"] }, result: "L 2&1" };
+
+/* ---------- Every type (master list) ---------- */
+
+/** Simulator "Type" choice: a catalog kind, or "mixed" = the design samples above. */
+export const NOTIFICATION_TYPE_CHOICES = ["mixed", ...NOTIFICATION_CATALOG.map(entry => entry.kind)] as const;
+export type NotificationTypeChoice = (typeof NOTIFICATION_TYPE_CHOICES)[number];
+export const NOTIFICATION_WORDINGS = [1, 2, 3] as const;
+export type NotificationWording = (typeof NOTIFICATION_WORDINGS)[number];
+

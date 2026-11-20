@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown, ChevronLeft, ChevronUp, Search } from "lucide-react";
 import type { MatchDraftPlayer } from "@/lib/platform/matchDraft";
 import { teamCountError, teamDraftCapacity, teamDraftSize, teamDraftTeamCount, teamDraftTurn, teamLetter } from "@/lib/platform/teamDraft";
-import { MaroonMark } from "@/components/brand/MaroonMark";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { DraftPlayerProfile } from "./DraftPlayerProfile";
 import styles from "./TripDraftRoom.module.css";
 
@@ -129,7 +129,7 @@ export function TripDraftRoom({ players, draftType, draftOrder, countdown, when,
         <div className={styles.list}><div className={styles.listHead}><span>{picking ? `${label(turn!).toUpperCase()} PICKS · PLAYER` : "PLAYER"}</span></div>{/* Each player (owner 2026-11-19): no number, no box — avatar + name, stats to the right (swipe for more), Draft on the right. */}{visible.map(player => <div key={player.name} className={styles.playerRow}>
           {/* Tap the player (avatar + name) → their tourney profile (no trip rounds yet). */}
           <button type="button" className={styles.playerWho} onClick={() => setProfile(player)} aria-label={`Open ${player.name}'s tourney profile`}>
-            <span className={styles.rowAvatar} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.rowMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+            <span className={styles.rowAvatar}><ProfileAvatar name={player.name} photoUrl={player.avatarUrl} /></span>
             <strong>{player.name}</strong>
           </button>
           {/* Stats to the right; swipe sideways for the rest. */}

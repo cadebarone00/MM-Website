@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight, MessageCircle, Pin, Search, Send, Users, X } from "lucide-react";
 import styles from "./GolfTripChat.module.css";
@@ -7,7 +8,6 @@ import styles from "./GolfTripChat.module.css";
 type Message = { id: number; text: string; createdAt: number; incoming?: boolean; author?: string };
 type Thread = { id: string; name: string; messages: Message[] };
 const TRIP = "trip";
-const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(part => part[0]).join("");
 
 /** Memory-only trip messaging layout. No delivery, storage or read-receipt service. */
 export function GolfTripChat({ open, onClose, members, tripName }: {
@@ -57,7 +57,7 @@ export function GolfTripChat({ open, onClose, members, tripName }: {
         <button type="button" className={styles.iconButton} aria-label="Close chats" onClick={close}><X size={22} /></button>
       </header>
       <div className={styles.chatHeading}>
-        {active && <span className={`${styles.avatar} ${active.id === TRIP ? styles.groupAvatar : ""}`}>{active.id === TRIP ? <Users size={22} /> : initials(active.name)}</span>}
+        {active && (active.id === TRIP ? <span className={`${styles.avatar} ${styles.groupAvatar}`}><Users size={22} /></span> : <ProfileAvatar name={active.name} size={42} />)}
         <h3>{active?.name ?? "Chats"}</h3>
       </div>
       {active ? <>
@@ -85,11 +85,11 @@ export function GolfTripChat({ open, onClose, members, tripName }: {
         <div className={styles.columnLabels}><span>Conversation</span><span>Messages</span></div>
         {inbox.map((thread, index) => <button type="button" key={thread.id} className={`${styles.thread} ${thread.id === TRIP ? styles.pinned : ""}`} onClick={() => setSelected(thread.id)}>
           <span className={styles.rank}>{thread.id === TRIP ? <Pin size={16} aria-label="Pinned" /> : String(index).padStart(2, "0")}</span>
-          <span className={`${styles.avatar} ${thread.id === TRIP ? styles.groupAvatar : ""}`}>{thread.id === TRIP ? <Users size={20} /> : initials(thread.name)}</span>
+          {thread.id === TRIP ? <span className={`${styles.avatar} ${styles.groupAvatar}`}><Users size={20} /></span> : <ProfileAvatar name={thread.name} size={42} />}
           <span className={styles.threadText}><strong>{thread.name}</strong><span>{thread.messages.at(-1)?.text ?? "Your whole group, together"}</span></span>
           <ChevronRight size={18} aria-hidden />
         </button>)}
-        {query.trim() ? <section className={styles.results} aria-label="Group members"><h3>In your group</h3>{searchMembers.map(name => <button type="button" className={styles.thread} key={name} onClick={() => start(name)}><span className={styles.avatar}>{initials(name)}</span><span className={styles.threadText}><strong>{name}</strong><span>Start a conversation</span></span><MessageCircle size={18} aria-hidden /></button>)}{!searchMembers.length && <p className={styles.empty}>No group members match “{query}”.</p>}</section>
+        {query.trim() ? <section className={styles.results} aria-label="Group members"><h3>In your group</h3>{searchMembers.map(name => <button type="button" className={styles.thread} key={name} onClick={() => start(name)}><ProfileAvatar name={name} size={42} /><span className={styles.threadText}><strong>{name}</strong><span>Start a conversation</span></span><MessageCircle size={18} aria-hidden /></button>)}{!searchMembers.length && <p className={styles.empty}>No group members match “{query}”.</p>}</section>
           : inbox.length === 1 && <div className={styles.empty}><MessageCircle size={25} aria-hidden /><p>Your conversations will appear here.</p><span>Find someone in your group to start a chat.</span></div>}
       </div>}
     </div>

@@ -1,8 +1,9 @@
 -- supabase/profile_preferences.sql
 -- Settings → Notifications and Golf preferences (project_specs.md "Settings redo", 2026-11-19).
 --   profile_preferences       one row per profile (made on the first save; no row = the defaults)
---     notifications            { "<type>": { "push": bool, "email": bool } } for friendRequests, tripInvites,
---                              draftStarting, yourPick, scoresPosted, chat (types left out = the app's default)
+--     notifications            { "<type>": { "push": bool, "email": bool } } for the Settings switches in
+--                              lib/notifications/catalog.ts: friendRequests, tripInvites, scoresPosted, bigMoments,
+--                              travel, draftStarting, yourPick, chat (types left out = the app's default)
 --     distance_unit            yards / meters
 --     usual_tees               Black / Blue / White / Gold / Red / Green, or empty
 --     score_entry              simple / full
@@ -40,7 +41,7 @@ begin
   select * into v_row from profile_preferences where profile_id = p_profile for update;
 
   if p_change ? 'notification' then
-    if coalesce(p_change->>'notification', '') not in ('friendRequests', 'tripInvites', 'draftStarting', 'yourPick', 'scoresPosted', 'chat')
+    if coalesce(p_change->>'notification', '') not in ('friendRequests', 'tripInvites', 'scoresPosted', 'bigMoments', 'travel', 'draftStarting', 'yourPick', 'chat')
        or coalesce(p_change->>'channel', '') not in ('push', 'email') or jsonb_typeof(p_change->'on') is distinct from 'boolean' then
       raise exception 'That notification setting isn''t one we know.' using errcode = '22023';
     end if;

@@ -4,7 +4,7 @@ import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
-import { ALL_NOTIFICATION_PREVIEWS, type NotificationPreview } from "./sampleNotifications";
+import { ALL_NOTIFICATION_PREVIEWS, NOTIFICATION_TYPE_CHOICES, NOTIFICATION_WORDINGS, type NotificationPreview, type NotificationTypeChoice, type NotificationWording } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
 import { validDraftSim, type DraftSimState } from "./draftSim";
 import { MOCK_DRAFT_PRESET_IDS, validMockViewer, type MockDraftPresetId, type MockViewer } from "./mockDraft";
@@ -93,6 +93,10 @@ export type SimulatorState = {
   matchDraftPreview?: "off" | "Response" | "Ranks" | "Randomized";
   /** Notifications group: which preview screen shows (lib/dev/sampleNotifications.ts). Unset = the page's first one. */
   notificationPreview?: NotificationPreview;
+  /** Notifications group (Phone, In-app, All types): which type every screen draws (lib/notifications/catalog.ts). Unset / "mixed" = the design samples. */
+  notificationType?: NotificationTypeChoice;
+  /** Notifications group: which wording version (V1–V3) is the newest note. Unset = V1. */
+  notificationWording?: NotificationWording;
   /** Notifications group (Phone, In-app): the Highlights scenario panel — engine output instead of the design samples. Unset = design samples. */
   highlightSim?: HighlightSim;
   /** Notifications group: lock / home screen wallpaper. Unset = the default (brighter maroon). */
@@ -230,6 +234,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.mockMatch !== undefined && state.mockMatch !== "off" && !MOCK_MATCH_PRESET_IDS.includes(state.mockMatch as MockMatchPresetId)) return null;
   if (state.mockMatchViewer !== undefined && !MATCH_SEL_VIEWERS.includes(state.mockMatchViewer as MatchSelViewer)) return null;
   if (state.notificationPreview !== undefined && !ALL_NOTIFICATION_PREVIEWS.includes(String(state.notificationPreview))) return null;
+  if (state.notificationType !== undefined && !NOTIFICATION_TYPE_CHOICES.includes(state.notificationType as NotificationTypeChoice)) return null;
+  if (state.notificationWording !== undefined && !NOTIFICATION_WORDINGS.includes(state.notificationWording as NotificationWording)) return null;
   if (state.wallpaper !== undefined && !["default", "dark", "light"].includes(String(state.wallpaper))) return null;
   if (state.highlightSim !== undefined && !parseHighlightSim(state.highlightSim)) return null;
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;

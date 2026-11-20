@@ -1,0 +1,25 @@
+/* Profile → Stats → Compare (owner requests 2026-11-19).
+   The stat chooser sits inside a "bubble" exactly like the Golf tab's round slider (GolfTripHome.module.css
+   .roundSelector + .roundPills): a 12px-corner box with a thin gold border and a soft gold glow at the top, the choices
+   scrolling sideways inside it (about 4½ showing), picked ones outlined in gold. Light look: inside .profile-body the
+   cream / gold tokens turn dark maroon / dark gold (app/globals.css), and the bubble is white instead of maroon. */
+.bubble{padding:2px 4px;overflow:hidden;border:1px solid color-mix(in srgb,var(--color-gold-300) 55%,transparent);border-radius:12px;
+  background:radial-gradient(120% 70% at 50% -18%,color-mix(in srgb,var(--color-gold-300) 18%,transparent),transparent 70%),#fffdf8}
+.slider{display:flex;gap:2px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none}
+.slider::-webkit-scrollbar{display:none}
+.option{flex:0 0 auto;min-width:calc(100% / 4.4);height:26px;padding:0 10px;scroll-snap-align:start;border:1px solid transparent;border-radius:12px;background:transparent;
+  color:color-mix(in srgb,var(--color-cream-50) 55%,transparent);font:700 12px/1 var(--font-barlow),sans-serif;white-space:nowrap;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+.option[aria-pressed=true]{border-color:color-mix(in srgb,var(--color-gold-300) 80%,transparent);color:var(--color-gold-300);
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--color-gold-300) 16%,transparent),color-mix(in srgb,var(--color-gold-300) 3.5%,transparent) 80%);
+  box-shadow:inset 0 0 12px color-mix(in srgb,var(--color-gold-300) 12%,transparent),0 0 6px color-mix(in srgb,var(--color-gold-300) 12%,transparent)}
+.option:focus-visible{outline:2px solid #edcf91;outline-offset:-2px}
+
+/* Who to compare with: just a line (no box). Tap it and the names slide down under it, narrowing as you type. */
+.line{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 2px;border-bottom:1.5px solid color-mix(in srgb,var(--color-gold-300) 60%,transparent);color:var(--color-cream-50)}
+.line:focus-within{border-bottom-color:var(--color-gold-300)}
+.line input{flex:1;min-width:0;border:0;background:transparent;color:inherit;font:500 15px var(--font-barlow),sans-serif;outline:none}
+.line input::placeholder{color:color-mix(in srgb,var(--color-cream-50) 50%,transparent)}
+.dropdown{position:absolute;inset-inline:0;top:100%;z-index:20;max-height:20rem;margin-top:6px;padding:4px;overflow-y:auto;border:1px solid color-mix(in srgb,var(--color-gold-300) 35%,transparent);
+  border-radius:12px;background:#fff;box-shadow:0 14px 30px rgba(36,0,1,.16);transform-origin:top;animation:slideDown .18s ease-out}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px) scaleY(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.option{transition:none}.dropdown{animation:none}}

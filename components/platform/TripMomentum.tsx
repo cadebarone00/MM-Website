@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import toggleStyles from "./GolfTripCompetition.module.css";
@@ -8,6 +8,7 @@ import notificationStyles from "./GolfTripNotifications.module.css";
 import { countdownParts } from "@/lib/platform/momNotifications";
 import { draftWhenLabel } from "@/lib/platform/teamDraft";
 import { homeDraftTeamsReady, homeDraftHasSchedule, homeTeamGroupsReady, homeMatchRounds, homeRoundRobinSides, type HomeCompetitionTypes } from "@/lib/platform/homeDraft";
+import { useMatchSelection } from "@/lib/platform/useMatchSelection";
 import { matchDraftTimeError } from "@/lib/platform/draftSchedule";
 import { draftBoard, teamDraftSize, type TeamDraft } from "@/lib/platform/teamDraft";
 import type { MomentumEvent } from "@/lib/platform/tripPush";
@@ -15,7 +16,7 @@ import styles from "./TripMomentum.module.css";
 import { useDevSetup, writeDevSetup } from "@/lib/dev/tripSetupStore";
 import { readJustCreatedAll, useJustCreatedVersion } from "@/lib/dev/justCreatedStore";
 import { useSavedTripSetup } from "./SavedTripSetupProvider";
-import { matchDraftRounds, type MatchDraftPlayer } from "@/lib/platform/matchDraft";
+import { homeMatchSelection, matchDraftRounds, type MatchDraftPlayer } from "@/lib/platform/matchDraft";
 import type { MomRound } from "@/lib/platform/momNotifications";
 import { matchDraftPreviewData } from "@/lib/dev/matchDraftPreview";
 import { draftSimFixture } from "@/lib/dev/draftSim";
@@ -52,7 +53,8 @@ const subscribeReminders = (change: () => void) => {
 };
 
 /** Existing team draft and next match draft occupy separate Home cards. */
-export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: editHrefProp, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"], fallback = null, headingClassName, onTeamsComplete }: {
+export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: editHrefProp, players = [], scope = "default", rounds = [], playedThrough = 0, teamNames = ["Team A","Team B"], fallback = null, headingClassName, onTeamsComplete, onGoToMatches }: {
+  onGoToMatches?: (round: number) => void;
   competitionTypes?: HomeCompetitionTypes | null;
   onTeamsComplete?: (players: MatchDraftPlayer[]) => void;
   headingClassName?: string;
@@ -69,6 +71,7 @@ export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: ed
   const version = useJustCreatedVersion();
   const setup = saved?.values ?? (scope === "empty" ? readJustCreatedAll(version) : dev);
   const [openRound, setOpenRound] = useState<string | null>(null);
+  const [confirmedRounds, setConfirmedRounds] = useState<string[]>([]);
   const sourceKey = JSON.stringify([scope, players, setup, draft, simulator?.state]);
   const [completed, setCompleted] = useState<{ key: string; players: MatchDraftPlayer[] } | null>(null);
   const assignments = setup.teamPicks as Record<number, number> | undefined;
@@ -142,8 +145,11 @@ export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: ed
   const teamsReady = homeDraftTeamsReady(players.length, matchPlayers);
   const board = !teamsReady && team?.teamType && team.selection === "Draft"
     ? draftBoard(team, now) ?? { when: team.date ? draftWhenLabel(team.date, team.time) : null, target: team.date ? team.date + "T" + (team.time || "00:00") : null } : null;
-  const next = [...matchRounds].filter(round => !round.locked).sort((a,b)=>(a.date ? a.date+"T"+(a.time||"00:00") : "9999").localeCompare(b.date ? b.date+"T"+(b.time||"00:00") : "9999"))[0];
-  const blockedReason = !teamsReady ? "Complete the team draft first." : next ? matchDraftTimeError(team ?? {}, next.date, next.time) : null;
+  matchRounds = matchRounds.map(round => confirmedRounds.includes(round.key) ? { ...round, locked: true } : round);
+  const next = homeMatchSelection(matchRounds);
+  const homeSelection = useMatchSelection(matchTransport ?? null, next?.key ?? null);
+  useEffect(() => { if (!homeSelection.data?.confirmed) return; const key = homeSelection.data.round.key; const timer = window.setTimeout(() => { setConfirmedRounds(current => current.includes(key) ? current : [...current, key]); if (realTrip) void saved?.refresh(); }, 0); return () => window.clearTimeout(timer); }, [homeSelection.data?.confirmed, homeSelection.data?.round.key, realTrip, saved?.refresh]);
+  const blockedReason = !teamsReady ? "Complete the team draft first." : next && !next.locked ? matchDraftTimeError(team ?? {}, next.date, next.time) : null;
   const roomPlayers = players.map((player, index) => {
     const picked = matchPlayers.find(item => item.id === String(index));
     return picked ? { ...player, team: picked.team, teamIndex: picked.team === "A" ? 0 : 1 } : player;
@@ -184,10 +190,12 @@ export function TripDraftWidget({ draft, competitionTypes, startAt, editHref: ed
     {showMatch && <section aria-label="Match selection"><h2 className={headingClassName}>Match Selection</h2><div className={styles.draftWidget}>
       {!rounds.length && <div className={styles.sectionStatus}><p>Add match-play rounds to set up match selection.</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Set up rounds</Link>}</div>}
       {robinRounds.length > 0 ? sides.length >= 2 ? <TripRoundRobin sides={sides} roster={robinRoster} results={setup.roundRobinResults as RoundRobinResults | undefined} onChange={writeRobin} courses={robinRounds.map(round => round.course)}/> : <div className={styles.sectionStatus}><p>{teamType ? "Complete team assignments first." : "Add at least two players first."}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Set up players</Link>}</div> : null}
-      {next && teamType === "2 Teams" ? <DraftStrip draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course} matchFormat={next.format} blockedReason={blockedReason} onOpen={()=>{ if (!blockedReason) setOpenRound(next.key); }}/> : applicableRounds.some(round => round.method !== "Round Robin") ? <div className={styles.sectionStatus}><p>{applicableRounds.every(round => round.number <= playedThrough || Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(round.key)) ? "Match selection complete" : teamType && !allTeamsReady ? "Complete team assignments first." : "Set up match selection"}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Match settings</Link>}</div> : null}
+      {next && teamType === "2 Teams" ? <DraftStrip matchesSelected={!!next.locked} draft={{teamType:"2 Teams",selection:"Draft",date:next.date||"",time:next.time||"",type:"Snake"}} board={{when:next.when,target:next.date ? next.date+"T"+(next.time||"00:00") : null}} now={now} editHref={editHref} players={players} matchRound={next.number} matchLabel={next.course} matchFormat={next.format} blockedReason={blockedReason} onOpen={()=>{ if (!blockedReason) setOpenRound(next.key); }}/> : applicableRounds.some(round => round.method !== "Round Robin") ? <div className={styles.sectionStatus}><p>{applicableRounds.every(round => round.number <= playedThrough || Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(round.key)) ? "Match selection complete" : teamType && !allTeamsReady ? "Complete team assignments first." : "Set up match selection"}</p>{editHref && <Link className={styles.scheduleButton} href={editHref}>Match settings</Link>}</div> : null}
     </div></section>}
     {!showTeam && !showMatch && fallback}
-    {openRound && teamsReady && !blockedReason && <TripMatchDraftRoom key={seenSimRoom ?? openRound} modal transport={matchTransport} editGolfHref={editHref ? (() => { const url = new URL(editHref, "http://localhost"); url.searchParams.set("view", "schedule"); return url.pathname + url.search; })() : undefined} onConfirmed={data => {
+    {openRound && teamsReady && !blockedReason && <TripMatchDraftRoom key={seenSimRoom ?? openRound} modal transport={matchTransport} editGolfHref={editHref ? (() => { const url = new URL(editHref, "http://localhost"); url.searchParams.set("view", "schedule"); return url.pathname + url.search; })() : undefined} onGoToMatches={round => { setOpenRound(null); onGoToMatches?.(round); }} onConfirmed={data => {
+      setConfirmedRounds(current => current.includes(data.round.key) ? current : [...current, data.round.key]);
+      if (realTrip) void saved?.refresh();
       if (realTrip || sim || mockMatch) return;
       const groups = Array.from({ length: data.round.matches }, (_, match) => ({ a: data.spots.filter(spot => spot.match === match && spot.team === 0).sort((a,b) => a.slot-b.slot).map(spot => players.findIndex(player => player.name === data.members.find(member => member.profileId === spot.profileId)?.name)), b: data.spots.filter(spot => spot.match === match && spot.team === 1).sort((a,b) => a.slot-b.slot).map(spot => players.findIndex(player => player.name === data.members.find(member => member.profileId === spot.profileId)?.name)) }));
       if (groups.some(group => [...group.a,...group.b].some(index => index < 0))) return;
@@ -204,7 +212,7 @@ export function TripMomentum({ events, fallback }: { events: MomentumEvent[]; fa
 }
 
 /** Before the draft: Team Draft · day and time (Edit for the organizer), then the countdown with Draft Room. */
-function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLabel, matchFormat, onOpen, onComplete, blockedReason, canEdit = false, simRoomKey = null, liveTripId = null, keepKey, liveTransport }: { /** Match Selection: the round's format, on its own line under "Round x @ Course". */ matchFormat?: string; liveTransport?: TeamDraftTransport; keepKey?: string; liveTripId?: string | null; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; blockedReason?: string | null; simRoomKey?: string | null; players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number; matchLabel?: string; onOpen?: () => void }) {
+function DraftStrip({ matchesSelected = false, draft, board, now, editHref, players, matchRound, matchLabel, matchFormat, onOpen, onComplete, blockedReason, canEdit = false, simRoomKey = null, liveTripId = null, keepKey, liveTransport }: { matchesSelected?: boolean; /** Match Selection: the round's format, on its own line under "Round x @ Course". */ matchFormat?: string; liveTransport?: TeamDraftTransport; keepKey?: string; liveTripId?: string | null; canEdit?: boolean; onComplete?: (players: MatchDraftPlayer[]) => void; blockedReason?: string | null; simRoomKey?: string | null; players: DraftRoomPlayer[]; draft: TeamDraft; board: { when: string | null; target: string | null }; now: string | null; editHref?: string; matchRound?: number; matchLabel?: string; onOpen?: () => void }) {
   const zone = useSyncExternalStore(subscribe, zoneName, () => "");
   const [roomOpen, setRoomOpen] = useState(false);
   // Simulator "Draft Room open": open the room (fresh) whenever the sample changes; close it when the sample says closed.
@@ -228,7 +236,7 @@ function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLab
       {/* No "Edit" in the top right any more (owner 2026-11-13): the date is changed in Settings. */}
     </div>
     <div className={styles.draftBottom}>
-      <div className={styles.countdown} role="timer" aria-label={parts ? `${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the draft` : "Countdown to the draft"}>
+      {matchesSelected ? <p className={styles.draftWhen}>Matches Selected</p> : <div className={styles.countdown} role="timer" aria-label={parts ? `${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the draft` : "Countdown to the draft"}>
         {units.map(([label, value], index) => <div key={label} className={styles.unitWrap}>
           {index > 0 && <span className={styles.colon} aria-hidden>:</span>}
           <span className={styles.unit}>
@@ -236,7 +244,7 @@ function DraftStrip({ draft, board, now, editHref, players, matchRound, matchLab
             <span className={styles.label} aria-hidden>{label}</span>
           </span>
         </div>)}
-      </div>
+      </div>}
     </div>
     {blockedReason && <p className={styles.matchLabel} role="status">{blockedReason}</p>}
     <div className={styles.draftActions}>

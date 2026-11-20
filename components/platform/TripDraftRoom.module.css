@@ -85,9 +85,8 @@
 .peekSheet .panel{padding:0 15px 24px}
 .playerRow{display:grid;grid-template-columns:18px 26px minmax(0,1fr);align-items:center;gap:10px;padding:5px 0}
 .rowNumber{color:var(--lm-ink-dcc495);font:800 13px/1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
-.rowAvatar{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;overflow:hidden;background:#fbf8f1}
-.rowAvatar img{width:100%;height:100%;object-fit:cover}
-.rowMark{display:block;width:72%;height:72%}
+/* The person's avatar (shared ProfileAvatar) fills this slot; the slot only sets the size. */
+.rowAvatar{display:block;flex:none;width:26px;height:26px}
 .playerBox{min-width:0;padding:7px 10px 6px;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-radius:10px;background:color-mix(in srgb,var(--lm-ink-dcc495) 4%,transparent)}
 .playerBoxTop{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:26px}
 .playerBoxTop strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
@@ -196,7 +195,7 @@ button.vsBox{cursor:pointer}
 .playerRow{grid-template-columns:minmax(0,42%) minmax(0,1fr) 58px;gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 14%,transparent)}
 .playerWho{display:flex;align-items:center;gap:10px;min-width:0;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .playerWho:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px;border-radius:8px}
-.playerWho .rowAvatar{flex:none;width:36px;height:36px;border-radius:9px}
+.playerWho .rowAvatar{flex:none;width:36px;height:36px}
 .playerWho strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
 .statScroll{display:flex;gap:14px;min-width:0;margin:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;mask-image:linear-gradient(90deg,#000 85%,transparent)}
 .statScroll::-webkit-scrollbar{display:none}
@@ -210,3 +209,14 @@ button.vsBox{cursor:pointer}
 .draftProfileStats>div{text-align:center}
 .draftProfileStats dt{color:color-mix(in srgb,var(--lm-ink-dcc495) 80%,transparent);font:600 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .draftProfileStats dd{margin:4px 0 0;color:var(--lm-ink-fbf8f1);font:700 18px/1.1 var(--font-spectral),Georgia,serif;font-variant-numeric:tabular-nums}
+
+/* Room top box (owner 2026-11-19): 4px higher, bottom brought up; organizer's Edit golf setup boxed like Start now, both 4px larger. */
+.roomBoard{margin-top:0;height:96px;padding-bottom:32px}
+.boardOrganizerActions a,.boardOrganizerActions button{display:inline-flex;align-items:center;padding:6px 12px;border:1px solid rgba(201,168,110,.6);border-radius:8px;background:rgba(201,168,110,.1);color:var(--lm-ink-dcc495);font:700 11px/1.2 var(--font-barlow),sans-serif;text-decoration:none;cursor:pointer}
+.boardOrganizerActions a{margin-right:auto}
+.boardOrganizerActions{bottom:6px}
+/* Match Selection rows: match name + tee time top-middle, Team A | VS | Team B under it. */
+.vsHead,.vsRow{grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);row-gap:6px}
+.vsHead .vsTeam:first-child{grid-column:1}.vsHead .vsTeam:last-child{grid-column:3}
+.vsMatchHead{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.vsTee{color:color-mix(in srgb,var(--lm-ink-fbf8f1) 70%,transparent);font:600 10px/1.2 var(--font-barlow),sans-serif;letter-spacing:.04em}

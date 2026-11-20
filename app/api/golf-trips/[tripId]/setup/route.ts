@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
-import { setupPlan, validSetup } from "@/lib/platform/savedTripSetup";
+import { setupForViewer, setupPlan, validSetup } from "@/lib/platform/savedTripSetup";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
@@ -25,4 +25,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ trip
     if (error) return NextResponse.json({ error: ["40001", "42501", "22023"].includes(error.code) ? error.message : "Couldn't save trip settings." }, { status: error.code === "40001" ? 409 : error.code === "42501" ? 403 : 400 });
     return NextResponse.json({ ok: true, revision: data.revision });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid settings." }, { status: 400 }); }
+}
+
+export async function GET(_request: Request, { params }: { params: Promise<{ tripId: string }> }) {
+ const { tripId } = await params; const view = await getGolfTrip(tripId);
+ if (view.status !== "ok") return NextResponse.json({ error: "Trip not found." }, { status: view.status === "signed-out" ? 401 : 404 });
+ return NextResponse.json(setupForViewer(await loadSavedTripSetup(view.trip), view.viewer.isOrganizer), { headers: { "Cache-Control": "no-store" } });
 }

@@ -47,7 +47,7 @@ export function NotificationSettings({ initial, save = saveAccountPreference }: 
         <Switch on={prefs.notifications[id].email} label={`${label}: emails`} onChange={(on) => set(id, "email", on)} />
       </li>)}
     </ul>
-    <p className={styles.note}>Phone alerts start with the App Store app. Today only friend-request emails are sent; the rest follow these switches as they arrive.</p>
+    <p className={styles.note}>Phone alerts start with the App Store app. Today only friend-request emails are sent; the rest follow these switches as they arrive. Messages from your trip organizer always come through.</p>
     {error && <p role="alert" className={styles.error}>{error}</p>}
   </div>;
 }

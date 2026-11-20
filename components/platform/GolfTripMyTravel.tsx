@@ -1,4 +1,5 @@
 "use client";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { DateTimePicker } from "./DateTimePicker";
 
 import { useState, type ReactNode } from "react";
@@ -244,7 +245,7 @@ function InvitePeople({ travel, itemId, onSend, onClose }: { travel: TripTravel;
       {others.map((member) => {
         const status = statusOf(member.id), already = status === "invited" || status === "going", on = already || picked.includes(member.id);
         return <button key={member.id} type="button" className={styles.inviteRow} aria-pressed={on} disabled={already} onClick={() => toggle(member.id)}>
-          <span className={styles.inviteAvatar} aria-hidden>{initials(member.name)}</span>
+          <ProfileAvatar name={member.name} size={34} />
           <span className={styles.inviteName}>{member.name}{already && <small>{status === "going" ? "Going" : "Invited"}</small>}</span>
           <span className={styles.inviteCheck} aria-hidden>{on && <Check size={16} strokeWidth={3} />}</span>
         </button>;
@@ -257,7 +258,6 @@ function InvitePeople({ travel, itemId, onSend, onClose }: { travel: TripTravel;
   </GolfTripActionSheet>;
 }
 
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join("") || "?";
 
 function Field({ label, value, onChange, type = "text", placeholder, problem, upper = false }: {
   label: string; value: string; onChange: (value: string) => void; type?: "text" | "number" | "datetime-local"; placeholder?: string; problem?: string; upper?: boolean;

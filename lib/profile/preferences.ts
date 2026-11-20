@@ -3,14 +3,10 @@
  * supabase/profile_preferences.sql). One set per profile. Shared by the screens, the save route and the server.
  */
 
-export const NOTIFICATION_TYPES = [
-  { id: "friendRequests", label: "Friend requests" },
-  { id: "tripInvites", label: "Trip invites" },
-  { id: "draftStarting", label: "Draft starting" },
-  { id: "yourPick", label: "Your turn to pick" },
-  { id: "scoresPosted", label: "Scores posted" },
-  { id: "chat", label: "Chat messages" },
-] as const;
+import { NOTIFICATION_SWITCHES } from "../notifications/catalog.ts";
+
+/** The Settings switches, straight from the notification master list (lib/notifications/catalog.ts). */
+export const NOTIFICATION_TYPES = NOTIFICATION_SWITCHES;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]["id"];
 export type NotificationChannel = "push" | "email";
 export type NotificationSettings = Record<NotificationType, Record<NotificationChannel, boolean>>;
@@ -24,9 +20,9 @@ export type ScoreEntry = (typeof SCORE_ENTRIES)[number]["id"];
 
 export interface Preferences { notifications: NotificationSettings; distance: DistanceUnit; usualTees: UsualTees; scoreEntry: ScoreEntry }
 
-/** Defaults: every phone alert on; emails only for the two that matter outside the app (friend requests, trip invites). */
+/** Defaults: every phone alert on; emails only for the ones that matter outside the app (catalog `email`: friend requests, trip invites). */
 export const DEFAULT_PREFERENCES: Preferences = {
-  notifications: Object.fromEntries(NOTIFICATION_TYPES.map(({ id }) => [id, { push: true, email: id === "friendRequests" || id === "tripInvites" }])) as NotificationSettings,
+  notifications: Object.fromEntries(NOTIFICATION_TYPES.map(({ id, email }) => [id, { push: true, email }])) as NotificationSettings,
   distance: "yards", usualTees: "", scoreEntry: "simple",
 };
 

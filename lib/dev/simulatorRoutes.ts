@@ -8,7 +8,8 @@ import { DEV_ACCOUNTS } from "./devAccounts";
 import { AUTH_SCREENS } from "./authScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
-import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS } from "./sampleNotifications";
+import { NOTIFICATION_PREVIEWS, NOTIFICATION_PREVIEW_LABELS, NOTIFICATION_TYPE_CHOICES, NOTIFICATION_WORDINGS } from "./sampleNotifications";
+import { catalogEntry } from "@/lib/notifications/catalog";
 import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAGE_COUNTS, TEAM_DRAFT_TYPES } from "./draftSim";
 import { teamDraftSize } from "@/lib/platform/teamDraft";
 import { MOCK_DRAFT_PRESETS } from "./mockDraft";
@@ -196,9 +197,16 @@ export function simulatorPages(): SimulatorPage[] {
         { id: "wall-dark", label: "Wallpaper · darker", state: { wallpaper: "dark" as const } },
         { id: "wall-light", label: "Wallpaper · lighter", state: { wallpaper: "light" as const } },
       ];
-      Object.assign(page, { label, group: "Notifications", conditions: [...walls, ...NOTIFICATION_PREVIEWS[surface].map(id => ({ id: "notify-" + id, label: NOTIFICATION_PREVIEW_LABELS[id], state: { notificationPreview: id } }))] });
+      // Phone + In-app: every screen can draw any type from the master list, in any wording version (cleanup 2026-11-19).
+      const types = surface === "live" ? [] : notificationTypeConditions();
+      Object.assign(page, { label, group: "Notifications", conditions: [...walls, ...NOTIFICATION_PREVIEWS[surface].map(id => ({ id: "notify-" + id, label: NOTIFICATION_PREVIEW_LABELS[id], state: { notificationPreview: id } })), ...types] });
       pages.push(...pages.splice(pages.indexOf(page), 1)); // keep this order: phone, Live Activity, in-app
     }
+  }
+  const allTypes = pages.find(item => item.path === "/dev/notifications/types");
+  if (allTypes) {
+    Object.assign(allTypes, { label: "All types", group: "Notifications", conditions: notificationTypeConditions() });
+    pages.push(...pages.splice(pages.indexOf(allTypes), 1));
   }
   // Tourneys group: a sample tournament joined by code (lib/dev/sampleTourney.ts), no sign-in, nothing saved.
   const tourney = pages.find(page => page.path === "/dev/tourney");
@@ -335,9 +343,10 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "profile-preview-public", label: "Someone else's Public profile (Instagram layout)", state: { profilePreview: "public", sampleStats: false, profileSearch: undefined } },
     { id: "profile-preview-private", label: "Someone else's Private profile (no Friends count, tabs greyed out)", state: { profilePreview: "private", sampleStats: false, profileSearch: undefined } },
   ] });
+  // Every Profile screen listed straight under the Profile group (owner request 2026-11-19), not hidden as sub-pages.
   for (const [path, label] of [["/dev/profile/settings", "Settings (sample)"], ["/dev/profile/edit", "Edit profile (sample)"]]) {
     const page = pages.find(item => item.path === path);
-    if (page) Object.assign(page, { label, group: "Profile", parentId: profile?.id, conditions: path === "/dev/profile/settings" ? [
+    if (page) Object.assign(page, { label, group: "Profile", conditions: path === "/dev/profile/settings" ? [
       { id: "settings-default", label: "Default (sample choices)", state: { settingsPreview: "default" } },
       { id: "settings-all-off", label: "Notifications all off", state: { settingsPreview: "allOff" } },
       { id: "settings-offer", label: "Organizer · an offer waiting", state: { settingsPreview: "offer" } },
@@ -346,11 +355,16 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Search page (2026-11-19, Instagram-style) on sample golfers.
   const searchPage = pages.find(item => item.path === "/dev/profile/search");
-  if (searchPage) Object.assign(searchPage, { label: "Search (sample)", group: "Profile", parentId: profile?.id, conditions: [
+  if (searchPage) Object.assign(searchPage, { label: "Search (sample)", group: "Profile", conditions: [
     { id: "profile-search-empty", label: "Before typing · friend requests, Recent, Suggested for you", state: { profileSearch: "empty" } },
     { id: "profile-search-results", label: "2 letters typed (\"ke\") · results, Public + Private", state: { profileSearch: "results" } },
     { id: "profile-search-none", label: "No results", state: { profileSearch: "none" } },
   ] });
+  // Someone else's profile, as you'd see it after searching (Instagram layout).
+  for (const [path, label] of [["/dev/profile/public", "Public profile (sample · Jake Parker)"], ["/dev/profile/private", "Private profile (sample · Mike Chen)"]]) {
+    const page = pages.find(item => item.path === path);
+    if (page) Object.assign(page, { label, group: "Profile", conditions: [] });
+  }
   // The real Profile (signed-in account): real data, or made-up rounds to preview the Stats tab and Compare.
   const realProfile = pages.find(page => page.path === "/profile");
   if (realProfile) Object.assign(realProfile, { label: "My profile (live account)", group: "Profile", conditions: [
@@ -359,9 +373,18 @@ export function simulatorPages(): SimulatorPage[] {
   ] });
   // The player-rounds store (moved from /dev/profile): History link requests, removing rounds, Public / Private.
   const requests = pages.find(page => page.path === "/dev/profile/requests");
-  if (requests) Object.assign(requests, { label: "Link requests (dev)", group: "Profile", conditions: signedInAs() });
-  // Keep the sample profile first in its group, then the live account, then link requests.
-  for (const page of [realProfile, requests]) if (page) pages.push(...pages.splice(pages.indexOf(page), 1));
+  // Not a real app screen (an older dev tool), so it lives in its own group instead of the Profile list.
+  if (requests) Object.assign(requests, { label: "Round link requests (old dev tool)", group: "Dev tools", conditions: signedInAs() });
+  // Profile group order: my profile, Edit profile, Settings, Search, Public, Private, then the live account.
+  const profileOrder = ["/dev/profile", "/dev/profile/edit", "/dev/profile/settings", "/dev/profile/search", "/dev/profile/public", "/dev/profile/private"]
+    .map((path) => pages.find((page) => page.path === path)).filter((page): page is SimulatorPage => Boolean(page));
+  const profileList = [...profileOrder, ...(realProfile ? [realProfile] : [])];
+  const profileAt = profileList.length ? Math.min(...profileList.map((page) => pages.indexOf(page))) : -1;
+  if (profileAt >= 0) {
+    for (const page of profileList) pages.splice(pages.indexOf(page), 1);
+    pages.splice(profileAt, 0, ...profileList);
+  }
+  if (requests) pages.push(...pages.splice(pages.indexOf(requests), 1));
   const onboardingOrder = ["/tournaments/create/golf-trip", "/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
   const reviewGroups = ["Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
@@ -433,4 +456,12 @@ function matchSelectionConditions(): SimulatorConditional[] {
 /** "Signed in as <mock account>" conditions for the player-rounds preview. */
 function signedInAs() {
   return DEV_ACCOUNTS.map((account) => ({ id: `view-as-${account.id}`, label: `Signed in as ${account.name}`, state: { viewAs: account.id } }));
+}
+
+/** Notifications group: "Type" (mixed samples or one catalog type) and "Wording" (V1–V3) choices. */
+function notificationTypeConditions(): SimulatorConditional[] {
+  return [
+    ...NOTIFICATION_TYPE_CHOICES.map(kind => ({ id: "notify-type-" + kind, section: "Type", label: kind === "mixed" ? "Mixed samples (default)" : catalogEntry(kind).name, state: { notificationType: kind } })),
+    ...NOTIFICATION_WORDINGS.map(version => ({ id: "notify-wording-" + version, section: "Wording", label: `V${version}`, state: { notificationWording: version } })),
+  ];
 }

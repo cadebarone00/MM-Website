@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, BedDouble, CalendarDays, Camera, Car, ChevronRight, Flag, LayoutGrid, ListChecks, Map as MapIcon, MapPin, ShoppingBag, Utensils } from "lucide-react";
@@ -43,7 +44,6 @@ function VenueMap({ latitude, longitude }: { latitude?: number; longitude?: numb
   </div>;
 }
 
-const initials = (text: string) => text.split(/[\s,]+/).filter(Boolean).slice(0, 2).map(word => word[0]?.toUpperCase()).join("") || "—";
 const monthDay = (date: string) => {
   const value = new Date(`${date}T00:00:00Z`);
   return { month: value.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }), day: value.getUTCDate() };
@@ -101,7 +101,7 @@ export function GolfTripVenue({ draft, latitude, longitude, players = [], items 
     <div className={styles.venueRow}>
       <div className={styles.venueColumn}>
         <div className={styles.avatars} aria-label={`${players.length} players`}>
-          {players.slice(0, 4).map((name, index) => <span key={`${index}-${name}`} className={styles.avatarDot} title={name}>{initials(name)}</span>)}
+          {players.slice(0, 4).map((name, index) => <span key={`${index}-${name}`} className={styles.avatarSlot}><ProfileAvatar name={name} title={name} /></span>)}
           {players.length > 4 && <span className={`${styles.avatarDot} ${styles.avatarMore}`}>+{players.length - 4}</span>}
           {!players.length && <span className={styles.tileMuted}>No players yet</span>}
         </div>

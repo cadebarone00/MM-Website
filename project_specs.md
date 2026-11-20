@@ -2032,7 +2032,7 @@ create index if not exists golf_trip_flights_member_idx on public.golf_trip_flig
 ### Round: Golf Trips page — money-app dashboard look (owner request 2026-10-02, built)
 
 Replaces the photo drop-down panel from earlier the same day. Modeled on the owner's money-app screenshot, in maroon instead of pink:
-- **Maroon band** at the top (radial maroon gradient) with the title **Your Next Golf Trip / Just Got Better** (Spectral, centered). No top bar on phones; wide screens (1024px+, no bottom menu) keep the menu and account buttons see-through over the band.
+- **Whole page is maroon** (maroon-900; 2026-11-19 — the old maroon band and its "Your Next Golf Trip / Just Got Better" title were removed). Group headings are cream, "Import past trip" is gold. No top bar on phones; wide screens (1024px+, no bottom menu) keep the menu and account buttons see-through over the maroon.
 - **Create a Golf Trip** is the big white card overlapping the band's bottom edge: small label "Plan something new", big "Create a Golf Trip", the course photo where the reference has its chart, then a "Start planning ›" row. The whole card is the link (sign-in prompt if signed out).
 - **Join a Trip** is its own white card under it (stacked, no sliding).
 - **Upcoming** and **Past Trips** replace the reference's account lists: small caps heading, then a white card of rows (rounded-square icon, trip name with destination · players · role, short dates on the right, ›). Empty: "No upcoming trip yet — Start +" (opens Create) / "No past trips yet". Signed out: one "Log in to see your trips — Log in ›" row.
@@ -5228,3 +5228,135 @@ Settings (default, notifications all off, organizer with an offer / without).
 Each Settings switch / choice saves and is still set after a reload (dev + live); Account rows work from Settings;
 nothing appears in both places; tests (incl. SQL); browser-checked.
 
+
+## One avatar everywhere (owner rule 2026-11-19) — APPROVED + BUILT 2026-11-19 (uncommitted; tsc + lint clean; not yet checked on screen)
+
+**What it is:** A person's avatar is their identity, the same on every page, like their name. By default it's their two
+initials in gold inside a thin gold ring. It looks exactly like the circle next to a name on the Golf tab's pulled-down top
+board (`GolfDayBoard.module.css .avatar`). When the person uploads a photo, the photo takes the circle's place.
+
+**Who sees it:** everyone, on every page.
+
+**Rules**
+- One shared component: `components/profile/ProfileAvatar.tsx` (already exists, already this look). Every person-circle uses it.
+- Default = initials (from their name), gold Spectral letters, 1px gold ring, faint gold fill. Their photo wins once they add one.
+- An avatar is always ONE person. Circles that aren't one person are not avatars and are left as they are: the team-match
+  circle with two players' letters, the group-chat people icon, "+3 more" dots, the Admin crest.
+- Each spot keeps its current size and position; only what's drawn in the circle changes (no layout shift).
+- No team-color rings on avatars (the old `ui/Avatar` maroon/white team ring goes away).
+
+**Places that switch** (today's look → gold-ring avatar, photo if they have one)
+1. Golf Trip Home → Players roster (Maroon logo mark today)
+2. Team Draft room + Match Selection room rows (Maroon logo mark today)
+3. Player tourney profile pop-ups (draft, match, profile round sheet)
+4. Top Matchup box sides, singles matches only
+5. Trip chat (thread list + open chat header, one-person chats)
+6. My Travel invite list
+7. Venue + itinerary "who's going" dots (each person; "+N" stays as-is)
+8. Itinerary/event host dot (empty circle today → host's avatar)
+9. Friends list, Find golfers, Settings photo row
+10. Old /play pages (PlayTabs roster; team-color ring dropped)
+11. Public tournament site player cards
+12. Account badge (top corner) + leaderboard rows (`ui/Avatar` → shared avatar)
+13. Website player dashboard
+
+**Data:** no database changes. Photo comes from what each screen already has (`avatarUrl` / `photoUrl`); where a screen has
+no photo today it shows initials.
+
+**Third-party services:** none.
+
+**Done looks like:** every one-person circle on the pages above shows the gold-ring initials (or the photo), sizes unchanged;
+`npx tsc` and lint pass; checked on the dev simulator's Golf Trip, Profile, Search, Settings and /play screens.
+
+**Build notes (2026-11-19):** switched 1–7, 9 (Friends), 10, 12, 13 and the Golf board itself to `ProfileAvatar` (now fills its
+slot when no `size` is given; initials scale with the circle). Not switched, on purpose:
+- 8 Event "host" dots: the hosts are labels (Flights, Lodging, Weather), not people, so not avatars.
+- 9 Find golfers + Settings photo row: no page uses them any more.
+- 11 Public tournament site: OPEN QUESTION for owner — it is a light, per-tournament-branded page; gold initials on its
+  near-white background would be very hard to read.
+
+## Simulator: phone keyboard (owner request 2026-11-19) — SPEC, awaiting approval
+
+**What it is:** in the dev simulator (`/dev`), whenever you tap anywhere you type (search boxes, Edit profile fields,
+sign-up / log-in, chat, socials, trip forms…), an on-screen keyboard slides up from the bottom of the phone, so you can
+see how each screen looks with the keyboard open — on **iPhone** and **Android** separately.
+
+**How it looks:**
+- **iPhone presets (17 / 17 Pro / 17 Pro Max):** the iOS keyboard — light grey, rounded white keys, word suggestions bar on
+  top, 🌐 and 🎤 row at the bottom, the blue/grey return key named to match the field (return / search / go / done / next).
+- **Google Pixel presets:** the Android (Gboard) keyboard — darker keys, suggestions strip, comma/period keys, round
+  return key with an icon.
+- **The keyboard type follows the field:** email → @ and . keys; numbers (scores, player amount) → number pad; phone → phone
+  pad; search → "search" return key; passwords → no suggestions bar.
+- Real phone heights (about 336 pt on iPhone incl. suggestions, about 300 dp on Pixel). **The screen gets shorter** like
+  on a real phone, so anything the keyboard would cover shows as covered — the point is to catch fields and buttons hidden
+  behind it.
+
+**How it works:**
+- Tap a field → keyboard slides up; tap outside / tap the field's done key → it slides down. Typing still works with your
+  computer keyboard, and the on-screen keys can be tapped to type too (letters, shift, numbers, space, delete, return).
+- A switch in the simulator's side panel: **Keyboard: Show / Hide** (on by default) so screenshots can be taken without it.
+
+**Not changed:** the real app and website are untouched; this is only the `/dev` simulator. No database.
+
+**Done looks like:** tapping a field on Search, Edit profile, Compare and a sign-in screen brings up the right keyboard for
+iPhone and for Pixel; the screen shortens; email / number fields get their own layouts; tapping keys types; the switch hides
+it; tested in the browser.
+
+## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, AWAITING APPROVAL)
+
+**Why.** Notifications live in 5 places that don't agree: the 12 kinds in `lib/notifications/types.ts`, the 6 Settings
+switches in `lib/profile/preferences.ts` (only 1–2 match a kind; friend requests, draft, your pick and chat have no kind),
+the old trip "Round alerts" panel (web push, Big moments / Every score), the Highlights sheet (75 rules, 7 categories,
+264 wordings) and the `/dev` previews (41 screens, but only 5 sample alerts). Goal: one master list, every type previewed
+on every surface with its wording versions, so it's ready to drop into the app.
+
+**Owner choices (2026-11-19).** Scope = catalog + previews (dev only, nothing sent, no SQL). "Versions" = **both** how a
+type looks on each screen **and** its wording variations. Settings-only alerts **become real types** (wording marked
+not approved).
+
+**Who uses it.** The owner (to see and approve every alert) and later the app (the catalog feeds push, bell and banner).
+
+**Tech.** Same stack: Next.js + TypeScript, pure functions with tests. No database, no new services, no new packages.
+
+**1. One master list — `lib/notifications/catalog.ts`.** Every type has: id, name, Settings switch it belongs to, icon,
+who gets it, what triggers it, where tapping goes, which surfaces it uses (phone / bell / in-app banner), and its wording
+(V1, V2, V3 — title + body with `{player}`-style blanks), plus an **approved** flag. Golf highlights and travel keep
+their wording in the Highlights sheet; the catalog points at those categories instead of copying them.
+
+| Settings switch | Types in it |
+|---|---|
+| Friend requests | friendRequest *(new)* |
+| Trip invites & requests | invited, joinRequest, requestAccepted, requestDeclined, linkRequest |
+| Draft starting | draftStarting *(new)* |
+| Your turn to pick | yourPick *(new)* |
+| Round updates (was "Scores posted", same saved id) | teeTime, opponentSubmitted, cardMismatch, roundFinal |
+| Big moments *(new switch)* | highlight — the 6 golf categories from the Highlights sheet |
+| Travel reminders *(new switch)* | travel — flights, rides, golf schedule, lodging, activities (sheet's travel tab) |
+| Chat messages | chat *(new)* |
+| — always on (can't turn off) | announcement (organizer messages) |
+
+`NOTIFICATION_KINDS` and the Settings list are both built from this catalog, so they can't drift apart again. Saved
+preferences keep working (same ids; new switches start on).
+
+**2. Previews — `/dev` → Notifications.**
+- New page **All types**: the catalog as a list (name, switch, icon, trigger, wordings, Approved / Not approved). Tap a
+  type → it shows on every surface below.
+- Phone and In-app pages get two new simulator choices: **Type** (any catalog type) and **Wording** (V1 / V2 / V3).
+  Every existing screen (iPhone lock, stacked, banner, signed out, Android, bell unread/read, top banner) then draws that
+  type. Live Activity pages are unchanged (they're one round-only type).
+- Each type gets realistic sample data (names, course, times) so blanks fill in.
+
+**3. UI pass.** I go through every preview screen at iPhone and Pixel width, write down what looks off (spacing, cut-off
+text, icon, contrast on the light/dark wallpapers, fixed sizes), show you the list, and fix only what you OK.
+
+**Not in this round.** Sending anything (APNs / FCM need the Mac + keys), the `app_notifications` table or a real bell
+in the app, changing the Live Activity, the old trip "Round alerts" panel (left working as is), emails, and approving
+any new wording (all new lines are marked Not approved until you OK them).
+
+**Open question.** Organizer announcements "always on" — OK, or should they get their own switch?
+
+**Done means.** One catalog drives the kinds list and Settings; every type previews on every phone/in-app screen with
+V1/V2/V3; tests check every type has a switch, an icon, a safe tap link, 3 wordings within the push length limits, and
+every switch has at least one type; TypeScript, lint and the full test suite pass; checked in the browser at phone width.
+Nothing sent, no SQL. Steps 1–2 = one commit, step 3 = a second commit after you OK the fix list.

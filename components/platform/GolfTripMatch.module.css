@@ -14,6 +14,8 @@
 .side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:var(--team-left,#dcc495)}
 .side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:var(--team-right,#e89a9a)}
 .avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--team-left,#dcc495);color:var(--team-left-text,var(--color-maroon-900));font:800 15px/1 var(--font-spectral),Georgia,serif}
+/* A single player's avatar (shared ProfileAvatar) in the team circle's spot and size. */
+.avatarSlot{display:block;flex:none;width:44px;height:44px}
 .avatarRight{background:var(--team-right,#e89a9a);color:var(--team-right-text,var(--color-maroon-900))}
 .sideLeading .avatar{background:var(--lm-bg-240001);color:var(--team-left-on-dark,#dcc495)}
 .right.sideLeading .avatar{color:var(--team-right-on-dark,#e89a9a)}
@@ -25,7 +27,7 @@
 .right.sideLeading .boxStanding,.right.sideLeading .teamName,.right.sideLeading .teamMeta{color:var(--team-right-text,var(--color-maroon-900))}
 .sideLeading .teamMeta{opacity:.75}
 .boxStatus{align-self:start;display:flex;justify-content:center;margin-top:-8px}
-@media(max-width:359px){.teams{gap:6px}.side{padding:10px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.boxStanding{min-height:16px;font-size:16px}.teamName{font-size:16px}}
+@media(max-width:359px){.teams{gap:6px}.side{padding:10px 8px 8px}.side.left.sideLeading{margin-right:6px}.side.right.sideLeading{margin-left:6px}.side.left.sideLeading{padding-left:22px}.side.right.sideLeading{padding-right:22px}.avatar{width:34px;height:34px;font-size:12px}.avatarSlot{width:34px;height:34px}.boxStanding{min-height:16px;font-size:16px}.teamName{font-size:16px}}
 /* Round stats: the win bar, then each side's four stats mirrored either side of a thin gold center line; the labels
    sit above a line (drawn at the label height, --label) and the values below it. */
 .stats{display:grid;grid-template-columns:1fr 1fr;margin:0 14px;padding:2px 0 14px;--label:9px}
@@ -190,7 +192,7 @@
 .matchupCompact .teams{gap:6px;padding:8px 14px 0}
 /* Board: no initials circle. Each side is a row: the names 6px from the box's edge, centered top to bottom, and the
    match score ("2 UP", "4&3", "AS") at the inner middle of the side (its lead fill). */
-.matchupCompact .avatar{display:none}
+.matchupCompact .avatar,.matchupCompact .avatarSlot{display:none}
 .matchupCompact .side{flex-direction:row;align-items:center;justify-content:flex-start;gap:6px}
 .matchupCompact .side.left{margin-left:-14px;padding:2px 10px 2px 6px}
 .matchupCompact .side.right{margin-right:-14px;flex-direction:row-reverse;padding:2px 6px 2px 10px}
@@ -381,7 +383,8 @@
 .playerTripProfileHandle .scoreSheetHandle{display:block;margin:0}
 /* The photo pokes 4px past the top, the left edge and the line (clipped): 16dvh header - 2px line + 8px. */
 .playerTripProfileAvatar{position:absolute;top:-4px;left:-4px;display:flex;align-items:center;justify-content:center;width:calc(16dvh + 6px);height:calc(16dvh + 6px);overflow:hidden;border-radius:50%;background:#fbf8f1;color:var(--color-maroon-900);font:700 5.4dvh var(--font-barlow),sans-serif;box-shadow:0 0 0 2px #dcc495}
-.playerTripProfileAvatar img{width:100%;height:100%;object-fit:cover}
+/* The slot only places and sizes the person's avatar (shared ProfileAvatar: gold ring + gold initials, or their photo). */
+.playerTripProfileAvatar{background:none;box-shadow:none}
 .playerTripProfileClose{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--lm-ink-ffffff);cursor:pointer}
 .playerTripProfileClose:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .playerTripProfileScorecard{padding:16px 0;margin:0 16px 6px;border-top:2px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent);border-bottom:2px solid color-mix(in srgb,var(--lm-ink-fbf8f1) 18%,transparent)}
@@ -715,6 +718,8 @@
 /* Keep the middle column compact; the 45px sides provide room for two player names and grow the match box naturally. */
 .matchBoardRow .boxStatusLabelled{gap:1px}
 .matchBoardRow .matchBoardOpen{padding:0 4px}
+/* "MATCH n" 1px smaller with tighter letters so it clears the lead fill. */
+.matchBoardRow .matchBoardOpen.matchBoardOpen{font-size:9px;letter-spacing:.06em;position:relative;top:-1px}
 /* Move each whole side so the lead fill stays centered on its names and score. */
 .matchBoardRow .boardBox:has(.winBar) .side{transform:translateY(4.5px)}
 .matchBoardRow .boardBox:has(.winBar) .roundStats{transform:translateY(5px)}

@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Flag, Plane, Plus, UserRound, type LucideIcon } from "lucide-react";
 import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from "@/lib/platform/golfTripCreate";
-import { JoinCodeCard } from "./JoinCodeCard";
-import { SignInRequiredLink } from "./SignInRequiredLink";
+import { GolfTripsActions } from "./GolfTripsActions";
 import { PastTripImport } from "./PastTripImport";
 import styles from "@/app/golf-trips/page.module.css";
 
@@ -12,7 +10,7 @@ import styles from "@/app/golf-trips/page.module.css";
 export type GolfTripsResult = { status: "ok"; trips: GolfTripSummary[] } | { status: "signed-out" } | { status: "unavailable" };
 
 /**
- * Golf Trips: Join a Trip, start a new trip, then My Trips (upcoming + past) — the standard way back into a saved trip.
+ * Golf Trips: Create + Join buttons, The Maroon Live, then My Trips (upcoming + past) — the standard way back into a saved trip.
  * Shared by the website's page (loaded on the server) and the iPhone / Android app's (loaded from the API), so both
  * look and work the same. Each trip opens its one trip page (golfTripUrl).
  */
@@ -22,25 +20,8 @@ export function GolfTripsView({ result }: { result: GolfTripsResult }) {
 
   return (
     <main className={styles.page}>
-      {/* Maroon band at the top; the Join card overlaps its bottom edge (money-app dashboard look). */}
-      <div className={styles.band}>
-        <h1 className={styles.title}>Your Next Golf Trip<br />Just Got Better</h1>
-      </div>
-
       <div className={styles.content}>
-        <JoinCodeCard kind="trip" />
-        <SignInRequiredLink href="/tournaments/create/golf-trip" className={styles.create} message="Sign in to create a golf trip">
-          <span className={styles.createLabel}>Plan something new</span>
-          <span className={styles.createTitle}>Create a Golf Trip</span>
-          <span className={styles.createPhoto}>
-            <Image src="/schedule/courses/petedye/37c88500018493969bee.webp" alt="" fill priority sizes="(max-width: 600px) 90vw, 528px" />
-          </span>
-          <span className={styles.createRow}>
-            <span className={styles.iconBox} aria-hidden="true"><Plus size={18} strokeWidth={2.25} /></span>
-            Start planning
-            <ChevronRight size={20} strokeWidth={2} aria-hidden="true" className={styles.rowArrow} />
-          </span>
-        </SignInRequiredLink>
+        <GolfTripsActions />
 
         <Link href="/golf-trips/live" className={styles.live} aria-labelledby="maroon-live-entry-title" aria-describedby="maroon-live-entry-description">
           <span className={styles.liveText}>

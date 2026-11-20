@@ -147,6 +147,8 @@ export function draftSimFixture(state: DraftSimState, now: string): DraftSimFixt
       number: 2, course: "Troon North · Monument", format: perSide === 2 ? "Fourball" : "Singles", perSide,
       matches: Math.floor(Math.min(sizeA, sizeB) / perSide), type: s.matchSelType,
       rankMinutes: 10, putForwardMinutes: 10, responseMinutes: 10,
+      // Sample tee times: a group every 10 minutes from 8:00.
+      teeTimes: Array.from({ length: 8 }, (_, group) => `0${8 + Math.floor(group / 6)}:${String((group % 6) * 10).padStart(2, "0")}`),
       date, time, when: date ? draftWhenLabel(date, time) : "Draft date not set yet", locked: s.matchSelLocked,
     }],
   };

@@ -174,3 +174,13 @@
 
 @keyframes bannerIn{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(prefers-reduced-motion:reduce){.homeBanner,.topBanner{animation:none}}
+
+/* All types page: one notification on each surface */
+.surfaces{display:flex;flex-direction:column;gap:10px}
+.surface{margin:0;padding:10px;border-radius:16px;overflow:hidden;color:var(--lm-ink-ffffff)}
+.surface figcaption{margin:0 0 8px 2px;font:600 10px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.surfaceApp{background:var(--lm-bg-240001);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 18%,transparent)}
+.surfaceApp li{list-style:none}
+.surface .androidNoteInline{margin:0}
+.surface .phoneNote{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-apple-system),sans-serif}
+.bannerStatic .topBanner{position:static;animation:none;box-shadow:none}

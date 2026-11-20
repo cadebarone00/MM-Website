@@ -2,13 +2,9 @@
  * One notification shape for every surface: the phone notification (push payload), the bell list and the top banner.
  * Spec: project_specs.md → "Notifications — native App Store app".
  */
-export const NOTIFICATION_KINDS = [
-  "highlight", "teeTime", "opponentSubmitted", "cardMismatch", "roundFinal",
-  "joinRequest", "requestAccepted", "requestDeclined", "invited", "linkRequest",
-  // Highlights Engine travel alerts (flights, rides, lodging, activities) and organizer announcements (TR- rules).
-  "travel", "announcement",
-] as const;
-export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+/** Every notification type comes from the master list (catalog.ts): kinds, Settings switches, wording, icons. */
+export { NOTIFICATION_KINDS, type NotificationKind } from "./catalog.ts";
+import type { NotificationKind } from "./catalog.ts";
 
 export type AppNotification = {
   id: string;

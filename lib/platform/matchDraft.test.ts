@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { generateMatchDraft, matchDraftPlayerId, matchDraftRounds, placeMatchDraftPlayer, responseDraftTurn, type MatchDraftPlayer, type MatchDraftRound } from "./matchDraft";
+import { homeMatchSelection, generateMatchDraft, matchDraftPlayerId, matchDraftRounds, placeMatchDraftPlayer, responseDraftTurn, type MatchDraftPlayer, type MatchDraftRound } from "./matchDraft";
 const players: MatchDraftPlayer[] = ["A","B"].flatMap(team => Array.from({length:4},(_,index)=>({id:team+index,name:team+index,team:team as "A"|"B"})));
 const round: MatchDraftRound = {key:"0-0",number:1,course:"Course",format:"Fourball",perSide:2,matches:2,type:"Response",when:"Date not set"};
 test("Response fills each group before its opposition and alternates opening team",()=>{
@@ -51,4 +51,12 @@ test("stroke-play scrambles and zero-capacity rounds never create match drafts",
  assert.deepEqual(matchDraftRounds(setup, [round], 8), []);
  assert.deepEqual(matchDraftRounds({ ...setup, compFormats: { "0-0": { ...comp, players: 1, matchType: "Match Play" } } }, [round], 1), []);
  assert.deepEqual(matchDraftRounds({ allRoundsMatch: { method: "Match Draft" } }, [{ ...round, format: "Stroke Play" }], 8), []);
+});
+
+test("Home advances after confirmation and retains the latest completed selection", () => {
+ const first = {...round, date:"2026-11-20", locked:false}; const second = {...round,key:"1-0",number:2,date:"2026-11-21",locked:false};
+ assert.equal(homeMatchSelection([second,first])?.key,first.key);
+ assert.equal(homeMatchSelection([second,{...first,locked:true}])?.key,second.key);
+ assert.equal(homeMatchSelection([{...second,locked:true},{...first,locked:true}])?.key,second.key);
+ assert.equal(homeMatchSelection([]),undefined);
 });
