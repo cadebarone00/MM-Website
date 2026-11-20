@@ -22,15 +22,17 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
 
 /** Dev preview screens wear the same chrome (header, background) as the real screens they preview. The coach marks
  *  preview is the real Golf Trip home, so it gets the trip home's chrome (no big site header). */
-const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit", "/dev/profile/search": "/profile/search",
+const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit", "/dev/profile/search": "/profile/search", "/dev/profile/friends": "/profile/user-friends",
   "/dev/trip-builder/tips": "/golf-trips/preview" };
 export function chromePathname(pathname: string): string {
   return DEV_PROFILE_PREVIEW[pathname] ?? pathname;
 }
 
-/** Where a bottom-menu tab goes: inside the dev profile preview, Profile stays in the preview instead of the live account. */
-export function siteBottomNavTabHref(pathname: string, href: string): string {
-  return href === "/profile" && (pathname === "/dev/profile" || pathname.startsWith("/dev/profile/")) ? "/dev/profile" : href;
+/** Where a bottom-menu tab goes: inside the dev profile preview, Profile stays in the preview instead of the live account.
+ *  On the local dev site (`npm run dev`), Profile always opens the sample-golfer preview (owner request 2026-11-20), so
+ *  the profile screens can be clicked through without signing in. The live site is unchanged. */
+export function siteBottomNavTabHref(pathname: string, href: string, localDev = process.env.NODE_ENV === "development"): string {
+  return href === "/profile" && (localDev || pathname === "/dev/profile" || pathname.startsWith("/dev/profile/")) ? "/dev/profile" : href;
 }
 
 export function siteBottomNavTabActive(pathname: string, href: string): boolean {

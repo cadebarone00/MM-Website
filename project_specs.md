@@ -5500,3 +5500,67 @@ uses the message itself as the body (its 3 versions only change the title line).
 **Not changing:** the Learn page and tour content, the questions themselves and what they save, Join a Trip, other tournament types. No database changes.
 
 **Done =** first Create → Learn; Skip → first question; second Create → first question directly; question pages have everything at the top with Next under the fields and no animation; Settings → Tutorials → Golf Trips plays the tour and returns to Settings; typecheck + lint + tests pass; checked in the browser at phone size.
+
+## Friends page: Search · Friends · Suggested tabs + seeing someone's friends (owner request 2026-11-20) — APPROVED + BUILT 2026-11-20 (uncommitted; dev-checked on sample golfers; FriendsList.tsx now unused). Also: on the local dev site the bottom menu's Profile opens /dev/profile (sample golfer)
+
+**What it does:** one place for people. The Search page gets 3 tabs under the search bar; tapping a Friends count opens a friends list.
+
+**1. Search page tabs** (`/profile/search`, website + app + dev preview). Under the search bar: **Search · Friends · Suggested** (one row of tabs, the picked one highlighted).
+- **Search** (default, what's there today): friend requests, Recent, then results once you type 2+ letters (searches everyone).
+- **Friends**: your friends (golf trip mates + accepted requests), avatar, @username, name, "Golf trip" note. Typing in the bar filters your friends. Empty: "No friends yet" + a nudge to the Suggested tab.
+- **Suggested**: the "Suggested for you" list (mutual friends first) with Add buttons. Typing in the bar switches to the Search tab.
+- Tab is in the address (`?tab=friends` / `?tab=suggested`) so links and Back land on the right one.
+
+**2. Your own Friends count** (on your profile) → the Search page with the **Friends** tab picked (`/profile/search?tab=friends`). The old `/profile/friends` page forwards there.
+
+**3. Someone else's Friends count** → their friends list, `/profile/<username>/friends`: Back + @username at the top, a search bar that filters their list, then the list (tap someone → their profile, Add button on people you're not friends with yet).
+- **Public profile:** the count is tappable and the list shows.
+- **Private profile:** no count (as today), nothing to tap; opening the address directly shows "Private Profile" and no list.
+- Signed-out visitors: same rules as viewing the profile itself.
+
+**Data:** no database changes. Friends lists come from the existing friends logic (trip mates + accepted requests, `lib/profile/friendsServer.ts`); someone else's list is only read on the server after checking their profile is Public.
+
+**Dev simulator:** Search page conditionals for the Friends and Suggested tabs; Public profile → Friends list (sample golfers); Private profile → no list.
+
+**Not changing:** friend requests, Add friend / Compare buttons, profile layout, Recent, the search itself.
+
+**Done =** the 3 tabs work and filter; own Friends count opens the Friends tab; a Public profile's Friends count opens their list; a Private profile shows no list even by address; typecheck + lint + tests pass; checked on screen at phone size.
+
+## Sign up: "email already has an account" + password AFTER the code (owner request 2026-11-20) — APPROVED 2026-11-20
+
+**Why:** in TestFlight the owner signed up with an email that already had an account. The app said "check your email", but no email is ever sent for an existing account, so they waited for a code that never came.
+
+**New sign-up order (app and website, same screens):**
+1. **Sign up:** type your email → Continue.
+   - **The email already has a verified account:** stay on this screen and show "There's already an account with this email." plus a **Log in** button that goes to Log in with the email filled in. No password screen, no email sent.
+   - **The email was started before but never verified:** treated like new. A fresh code is sent and you go to step 2.
+   - **New email:** the account is made and the code is sent → step 2.
+   - Not on the tester list or sign-ups closed: the same message as today, on this screen.
+2. **Email Verification:** type the 6-digit code (same screen as today).
+3. **Create a password:** moved here, after the code. Same screen, rules (8+ characters) and look as today.
+4. Then Name → Birthday → Photo → Settings → Finish, as today. The progress bar follows the new order.
+
+**How it works (plain):**
+- Supabase needs a password to make an email account, so on step 1 the server makes the account with a long random password that nobody ever sees or uses. Step 3 replaces it with the person's real one.
+- The "already has an account" check uses Supabase's own sign-up reply, which marks an email that is already verified. No database changes and no SQL to run.
+- The server remembers "password not set yet" on the login itself (`app_metadata`, which only the server can write). This covers people who verify and then close the app before step 3:
+  - Opening the app again (still signed in) sends them back to **Create a password** before anything else.
+  - If they got signed out, they can't log in (they never chose a password). **Forgot password** sends a code, lets them set one and clears the flag.
+- **New `POST /api/auth/create-password`:** only works for a signed-in account that still has the "password not set yet" flag. It saves the password, clears the flag and keeps you signed in, so onboarding carries on. Works with the website login and the app login.
+- The email templates, the code email and Supabase settings stay the same. Nothing to change in the Supabase dashboard.
+
+**Trade-off (owner's call, accepted by asking for this):** anyone can type an email on Sign up and learn whether it has an account. Most apps work this way. Supabase's sign-up limits per device (IP address) still apply.
+
+**Dev simulator:** the Sign up page gets a conditional for the "There's already an account with this email" state, and the progress bar shows the new order on every step.
+
+**Small messages are white (owner request 2026-11-20, approved):** the small helper and error lines on the sign-up, log-in, code, password and onboarding screens (e.g. "At least 8 characters.", "Passwords don't match.", "That code is wrong…") turn white (#fbf8f1) instead of red. Same size and position, so nothing moves.
+
+**Not changing:** Log in, Forgot password, Google/Apple, the tester list, the code screen's design, Name/Birthday and the later steps.
+
+**Done =**
+- An already-verified email shows the message and the Log in button on Sign up, and no email is sent.
+- A new email gets a code, then the password screen, then Name.
+- Closing the app after the code and opening it again lands on Create a password.
+- Typecheck, lint and tests pass.
+- Checked on screen in the website at phone size and in the app build (`npm run build:app`).
+- Live in TestFlight only after a commit, push, deploy + Promote, and a new TestFlight build.

@@ -60,6 +60,12 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Authentication: every account screen, numbered in signup order (placeholders until each is designed).
   AUTH_SCREENS.forEach(([slug, label], index) => pages.push({ id: "auth-" + slug, path: "/dev/auth/" + slug, label: `${index + 1}. ${label}`, group: "Authentication", fixtures: false, conditions: [] }));
+  // Sign up: the plain screen, and an email that already has an account (owner decision 2026-11-20).
+  const signUp = pages.find(page => page.id === "auth-sign-up");
+  if (signUp) signUp.conditions = [
+    { id: "sign-up-empty", label: "New email", state: { signUpStage: "empty" } },
+    { id: "sign-up-account-exists", label: "Email already has an account", state: { signUpStage: "account-exists" } },
+  ];
   // Profile Photo: each state of the photo step (pick -> Move and scale -> round result), so the cropper can be designed.
   const birthday = pages.find(page => page.id === "auth-age-check");
   if (birthday) birthday.conditions = [
@@ -358,6 +364,8 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "profile-search-empty", label: "Before typing · friend requests, Recent, Suggested for you", state: { profileSearch: "empty" } },
     { id: "profile-search-results", label: "2 letters typed (\"ke\") · results, Public + Private", state: { profileSearch: "results" } },
     { id: "profile-search-none", label: "No results", state: { profileSearch: "none" } },
+    { id: "profile-search-friends", label: "Friends tab · your friends (type to narrow)", state: { profileSearch: "friends" } },
+    { id: "profile-search-suggested", label: "Suggested tab · Suggested for you", state: { profileSearch: "suggested" } },
   ] });
   // Someone else's profile, as you'd see it after searching (Instagram layout).
   for (const [path, label] of [["/dev/profile/public", "Public profile (sample · Jake Parker)"], ["/dev/profile/private", "Private profile (sample · Mike Chen)"]]) {

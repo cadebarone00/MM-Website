@@ -27,6 +27,7 @@ test("join, invite, tournament, watch and profile links become the app's one pag
   assert.equal(appPath("/watch/XYZ"), "/watch/?code=XYZ");
   assert.equal(appPath(`/leagues/${ID}`), `/leagues/league/?id=${ID}`);
   assert.equal(appPath("/profile/cam%20l"), "/profile/user/?username=cam+l");
+  assert.equal(appPath("/profile/jakeparker/friends"), "/profile/user-friends/?username=jakeparker");
   assert.equal(appPath("/t/texas-cup"), "/t/site/?tournament=texas-cup");
   assert.equal(appPath("/t/texas-cup/2027/players"), "/t/site/?tournament=texas-cup&year=2027&section=players");
   assert.equal(appPath("/play/texas-cup/2027"), "/play/tournament/?tournament=texas-cup&year=2027");

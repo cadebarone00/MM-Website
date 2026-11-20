@@ -13,7 +13,7 @@ import { isRibbonSampleEnabled } from "@/lib/content/ribbonSample";
 import { canPublish, postCounts } from "@/lib/content/ribbon";
 import { contentViewer, loadItems, loadTeam } from "@/lib/content/ribbonServer";
 import { sampleContentTeam, sampleRibbonItems } from "@/lib/content/ribbonSample";
-import { myFriendRequests, listFriends, friendshipWith, type FriendRequest, type FriendListItem, type Relation } from "./friendRequestsServer";
+import { myFriendRequests, listFriends, listFriendsOf, friendshipWith, type FriendRequest, type FriendListItem, type FriendOfItem, type Relation } from "./friendRequestsServer";
 import { loadProfileReadModel, profileIdForUsername } from "./profileReadModelServer";
 import type { ProfileReadModel } from "./profileReadModel";
 import { deletionPreview } from "@/lib/account/accountDeletion";
@@ -104,6 +104,24 @@ export async function loadPublicProfile(username: string): Promise<PublicProfile
   // Signed in: the friend button in the corner shows (and switches) where we stand.
   const friendship = viewerId ? { profileId: subjectId, ...await friendshipWith(viewerId, subjectId).catch(() => ({ relation: "none" as const, tripMate: false })) } : undefined;
   return { status: "ok", profile, friends, friendship };
+}
+
+/**
+ * Someone's Friends list (/profile/<username>/friends). Only a Public profile's list is read: a Private one (or one the
+ * viewer can't see) gives "private" and no names. Your own username gives "self" (your list is Search → Friends).
+ */
+export type UserFriendsData = { status: "not-found" } | { status: "self" } | { status: "private"; username: string }
+  | { status: "ok"; username: string; signedIn: boolean; friends: FriendOfItem[] };
+export async function loadUserFriends(username: string): Promise<UserFriendsData> {
+  const subjectId = await profileIdForUsername(username);
+  if (!subjectId) return { status: "not-found" };
+  const current = await getCurrentProfile();
+  const viewerId = current.status === "ok" ? current.profile.profileId : null;
+  if (viewerId === subjectId) return { status: "self" };
+  const profile = await loadProfileReadModel(viewerId, subjectId);
+  if (!profile) return { status: "not-found" };
+  if (profile.access === "private") return { status: "private", username: profile.identity.username };
+  return { status: "ok", username: profile.identity.username, signedIn: viewerId !== null, friends: await listFriendsOf(subjectId, viewerId).catch(() => []) };
 }
 
 export type DeleteAccountData = { status: "signed-out" } | { status: "ok"; preview: DeletionPreviewData | null };

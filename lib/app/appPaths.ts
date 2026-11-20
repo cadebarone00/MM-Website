@@ -15,6 +15,7 @@ const WITH_VALUE: { pattern: RegExp; page: string; param: string }[] = [
   { pattern: /^\/tournaments\/invite\/([A-Za-z0-9_-]{32,200})\/?$/, page: "/tournaments/invite/", param: "token" },
   { pattern: /^\/watch\/([A-Za-z0-9]{1,12})\/?$/, page: "/watch/", param: "code" },
   { pattern: /^\/profile\/((?!search$|friends$|edit$|user$)[^/?#]{1,60})\/?$/, page: "/profile/user/", param: "username" },
+  { pattern: /^\/profile\/((?!search$|friends$|edit$|user$|user-friends$)[^/?#]{1,60})\/friends\/?$/, page: "/profile/user-friends/", param: "username" },
   { pattern: /^\/t\/((?!site$)[^/?#]{1,80})\/?$/, page: "/t/site/", param: "tournament" },
   { pattern: /^\/leagues\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i, page: "/leagues/league/", param: "id" },
 ];

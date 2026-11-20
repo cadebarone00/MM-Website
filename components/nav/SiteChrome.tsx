@@ -30,11 +30,13 @@ function AppChrome({ children }: { children: ReactNode }) {
   const ownShell = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/") || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/") || pathname.startsWith("/rounds/") || pathname === "/dev/tourney"
     || pathname.startsWith("/leagues/") || pathname === "/dev/leagues"
     // Edit profile has its own top bar (back | Edit profile | Save) right under the camera (owner request 2026-11-13).
-    || pathname === "/profile/edit" || pathname === "/profile/search";
+    || pathname === "/profile/edit" || pathname === "/profile/search"
+    // Someone's Friends list (2026-11-20): its own top bar too (Back | @username).
+    || pathname === "/profile/user-friends" || /^\/profile\/[^/]+\/friends\/?$/.test(pathname);
   const title = pathname === "/" ? "The Maroon" : pathname === "/leagues" ? "Leagues" : pathname === "/settings" ? "Settings" : pathname === "/profile/search" ? "Find Golfers" : pathname === "/profile/friends" ? "Friends" : pathname === "/profile" || pathname.startsWith("/profile/") ? "Profile" : undefined;
   return <>
     <div className={`app-camera-content ${hideBottomNav ? "" : SITE_BOTTOM_NAV_CONTENT_CLASS}`}>
-      {pathname === "/golf-trips" ? <div className="hidden lg:absolute lg:inset-x-0 lg:top-0 lg:z-10 lg:block"><PlatformHeader wordmark={false} /></div> : !ownShell && <PlatformHeader home={pathname === "/"} title={title} />}
+      {pathname === "/golf-trips" || pathname === "/leagues" ? <div className="hidden lg:absolute lg:inset-x-0 lg:top-0 lg:z-10 lg:block"><PlatformHeader wordmark={false} /></div> : !ownShell && <PlatformHeader home={pathname === "/"} title={title} />}
       {children}
     </div>
     {!hideBottomNav && <SiteBottomNav />}

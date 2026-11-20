@@ -88,7 +88,7 @@ export type SimulatorState = {
   /** Profile preview (/dev/profile): whose sample profile shows and with how many rounds. Unset = "sample". */
   profilePreview?: ProfilePreview;
   /** Profile preview: the search bar open with nothing typed (friend requests), with results, or with no results. Unset = closed. */
-  profileSearch?: "empty" | "results" | "none";
+  profileSearch?: "empty" | "results" | "none" | "friends" | "suggested";
   /** Settings preview (/dev/profile/settings): default, every notification off, an organizer offer waiting, or a content admin. */
   settingsPreview?: "default" | "allOff" | "offer" | "admin";
   /** The on-screen phone keyboard drawn when a text field is tapped (set by the simulator from the device preset). */
@@ -128,6 +128,8 @@ export type SimulatorState = {
   homePlayers?: HomePlayersStage;
   /** Authentication → Birthday: boxes empty / the shared calendar open / a birthday filled in. Unset = "empty". */
   birthdayStage?: "empty" | "calendar" | "picked";
+  /** Authentication → Sign up: the plain screen, or the "There's already an account with this email." state. Unset = "empty". */
+  signUpStage?: "empty" | "account-exists";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
@@ -228,7 +230,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.seed !== undefined && (typeof state.seed !== "number" || !Number.isSafeInteger(state.seed) || state.seed < 1 || state.seed > 2 ** 31)) return null;
   if (state.competitionSetup !== undefined && !COMPETITION_SETUPS.some(([id]) => id === state.competitionSetup)) return null;
   if (state.profilePreview !== undefined && !PROFILE_PREVIEWS.includes(state.profilePreview as ProfilePreview)) return null;
-  if (state.profileSearch !== undefined && !["empty", "results", "none"].includes(String(state.profileSearch))) return null;
+  if (state.profileSearch !== undefined && !["empty", "results", "none", "friends", "suggested"].includes(String(state.profileSearch))) return null;
   if (state.settingsPreview !== undefined && !["default", "allOff", "offer", "admin"].includes(String(state.settingsPreview))) return null;
   if (state.keyboard !== undefined && !["ios", "android", "off"].includes(String(state.keyboard))) return null;
   if (state.playerRoleViewer !== undefined && !["organizer","captain-a","captain-b","player"].includes(String(state.playerRoleViewer))) return null;
@@ -253,6 +255,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   for (const [key, allowed] of [["homeOverview", HOME_OVERVIEW_STAGES], ["homeMomentum", HOME_MOMENTUM_STAGES], ["homeUpcoming", HOME_UPCOMING_STAGES], ["homeCompetition", HOME_COMPETITION_STAGES], ["homeInvite", HOME_INVITE_STAGES], ["homePlayers", HOME_PLAYERS_STAGES]] as const)
     if (state[key] !== undefined && !(allowed as readonly unknown[]).includes(state[key])) return null;
   if (state.birthdayStage !== undefined && !["empty", "calendar", "picked"].includes(String(state.birthdayStage))) return null;
+  if (state.signUpStage !== undefined && !["empty", "account-exists"].includes(String(state.signUpStage))) return null;
   if (state.tripBuilderStage !== undefined && !(TRIP_BUILDER_STAGES as readonly unknown[]).includes(state.tripBuilderStage)) return null;
   if (state.photoStage !== undefined && !["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"].includes(String(state.photoStage))) return null;
   if (state.brandReplay !== undefined && (typeof state.brandReplay !== "number" || !Number.isSafeInteger(state.brandReplay) || state.brandReplay < 0)) return null;

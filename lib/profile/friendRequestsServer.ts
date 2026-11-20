@@ -118,6 +118,32 @@ export async function listFriends(me: string): Promise<FriendListItem[]> {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** One of someone's friends on their Friends list: where the viewer stands with them, and `you` = it's the viewer. */
+export type FriendOfItem = GolferResult & { you?: boolean };
+
+/**
+ * Someone's friends (their Friends list, owner request 2026-11-20), A–Z, with where `viewer` (null = signed out) stands
+ * with each. The caller checks first that their profile is Public; this doesn't.
+ */
+export async function listFriendsOf(subject: string, viewer: string | null): Promise<FriendOfItem[]> {
+  const theirs = await listFriends(subject);
+  if (!theirs.length) return [];
+  const ids = theirs.map((f) => f.id);
+  const [publicIds, mine, myTrip, pending] = await Promise.all([
+    publicProfileIds(ids),
+    viewer ? friendIds(viewer) : Promise.resolve(new Set<string>()),
+    viewer ? tripFriendIds(viewer) : Promise.resolve(new Set<string>()),
+    viewer ? db().from("profile_friend_requests").select("from_profile, to_profile").eq("status", "pending").or(`from_profile.eq.${viewer},to_profile.eq.${viewer}`)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const rows = pending.error ? [] : (pending.data ?? []) as { from_profile: string; to_profile: string }[];
+  const sent = new Set(rows.filter((r) => r.from_profile === viewer).map((r) => r.to_profile));
+  const received = new Set(rows.filter((r) => r.to_profile === viewer).map((r) => r.from_profile));
+  return theirs.map((f) => ({ id: f.id, name: f.name, username: f.username, photoUrl: f.photoUrl, isPrivate: !publicIds.has(f.id),
+    relation: mine.has(f.id) ? "friends" : sent.has(f.id) ? "requested" : received.has(f.id) ? "incoming" : "none",
+    tripMate: myTrip.has(f.id), you: f.id === viewer }));
+}
+
 /** Where I stand with `other`, for the friend button on their profile. */
 export async function friendshipWith(me: string, other: string): Promise<{ relation: Relation; tripMate: boolean }> {
   const [all, trip] = await Promise.all([friendIds(me), tripFriendIds(me)]);
