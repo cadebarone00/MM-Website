@@ -5,6 +5,7 @@ import type { Match, Player, Standing } from "@/components/platform/tournament-s
 import { PAIRINGS_HOLDING, parTone, positionLabel, SCORING_HOLDING, sessionFor, tabPath, type TournamentHome } from "@/lib/platform/tournamentHome";
 import { MatchCard } from "./MatchCard";
 import { Holding, initials, PlaySection, PlayShell } from "./PlayShell";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import styles from "./Play.module.css";
 
 const STATUS_ORDER: Match["status"][] = ["live", "waiting", "scheduled", "final"];
@@ -105,7 +106,7 @@ export function PlayPlayers({ home }: { home: TournamentHome }) {
           <ul className={styles.rows}>{group.players.map((player) => {
             const status = playerStatus(home, player);
             return <li key={player.id} className={styles.row}>
-              <span className={styles.avatar} style={group.color ? { borderColor: safeColor(group.color) } : undefined}>{initials(player.name)}</span>
+              <ProfileAvatar name={player.name} size={38} />
               <span className={styles.rowMain}><strong>{player.name}{player.captain && <em className={styles.captain}> · Captain</em>}</strong>{status && <small>{status}</small>}</span>
               {player.handicap?.public && <span className={styles.rowSide} aria-label={`Handicap ${player.handicap.value}`}>{player.handicap.value.toFixed(1)}</span>}
             </li>;

@@ -3,7 +3,7 @@ export const GOLF_TRIP_TABS = ["Home", "Golf", "Venue", "Itinerary"] as const;
 export const GOLF_TRIP_SECTIONS = ["Overview", "Competition", "Games", "Stats", "Predict"] as const;
 export type GolfTripTab = (typeof GOLF_TRIP_TABS)[number];
 export type GolfTripSection = (typeof GOLF_TRIP_SECTIONS)[number];
-export type GolfTripNavigation = { tab: GolfTripTab; golfSection?: GolfTripSection; settingsView?: string; command?: number };
+export type GolfTripNavigation = { tab: GolfTripTab; round?: number; golfSection?: GolfTripSection; settingsView?: string; command?: number };
 
 /** Which kinds of competition the trip has: an individual tournament, a team event, both, or neither. */
 export type CompetitionStructure = { individual: boolean; team: boolean };

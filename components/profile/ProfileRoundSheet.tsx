@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -18,7 +19,6 @@ import styles from "@/components/platform/GolfTripMatch.module.css";
 
 const shortDay = (iso: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 const toPar = (n: number) => n === 0 ? "E" : n > 0 ? `+${n}` : String(n);
-const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "").join("") || "?";
 
 export function ProfileRoundSheet({ round, name, avatarUrl, nineHolePair, onClose }: { round: ProfileHistoryRound; name: string; avatarUrl: string | null;
   /** A 9-hole round's pair (its combined differential) or "waiting" (nineHolePairs); none for anything else. */ nineHolePair?: { differential: number } | "waiting"; onClose: () => void }) {
@@ -73,10 +73,7 @@ export function ProfileRoundSheet({ round, name, avatarUrl, nineHolePair, onClos
   return createPortal(<dialog ref={dialogRef} className={styles.leaderboardScoreSheet} aria-label={`${name} · ${tab}`} onCancel={onClose} onClick={(event) => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientY < r.top || event.clientX < r.left || event.clientX > r.right) onClose(); } }}>
     <div className={styles.playerTripProfileHeader} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
       <span className={styles.playerTripProfileHandle} data-handle aria-hidden><span className={styles.scoreSheetHandle} /></span>
-      <span className={styles.playerTripProfileAvatar} aria-hidden>
-        {/* eslint-disable-next-line @next/next/no-img-element -- a stored photo URL, shown as-is */}
-        {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
-      </span>
+      <span className={styles.playerTripProfileAvatar}><ProfileAvatar name={name} photoUrl={avatarUrl} /></span>
       <h2>{name}</h2>
       <button type="button" className={styles.playerTripProfileClose} onClick={dismiss} autoFocus aria-label="Close round"><X size={18} strokeWidth={2.25} aria-hidden /></button>
     </div>

@@ -1,11 +1,13 @@
 "use client";
 
-import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, LockKeyhole, Mail, Megaphone, Plane, Trophy, UserPlus, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, ListOrdered, LockKeyhole, Mail, Megaphone, MessageCircle, Plane, Timer, Trophy, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { appleSystem, androidSystem } from "@/lib/fonts/notifications";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
-import type { AppNotification, LiveRoundActivity, NotificationKind } from "@/lib/notifications/types";
+import type { AppNotification, LiveRoundActivity } from "@/lib/notifications/types";
+import { catalogEntry, type NotificationIcon, type NotificationKind } from "@/lib/notifications/catalog";
+import { sampleNotesForType } from "@/lib/dev/sampleNotificationTypes";
 import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import { previewNotes } from "@/lib/dev/highlightScenarios";
 import { detectionPreviewNotes } from "@/lib/dev/detectionScenarios";
@@ -28,8 +30,11 @@ export function NotificationPreviewScreen({ surface }: { surface: NotificationSu
   // inbox. Otherwise the original design samples. `latest` is null when the scenario's alert isn't on the phone.
   const highlight = simulator?.state.highlightSim;
   const engine = highlight?.source === "engine" ? previewNotes(highlight, SAMPLE_NOW) : highlight?.source === "detection" ? detectionPreviewNotes(highlight) : null;
-  const notes = engine ? engine.inbox : SAMPLE_NOTIFICATIONS;
-  const [latest, ...older]: (AppNotification | null)[] = engine ? [engine.current, ...engine.inbox.filter(note => note.id !== engine.current?.id)] : newestFirst(SAMPLE_NOTIFICATIONS);
+  // Type choice (simulator): one type from the master list in its three wordings, the chosen one newest. Else the mix.
+  const type = simulator?.state.notificationType;
+  const samples = type && type !== "mixed" ? sampleNotesForType(type, simulator?.state.notificationWording ?? 1) : SAMPLE_NOTIFICATIONS;
+  const notes = engine ? engine.inbox : samples;
+  const [latest, ...older]: (AppNotification | null)[] = engine ? [engine.current, ...engine.inbox.filter(note => note.id !== engine.current?.id)] : newestFirst(samples);
   // display: contents — the screen itself stays the page's first box (globals.css top clearance rules).
   return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents" }}>{previewScreen(screen, wall, latest, older as AppNotification[], notes)}</div>;
 }
@@ -333,11 +338,12 @@ function AndroidNotificationScreen({ note, wall }: { note: AppNotification | nul
 
 /* ---------- In-app ---------- */
 
-const KIND_ICONS: Record<NotificationKind, LucideIcon> = {
-  highlight: Flame, teeTime: CalendarClock, opponentSubmitted: ClipboardCheck, cardMismatch: AlertTriangle, roundFinal: Trophy,
-  joinRequest: UserPlus, requestAccepted: Check, requestDeclined: X, invited: Mail, linkRequest: Link2,
-  travel: Plane, announcement: Megaphone,
+/** The master list's icon names (lib/notifications/catalog.ts) as drawn. */
+const ICONS: Record<NotificationIcon, LucideIcon> = {
+  flame: Flame, calendarClock: CalendarClock, clipboardCheck: ClipboardCheck, alertTriangle: AlertTriangle, trophy: Trophy, userPlus: UserPlus,
+  check: Check, x: X, mail: Mail, link: Link2, plane: Plane, megaphone: Megaphone, users: Users, listOrdered: ListOrdered, timer: Timer, messageCircle: MessageCircle,
 };
+export const kindIcon = (kind: NotificationKind): LucideIcon => ICONS[catalogEntry(kind).icon];
 
 /** A plain app screen behind the in-app previews: the trip's maroon top bar with the bell. */
 function AppScreen({ children, banner, notes = SAMPLE_NOTIFICATIONS }: { children?: ReactNode; banner?: ReactNode; notes?: AppNotification[] }) {
@@ -361,7 +367,7 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
     {sorted.length === 0
       ? <p className={styles.listEmpty}>No notifications yet. Scores, tee times and requests for your groups will show up here.</p>
       : <ul>{sorted.map(note => {
-        const Icon = KIND_ICONS[note.kind];
+        const Icon = kindIcon(note.kind);
         return <li key={note.id} className={note.read ? undefined : styles.unread}>
           <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
           <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, now)}</p></div>
@@ -373,9 +379,39 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
 
 /** Slides down over the app while it's open; tap opens the link. */
 export function TopBanner({ note }: { note: AppNotification }) {
-  const Icon = KIND_ICONS[note.kind];
+  const Icon = kindIcon(note.kind);
   return <div className={styles.topBanner} role="status">
     <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
     <div><p className={styles.listTitle}>{note.title}</p><p className={styles.topBannerBody}>{note.body}</p></div>
+  </div>;
+}
+
+/**
+ * One notification as each surface draws it, side by side: iPhone notification, Android notification, the bell's row and
+ * the top banner. Used by the All types page (NotificationCatalog.tsx). `surfaces` = where the type shows (catalog).
+ */
+export function NotificationSurfaces({ note, surfaces }: { note: AppNotification; surfaces: readonly ("phone" | "bell" | "banner")[] }) {
+  const Icon = kindIcon(note.kind);
+  return <div className={`${appleSystem.variable} ${androidSystem.variable} ${styles.surfaces}`}>
+    {surfaces.includes("phone") && <>
+      <figure className={`${styles.surface} ${styles.wallpaper}`}><figcaption>iPhone</figcaption><PhoneNotification note={note} /></figure>
+      <figure className={`${styles.surface} ${styles.androidScreen} ${styles.wallpaper}`}><figcaption>Android</figcaption>
+        <article className={`${styles.androidNote} ${styles.androidNoteInline}`} aria-label="Notification">
+          <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
+          <p className={styles.androidNoteTitle}>{note.title}</p>
+          <p className={styles.androidNoteText}>{note.body}</p>
+        </article>
+      </figure>
+    </>}
+    {surfaces.includes("bell") && <figure className={`${styles.surface} ${styles.surfaceApp} ${styles.list}`}><figcaption>Bell list</figcaption>
+      <ul><li className={styles.unread}>
+        <span className={styles.listIcon}><Icon size={18} aria-hidden /></span>
+        <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</p></div>
+        <i className={styles.dot} aria-label="Unread" />
+      </li></ul>
+    </figure>}
+    {surfaces.includes("banner") && <figure className={`${styles.surface} ${styles.surfaceApp}`}><figcaption>Top banner (app open)</figcaption>
+      <div className={styles.bannerStatic}><TopBanner note={note} /></div>
+    </figure>}
   </div>;
 }

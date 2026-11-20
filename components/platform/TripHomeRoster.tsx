@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MaroonMark } from "@/components/brand/MaroonMark";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { shownUsername } from "@/lib/platform/playerUsername";
 import { sortHomeRoster, type HomeRosterPlayer, type HomeRosterTeam } from "@/lib/platform/homeRoster";
 import styles from "./GolfTripHome.module.css";
@@ -16,7 +16,7 @@ export function TripHomeRoster({ players, teams, allotted, invite }: {
   const list = (roster: HomeRosterPlayer[]) => <ul className={styles.homePlayerList}>
     {roster.map((player, index) => <li key={player.name} className={styles.homePlayer}>
       <span className={styles.homePlayerNumber}>{index + 1}</span>
-      <span className={styles.homePlayerBadge} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.homePlayerMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+      <ProfileAvatar name={player.name} photoUrl={player.avatarUrl} size={26} />
       <span className={styles.homePlayerWho}>
         <span className={styles.homePlayerName}>{player.name}</span>
         <span className={styles.homePlayerUsername}>{shownUsername(player.name, player.username)}</span>
@@ -45,7 +45,7 @@ export function TripHomeRoster({ players, teams, allotted, invite }: {
     {section.players.length ? <ul className={styles.homePlayerList}>
       {section.players.map((player, index) => <li key={player.name} className={styles.homePlayer}>
         <span className={styles.homePlayerNumber}>{index + 1}</span>
-        <span className={styles.homePlayerBadge} aria-hidden>{player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className={styles.homePlayerMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+        <ProfileAvatar name={player.name} photoUrl={player.avatarUrl} size={26} />
         <span className={styles.homePlayerWho}>
           <span className={styles.homePlayerName}>{player.name}</span>
           <span className={styles.homePlayerUsername}>{shownUsername(player.name, player.username)}</span>

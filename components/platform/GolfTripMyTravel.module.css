@@ -40,7 +40,6 @@
 .inviteRow[aria-pressed=true]{border-color:#c9a86e}
 .inviteRow:disabled{cursor:default;opacity:.7}
 .inviteRow:focus-visible{outline:2px solid #c49b54;outline-offset:2px}
-.inviteAvatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:#dcc495;color:#240001;font:700 13px/1 var(--font-barlow),sans-serif}
 .inviteName{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;font:600 15px/1.2 var(--font-barlow),sans-serif}
 .inviteName small{font:600 12px/1 var(--font-barlow),sans-serif;color:#e1cec4}
 .inviteCheck{display:grid;place-items:center;flex:none;width:22px;height:22px;border:1.5px solid rgba(251,248,241,.35);border-radius:6px;color:#240001}

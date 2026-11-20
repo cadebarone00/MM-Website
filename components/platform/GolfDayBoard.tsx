@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useId, useRef, useSyncExternalStore, type PointerEvent, type ReactNode } from "react";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { golfDayAssignment, golfDayDateLabel, golfDayMatchNames, golfDayRounds, golfDaySummary } from "@/lib/platform/golfDay";
@@ -58,16 +59,12 @@ export function GolfDayBoard({ match, schedule, viewerName, structure, spectator
   const rounds = golfDayRounds(match, schedule);
   const summary = golfDaySummary(match, viewerName, structure, spectator);
   const viewer = golfDayAssignment(match, viewerName, spectator).player;
-  const initials = viewerName?.trim().split(/\s+/).map(part => part[0]).slice(0, 2).join("").toUpperCase();
   return <section className={styles.board} data-collapsed={collapsed} aria-label={spectator ? "Golf day overview" : "Your golf day"}>
     <div id={detailsId} className={styles.details} data-collapsed={collapsed} inert={collapsed} aria-hidden={collapsed || undefined}>
     <div className={styles.detailsInner}><div className={styles.content}>
       {!spectator && (viewerName || summary) && <div className={styles.profileRow}>
         {viewerName && <div className={styles.identity}>
-          <span className={styles.avatar} aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element -- existing player photo URL */}
-            {viewer?.avatarUrl ? <img src={viewer.avatarUrl} alt="" /> : initials}
-          </span>
+          <ProfileAvatar name={viewerName} photoUrl={viewer?.avatarUrl} size={36} />
           <div className={styles.identityText}><p className={styles.name}>{viewerName}</p><p className={styles.username}>{shownUsername(viewerName, viewer?.username)}</p></div>
         </div>}
       {summary && <dl className={styles.summary} aria-label="Your trip standings">

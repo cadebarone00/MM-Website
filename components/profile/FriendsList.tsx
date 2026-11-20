@@ -6,8 +6,8 @@ import { ArrowLeft, ChevronRight, Search, UserPlus } from "lucide-react";
 import type { FriendListItem } from "@/lib/profile/friendRequestsServer";
 import settings from "@/components/settings/Settings.module.css";
 import styles from "./FindGolfers.module.css";
+import { ProfileAvatar } from "./ProfileAvatar";
 
-const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
 
 /**
  * Profile → Friends: everyone I'm friends with (golf trip mates and accepted requests), with a small search at the top.
@@ -34,8 +34,7 @@ export function FriendsList({ friends }: { friends: FriendListItem[] }) {
           : !shown.length ? <p className={styles.note}>No friends match &ldquo;{query.trim()}&rdquo;.</p>
           : <ul className={styles.list}>{shown.map((f) => <li key={f.id}>
             <Link href={f.username ? `/profile/${f.username}` : "#"} className={`${styles.who} ${styles.whoRow}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- profile photos come from storage at any size */}
-              {f.photoUrl ? <img src={f.photoUrl} alt="" className={styles.avatar} /> : <span className={styles.avatar} aria-hidden="true">{initials(f.name)}</span>}
+              <ProfileAvatar name={f.name} photoUrl={f.photoUrl} size={42} />
               <span><b>{f.name}</b><small>{f.username ? `@${f.username}` : ""}{f.tripMate ? `${f.username ? " · " : ""}Golf trip` : ""}</small></span>
               <ChevronRight size={18} aria-hidden="true" className={styles.chevron} />
             </Link>

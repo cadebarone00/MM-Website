@@ -1,5 +1,6 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Clock, FileText, Map as MapIcon, MapPin, Users, X } from "lucide-react";
@@ -7,7 +8,6 @@ import { itineraryCategory, itineraryLongDate, itineraryTime, itineraryWeekday, 
 import venue from "./GolfTripVenue.module.css";
 import styles from "./ItineraryDetailSheet.module.css";
 
-const initials = (text: string) => text.split(/[\s,]+/).filter(Boolean).slice(0, 2).map(word => word[0]?.toUpperCase()).join("") || "—";
 
 /**
  * Info → Itinerary → tap a plan: a sheet that slides up from the bottom, laid out like the Venue tab — a photo card (placeholder)
@@ -47,7 +47,7 @@ export function ItineraryDetailSheet({ item, going, onClose, onDelete }: { item:
         <div className={venue.venueRow}>
           <div className={venue.venueColumn}>
             <div className={venue.avatars} aria-label={`${going.length} going`}>
-              {going.slice(0, 4).map((name, index) => <span key={`${index}-${name}`} className={venue.avatarDot} title={name}>{initials(name)}</span>)}
+              {going.slice(0, 4).map((name, index) => <span key={`${index}-${name}`} className={venue.avatarSlot}><ProfileAvatar name={name} title={name} /></span>)}
               {going.length > 4 && <span className={`${venue.avatarDot} ${venue.avatarMore}`}>+{going.length - 4}</span>}
               {!going.length && <span className={venue.tileMuted}>Just you</span>}
             </div>

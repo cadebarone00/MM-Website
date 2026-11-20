@@ -56,10 +56,11 @@ const SAMPLE_SEARCH: ProfileSearchSource = {
   href: (username) => `/dev/profile?user=${encodeURIComponent(username)}`,
 };
 
-export function DevProfilePreview() {
+/** `user`: always show this sample golfer (the /dev/profile/public and /private pages). */
+export function DevProfilePreview({ user: fixedUser }: { user?: string } = {}) {
   const params = useSearchParams();
   const view = params.get("view");
-  const user = params.get("user");
+  const user = fixedUser ?? params.get("user");
   const linked = view === "public" || view === "private" ? view : null;
   const simulated = useSimulator()?.state.profilePreview;
   const preview = linked ?? simulated ?? "sample";

@@ -1,4 +1,5 @@
 import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { nonIndividualRound } from "@/lib/platform/nonIndividualRound";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
@@ -322,10 +323,7 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
     <div className={styles.playerTripProfileHeader} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
       <span className={styles.playerTripProfileHandle} data-handle aria-hidden><span className={styles.scoreSheetHandle} /></span>
       {/* Photo on the left (initials when there's none), a hair cut off by the top, the left edge and the line below; name to its right. */}
-      <span className={styles.playerTripProfileAvatar} aria-hidden>
-        {/* eslint-disable-next-line @next/next/no-img-element -- a stored photo URL, shown as-is */}
-        {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
-      </span>
+      <span className={styles.playerTripProfileAvatar}><ProfileAvatar name={name} photoUrl={avatarUrl} /></span>
       {/* Name, then the numbers under it (like the profile page's top). */}
       <div className={styles.playerTripProfileIdentity}>
         <h2>{name}</h2>
@@ -830,7 +828,9 @@ function PlayerSide({ competitor, align, standing, score }: { competitor: GolfMa
 
   return <div className={`${styles.side} ${styles[align]} ${leading ? styles.sideLeading : ""}`}>
     <span className={styles.boxStanding}>{score}</span>
-    <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{players.length > 1 ? players.map(player => player[0]).join("").slice(0, 2).toUpperCase() : initials(name)}</span>
+    {/* One player = that person's avatar; two players / a team name = the team circle (not an avatar). */}
+    {comp.golfers.length === 1 ? <span className={styles.avatarSlot}><ProfileAvatar name={comp.golfers[0].name} photoUrl={comp.golfers[0].avatarUrl} /></span>
+      : <span className={`${styles.avatar} ${align === "right" ? styles.avatarRight : ""}`}>{players.length > 1 ? players.map(player => player[0]).join("").slice(0, 2).toUpperCase() : initials(name)}</span>}
     <div className={styles.sideNames}>
       {players.length > 1 ? players.map(player => <p key={player} className={styles.teamName}>{player}</p>) : <p className={styles.teamName}>{name}</p>}
       {points !== undefined && <p className={styles.teamMeta}>{points} {points === 1 ? "PT" : "PTS"}</p>}

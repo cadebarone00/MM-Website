@@ -2,7 +2,7 @@ import { defaultRoundComp, playersPerSide, roundMatches, ROUND_FORMATS, type Rou
 import { draftWhenLabel } from "./teamDraft";
 
 export type MatchDraftPlayer = { id?: string; name: string; team: "A" | "B"; handicap?: number };
-export type MatchDraftRound = { key: string; number: number; course: string; format: string; matches: number; type: string; when: string; date?: string; time?: string; perSide?: number; locked?: boolean; rankMinutes?: number; putForwardMinutes?: number; responseMinutes?: number };
+export type MatchDraftRound = { key: string; number: number; course: string; format: string; matches: number; type: string; when: string; date?: string; time?: string; perSide?: number; locked?: boolean; /** Tee time per group ("HH:mm"), from Settings → Golf. */ teeTimes?: string[]; rankMinutes?: number; putForwardMinutes?: number; responseMinutes?: number };
 export type MatchDraftPlacement = { player: string; match: number; team: "A" | "B"; slot: number };
 export const matchDraftPlayerId = (player: MatchDraftPlayer) => player.id ?? player.team + ":" + player.name;
 export const matchDraftSideSize = (round: MatchDraftRound) => round.perSide ?? ROUND_FORMATS.find(item => item.name === round.format)?.perSide ?? 1;
@@ -35,7 +35,7 @@ export function matchDraftRounds(setup: Record<string, unknown>, rounds: SourceR
     const settings = formats?.[key] ?? { ...defaultRoundComp(playerCount), format: ROUND_FORMATS.find(item => item.name === format)?.name ?? "Singles" };
     if (settings.matchType !== "Match Play" || !roundMatches(settings) || !formats?.[key] && (format === "Stroke Play" || format === "Stableford")) return [];
     const date = own?.date || choice.date || "", time = own?.time || choice.time || "";
-    return [{ key, number: round.number, course: round.course, format: settings.format, matches: roundMatches(settings), perSide: playersPerSide(settings.format), type: choice.draftType ?? "Not selected", rankMinutes: choice.rankMinutes, putForwardMinutes: choice.putForwardMinutes, responseMinutes: choice.responseMinutes, date, time, when: date ? draftWhenLabel(date,time) : "Draft date not set yet", locked: round.number <= playedThrough || (Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(key)) }];
+    return [{ key, number: round.number, course: round.course, format: settings.format, matches: roundMatches(settings), perSide: playersPerSide(settings.format), type: choice.draftType ?? "Not selected", rankMinutes: choice.rankMinutes, putForwardMinutes: choice.putForwardMinutes, responseMinutes: choice.responseMinutes, date, time, teeTimes: (setup.teeTimes as Record<string, string[]> | undefined)?.[key], when: date ? draftWhenLabel(date,time) : "Draft date not set yet", locked: round.number <= playedThrough || (Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(key)) }];
   });
 }
 
@@ -70,4 +70,10 @@ export function generateMatchDraft(round: MatchDraftRound, players: MatchDraftPl
     ids.slice(0,capacity).forEach((player,index) => result.push({ player, team, match: Math.floor(index / matchDraftSideSize(round)), slot: index % matchDraftSideSize(round) }));
   }
   return result;
+}
+
+/** Next pending selection, falling back to the latest completed room. */
+export function homeMatchSelection(rounds: MatchDraftRound[]): MatchDraftRound | undefined {
+ const ordered = [...rounds].sort((a,b) => (a.date ? a.date+"T"+(a.time||"00:00") : "9999").localeCompare(b.date ? b.date+"T"+(b.time||"00:00") : "9999") || a.number-b.number);
+ return ordered.find(round => !round.locked) ?? ordered.at(-1);
 }

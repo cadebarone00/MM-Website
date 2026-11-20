@@ -6,6 +6,11 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+### 2026-11-19 - Match confirmation handoff and Home selection queue
+
+Implemented locally, not deployed: completed picks now show **Confirm Selections** to the organizer and **Waiting for Organizer** to other viewers. Confirmation changes the room action to **Go To Matches**, opening Golf on that round; the room back arrow returns Home. All selection rounds remain accessible in the room selector. Home advances to the next unconfirmed selection, falling back to the last completed room with **Matches Selected** instead of a countdown. Saved viewers reload member-filtered setup after confirmation; existing tee times are preserved. Affected: section 22, saved setup reads, selection controls and workflow below. Hosted SQL installation and multi-device deployment remain unverified.
+
+
 **2026-11-19 - Organizer start, reset and confirmation (implemented locally; not deployed).** Both room boards show date/time 6px larger and countdown below, with organizer-only Start now/Reset at bottom right. Reset asks Are you sure? and Yes, reset, clears pending selections and requires manual restart. After the final pick, Confirm selections replaces the countdown for the organizer. Team confirmation saves teams; match confirmation publishes groups into existing Golf match assignments using existing tee times. Edit golf setup opens schedule settings. Confirmed assignments remain locked. Section 22, Mermaid and rendered workflow mapping updated. SQL installation and hosted verification remain outstanding; review: docs/draft-confirmation-review.md, review_required.
 
 **2026-11-19 - Draft room control boards and larger titles (implemented locally, not deployed).** Team Draft Room and Selection Room titles are 4px larger and lowered 4px; both use the plain back chevron. Countdown, start controls and schedule move into a 104px-high maroon/gold board beneath the header, approximately half the Home Big Board height. After starting, Team Draft displays picking instructions there; Selection Room displays its existing live instructions and turn timer. Section 22 updated; start permissions, selection rules and storage unchanged.
@@ -751,6 +756,9 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  DraftPublished --> SelectionMatches[Go To Matches: Golf on selected round]
+  DraftPublished --> SelectionQueue[Home: next pending selection or last Matches Selected]
+  SelectionQueue --> DraftStaged
   DraftStaged["Draft rooms: organizer starts; captains select"] --> DraftReview["All selections ready: organizer review"]
   DraftReview -->|Confirm selections| DraftPublished["Saved teams or Golf match groups with existing tee times"]
   DraftStaged -->|Reset, then Yes reset| DraftUnstarted["Clear pending picks; manual restart required"]

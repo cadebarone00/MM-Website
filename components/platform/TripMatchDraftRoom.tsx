@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { DraftResetConfirm } from "./DraftResetConfirm";
 import { ChevronDown, ChevronLeft, ChevronUp, Search } from "lucide-react";
-import { MaroonMark } from "@/components/brand/MaroonMark";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { matchDraftPlayerId, type MatchDraftPlayer, type MatchDraftRound } from "@/lib/platform/matchDraft";
 import { mayActFor, type MatchSelectionResponse, type Side, type VisibleSpot, type SelectionMember } from "@/lib/platform/matchSelection";
 import { selectionRoundFrom } from "@/lib/platform/matchSelectionSetup";
@@ -13,6 +13,7 @@ import { useMatchSelection, type MatchSelectionTransport } from "@/lib/platform/
 import { mockMatchTransport, newLocalMatch } from "@/lib/dev/mockMatchSelection";
 import { statCells } from "./TripDraftRoom";
 import { DraftPlayerProfile } from "./DraftPlayerProfile";
+import { teeTimeLabel } from "@/lib/platform/codeTournaments";
 import styles from "./TripDraftRoom.module.css";
 import { AppSelect } from "@/components/platform/AppSelect";
 export type { MatchDraftRound } from "@/lib/platform/matchDraft";
@@ -29,10 +30,10 @@ const clock = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); con
  * Tap a box you may fill → pick a player. Everything goes through `transport` (the saved trip's server, or a pretend
  * server for simulator / dev trips); without one, a pretend server is made from `rounds` + `players`.
  */
-export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, modal = false, canEdit = true, teamNames = ["Team A", "Team B"], transport, editGolfHref, onConfirmed }: {
+export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, modal = false, canEdit = true, teamNames = ["Team A", "Team B"], transport, editGolfHref, onConfirmed, onGoToMatches }: {
   rounds: MatchDraftRound[]; players: MatchDraftPlayer[]; initialRound?: string; onClose: () => void; modal?: boolean; canEdit?: boolean; teamNames?: string[];
   transport?: MatchSelectionTransport;
-  editGolfHref?: string; onConfirmed?: (data: MatchSelectionResponse) => void;
+  onGoToMatches?: (round: number) => void; editGolfHref?: string; onConfirmed?: (data: MatchSelectionResponse) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [roundKey, setRoundKey] = useState(initialRound ?? rounds[0]?.key ?? "");
@@ -44,7 +45,7 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   // No server given (simulator samples, dev trips, Settings preview): a pretend one made from these rounds and players.
   // Built from a plain-text description so it only changes when the players / rounds really do (Home redraws every second).
   const seed = JSON.stringify({ players: players.map(p => ({ id: matchDraftPlayerId(p), name: p.name, handicap: p.handicap, team: p.team })),
-    rounds: rounds.map(r => ({ ...r })), teamNames: [teamNames[0] || "Team A", teamNames[1] || "Team B"] });
+    rounds: rounds.map(({ locked: _locked, ...r }) => r), teamNames: [teamNames[0] || "Team A", teamNames[1] || "Team B"] });
   const local = useMemo(() => {
     if (transport) return null;
     const parsed = JSON.parse(seed) as { players: { id: string; name: string; handicap?: number; team: "A" | "B" }[]; rounds: MatchDraftRound[]; teamNames: [string, string] };
@@ -57,6 +58,9 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   }, [transport, seed, canEdit]);
   const live = useMatchSelection(transport ?? local, roundKey || null);
   const data: MatchSelectionResponse | null = live.data;
+  const confirmedCallback = useRef(onConfirmed);
+  useEffect(() => { confirmedCallback.current = onConfirmed; });
+  useEffect(() => { if (data?.confirmed) confirmedCallback.current?.(data); }, [data?.confirmed, data?.round.key]);
   const now = useSyncExternalStore(tick, nowMs, () => null);
   const source = rounds.find(r => r.key === roundKey);
   const round = data?.round;
@@ -64,6 +68,8 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   const label = (team: Side) => data?.teamNames[team] || teamNames[team] || `Team ${team ? "B" : "A"}`;
   // The player whose tourney profile is open (tap a player in the list).
   const [profile, setProfile] = useState<SelectionMember | null>(null);
+  // A match's tee time: its group's time from Settings → Golf (a foursome holds 2 singles matches or 1 pairs match).
+  const teeFor = (match: number) => { const perGroup = Math.max(1, Math.floor(4 / (2 * (round?.perSide ?? 1)))); const time = source?.teeTimes?.[Math.floor(match / perGroup)]; return time ? teeTimeLabel(time) : "Tee time TBD"; };
   const member = (id: string | null) => data?.members.find(m => m.profileId === id);
   const spotAt = (match: number, team: Side, slot: number): VisibleSpot | undefined => data?.spots.find(s => s.match === match && s.team === team && s.slot === slot);
   const locked = !!source?.locked && !data?.completed;
@@ -115,7 +121,8 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
   const whenParts = source?.when?.includes(" @ ") ? [source.when.slice(0, source.when.indexOf(" @ ")), source.when.slice(source.when.indexOf(" @ ") + 3).replace(/^0/, "")] : [source?.when || "Time not set"];
   const status = live.message || (!rounds.length ? "No rounds use Match Draft yet. Choose Match Draft for a round in Settings → Match Selection."
     : locked ? "This round has been played — its matches are locked."
-    : data?.completed ? "Match selection complete — the matches are saved."
+    : data?.confirmed ? "Matches Selected"
+    : data?.completed ? (viewer?.isOrganizer ? "Review and confirm the selections." : "Waiting for Organizer")
     : !data ? "Loading match selection…"
     : !data.started ? (data.startError ?? "Waiting to start.")
     : round?.type === "Response" ? (viewer && data.turn && mayActFor(viewer, data.turn.team) ? `Your turn: ${turnLabel}` : `${turnLabel} — you'll see it once it's submitted.`)
@@ -127,7 +134,7 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
     const spot = spotAt(match, team, slot);
     const who = spot?.profileId ? member(spot.profileId) : undefined;
     const tappable = canTap(match, team, slot);
-    const body = who ? <><span className={styles.rowAvatar} aria-hidden>{who.avatarUrl ? <img src={who.avatarUrl} alt="" /> : <span className={styles.rowMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+    const body = who ? <><span className={styles.rowAvatar}><ProfileAvatar name={who.name} photoUrl={who.avatarUrl} /></span>
       <span className={styles.vsWho}><strong>{who.name}</strong><small>{spot?.submitted ? (who.handicap === undefined ? "Final" : `HCP ${who.handicap}`) : "Not submitted"}</small></span></>
       : spot?.hidden ? <span className={styles.vsHidden}>{round?.type === "Ranks" ? "Ranked ✓" : "Picked ✓"}</span>
       : <span className={styles.empty}>{tappable ? "Tap to place" : "Open"}</span>;
@@ -144,16 +151,17 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
     <section className={styles.roomBoard} aria-label="Selection controls">
       {!data?.started && <p className={styles.boardWhen}>{whenParts.map(part => <span key={part}>{part}</span>)}</p>}
       <div className={styles.boardControls}>
-        {data?.completed && !data.confirmed && viewer?.isOrganizer ? <button type="button" className={styles.confirmSelections} disabled={live.busy} onClick={async () => { const result = await live.act({ action: "confirm" }); if (result && data) onConfirmed?.({ ...data, confirmed: true }); }}>Confirm selections</button> : !data?.confirmed && <div className={styles.timer} role="timer"><span>{countdown}</span></div>}
+        {data?.confirmed ? <button type="button" className={styles.confirmSelections} onClick={() => onGoToMatches?.(data.round.number)}>Go To Matches</button> : data?.completed && !viewer?.isOrganizer ? <span className={styles.boardInstructions}>Waiting for Organizer</span> : data?.completed && viewer?.isOrganizer ? <button type="button" className={styles.confirmSelections} disabled={live.busy} onClick={async () => { const result = await live.act({ action: "confirm" }); void result; }}>Confirm Selections</button> : !data?.confirmed && <div className={styles.timer} role="timer"><span>{countdown}</span></div>}
       </div>
       {data?.started && <p className={styles.boardInstructions} role="status">{status}</p>}
       {viewer?.isOrganizer && !data?.confirmed && <div className={styles.boardOrganizerActions}>{editGolfHref && <Link href={editGolfHref} onClick={onClose}>Edit golf setup</Link>}<button type="button" disabled={live.busy || !!data?.startError && !data?.started} onClick={() => data?.started ? setResetOpen(true) : void live.act({ action: round?.type === "Randomized" ? "randomize" : "start" })}>{data?.started ? "Reset" : "Start now"}</button></div>}
       {resetOpen && <DraftResetConfirm busy={live.busy} onCancel={() => setResetOpen(false)} onReset={async () => { const result = await live.act({ action: "reset" }); if (result) { setResetOpen(false); setTarget(null); setExpanded(false); } }} />}
     </section>
     <div className={styles.vsBoard} aria-label="Match selection board">
-      <div className={styles.vsHead}><span /><span className={styles.vsTeam}>{label(0)}{round?.type === "Ranks" && data?.locked[0] ? " · locked ✓" : ""}</span><span /><span className={styles.vsTeam}>{label(1)}{round?.type === "Ranks" && data?.locked[1] ? " · locked ✓" : ""}</span></div>
+      <div className={styles.vsHead}><span className={styles.vsTeam}>{label(0)}{round?.type === "Ranks" && data?.locked[0] ? " · locked ✓" : ""}</span><span /><span className={styles.vsTeam}>{label(1)}{round?.type === "Ranks" && data?.locked[1] ? " · locked ✓" : ""}</span></div>
       {round && Array.from({ length: round.matches }, (_, match) => <div key={match} className={styles.vsRow} data-turn={data?.turn?.match === match}>
-        <span className={styles.vsLabel}>{round.type === "Ranks" ? "Rank" : "Match"} {match + 1}</span>
+        {/* Like the Golf page (owner 2026-11-19): "Match 1" top-middle with its tee time under it; Team A left, VS middle, Team B right. */}
+        <div className={styles.vsMatchHead}><span className={styles.vsLabel}>{round.type === "Ranks" ? "Rank" : "Match"} {match + 1}</span><span className={styles.vsTee}>{teeFor(match)}</span></div>
         <div className={styles.vsSide}>{Array.from({ length: round.perSide }, (_, slot) => box(match, 0, slot))}</div>
         <span className={styles.vsVs}>VS</span>
         <div className={styles.vsSide}>{Array.from({ length: round.perSide }, (_, slot) => box(match, 1, slot))}</div>
@@ -179,7 +187,7 @@ export function TripMatchDraftRoom({ rounds, players, initialRound, onClose, mod
           {listed.map(m => <div key={m.profileId} className={styles.playerRow}>
             {/* Tap the player → their tourney profile (no trip rounds yet). */}
             <button type="button" className={styles.playerWho} onClick={() => setProfile(m)} aria-label={`Open ${m.name}'s tourney profile`}>
-              <span className={styles.rowAvatar} aria-hidden>{m.avatarUrl ? <img src={m.avatarUrl} alt="" /> : <span className={styles.rowMark}><MaroonMark color="var(--color-maroon-900)" /></span>}</span>
+              <span className={styles.rowAvatar}><ProfileAvatar name={m.name} photoUrl={m.avatarUrl} /></span>
               <strong>{m.name}{placedIds.has(m.profileId) ? <small className={styles.placedTag}> · placed</small> : null}</strong>
             </button>
             <dl className={styles.statScroll} aria-label={`${m.name} stats`}>{statCells({ handicap: m.handicap }).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>

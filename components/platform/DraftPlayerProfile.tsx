@@ -1,12 +1,12 @@
 "use client";
 
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import styles from "./GolfTripMatch.module.css";
 import room from "./TripDraftRoom.module.css";
 
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase() ?? "").join("");
 
 /**
  * A player's tourney profile from the draft rooms (owner 2026-11-19): the same pop-up as the leaderboard's player card —
@@ -52,10 +52,7 @@ export function DraftPlayerProfile({ name, avatarUrl, username, stats, onClose }
       if (event.clientY < r.top || event.clientY > r.bottom || event.clientX < r.left || event.clientX > r.right) onClose();
     }}>
     <div className={styles.playerTripProfileHeader}>
-      <span className={styles.playerTripProfileAvatar} aria-hidden>
-        {/* eslint-disable-next-line @next/next/no-img-element -- a stored photo URL, shown as-is */}
-        {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
-      </span>
+      <span className={styles.playerTripProfileAvatar}><ProfileAvatar name={name} photoUrl={avatarUrl} /></span>
       <div className={styles.playerTripProfileIdentity}>
         <h2>{name}</h2>
         <dl className={styles.playerTripProfileStats} aria-label="Player numbers">

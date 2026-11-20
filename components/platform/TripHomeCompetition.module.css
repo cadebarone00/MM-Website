@@ -23,3 +23,6 @@
 .pointsCell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border-radius:12px;background:color-mix(in srgb,#fbf8f1 6%,transparent)}
 .pointsValue{font:700 30px/1 var(--font-spectral),Georgia,serif;color:#fff5df}
 .toWin{color:#edcf91}
+
+/* Words sit 16px from the phone's sides (the app's text inset), not the boxes' 8px; the points boxes stay at 8px. */
+.facts,.subhead,.rounds{padding-inline:var(--page-text-shift)}

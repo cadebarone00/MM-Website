@@ -1,12 +1,14 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { setupDecode, setupEncode, type SetupValues, type TripSetupSnapshot } from "@/lib/platform/savedTripSetup";
 
-type Context = { tripId: string; values: SetupValues; write: (field: string, value: unknown) => void; available: boolean; readOnly: boolean };
+type Context = { refresh: () => Promise<void>; tripId: string; values: SetupValues; write: (field: string, value: unknown) => void; available: boolean; readOnly: boolean };
 const SavedSetupContext = createContext<Context | null>(null);
 export const useSavedTripSetup = () => useContext(SavedSetupContext);
 
 export function SavedTripSetupProvider({ tripId, snapshot, editable, children }: { tripId: string; snapshot: TripSetupSnapshot; editable: boolean; children: ReactNode }) {
+  const router = useRouter();
   const [values, setValues] = useState<SetupValues>(() => JSON.parse(JSON.stringify(snapshot.values), setupDecode));
   const [status, setStatus] = useState("");
   const current = useRef(values), revision = useRef(snapshot.revision);
@@ -45,7 +47,16 @@ export function SavedTripSetupProvider({ tripId, snapshot, editable, children }:
     window.addEventListener("beforeunload", leave);
     return () => window.removeEventListener("beforeunload", leave);
   }, []);
-  return <SavedSetupContext.Provider value={{ tripId, values, write, available: snapshot.available, readOnly: !editable || blocked.current }}>
+  const refresh = useCallback(async () => {
+    if (pending.current) return;
+    const response = await fetch(`/api/golf-trips/${tripId}/setup`, { cache: "no-store" });
+    if (!response.ok) return;
+    const result = await response.json();
+    const next = JSON.parse(JSON.stringify(result.values), setupDecode);
+    if (!next) return;
+    current.current = next; revision.current = result.revision; setValues(next); router.refresh();
+  }, [tripId, router]);
+  return <SavedSetupContext.Provider value={{ refresh, tripId, values, write, available: snapshot.available, readOnly: !editable || blocked.current }}>
     {editable && status && <div role={blocked.current ? "alert" : "status"} style={{ padding: "8px 16px", background: "var(--color-maroon-900)", color: "#dcc495" }}>{status}{blocked.current && <button type="button" onClick={() => location.reload()}>Reload settings</button>}</div>}
     {children}
   </SavedSetupContext.Provider>;
