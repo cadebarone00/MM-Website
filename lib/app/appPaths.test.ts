@@ -23,10 +23,13 @@ test("join, invite, tournament, watch and profile links become the app's one pag
   assert.equal(appPath(`/tournaments/code/invite/${TOKEN}`), `/tournaments/code/invite/?token=${TOKEN}`);
   assert.equal(appPath(`/tournaments/invite/${TOKEN}`), `/tournaments/invite/?token=${TOKEN}`);
   assert.equal(appPath("/tournaments/code/abc"), "/tournaments/code/?id=abc");
+  assert.equal(appPath("/tournaments/code/abc/"), "/tournaments/code/?id=abc");
+  assert.equal(appPath("/t/texas-cup/"), "/t/site/?tournament=texas-cup");
   assert.equal(appPath("/tournaments/live/abc"), "/tournaments/live/?id=abc");
   assert.equal(appPath("/watch/XYZ"), "/watch/?code=XYZ");
   assert.equal(appPath(`/leagues/${ID}`), `/leagues/league/?id=${ID}`);
   assert.equal(appPath("/profile/cam%20l"), "/profile/user/?username=cam+l");
+  assert.equal(appPath("/profile/cam/"), "/profile/user/?username=cam");
   assert.equal(appPath("/t/texas-cup"), "/t/site/?tournament=texas-cup");
   assert.equal(appPath("/t/texas-cup/2027/players"), "/t/site/?tournament=texas-cup&year=2027&section=players");
   assert.equal(appPath("/play/texas-cup/2027"), "/play/tournament/?tournament=texas-cup&year=2027");
@@ -35,7 +38,7 @@ test("join, invite, tournament, watch and profile links become the app's one pag
   assert.equal(appPath("/tournaments/texas-cup/2027/next"), "/tournaments/studio/next/?tournament=texas-cup&year=2027");
   assert.equal(appPath("/tournaments/texas-cup/2027/preview/players"), "/tournaments/studio/preview/?tournament=texas-cup&year=2027&section=players");
   // The app's own pages, and codes too short to be real, are left alone.
-  for (const path of ["/tournaments/code/new", "/tournaments/code/join", "/tournaments/mine", "/tournaments/new", "/tournaments/create/match-play", "/profile/edit", "/profile/search", "/golf-trips/join/short", "/leagues", "/leagues/new", "/leagues/join?code=ABC123"]) assert.equal(appPath(path), path);
+  for (const path of ["/tournaments/code/new", "/tournaments/code/join", "/tournaments/mine", "/tournaments/new", "/tournaments/create/match-play", "/profile/edit", "/profile/search", "/tournaments/code/new/", "/tournaments/code/join/", "/tournaments/code/invite/?x=1", "/t/site/?tournament=texas-cup", "/profile/edit/", "/profile/search/", "/profile/friends/", "/profile/user/", "/golf-trips/join/short", "/leagues", "/leagues/new", "/leagues/join?code=ABC123"]) assert.equal(appPath(path), path);
 });
 
 test("trip links: the website keeps /golf-trips/<id>/…; the app build uses /golf-trips/trip/…?id=", () => {

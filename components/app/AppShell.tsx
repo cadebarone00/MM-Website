@@ -9,6 +9,7 @@ import { appSupabase } from "@/lib/app/appAuth";
 import { appPath } from "@/lib/app/appPaths";
 import { shareOrigin } from "@/lib/app/shareOrigin";
 import { AppComingSoon, keptOutOfApp } from "./AppComingSoon";
+import { clearAppData, preloadAppData } from "./appDataCache";
 import { AppNative } from "./AppNative";
 import { AppUpdate } from "./AppUpdate";
 import styles from "./App.module.css";
@@ -33,6 +34,8 @@ const inApp = (path: string) => IN_APP.includes(path) || ["/start", "/onboarding
 const signedOutOk = (path: string) => path === "/login" || path === "/account/status" || path === "/start" || path.startsWith("/start/")
   // The dev server's sample previews (e.g. /dev/leagues) need no account; a TestFlight build has none.
   || (process.env.NODE_ENV === "development" && path.startsWith("/dev/"));
+/** The main tabs' data (Play, Golf Trips, Profile, Tourneys), the same addresses their screens load with useAppData. */
+const MAIN_TABS = ["/api/app/play", "/api/golf-trips", "/api/app/profile", "/api/app/tourneys?view=join"];
 /** The bottom menu's season data starts from the built-in season and refreshes itself from the server (SeasonCatalogProvider). */
 const CATALOG = { nextTournament, pastTournaments, latestCompleted, scheduled: false, leaderboardOpen: isPastLeaderboardSwitchover() };
 
@@ -49,10 +52,24 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const auth = appSupabase().auth;
-    void auth.getSession().then(({ data }) => setSession(data.session ? "in" : "out"));
-    const { data } = auth.onAuthStateChange((_event, next) => setSession(next ? "in" : "out"));
+    let user: string | null = null;
+    void auth.getSession().then(({ data }) => { user = data.session?.user.id ?? null; setSession(data.session ? "in" : "out"); });
+    const { data } = auth.onAuthStateChange((_event, next) => {
+      // Signed out or someone else signed in: forget the screens the last person loaded (appDataCache.ts).
+      const nextUser = next?.user.id ?? null;
+      if (nextUser !== user) clearAppData();
+      user = nextUser;
+      setSession(next ? "in" : "out");
+    });
     return () => data.subscription.unsubscribe();
   }, []);
+
+  // Once signed in, after the open screen has had its turn: load the main tabs quietly so the first tap on each is instant.
+  useEffect(() => {
+    if (session !== "in") return;
+    const timer = window.setTimeout(() => void preloadAppData(MAIN_TABS), 1500);
+    return () => window.clearTimeout(timer);
+  }, [session]);
 
   // A tap on any in-app link with a website-style address (e.g. /tournaments/code/<id>, /golf-trips/<id>) opens the
   // app's page for it instead. Caught before the link's own handler, so the website's components need no changes.

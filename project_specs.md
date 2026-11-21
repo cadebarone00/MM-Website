@@ -5474,3 +5474,98 @@ any new wording (all new lines are marked Not approved until you OK them).
 V1/V2/V3; tests check every type has a switch, an icon, a safe tap link, 3 wordings within the push length limits, and
 every switch has at least one type; TypeScript, lint and the full test suite pass; checked in the browser at phone width.
 Nothing sent, no SQL. Steps 1–2 = one commit, step 3 = a second commit after you OK the fix list.
+
+## Fix: app magnifying glass says "That profile wasn't found" (owner request 2026-11-21) — SPEC, awaiting approval
+
+**What the owner asked for:** on Profile, search the golfers in the database, tap Add friend; the other golfer gets told
+someone wants to be friends; Accept → each shows in the other's Friends list; Decline → nothing happens.
+
+**What already exists (built 2026-11-13 / 11-19, unchanged):** the Search page (`/profile/search`) searches every active
+golfer by name or @username; Add friend → Requested; the other golfer sees a **red badge** on the Profile tab and the
+magnifying glass, an **email** (if their Email switch is on), and the request at the top of Search with Accept / Decline;
+Accept makes them friends and both show in Profile → Friends; Decline just marks the request declined (the sender gets
+nothing). All of this works on the website.
+
+**The bug (iPhone app only):** the app adds a "/" to the end of every link (`/profile/search/`). The app's link rule in
+`lib/app/appPaths.ts` only skips `search`, `friends`, `edit` and `user` when there's no ending "/", so `/profile/search/`
+is read as "the profile of a golfer called *search*" → "That profile wasn't found". The same thing hits the Friends link
+(`/profile/friends/`) and Edit profile (`/profile/edit/`).
+
+**The fix:** one change to that rule so those four words are skipped with or without the ending "/". Add test cases for
+`/profile/search/`, `/profile/friends/`, `/profile/edit/` (stay as they are) and `/profile/cam/` (still opens Cam's
+profile).
+
+**Not changed:** no database / SQL, no new screens, no phone push notifications (those need Apple keys — not set up yet;
+the badge + email are today's notification).
+
+**Done looks like:** appPaths tests pass (old + new), type check passes, `npm run build:app` succeeds, and in the app
+build the magnifying glass opens Search, Friends opens the list, and a golfer's profile still opens.
+
+**Addition (owner approved 2026-11-21):** the same ending-"/" bug in the app's tournament links: Create tournament
+(`/tournaments/code/new/`), Join (`/tournaments/code/join/`), tournament invites (`/tournaments/code/invite/`) and the
+tournament site (`/t/site/`) were read as a tournament called "new" / "join" / "invite" / "site". Same one-line fix to
+each rule in `lib/app/appPaths.ts`, with tests.
+
+## App: tabs open instantly — remember + pre-load (owner request 2026-11-21) — SPEC, awaiting approval
+
+**Problem:** in the iPhone app, every time you switch tabs (Play, Golf Trips, Profile, Tourneys) the screen starts over:
+loading screen, then a full trip to the server (login check with Supabase + several database lookups). Coming back to a
+tab you just saw waits all over again.
+
+**Who it's for:** every app user. App only — the website is unchanged.
+
+**A. Remember each screen (`components/app/useAppData.ts`).**
+- The app keeps the last data each screen loaded, in the phone's memory while the app is open.
+- Opening a screen you've seen before shows that saved version **instantly** (no loading screen), then quietly asks the
+  server for fresh data and swaps it in when it arrives.
+- If that quiet check fails (no signal), the saved version stays on screen instead of an error.
+- First visit to a screen still shows the loading screen (nothing saved yet).
+- **Signing out wipes everything saved**, so the next person to sign in on that phone never sees the last person's data.
+- Nothing is written to the phone's storage — closing the app clears it.
+- Covers every screen that uses `useAppData` (Play, Golf Trips, Profile, Tourneys, Settings, Edit profile, Search,
+  Friends, trip pages, …).
+
+**B. Pre-load the main tabs (`components/app/AppShell.tsx`).**
+- About 1.5 seconds after the app opens signed in (so the screen you're on loads first), the app quietly loads Play, Golf
+  Trips, Profile and Tourneys in the background and saves them (using A). So even the **first** tap on a tab is instant.
+- Happens once per sign-in; no loading screens, no errors shown if it fails (the tab just loads normally).
+
+**Not in this round:**
+- **Leagues** tab — it loads its own data a different way; it would need its own change.
+- **C. Server next to the database:** primary database is in **Canada Central (Montréal)**. Moving our Vercel server to
+  Montréal (`yul1`) is a one-line change in `vercel.json` — owner to say yes separately.
+- **D. Login check on our own server.**
+
+**No database / SQL changes, no new services or packages.**
+
+**Done looks like:** tests for the memory (saved data shown first, fresh data replaces it, failed refresh keeps it,
+sign-out wipes it); type check + full test suite pass; `npm run build:app` succeeds; in the app build, switching back to
+a tab shows it instantly and the first tap on each main tab is instant after pre-load.
+
+## Profile photo: move it inside the circle (owner request 2026-11-21) — SPEC, awaiting approval
+
+**What the owner asked for:** when choosing a profile picture, let the golfer move the picture inside the circle.
+
+**What already exists:** the "Move and scale" screen (`components/profile/PhotoCropper.tsx`, built 2026-11-02): the
+photo fills a square with a circle showing what the profile picture will be; drag to move, pinch to zoom (scroll /
+trackpad on a computer); the photo can never be moved so the circle shows empty space; Done saves the framed square as a
+small JPEG (`lib/profile/photoCrop.ts`), Cancel saves nothing. **It's only used in the dev simulator** — the real photo
+pickers upload the photo as picked.
+
+**The change:** after picking a photo, open "Move and scale" first in all three real places, then save what was framed:
+1. **Sign-up → Add a profile image** (`components/onboarding/OnboardingScreens.tsx`)
+2. **Profile → Edit profile → Change photo** (`components/profile/EditProfileScreen.tsx`)
+3. **Settings → Profile photo** (`components/settings/PhotoSetting.tsx`)
+Cancel goes back with nothing changed. Works the same on the website and in the iPhone app.
+**Built 2026-11-21:** 1 and 2 done. 3 was dropped: `PhotoSetting.tsx` isn't on any screen any more (Settings links to
+Edit profile for the photo), so it was left unchanged.
+
+**Bonus (comes free):** since the saved photo is the framed JPEG, big phone photos (over 3 MB, or iPhone HEIC) no longer
+get "That photo is too big" — they're shrunk on the phone first.
+
+**Not changed:** no database / SQL, no server changes (the photo API already takes these JPEGs), no new packages
+(`react-easy-crop` is already installed).
+
+**Done looks like:** in all three places, picking a photo opens Move and scale; Done saves the framed circle and it shows
+on the profile; Cancel changes nothing; type check, lint and full test suite pass; `npm run build:app` succeeds; checked
+in the browser at phone width.

@@ -10,12 +10,12 @@ const WITH_VALUE: { pattern: RegExp; page: string; param: string }[] = [
   { pattern: /^\/golf-trips\/join\/([A-Za-z0-9_-]{24,64}|[A-HJKMNP-Z2-9]{6})\/?$/, page: "/golf-trips/join/", param: "code" },
   { pattern: /^\/golf-trips\/invite\/([A-Za-z0-9_-]{32,200})\/?$/, page: "/golf-trips/invite/", param: "token" },
   { pattern: /^\/tournaments\/code\/invite\/([A-Za-z0-9_-]{32,200})\/?$/, page: "/tournaments/code/invite/", param: "token" },
-  { pattern: /^\/tournaments\/code\/((?!new$|join$|invite$)[A-Za-z0-9_-]{1,80})\/?$/, page: "/tournaments/code/", param: "id" },
+  { pattern: /^\/tournaments\/code\/((?!(?:new|join|invite)\/?$)[A-Za-z0-9_-]{1,80})\/?$/, page: "/tournaments/code/", param: "id" },
   { pattern: /^\/tournaments\/live\/([A-Za-z0-9_-]{1,80})\/?$/, page: "/tournaments/live/", param: "id" },
   { pattern: /^\/tournaments\/invite\/([A-Za-z0-9_-]{32,200})\/?$/, page: "/tournaments/invite/", param: "token" },
   { pattern: /^\/watch\/([A-Za-z0-9]{1,12})\/?$/, page: "/watch/", param: "code" },
-  { pattern: /^\/profile\/((?!search$|friends$|edit$|user$)[^/?#]{1,60})\/?$/, page: "/profile/user/", param: "username" },
-  { pattern: /^\/t\/((?!site$)[^/?#]{1,80})\/?$/, page: "/t/site/", param: "tournament" },
+  { pattern: /^\/profile\/((?!(?:search|friends|edit|user)\/?$)[^/?#]{1,60})\/?$/, page: "/profile/user/", param: "username" },
+  { pattern: /^\/t\/((?!site\/?$)[^/?#]{1,80})\/?$/, page: "/t/site/", param: "tournament" },
   { pattern: /^\/leagues\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i, page: "/leagues/league/", param: "id" },
 ];
 

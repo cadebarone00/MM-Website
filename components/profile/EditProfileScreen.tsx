@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Check, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { SocialIcon } from "@/components/profile/SocialIcon";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { PhotoCropper } from "@/components/profile/PhotoCropper";
 import { PRIVACY_EXPLAIN } from "@/components/settings/PrivacySetting";
 import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
 import {
@@ -71,6 +72,8 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
   const [busy, setBusy] = useState<null | "save" | "photo" | "visibility">(null);
   const [error, setError] = useState("");
   const photoInput = useRef<HTMLInputElement>(null);
+  const [picked, setPicked] = useState<string | null>(null); // the original, while Move and scale is open
+  useEffect(() => () => { if (picked) URL.revokeObjectURL(picked); }, [picked]);
 
   const usernameChanged = username.trim() !== initial.username;
   const changes: ProfileEditInput = {
@@ -125,7 +128,8 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
           {photoUrl ? <ProfileAvatar name={name} photoUrl={photoUrl} size={92} /> : <span className={styles.emptyPhoto} aria-hidden="true"><Camera size={28} /></span>}
           <ProfileAvatar name={name} size={92} photo={false} />
         </div>
-        <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void changePhoto(file); }} />
+        <input ref={photoInput} type="file" accept="image/*" hidden onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) setPicked(URL.createObjectURL(file)); }} />
+        {picked && <PhotoCropper imageUrl={picked} onCancel={() => setPicked(null)} onDone={(framed) => { setPicked(null); void changePhoto(framed); }} />}
         <button type="button" className={styles.editPicture} onClick={() => setPanel("picture")} disabled={busy === "photo"}>{busy === "photo" ? "Saving photo…" : "Edit picture or avatar"}</button>
         {!initial.photoAvailable && <p className={styles.soon}>Profile photos are coming soon.</p>}
       </section>
