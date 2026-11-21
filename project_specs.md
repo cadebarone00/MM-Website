@@ -5862,3 +5862,23 @@ get "That photo is too big" — they're shrunk on the phone first.
 **Done looks like:** in all three places, picking a photo opens Move and scale; Done saves the framed circle and it shows
 on the profile; Cancel changes nothing; type check, lint and full test suite pass; `npm run build:app` succeeds; checked
 in the browser at phone width.
+
+## App sign-up: no white flash between steps (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21
+
+**What happens now:** in the iPhone app, each sign-up step (Create a password, Name, Birthday, Photo, Settings) first
+asks the server "which step is this account on?" before it shows. While it waits it shows a plain "Loading…" line
+(`Waiting` in `components/app/AppOnboarding.tsx`) on the page's default background, which is **cream (#fbf8f1, almost
+white)**, not the sign-up screens' **maroon (#240001)**. Some steps pass through two of these in a row (e.g. Create a
+password → "carry on" → Name), so you see maroon → white → maroon, with the "Loading…" text jumping in at the top.
+
+**The fix:** that waiting screen looks like the sign-up screens — full-screen maroon with the Maroon logo, the same as
+the app's opening splash (`styles.splash` in `components/app/App.module.css`). Moving between steps then stays maroon
+the whole time; no white.
+
+**Who:** new users signing up in the app. App only — the website's sign-up is drawn on the server and never shows this.
+
+**Not changed:** the order of steps, the server checks, any database / SQL. (Cutting the number of hops would make it
+faster too, but it touches the step rules — left for later if still wanted.)
+
+**Done looks like:** the waiting screen is maroon with the logo; type check, lint and tests pass; `npm run build:app`
+succeeds; checked in the browser at phone width that a sign-up step's waiting screen is maroon.
