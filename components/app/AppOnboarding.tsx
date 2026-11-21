@@ -27,7 +27,8 @@ import styles from "./App.module.css";
  * the app yet (they need the native sign-in sheets); the server still enforces every sign-up and age rule.
  */
 
-const Waiting = () => <p className={styles.status} aria-busy="true">Loading…</p>;
+/** Between sign-up steps: the app's maroon opening splash, so moving from step to step never flashes the cream page. */
+const Waiting = () => <main className={styles.splash} aria-busy="true"><span className={styles.logo}>The Maroon</span></main>;
 /** The app's own login (a session on the phone), or null. */
 const appSession = async () => (await appSupabase().auth.getSession()).data.session;
 
