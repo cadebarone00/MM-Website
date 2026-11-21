@@ -34,6 +34,9 @@ export function simulatorPages(): SimulatorPage[] {
     }
   }
   walk(join(process.cwd(), "app/dev"), "/dev");
+  for (const [slug, label] of [["trip-accept", "Golf Trip · Receive"], ["tourney-accept", "Tournament · Receive"], ["league-accept", "League · Receive"], ["play-accept", "Play · Receive"]]) {
+    pages.push({ id: `invite-${slug}`, path: `/dev/invites/${slug}`, label, group: "Invitations", fixtures: false, conditions: [] });
+  }
   pages.push(
     { id: "website-desktop", path: "/dev-website", label: "Landing page", group: "Website desktop", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
     { id: "website-mobile", path: "/dev-website", label: "Landing page", group: "Website mobile", fixtures: false, viewport: "mobile", standalone: true, conditions: [] },

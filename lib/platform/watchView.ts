@@ -33,11 +33,12 @@ function publicSetupValues(values: Record<string, unknown>): Record<string, unkn
   return shown;
 }
 
-/** A tournament for spectators: players as p1, p2…; no join code, no organizer id, no Info PDF or tee sheets (players only). */
+/** A tournament for spectators: players as p1, p2… (names and usernames kept); no join code, no organizer id, no Info PDF or tee sheets (players only). */
 export function spectatorTournament(t: CodeTournament): CodeTournament {
   const ids = new Map(t.players.map((p, i) => [p.profileId, `p${i + 1}`]));
   // Info and the tee sheets are for players only.
-  const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, attests: [], players: t.players.map((p) => ({ ...p, username: null })),
+  // Usernames stay (The Maroon Live, Step 2): tapping a name can open that person's profile, which follows their own privacy setting.
+  const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, attests: [], players: t.players.map((p) => ({ ...p })),
     rounds: t.rounds.map((r) => ({ ...r, teeSheet: null })) };
   delete shown.watchCode;
   return swapIds(shown, ids);
@@ -57,7 +58,7 @@ export function spectatorTrip(trip: SavedGolfTrip, scoring: TripRoundScoring | n
     trip: { id: t.id, name: t.name, destination: "", start_date: t.start_date, end_date: t.end_date, expected_traveler_count: null, golf_days: t.golf_days,
       planned_rounds: t.planned_rounds, includes_tournament: t.includes_tournament, lodging_plan: "undecided", flight_plan: "undecided", transportation_plan: "undecided",
       tournament_id: null, status: t.status, created_by: "" },
-    members: accepted.map((m) => ({ id: m.id, profileId: m.profileId, displayName: m.displayName, email: null, role: m.role, invitationStatus: "accepted", username: null, avatarUrl: m.avatarUrl ?? null })),
+    members: accepted.map((m) => ({ id: m.id, profileId: m.profileId, displayName: m.displayName, email: null, role: m.role, invitationStatus: "accepted", username: m.username ?? null, avatarUrl: m.avatarUrl ?? null })),
     rounds: trip.rounds.map((r) => ({ roundNumber: r.roundNumber, dayNumber: r.dayNumber, playDate: r.playDate, courseName: r.courseName })),
   };
   const draft: GolfTripDraft = { ...savedTripAsDraft(savedTrip), destination: "", yourName: "", yourEmail: "" };

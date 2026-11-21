@@ -5,7 +5,8 @@
  *
  * Wording: types written here have three versions (V1–V3); the app picks one. Golf highlights, travel alerts and organizer
  * messages keep their wording in the Highlights sheet (lib/highlights), so they point at its categories instead.
- * `approved: false` = preview wording only; nothing goes to a real phone until the owner approves it.
+ * `approved: false` = preview wording only. All 3 versions of every type written here were approved 2026-11-21;
+ * each send picks one at random with `pickWording` (never the same version twice in a row for one person).
  */
 
 /** Settings → Notifications switches, in the order Settings shows them. Ids are saved in profile_preferences. */
@@ -62,22 +63,22 @@ export const TRAVEL_SHEET_CATEGORIES = ["Flights", "Transportation", "Golf sched
 
 export const NOTIFICATION_CATALOG = [
   // ---------- Round updates ----------
-  { kind: "teeTime", name: "Tee time soon", switch: "scoresPosted", icon: "calendarClock", audience: "Players with a tee time", trigger: "30 minutes before my tee time", link: `${TRIP}#golf`, surfaces: ALL, approved: false, wording: [
+  { kind: "teeTime", name: "Tee time soon", switch: "scoresPosted", icon: "calendarClock", audience: "Players with a tee time", trigger: "30 minutes before my tee time", link: `${TRIP}#golf`, surfaces: ALL, approved: true, wording: [
     { title: "Tee time in 30 minutes", body: "Round {Round} · {Course} · {Time}" },
     { title: "Almost go time ⛳", body: "You tee off at {Time} at {Course}." },
     { title: "Head to the first tee", body: "Round {Round} starts at {Time}. Good luck!" },
   ] },
-  { kind: "opponentSubmitted", name: "Opponent submitted", switch: "scoresPosted", icon: "clipboardCheck", audience: "Players in the same match or group", trigger: "Someone in my match submits their card before me", link: `${TRIP}#golf`, surfaces: ALL, approved: false, wording: [
+  { kind: "opponentSubmitted", name: "Opponent submitted", switch: "scoresPosted", icon: "clipboardCheck", audience: "Players in the same match or group", trigger: "Someone in my match submits their card before me", link: `${TRIP}#golf`, surfaces: ALL, approved: true, wording: [
     { title: "{Player} submitted Round {Round}", body: "Check their card against yours before you submit." },
     { title: "{Player}'s card is in", body: "Compare scores, then submit yours." },
     { title: "Your turn to submit", body: "{Player} already turned in Round {Round}." },
   ] },
-  { kind: "cardMismatch", name: "Card mismatch", switch: "scoresPosted", icon: "alertTriangle", audience: "Both players whose cards disagree", trigger: "Submitted cards in a match have different scores on a hole", link: `${TRIP}#golf`, surfaces: ALL, approved: false, wording: [
+  { kind: "cardMismatch", name: "Card mismatch", switch: "scoresPosted", icon: "alertTriangle", audience: "Both players whose cards disagree", trigger: "Submitted cards in a match have different scores on a hole", link: `${TRIP}#golf`, surfaces: ALL, approved: true, wording: [
     { title: "Scores don't match on hole {Hole}", body: "You and {Player} have different scores. Take a look." },
     { title: "Quick check on hole {Hole}", body: "Your card and {Player}'s don't agree yet." },
     { title: "Card mismatch", body: "Hole {Hole} needs a second look before Round {Round} is final." },
   ] },
-  { kind: "roundFinal", name: "Round final", switch: "scoresPosted", icon: "trophy", audience: "Everyone on the trip", trigger: "Every card in the round is submitted", link: `${TRIP}#golf`, surfaces: ALL, approved: false, wording: [
+  { kind: "roundFinal", name: "Round final", switch: "scoresPosted", icon: "trophy", audience: "Everyone on the trip", trigger: "Every card in the round is submitted", link: `${TRIP}#golf`, surfaces: ALL, approved: true, wording: [
     { title: "Round {Round} is final", body: "See where you finished on the leaderboard." },
     { title: "That's a wrap on Round {Round} 🏁", body: "Results are in for {Course}." },
     { title: "Final scores are in", body: "Round {Round} at {Course} is locked. Check the standings." },
@@ -88,50 +89,50 @@ export const NOTIFICATION_CATALOG = [
   { kind: "travel", name: "Travel reminder", switch: "travel", icon: "plane", audience: "Travelers the item belongs to (per rule)", trigger: "A travel rule's reminder time (e.g. 24h before a flight)", link: `${TRIP}#itinerary`, surfaces: ALL, approved: false, wording: null, sheetCategories: TRAVEL_SHEET_CATEGORIES },
   { kind: "announcement", name: "Organizer message", switch: null, icon: "megaphone", audience: "Everyone on the trip", trigger: "The organizer posts an announcement", link: TRIP, surfaces: ALL, approved: false, wording: null, sheetCategories: ["Organizer messages"], note: "Always on: players can't turn off messages from their organizer." },
   // ---------- Trip invites & requests ----------
-  { kind: "invited", name: "Trip invite", switch: "tripInvites", icon: "mail", audience: "The person invited", trigger: "Someone invites me to a trip", link: TRIP, surfaces: ALL, approved: false, wording: [
+  { kind: "invited", name: "Trip invite", switch: "tripInvites", icon: "mail", audience: "The person invited", trigger: "Someone invites me to a trip", link: TRIP, surfaces: ALL, approved: true, wording: [
     { title: "You're invited to {Trip}", body: "{Player} invited you. Tap to accept or decline." },
     { title: "New trip invite ⛳", body: "{Player} wants you on {Trip}." },
     { title: "Join {Trip}?", body: "{Player} sent you an invite." },
   ] },
-  { kind: "joinRequest", name: "Join request", switch: "tripInvites", icon: "userPlus", audience: "The trip organizer", trigger: "Someone asks to join the trip", link: `${TRIP}/settings`, surfaces: ALL, approved: false, wording: [
+  { kind: "joinRequest", name: "Join request", switch: "tripInvites", icon: "userPlus", audience: "The trip organizer", trigger: "Someone asks to join the trip", link: `${TRIP}/settings`, surfaces: ALL, approved: true, wording: [
     { title: "{Player} wants to join", body: "{Trip} · tap to accept or decline" },
     { title: "New join request", body: "{Player} asked to join {Trip}." },
     { title: "Someone wants in", body: "{Player} would like to join {Trip}. Accept or decline." },
   ] },
-  { kind: "requestAccepted", name: "Request accepted", switch: "tripInvites", icon: "check", audience: "The person who asked", trigger: "The organizer accepts my join request", link: TRIP, surfaces: ALL, approved: false, wording: [
+  { kind: "requestAccepted", name: "Request accepted", switch: "tripInvites", icon: "check", audience: "The person who asked", trigger: "The organizer accepts my join request", link: TRIP, surfaces: ALL, approved: true, wording: [
     { title: "You're in! 🎉", body: "{Player} accepted your request to join {Trip}." },
     { title: "Welcome to {Trip}", body: "Your request was accepted. Take a look around." },
     { title: "Request accepted", body: "You've joined {Trip}." },
   ] },
-  { kind: "requestDeclined", name: "Request declined", switch: "tripInvites", icon: "x", audience: "The person who asked", trigger: "The organizer declines my join request", link: "/golf-trips", surfaces: ["phone", "bell"], approved: false, wording: [
+  { kind: "requestDeclined", name: "Request declined", switch: "tripInvites", icon: "x", audience: "The person who asked", trigger: "The organizer declines my join request", link: "/golf-trips", surfaces: ["phone", "bell"], approved: true, wording: [
     { title: "Request not accepted", body: "{Trip} isn't taking new players right now." },
     { title: "No spot this time", body: "Your request to join {Trip} wasn't accepted." },
     { title: "Join request update", body: "{Trip} declined your request." },
   ] },
-  { kind: "linkRequest", name: "Add past rounds", switch: "tripInvites", icon: "link", audience: "The player whose past rounds were entered", trigger: "An organizer links past trip rounds to my account", link: "/profile", surfaces: ALL, approved: false, wording: [
+  { kind: "linkRequest", name: "Add past rounds", switch: "tripInvites", icon: "link", audience: "The player whose past rounds were entered", trigger: "An organizer links past trip rounds to my account", link: "/profile", surfaces: ALL, approved: true, wording: [
     { title: "{Trip} wants to add past rounds", body: "Add {Count} past rounds to your profile? Accept or decline." },
     { title: "Past rounds found", body: "{Trip} has {Count} rounds of yours. Add them to your profile?" },
     { title: "Link your history", body: "Accept to add {Count} rounds from {Trip} to your profile." },
   ] },
   // ---------- Friends ----------
-  { kind: "friendRequest", name: "Friend request", switch: "friendRequests", icon: "users", audience: "The person asked", trigger: "Someone sends me a friend request", link: "/profile/friends", surfaces: ALL, approved: false, personal: true, wording: [
+  { kind: "friendRequest", name: "Friend request", switch: "friendRequests", icon: "users", audience: "The person asked", trigger: "Someone sends me a friend request", link: "/profile/friends", surfaces: ALL, approved: true, personal: true, wording: [
     { title: "{Player} sent you a friend request", body: "Tap to accept or decline." },
     { title: "New friend request", body: "{Player} wants to be friends on The Maroon." },
     { title: "{Player} wants to connect", body: "Accept to see each other's rounds." },
   ] },
   // ---------- Drafts ----------
-  { kind: "draftStarting", name: "Draft starting", switch: "draftStarting", icon: "listOrdered", audience: "Everyone in the draft", trigger: "15 minutes before the scheduled draft", link: `${TRIP}#draft`, surfaces: ALL, approved: false, wording: [
+  { kind: "draftStarting", name: "Draft starting", switch: "draftStarting", icon: "listOrdered", audience: "Everyone in the draft", trigger: "15 minutes before the scheduled draft", link: `${TRIP}#draft`, surfaces: ALL, approved: true, wording: [
     { title: "The draft starts in 15 minutes", body: "{Trip} · get your picks ready." },
     { title: "Draft day 📋", body: "The {Trip} draft starts at {Time}." },
     { title: "Draft room is opening", body: "Join the {Trip} draft at {Time}." },
   ] },
-  { kind: "yourPick", name: "Your turn to pick", switch: "yourPick", icon: "timer", audience: "The captain on the clock", trigger: "It becomes my pick in a draft", link: `${TRIP}#draft`, surfaces: ALL, approved: false, wording: [
+  { kind: "yourPick", name: "Your turn to pick", switch: "yourPick", icon: "timer", audience: "The captain on the clock", trigger: "It becomes my pick in a draft", link: `${TRIP}#draft`, surfaces: ALL, approved: true, wording: [
     { title: "You're on the clock ⏱️", body: "It's your pick in the {Trip} draft." },
     { title: "Your turn to pick", body: "Make your pick in the {Trip} draft." },
     { title: "Pick time", body: "The {Trip} draft is waiting on you." },
   ] },
   // ---------- Chat ----------
-  { kind: "chat", name: "Chat message", switch: "chat", icon: "messageCircle", audience: "Everyone in the chat except the sender", trigger: "A new message in a trip chat", link: `${TRIP}#chat`, surfaces: ["phone", "banner"], approved: false, wording: [
+  { kind: "chat", name: "Chat message", switch: "chat", icon: "messageCircle", audience: "Everyone in the chat except the sender", trigger: "A new message in a trip chat", link: `${TRIP}#chat`, surfaces: ["phone", "banner"], approved: true, wording: [
     { title: "{Player} · {Trip}", body: "{Message}" },
     { title: "{Player} in {Trip}", body: "{Message}" },
     { title: "{Trip}", body: "{Player}: {Message}" },
@@ -170,3 +171,16 @@ export const CATALOG_LONG_VALUES: Record<string, string> = {
   ...CATALOG_SAMPLE_VALUES, Player: "Christopher Montgomery-Wellington", Trip: "Annual Scottsdale Spring Classic 2027", Course: "PGA West Jack Nicklaus",
   Message: "Running ten minutes late, save me a seat and order the wings. Also, does anyone have an extra sleeve of balls? Lost mine on 14.",
 };
+
+/**
+ * Picks which version (1–3) of a type's wording to send, at random, never the one this person got last time for this type,
+ * so nobody sees the same words twice in a row. Null for sheet types: the Highlights engine picks their wording.
+ * `random` is only swapped out by tests.
+ */
+export function pickWording(kind: NotificationKind, lastVersion?: number | null, random: () => number = Math.random): { version: number; wording: Wording } | null {
+  const wording = catalogEntry(kind).wording;
+  if (!wording?.length) return null;
+  const choices = wording.map((_, index) => index + 1).filter((version) => wording.length === 1 || version !== lastVersion);
+  const version = choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))];
+  return { version, wording: wording[version - 1] };
+}

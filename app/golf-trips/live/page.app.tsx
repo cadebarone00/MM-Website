@@ -1,2 +1,2 @@
-/** App → The Maroon Live (Golf Trips): the website's screen, unchanged (sample trips, nothing loaded from the server). */
+/** App → The Maroon Live (Golf Trips): the website's screen, unchanged (Public trips and tournaments, loaded from /api/live). */
 export { default } from "./page";

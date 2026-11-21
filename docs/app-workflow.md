@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-21 - Invitation receiving design (development preview; deployment not verified).** The Invitations simulator previously included separate send previews and existing acceptance screens. It now contains receive designs for a trip, tournament, league and round: event type and name, sample inviter avatar, name and username, and a matching Join button. Joining changes the preview locally only. Send previews were removed; real invite routes are unchanged and do not yet provide consistent sharer identity. Section 22 and Mermaid annotation updated; review: docs/invitation-simulator-review.md, review_required.
+
+**2026-11-21 - Invitation simulator section (implemented locally; deployment not verified).** Invitation screens were scattered through the simulator. A new Invitations group brings together fictional trip, tournament and league send and acceptance previews. The trip preview offers signed-out, signed-in, joined, expired and invalid states; league joining changes sample state only, and sample invitation actions do not send email or create memberships. Tournament acceptance is a visual preview. Existing app invitation routes and permissions are unchanged. Section 22 and Mermaid annotation updated; review: docs/invitation-simulator-review.md, review_required.
+
 **2026-11-21 - Home Feed and On The Range (implemented locally; deployment not verified).** Home previously showed a League box and the Explore–News categories directly below the profile circles. The League box is removed, a Feed heading appears below the circles with no Home feed data connected yet, and On The Range opens the existing Explore, Courses, Equipment, Teaching and News content with a return to Home. Round invites and code joining remain on Home. The Main Page description and Mermaid annotation are updated; existing content sources and destination routes are unchanged.
 
 **2026-11-21 - Home navigation boxes (implemented locally; deployment not verified).** Home previously showed white Play, Golf Trip and Tournament boxes beneath the circles; those three boxes are removed. The League box and bottom navigation remain. The Main Page description is affected; the circles remain visual placeholders and destination routes are unchanged.
@@ -852,7 +856,7 @@ flowchart TD
   Graphics --> Controls[Fullscreen and pausable scrolling]
   App[V2 app home and simulator] --> Profile[Existing V2 profile and player details]
   App --> Trips[Existing V2 trips and organizer settings]
-  %% Home shows the profile, circles and an unconnected Feed area; On The Range opens Explore through News.
+  %% Home shows the profile, circles and an unconnected Feed area; On The Range opens Explore through News. The dev Invitations group previews receiving screens with fictional data.
   App --> Play[Existing Play and Predict experiences]
   Profile --> Handicap[Shared handicap and round history]
   Trips --> PublicTap[Home Maroon Live box and View /tap-in/code]
@@ -979,6 +983,8 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 Platform headings for The Maroon home, Tourneys, Pick'ems, Profile, My Tournaments, and Create Tournament sit immediately beside the hamburger menu in the shared top bar. They use bold Spectral at 24?30px rather than large centered titles below the bar. Create Tournament retains its introductory headline below.
 
 **Main Page entry.** `/` shows The Maroon and its M logo above an always-visible profile snapshot, with the heading below the phone's camera area. The signed-in viewer's name, username and avatar come from the private profile endpoint, with a direct link to `/profile`; signed-out visitors can sign in. Three circles show the existing modern handicap index (or a dash), the M logo and the Explore icon, labeled Play, Live and On The Range. On The Range opens the existing Explore, Courses, Equipment, Teaching and News content with a return to Home; Play and Live remain visual placeholders. A Feed heading sits below the circles without Home feed data connected yet. Golf Trips, Tourneys and Leagues remain available from the bottom navigation. Round invites and joining by code remain available to signed-in users. Authentication and destination access remain unchanged.
+
+**Invitation simulator.** The development-only Invitations group presents receiving designs for trips, tournaments, leagues and rounds using fictional event and inviter details. The Join buttons update the preview locally; they do not join events. Existing trip link states remain in the Golf Trip Onboarding preview. Production invitation routes retain their existing behavior and do not consistently identify the person who shared the link.
 
 Shared phone header clearance is 8px below the reported top safe area. Saved trip Home and its Feed use that clearance without a preceding save-status message adding a second inset; some screens have separately styled headers.
 

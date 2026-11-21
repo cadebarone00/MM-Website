@@ -89,3 +89,28 @@ test("signed-in apps can't call it directly (server only)", async () => {
   const grants = await db.query<{ g: string }>("select grantee g from information_schema.routine_privileges where routine_name = 'set_live_visibility'");
   assert.ok(!grants.rows.some((r) => ["anon", "authenticated", "PUBLIC"].includes(r.g)));
 });
+
+// --- Database: supabase/maroon_live_directory.sql (the public directory at /tap-in) ----------------------------
+
+test("the directory lists only Public trips and tournaments, golf details only, and searches name or course", async () => {
+  const { db, cam, oldTrip, pub, priv } = await setup();
+  await db.exec(sqlFile("maroon_live_directory.sql"));
+  await db.exec(sqlFile("maroon_live_directory.sql")); // safe to run twice
+  const list = async (q = "") => (await db.query<{ r: Record<string, unknown>[] }>("select list_public_live_events($1) as r", [q])).rows[0].r;
+  // Before: only the public tournament (the old trip is Link only, the other tournament Private).
+  assert.deepEqual((await list()).map((e) => [e.kind, e.name]), [["tournament", "Open"]]);
+  await set(db, cam, "trip", oldTrip, "public", true);
+  const all = await list();
+  assert.deepEqual(all.map((e) => e.kind).sort(), ["tournament", "trip"]);
+  const trip = all.find((e) => e.kind === "trip")!;
+  assert.deepEqual(Object.keys(trip).sort(), ["code", "course", "ended", "firstDate", "kind", "lastDate", "name", "playerCount"]);
+  assert.equal(trip.code, (await row(db, "golf_trips", oldTrip)).w);
+  assert.equal(trip.playerCount, 1);
+  assert.ok(!JSON.stringify(all).includes("Pinehurst, NC"), "no destination");
+  assert.ok(!JSON.stringify(all).includes(cam), "no profile ids");
+  assert.deepEqual((await list("pine valley")).map((e) => e.name), ["Open"], "a course name finds it");
+  assert.deepEqual((await list("PINEHURST")).map((e) => e.name), ["Pinehurst"]);
+  await set(db, cam, "tournament", pub, "link", true);
+  assert.deepEqual((await list()).map((e) => e.name), ["Pinehurst"], "Link only drops out of the directory");
+  assert.equal(priv.length > 0, true);
+});

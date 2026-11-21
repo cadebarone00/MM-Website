@@ -5708,7 +5708,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 ---
 
-## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT 2026-11-21, uncommitted; `supabase/maroon_live_visibility.sql` NOT run in prod; leagues have the columns only (their settings come with Step 3)
+## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT + committed (350d3c4b); Step 2 BUILT 2026-11-21, uncommitted (real /tap-in directory via /api/live + `supabase/maroon_live_directory.sql`, usernames kept for watchers so the trip profile name opens /profile/<username>, one top bar on every live page); NEITHER `maroon_live_visibility.sql` NOR `maroon_live_directory.sql` run in prod; leagues have the columns only (their settings come with Step 3)
 
 **What it does / who uses it.** Every golf trip, tournament and league gets its own live site, built from one shared template, on the website and in the app. Anyone allowed in can follow the golf live: leaderboard, match play, scorecards, and each player's trip profile. Like the Masters app: you see Rory's scores, not his flight plans. Organizers can also put a scrolling leaderboard on a TV.
 
@@ -5750,7 +5750,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 **Done =** a signed-out browser can open a Public event from search and a Link only event from its link, and see live golf update. Private and changed-to-Private events say "This event isn't available." Nothing private appears in any reply (checked by tests). The share-link toggle hides or shows Share for players. TV mode scrolls and updates on its own. Typecheck, lint and tests pass, and it's checked on screen.
 
-## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — SPEC, awaiting approval
+## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
 
 **Why:** the owner wants every version used, so people don't get the exact same words every time for the same thing.
 

@@ -24,3 +24,14 @@
 .appPage .trip h3{font-size:22px}
 @media(min-width:1024px){.appPage{margin-bottom:0;padding-top:48px;padding-bottom:48px}}
 @media(max-width:600px){.page{padding-top:24px}.header{gap:12px}.back{font-size:12px}.directory{margin-top:58px}.title{margin-bottom:40px}.trip{padding:23px 0}.trip h3{font-size:22px}}
+/* Step 2: real directory — search, Live / Upcoming / Past sections, tappable rows. */
+.search{display:flex;align-items:center;gap:10px;min-height:46px;margin:0 0 28px;padding:0 14px;border:1px solid rgba(220,196,149,.45);border-radius:999px;color:#dcc495}
+.search input{flex:1;min-width:0;border:0;background:transparent;color:#fbf8f1;font:500 15px var(--font-barlow),Arial,sans-serif;outline:none}
+.search input::placeholder{color:#c7b3a8}
+.search:focus-within{border-color:#dcc495}
+.section+.section{margin-top:36px}
+.notice{margin:24px 0;text-align:center;color:#c7b3a8;font-size:14px}
+.eventLink{display:block;color:inherit;text-decoration:none}
+.eventLink:hover h3{text-decoration:underline;text-underline-offset:4px}
+.eventLink:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
+.livePill{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:999px;background:#e8c98a;color:#3b0d18;font:700 11px/1.5 var(--font-barlow),Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}

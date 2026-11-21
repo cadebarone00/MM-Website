@@ -6,15 +6,15 @@ import type { SavedGolfTrip } from "./golfTripCreate.ts";
 
 const CAM = "11111111-1111-4111-8111-111111111111", CADE = "22222222-2222-4222-8222-222222222222", TRIP = "33333333-3333-4333-8333-333333333333";
 
-test("a watched tournament keeps names and scores but no profile ids, join code, organizer or usernames", () => {
+test("a watched tournament keeps names, usernames and scores but no profile ids, join code or organizer", () => {
   const t: CodeTournament = { id: "t", code: "K7Q4MZ", name: "Member-Guest", organizer: CAM, organizerPlays: true, scoring: "Gross", status: "live", createdAt: "",
     rounds: [{ number: 1, setup: { course: { ref: "c", name: "Pine", place: "", par: [4] }, tee: null }, date: "2026-11-01" }],
     players: [{ profileId: CAM, name: "Cam Latto", username: "cam", handicap: 3 }, { profileId: CADE, name: "Cade Barone", username: "cade", handicap: null }],
     holes: [{ profileId: CADE, round: 1, hole: 1, strokes: 5 }], cards: [{ profileId: CADE, round: 1, submittedAt: "x" }] };
   const shown = spectatorTournament(t);
   const text = JSON.stringify(shown);
-  for (const secret of [CAM, CADE, "K7Q4MZ", '"cam"', '"cade"']) assert.ok(!text.includes(secret), `leaked ${secret}`);
-  assert.deepEqual(shown.players.map((p) => [p.profileId, p.name]), [["p1", "Cam Latto"], ["p2", "Cade Barone"]]);
+  for (const secret of [CAM, CADE, "K7Q4MZ"]) assert.ok(!text.includes(secret), `leaked ${secret}`);
+  assert.deepEqual(shown.players.map((p) => [p.profileId, p.name, p.username]), [["p1", "Cam Latto", "cam"], ["p2", "Cade Barone", "cade"]], "usernames stay so a name opens the profile");
   assert.deepEqual(shown.holes, [{ profileId: "p2", round: 1, hole: 1, strokes: 5 }], "scores still line up with their player");
 });
 
@@ -33,8 +33,8 @@ test("a watched trip drops pending invites, emails, destination, coordinates and
     entries: [{ scoredProfileId: CADE, enteredByProfileId: CADE, hole: 1, strokes: 4 }] } as never;
   const shown = spectatorTrip(trip, scoring, { values: { teamNames: ["A", "B"], organizerNote: CAM }, available: true } as never, "watch-W4K9PZ");
   const text = JSON.stringify(shown);
-  for (const secret of [CAM, CADE, TRIP, "example.com", "Invited Ike", "Pinehurst, NC", "35.2", '"cam"', '"cade"']) assert.ok(!text.includes(secret), `leaked ${secret}`);
-  assert.deepEqual(shown.savedTrip.members.map((m) => [m.profileId, m.displayName, m.avatarUrl ?? null]), [["p1", "Cam Latto", "https://x/cam.webp"], ["p2", "Cade Barone", null]]);
+  for (const secret of [CAM, CADE, TRIP, "example.com", "Invited Ike", "Pinehurst, NC", "35.2"]) assert.ok(!text.includes(secret), `leaked ${secret}`);
+  assert.deepEqual(shown.savedTrip.members.map((m) => [m.profileId, m.displayName, m.avatarUrl ?? null, m.username]), [["p1", "Cam Latto", "https://x/cam.webp", "cam"], ["p2", "Cade Barone", null, "cade"]]);
   assert.equal(shown.savedTrip.trip.id, "watch-W4K9PZ");
   assert.equal(shown.draft.round1Course, "Pinehurst No. 2");
   assert.equal(shown.draft.tripName, "Pinehurst");

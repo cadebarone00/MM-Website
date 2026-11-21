@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { GolfTripHome } from "./GolfTripHome";
 import { CodeTournamentHome } from "./CodeTournamentHome";
 import { SavedTripSetupProvider } from "./SavedTripSetupProvider";
@@ -37,9 +39,18 @@ export function WatchPage({ code }: { code: string }) {
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, [load, view?.kind]);
 
-  if (view?.kind === "tournament") return <CodeTournamentHome id="" meId={null} watchCode={code} />;
+  // The Maroon Live: every live page (trip or tournament) has the same top bar, back to the directory.
+  if (view?.kind === "tournament") return <div className={tapStyles.spectator}><LiveTopBar /><CodeTournamentHome id="" meId={null} watchCode={code} /></div>;
   if (view?.kind === "trip") return <SpectatorTrip trip={view.trip} problem={problem} />;
-  return <main className={homeStyles.page}><p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading…"}</p></main>;
+  return <div className={tapStyles.spectator}><LiveTopBar /><main className={homeStyles.page}><p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading…"}</p></main></div>;
+}
+
+/** The top of every live page: back to The Maroon Live directory, and the brand. */
+function LiveTopBar() {
+  return <nav className={tapStyles.topBar} aria-label="The Maroon Live">
+    <Link href="/tap-in" prefetch={false} className={tapStyles.topBack}><ChevronLeft size={18} aria-hidden="true" /> All events</Link>
+    <span className={tapStyles.pill}>The Maroon Live</span>
+  </nav>;
 }
 
 /** A trip's Golf tab for spectators: the same leaderboard and matches members see, built the same way. */
@@ -52,9 +63,9 @@ function SpectatorTrip({ trip, problem }: { trip: SpectatorTrip; problem: string
       values.compRounds as Record<string, boolean> | undefined, Number(values.playerTotal) || savedTrip.members.length) };
   return <SavedTripSetupProvider tripId={savedTrip.trip.id} snapshot={setup} editable={false}>
     <div className={tapStyles.spectator}>
+      <LiveTopBar />
       <header className={tapStyles.masthead}>
         <p className={tapStyles.brand}>The Maroon</p>
-        <span className={tapStyles.pill}>The Maroon Live</span>
         <h1 className={tapStyles.tripName}>{savedTrip.trip.name}</h1>
         <p className={tapStyles.summary}>{savedTrip.members.length} players{scoring ? ` / Round ${scoring.roundNumber}` : ""}</p>
         <p className={tapStyles.following}>Follow the scores. Know the story.</p>
