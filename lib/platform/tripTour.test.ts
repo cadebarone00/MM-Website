@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { QUICK_SWIPES, TIPS_SEEN_KEY, TOUR_SEEN_KEY, TOUR_SLIDES, clearSeen, hasSeen, markSeen } from "./tripTour.ts";
+import { QUICK_SWIPES, TIPS_SEEN_KEY, TOUR_SEEN_KEY, TOUR_SLIDES, clearSeen, hasSeen, markSeen, tourDoneHref } from "./tripTour.ts";
 
 function memoryStorage() {
   const map = new Map<string, string>();
@@ -40,4 +40,13 @@ test("3 quick swipes and a 5–7 slide tour that explains side games", () => {
   assert.ok(TOUR_SLIDES.length >= 5 && TOUR_SLIDES.length <= 7);
   assert.ok(TOUR_SLIDES.some(slide => /skins/i.test(slide.body)), "side games are explained in the tour");
   for (const slide of [...QUICK_SWIPES, ...TOUR_SLIDES]) assert.ok(slide.title && slide.body);
+});
+
+test("the tour returns to Settings, a Golf Trips page, or the first question", () => {
+  assert.equal(tourDoneHref("/settings"), "/settings");
+  assert.equal(tourDoneHref("/golf-trips/abc-123"), "/golf-trips/abc-123");
+  assert.equal(tourDoneHref(undefined), "/golf-trips/new");
+  assert.equal(tourDoneHref(null), "/golf-trips/new");
+  assert.equal(tourDoneHref("https://evil.example"), "/golf-trips/new");
+  assert.equal(tourDoneHref("/settings/delete-account"), "/golf-trips/new");
 });

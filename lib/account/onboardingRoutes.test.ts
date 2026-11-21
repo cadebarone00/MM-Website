@@ -11,6 +11,7 @@ test("each server step has one page; blocked states go to the status page, never
   assert.equal(stepPath("play"), "/");
   for (const s of ["ineligible", "restricted", "closed"] as const) assert.equal(stepPath(s), "/account/status");
   assert.equal(stepPath("welcome"), "/start");
+  assert.equal(stepPath("password"), "/start/password");
 });
 
 test("screens are strictly forward and Profile Created needs Active", () => {
@@ -27,10 +28,10 @@ test("screens are strictly forward and Profile Created needs Active", () => {
   assert.equal(onboardingRedirect("created", "ineligible"), "/account/status");
 });
 
-test("progress bar follows the real order (birthday after Name, 2026-11-02)", () => {
+test("progress bar follows the real order (code before password 2026-11-20, birthday after Name 2026-11-02)", () => {
   assert.equal(progressWidth("sign-up"), "12.5%");
-  assert.equal(progressWidth("password"), "25%");
-  assert.equal(progressWidth("verify"), "37.5%");
+  assert.equal(progressWidth("verify"), "25%");
+  assert.equal(progressWidth("password"), "37.5%");
   assert.equal(progressWidth("name"), "50%");
   assert.equal(progressWidth("birthday"), "62.5%");
   assert.equal(progressWidth("photo"), "75%");

@@ -17,6 +17,7 @@ const { POST: resendPOST } = await import("../../app/api/auth/resend-verificatio
 const { POST: forgotPOST } = await import("../../app/api/auth/forgot-password/route.ts");
 const { POST: resetPOST } = await import("../../app/api/auth/reset-password/route.ts");
 const { POST: verifyPOST } = await import("../../app/api/auth/verify-code/route.ts");
+const { POST: createPasswordPOST } = await import("../../app/api/auth/create-password/route.ts");
 const { GET: callbackGET } = await import("../../app/auth/callback/route.ts");
 const { GET: onboardingGET } = await import("../../app/api/account/onboarding/route.ts");
 const { POST: ageCheckPOST } = await import("../../app/api/auth/age-check/route.ts");
@@ -59,11 +60,11 @@ async function latestCode(email: string, subject: string, after = 0): Promise<st
   throw new Error(`no "${subject}" code email for ${email}`);
 }
 const SIGNUP_MAIL = "Confirm your email", RESET_MAIL = "Reset your Maroon password";
-/** Signs up through the real route (as the Create password screen does) and returns the emailed code. */
+/** Signs up through the real route (as the Sign up screen does: email only since 2026-11-20) and returns the emailed code. */
 async function signUp(name: string) {
   const email = addr(name), jar = browser(), sent = Date.now() - 1000;
   await call(jar, ageCheckPOST, "/api/auth/age-check", { birthdate: "1990-06-15" }); // G4: birthday first
-  const r = await call(jar, signupPOST, "/api/auth/signup", { email, password: PASSWORD, next: "/onboarding" });
+  const r = await call(jar, signupPOST, "/api/auth/signup", { email, next: "/onboarding" });
   return { email, jar, status: r.status, code: await latestCode(email, SIGNUP_MAIL, sent) };
 }
 const wrong = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
@@ -95,7 +96,7 @@ check("no tokens in the website reply", !("session" in (r.json ?? {})));
 check("the profile row exists (initialized like log-in)", sql(`select count(*) from public.profiles where id = '${account(ann.email)!.id}'`) === "1");
 check("attempt counter cleared after success", sql(`select count(*) from public.auth_code_attempts where key_hash = encode(sha256(convert_to('${ann.email}', 'UTF8')), 'hex')`) === "0");
 r = await resume(ann.jar);
-check("resume -> name_username (Pending, details missing)", r.json?.state === "pending" && r.json?.next === "name_username", JSON.stringify(r.json));
+check("resume -> password (Pending, verified, password not chosen yet: 2026-11-20)", r.json?.state === "pending" && r.json?.next === "password", JSON.stringify(r.json));
 r = await verify(browser(), { email: ann.email, code: ann.code, type: "signup" });
 check("the same code again -> invalid_code (single use)", r.status === 400 && r.json?.code === "invalid_code");
 
@@ -144,11 +145,31 @@ const session = r.json?.session as { access_token?: string; refresh_token?: stri
 check("app verify -> 200 with access + refresh token", r.status === 200 && !!session?.access_token && !!session?.refresh_token);
 check("app verify sets no cookies", appJar.size === 0);
 r = await resume(browser(), session?.access_token);
-check("the returned token works as a Bearer session (resume -> name_username)", r.json?.next === "name_username", JSON.stringify(r.json));
+check("the returned token works as a Bearer session (resume -> password)", r.json?.next === "password", JSON.stringify(r.json));
 
 section("Password reset by code");
 const eve = await signUp("eve");
 await verify(eve.jar, { email: eve.email, code: eve.code, type: "signup" });
+
+section("Create a password after the code (owner decision 2026-11-20)");
+r = await resume(eve.jar);
+check("verified, no password chosen yet -> next is password", r.json?.next === "password", JSON.stringify(r.json));
+r = await call(browser(), createPasswordPOST, "/api/auth/create-password", { password: PASSWORD });
+check("create-password signed out -> 401", r.status === 401);
+r = await call(eve.jar, createPasswordPOST, "/api/auth/create-password", { password: "short" });
+check("create-password keeps the password rules", r.status === 400);
+r = await call(eve.jar, createPasswordPOST, "/api/auth/create-password", { password: PASSWORD }, { headers: { origin: "https://evil.test" } });
+check("create-password from another site with cookies -> 403", r.status === 403);
+r = await call(eve.jar, createPasswordPOST, "/api/auth/create-password", { password: PASSWORD });
+check("create-password -> 200", r.status === 200 && r.json?.ok === true, JSON.stringify(r.json));
+r = await resume(eve.jar);
+check("still signed in, and next is Name", r.json?.next === "name_username", JSON.stringify(r.json));
+r = await call(eve.jar, createPasswordPOST, "/api/auth/create-password", { password: "another-password-9" });
+check("create-password can't change it a second time -> 409 already_set", r.status === 409 && r.json?.code === "already_set");
+check("the chosen password logs in", !(await anon().auth.signInWithPassword({ email: eve.email, password: PASSWORD })).error);
+await pastThrottle();
+r = await call(browser(), signupPOST, "/api/auth/signup", { email: eve.email, next: "/onboarding" });
+check("Sign up with an email that has a verified account -> 409 account_exists", r.status === 409 && r.json?.code === "account_exists", JSON.stringify(r.json));
 const otherDevice = (await anon().auth.signInWithPassword({ email: eve.email, password: PASSWORD })).data.session!;
 const before = account(eve.email)!.passwordFingerprint;
 let sentAt = Date.now() - 1000;

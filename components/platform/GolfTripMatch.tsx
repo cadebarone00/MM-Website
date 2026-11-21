@@ -136,7 +136,7 @@ function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatc
  * Stableford formats display PTS columns; stroke play formats display TOT relative to par.
  */
 /** `byToday` (no competition): ranked by the day's score, best first, rather than the trip total. */
-export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, winChances }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView;
+export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, winChances, hidePlayerDividers = false }: { match: GolfMatchPreview; byToday?: boolean; tripStats?: TripStatsView; hidePlayerDividers?: boolean;
   /** Each player's chance (0–1) of winning the trip's individual competition, by name — net and gross (Predict's model). When given,
    *  it replaces the @username line under each name. "loading" = still being worked out: the line's space is kept, empty. */
   winChances?: { net: Map<string, number>; gross: Map<string, number> } | "loading";
@@ -203,7 +203,7 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, wi
 
   const selectedCard = rows.find(row => row.golfer.name === selectedPlayer);
 
-  return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard}`}>
+  return <div ref={leaderboardRef} className={`${styles.match} ${styles.leaderboard} ${hidePlayerDividers ? styles.noPlayerDividers : ""}`}>
     <div>
       <div className={styles.leaderboardListHeading}>
         {/* Gross/Net (owner 2026-11-13): centered over the score columns (TOT → TDY), in the Team/Indi sliding style. It spans the
@@ -481,6 +481,13 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
     ? [blank(left, leftComp.name ?? left.name, leftPct), blank(right, rightComp?.name ?? right.name, 100 - leftPct)]
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
+  const ppg = (competitor: typeof leftComp) => {
+    if (!competitor || status?.kind === "tee") return "";
+    const names = new Set(competitor.golfers.map(golfer => golfer.name));
+    const putts = match.leaderboard.filter(row => names.has(row.golfer.name)).flatMap(row => row.putts ?? []).filter((value): value is number => value !== null && Number.isFinite(value));
+    return putts.length ? (putts.reduce((sum, value) => sum + value, 0) / putts.length).toFixed(2) : "";
+  };
+
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
     <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined} {...swipe}>
       <div className={styles.teams}>
@@ -497,8 +504,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
       </div>
       {(predictOn || showStats) && <div className={styles.stats}>
         {predictOn && <WinBar left={boxLeft.winPct} right={boxRight.winPct} />}
-        {showStats && <RoundStats side={boxLeft} align="left" />}
-        {showStats && <RoundStats side={boxRight} align="right" />}
+        {showStats && <RoundStats side={boxLeft} align="left" ppg={ppg(leftComp)} />}
+        {showStats && <RoundStats side={boxRight} align="right" ppg={ppg(pairing?.right ? rightComp : undefined)} />}
       </div>}
     </section>
 
@@ -560,7 +567,7 @@ export function GolfTournamentSummary({ match, tripStats }: { match: GolfMatchPr
     <section className={`${styles.versus} ${styles.boardBox}`} aria-label="Tournament standings" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined}>
       <div className={`${styles.summaryTeams} ${styles.summaryTap} ${styles.teamStripeSummary}`} role="button" tabIndex={0} aria-expanded={pointsOpen} aria-label="Points by player"
         onClick={() => setPointsOpen(!pointsOpen)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setPointsOpen(!pointsOpen); } }}>
-        {/* Each team sits in its own color fill (like a lead fill, but always there) from its edge in toward TO WIN. */}
+        {/* Team colors glow from the upper corners behind the standings. */}
         {[left, right].map((side, i) => <div key={side.name} className={`${styles.summaryFill} ${i ? `${styles.summaryRight} ${styles.summaryFillRight}` : styles.summaryFillLeft}`}>
           <FitName name={side.name} />
           <p className={styles.summaryScore}>{team ? halves(team.points[i]) : side.score || "—"}</p>
@@ -862,7 +869,7 @@ function RoundStats({ side, align }: { side: GolfMatchSide; align: "left" | "rig
   const stats = [["FWY", side.fairwayPct], ["GREEN", side.greenPct], ["PUTTS", side.putts], ["SCORE", side.score]];
   return <dl className={`${styles.roundStats} ${styles[align]}`} aria-label={`${side.name} round stats`}>
     {(align === "right" ? [...stats].reverse() : stats).map(([label, value]) => <div key={label} className={styles.roundStat}>
-      <dt>{label}</dt><dd>{value}</dd>
+      <dt>{label}</dt><dd>{/^(?:[-—?]|\?%)$/.test(value?.trim() ?? "") ? "" : value}</dd>
     </div>)}
   </dl>;
 }
@@ -872,7 +879,7 @@ function SummaryStats({ align, team, onOpen }: { align: "left" | "right"; team: 
   const labels = ["PPG", "FWY", "GIR"];
   return <button type="button" className={styles.summaryStatsTrigger} onClick={onOpen} aria-label={team + " player stats"} aria-haspopup="dialog">
     <dl className={styles.summaryStats}>{(align === "right" ? [...labels].reverse() : labels).map(label => <div key={label} className={styles.roundStat}>
-      <dt>{label}</dt><dd>{label === "PPG" ? "?" : "?%"}</dd>
+      <dt>{label}</dt><dd />
     </div>)}</dl>
   </button>;
 }

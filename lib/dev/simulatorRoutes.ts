@@ -14,6 +14,7 @@ import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAG
 import { teamDraftSize } from "@/lib/platform/teamDraft";
 import { MOCK_DRAFT_PRESETS } from "./mockDraft";
 import { MOCK_MATCH_PRESETS } from "./mockMatchSelection";
+import { mockPeople } from "./mockPeople";
 
 /** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
 const AUTHDEV_ORIGIN = "http://localhost:3002";
@@ -60,6 +61,19 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Authentication: every account screen, numbered in signup order (placeholders until each is designed).
   AUTH_SCREENS.forEach(([slug, label], index) => pages.push({ id: "auth-" + slug, path: "/dev/auth/" + slug, label: `${index + 1}. ${label}`, group: "Authentication", fixtures: false, conditions: [] }));
+  // Sign up: the plain screen, and an email that already has an account (owner decision 2026-11-20).
+  const signUp = pages.find(page => page.id === "auth-sign-up");
+  if (signUp) signUp.conditions = [
+    { id: "sign-up-empty", label: "New email", state: { signUpStage: "empty" } },
+    { id: "sign-up-account-exists", label: "Email already has an account", state: { signUpStage: "account-exists" } },
+  ];
+  // Sign-up simulation (owner request 2026-11-21): the real screens with fake answers, start to End of simulation.
+  pages.push({ id: "auth-signup-sim", path: "/dev/signup-sim", label: "Sign-up simulation", group: "Authentication", fixtures: false, conditions: [
+    { id: "signup-sim-new", label: "New person", state: { signUpSimCase: "new" } },
+    { id: "signup-sim-exists", label: "Email already has an account", state: { signUpSimCase: "exists" } },
+    { id: "signup-sim-under13", label: "Under 13", state: { signUpSimCase: "under13" } },
+    { id: "signup-sim-wrong-code", label: "Wrong code first", state: { signUpSimCase: "wrong-code" } },
+  ] });
   // Profile Photo: each state of the photo step (pick -> Move and scale -> round result), so the cropper can be designed.
   const birthday = pages.find(page => page.id === "auth-age-check");
   if (birthday) birthday.conditions = [
@@ -113,7 +127,6 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "join-invalid", label: "Link not working", state: { tripBuilderStage: "join-invalid" } },
   ] });
   // Dynamic setup route has a real, fixed Golf Trip branch.
-  pages.push({ id: "trip-setup", path: "/tournaments/create/golf-trip", label: "Golf Trip setup", fixtures: false, group: "Golf Trip Onboarding", conditions: [] });
   // Trip Builder steps (Flights, Transportation and Review are no longer in the flow, owner 2026-11-03).
   const stepLabels: Record<string, string> = { dates: "Dates + travel", players: "People + competing", teams: "Team structure", golf: "Where are you playing", courses: "Courses", format: "Formats", lodging: "Lodging + Create" };
   for (const step of Object.keys(stepLabels)) {
@@ -203,6 +216,20 @@ export function simulatorPages(): SimulatorPage[] {
       pages.push(...pages.splice(pages.indexOf(page), 1)); // keep this order: phone, Live Activity, in-app
     }
   }
+  // Home screen widget (spec: Home screen widget): sits after Live Activity, before In-app.
+  const widget = pages.find(item => item.path === "/dev/notifications/widget");
+  if (widget) {
+    const choices = <K extends string>(section: string, key: string, labels: Record<K, string>) =>
+      (Object.entries(labels) as [K, string][]).map(([value, label]) => ({ id: `widget-${key}-${value}`, section, label, state: { [`widget${key[0].toUpperCase()}${key.slice(1)}`]: value } }));
+    Object.assign(widget, { label: "Home screen widget", group: "Notifications", conditions: [
+      ...choices("Size", "size", { small: "Small (square)", medium: "Medium (rectangle)", large: "Large (big square)", lock: "Lock screen" }),
+      ...choices("State", "state", { next: "Coming up", live: "Live round", long: "Live · long names", nothing: "Nothing coming up" }),
+      ...choices("Phone", "phone", { ios: "iPhone", android: "Android" }),
+    ] });
+    pages.splice(pages.indexOf(widget), 1);
+    const inApp = pages.findIndex(item => item.path === "/dev/notifications/in-app");
+    pages.splice(inApp >= 0 ? inApp : pages.length, 0, widget);
+  }
   const allTypes = pages.find(item => item.path === "/dev/notifications/types");
   if (allTypes) {
     Object.assign(allTypes, { label: "All types", group: "Notifications", conditions: notificationTypeConditions() });
@@ -220,6 +247,13 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
     { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
+  // Mock people group: the main tabs for 5 pretend people (lib/dev/mockPeople.ts), in bottom-menu order.
+  for (const [slug, label] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
+    const page = pages.find(item => item.path === `/dev/people/${slug}`);
+    if (!page) continue;
+    Object.assign(page, { label, group: "Mock people", conditions: mockPeople().map(person => ({ id: `mock-person-${person.id}`, label: `Signed in as ${person.label}`, state: { mockPerson: person.id } })) });
+    pages.push(...pages.splice(pages.indexOf(page), 1));
+  }
   // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
   const importTrip = pages.find(page => page.path === "/dev/import-trip");
   if (importTrip) Object.assign(importTrip, { label: "Import past trip (sample)", group: "Golf Trip Active", conditions: [] });
@@ -359,6 +393,8 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "profile-search-empty", label: "Before typing · friend requests, Recent, Suggested for you", state: { profileSearch: "empty" } },
     { id: "profile-search-results", label: "2 letters typed (\"ke\") · results, Public + Private", state: { profileSearch: "results" } },
     { id: "profile-search-none", label: "No results", state: { profileSearch: "none" } },
+    { id: "profile-search-friends", label: "Friends tab · your friends (type to narrow)", state: { profileSearch: "friends" } },
+    { id: "profile-search-suggested", label: "Suggested tab · Suggested for you", state: { profileSearch: "suggested" } },
   ] });
   // Someone else's profile, as you'd see it after searching (Instagram layout).
   for (const [path, label] of [["/dev/profile/public", "Public profile (sample · Jake Parker)"], ["/dev/profile/private", "Private profile (sample · Mike Chen)"]]) {
@@ -385,7 +421,7 @@ export function simulatorPages(): SimulatorPage[] {
     pages.splice(profileAt, 0, ...profileList);
   }
   if (requests) pages.push(...pages.splice(pages.indexOf(requests), 1));
-  const onboardingOrder = ["/tournaments/create/golf-trip", "/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
+  const onboardingOrder = ["/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
   const reviewGroups = ["Website desktop", "Website mobile"];
   const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
   groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);

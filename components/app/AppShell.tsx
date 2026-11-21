@@ -23,7 +23,7 @@ const IN_APP = ["/", "/login", "/golf-trips", "/golf-trips/import", "/golf-trips
   "/golf-trips/join", "/golf-trips/invite", "/rounds/new", "/tournaments/create",
   "/tournaments", "/tournaments/join", "/tournaments/mine", "/tournaments/new", "/tournaments/request-access", "/tournaments/code", "/tournaments/code/new",
   "/tournaments/code/join", "/tournaments/code/invite", "/tournaments/live", "/tournaments/invite", "/watch", "/pickems",
-  "/profile/search", "/profile/friends", "/profile/user", "/settings/delete-account", "/settings/content-team", "/account/choose",
+  "/profile/search", "/profile/friends", "/profile/user", "/profile/user-friends", "/settings/delete-account", "/settings/content-team", "/account/choose",
   "/play/tournament", "/t/site", "/tournaments/studio", "/tournaments/studio/next", "/tournaments/studio/preview", "/schedule", "/contact", "/watch-live", "/wagers", "/fantasy", "/dev/leagues",
   "/leagues", "/leagues/new", "/leagues/join", "/leagues/league", "/rounds/join", "/golf-trips/live",
   "/dev/tournament", "/dev/tournament/settings", "/dev/tournament/delete-trip",

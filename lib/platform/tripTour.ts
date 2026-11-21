@@ -24,6 +24,15 @@ function write(key: string, ids: Set<string>, storage: Store | null) {
   try { storage?.setItem(key, JSON.stringify([...ids])); } catch { /* blocked: the in-memory copy covers this session */ }
 }
 
+/**
+ * Where the full tour goes when it ends: `back` if it's a Golf Trips page (a trip's Settings replay) or Settings
+ * (Settings → Tutorials), otherwise the first Trip Builder question. Anything else is ignored.
+ */
+export function tourDoneHref(back: string | null | undefined): string {
+  if (back === "/settings") return back;
+  return typeof back === "string" && /^\/golf-trips\/[A-Za-z0-9/_-]*$/.test(back) ? back : "/golf-trips/new";
+}
+
 export function hasSeen(key: string, profileId: string, storage: Store | null = defaultStore()): boolean {
   return memory.get(key)?.has(profileId) === true || read(key, storage).has(profileId);
 }

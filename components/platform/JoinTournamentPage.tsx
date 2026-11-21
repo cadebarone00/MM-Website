@@ -6,7 +6,7 @@ import { TourneyActions } from "./TourneyActions";
 import { PublicTournamentSearch } from "./PublicTournamentSearch";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
 import type { TourneysHomeData } from "@/lib/platform/tourneyScreensData";
-import { PlatformHeader } from "./PlatformHeader";
+import landing from "./SectionLanding.module.css";
 import { SignInRequiredLink } from "./SignInRequiredLink";
 import styles from "./JoinTournament.module.css";
 import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntrance";
@@ -19,8 +19,8 @@ import { JoinTournamentEntrance } from "@/components/motion/JoinTournamentEntran
 export function JoinTournamentPage({ past, codeTournaments }: TourneysHomeData) {
 
   return <>
-    <PlatformHeader title="Tourneys" />
     <JoinTournamentEntrance className={`${styles.page} ${styles.tourneys}`}>
+      <h1 className={landing.title}>Tourneys</h1>
       <div className={styles.photoPanel}>
       <h2 className={styles.descriptor}>Get started</h2>
       <TourneyActions create={<SignInRequiredLink href="/tournaments/code/new" className={styles.actionBox} message="Sign in to create a tournament"><Plus size={22} aria-hidden="true" /><span>Create a Tournament</span></SignInRequiredLink>} />

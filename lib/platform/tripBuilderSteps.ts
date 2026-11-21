@@ -7,7 +7,8 @@ import { plannedRounds, tripDates, type GolfTripDraft } from "./golfTripDraft.ts
 export const TRIP_BUILDER_STEPS = ["basics", "dates", "players", "teams", "golf", "courses", "format", "lodging"] as const;
 export type TripBuilderStep = (typeof TRIP_BUILDER_STEPS)[number];
 
-export const TRIP_BUILDER_START = "/tournaments/create/golf-trip";
+/** Back from the first question: the Golf Trips page (Create now goes straight in, so there is no setup screen). */
+export const TRIP_BUILDER_START = "/golf-trips";
 
 export const stepPath = (step: TripBuilderStep) => step === "basics" ? "/golf-trips/new" : `/golf-trips/new/${step}`;
 

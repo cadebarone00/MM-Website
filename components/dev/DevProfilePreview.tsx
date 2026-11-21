@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { ProfileSearch, type ProfileSearchSource } from "@/components/profile/ProfileSearch";
+import { ProfileSearch, searchTabFrom, type ProfileSearchSource } from "@/components/profile/ProfileSearch";
+import { UserFriendsList } from "@/components/profile/UserFriendsList";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { updateSampleProfile, useSampleProfile } from "@/components/dev/useSampleProfile";
 import { EditProfileScreen } from "@/components/profile/EditProfileScreen";
@@ -11,8 +12,8 @@ import { DEFAULT_PREFERENCES, NOTIFICATION_TYPES, applyPreferenceChange, type Pr
 import type { SettingsData } from "@/lib/profile/profileScreensData";
 import { appMode } from "@/lib/theme/appMode";
 import { ProfileView } from "@/components/profile/ProfileView";
-import { SAMPLE_FRIENDS, SAMPLE_GOLFERS, sampleProfileReadModel, type SampleGolfer } from "@/lib/dev/sampleProfile";
-import type { FriendRequest, GolferResult, Relation } from "@/lib/profile/friendRequestsServer";
+import { DEFAULT_SAMPLE_PROFILE, SAMPLE_GOLFERS, sampleProfileReadModel, type SampleGolfer } from "@/lib/dev/sampleProfile";
+import type { FriendListItem, FriendOfItem, FriendRequest, GolferResult, Relation } from "@/lib/profile/friendRequestsServer";
 import { profileEditFromBody } from "@/lib/profile/profileEdit";
 import { profileSocialsFromBody } from "@/lib/profile/profileSocials";
 import styles from "@/components/settings/Settings.module.css";
@@ -23,10 +24,18 @@ import styles from "@/components/settings/Settings.module.css";
  */
 // "?view=public" / "?view=private" (a Team Draft sample player's box) or "?user=<username>" (a search result) picks
 // someone else's sample profile. Read with useSearchParams so following a link to it switches the profile straight away.
-const LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/edit", search: "/dev/profile/search", profile: "/dev/profile" };
+const LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/edit", search: "/dev/profile/search", profile: "/dev/profile",
+  friends: "/dev/profile/search?tab=friends", friendsOf: "/dev/profile/friends?user={username}" };
 
 /** Sample "where we stand" with each sample golfer, kept for the browser tab so Search and their profiles agree. */
-const relations = new Map<string, Relation>(SAMPLE_GOLFERS.filter((g) => g.username === "mikechen").map((g) => [g.id, "incoming" as Relation]));
+// The sample golfer starts friends with 6 of them (Jake Parker stays "Add friend" so that button can be tried) and has
+// a request waiting from Mike Chen.
+const SAMPLE_FRIEND_NAMES = ["sarahlopez", "tomreed", "chrispatel", "benwalker", "kylebrooks", "drewmorgan"];
+const relations = new Map<string, Relation>(SAMPLE_GOLFERS.flatMap((g): [string, Relation][] =>
+  g.username === "mikechen" ? [[g.id, "incoming"]] : SAMPLE_FRIEND_NAMES.includes(g.username) ? [[g.id, "friends"]] : []));
+const ME_ID = "00000000-0000-4000-8000-000000000001";
+const myFriends = (): FriendListItem[] => SAMPLE_GOLFERS.filter((g) => relations.get(g.id) === "friends")
+  .map((g) => ({ id: g.id, name: g.displayName, username: g.username, photoUrl: null, tripMate: false })).sort((a, b) => a.name.localeCompare(b.name));
 let incoming: FriendRequest[] = SAMPLE_GOLFERS.filter((g) => g.username === "mikechen").map((g) => ({ id: `request-${g.id}`, profileId: g.id, name: g.displayName, username: g.username, photoUrl: null }));
 const asResult = (g: SampleGolfer): GolferResult => ({ id: g.id, name: g.displayName, username: g.username, photoUrl: null, relation: relations.get(g.id) ?? "none", tripMate: false, isPrivate: g.roundsVisibility === "private", mutuals: g.mutuals });
 function befriend(id: string, off: boolean): Relation {
@@ -35,6 +44,15 @@ function befriend(id: string, off: boolean): Relation {
   relations.set(id, next);
   if (next === "friends") incoming = incoming.filter((r) => r.profileId !== id);
   return next;
+}
+
+/** A sample golfer's own friends: the 5 golfers after them in the list, plus you once you're friends. */
+function sampleFriendsOf(golfer: SampleGolfer): FriendOfItem[] {
+  const at = SAMPLE_GOLFERS.indexOf(golfer);
+  const others = [1, 2, 3, 4, 5].map((step) => SAMPLE_GOLFERS[(at + step) % SAMPLE_GOLFERS.length]);
+  const list: FriendOfItem[] = others.map(asResult);
+  if (relations.get(golfer.id) === "friends") list.push({ id: ME_ID, name: DEFAULT_SAMPLE_PROFILE.displayName, username: DEFAULT_SAMPLE_PROFILE.username, photoUrl: null, relation: "none", tripMate: false, isPrivate: false, you: true });
+  return list.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** The Search page on sample golfers (no account). Suggestions: golfers with mutual friends first, then the rest, shuffled. */
@@ -48,6 +66,7 @@ const SAMPLE_SEARCH: ProfileSearchSource = {
     return [...open.filter((g) => g.mutuals > 0).sort((x, y) => y.mutuals - x.mutuals), ...open.filter((g) => !g.mutuals).sort(() => Math.random() - 0.5)].slice(0, 8).map(asResult);
   },
   async incoming() { return incoming; },
+  async friends() { return myFriends(); },
   async befriend(golfer) { return befriend(golfer.id, false); },
   async answer(request, accept) {
     incoming = incoming.filter((r) => r.id !== request.id);
@@ -68,7 +87,8 @@ export function DevProfilePreview({ user: fixedUser }: { user?: string } = {}) {
   const profile = useMemo(() => sampleProfileReadModel(preview, mine, new Date().toISOString().slice(0, 10), user), [preview, mine, user]);
   const golfer = profile.isOwner ? null : SAMPLE_GOLFERS.find((g) => g.username === profile.identity.username) ?? null;
   const compare = params.get("compare");
-  return <ProfileView key={`${profile.identity.username}|${compare ?? ""}`} profile={profile} friendsCount={SAMPLE_FRIENDS} links={LINKS} compare={compare}
+  const friendsCount = golfer ? sampleFriendsOf(golfer).length : myFriends().length;
+  return <ProfileView key={`${profile.identity.username}|${compare ?? ""}`} profile={profile} friendsCount={friendsCount} links={LINKS} compare={compare}
     friendship={golfer ? { profileId: golfer.id, relation: relations.get(golfer.id) ?? "none", tripMate: false } : undefined}
     friendSave={golfer ? async (off) => befriend(golfer.id, off) : undefined} />;
 }
@@ -76,8 +96,19 @@ export function DevProfilePreview({ user: fixedUser }: { user?: string } = {}) {
 /** DEV ONLY: the Search page on sample golfers. The simulator's Search conditionals open it typed in. */
 export function DevSearchPreview() {
   const state = useSimulator()?.state.profileSearch;
+  const fromAddress = searchTabFrom(useSearchParams().get("tab"));
+  const tab = state === "friends" || state === "suggested" ? state : state ? "search" : fromAddress ?? "search";
   const query = state === "results" ? "ke" : state === "none" ? "zzq" : "";
-  return <ProfileSearch key={state ?? "open"} source={SAMPLE_SEARCH} backHref="/dev/profile" initialQuery={query} recentKey="maroon-dev-search-recent-v1" />;
+  return <ProfileSearch key={`${state ?? "open"}|${tab}`} source={SAMPLE_SEARCH} backHref="/dev/profile" initialQuery={query} initialTab={tab} recentKey="maroon-dev-search-recent-v1" />;
+}
+
+/** DEV ONLY: a sample golfer's Friends list (?user=<username>), opened from the Friends count on their Public profile. */
+export function DevUserFriendsPreview() {
+  const username = useSearchParams().get("user") ?? "jakeparker";
+  const golfer = SAMPLE_GOLFERS.find((g) => g.username === username) ?? SAMPLE_GOLFERS[0];
+  const isPrivate = golfer.roundsVisibility === "private";
+  return <UserFriendsList key={golfer.username} username={golfer.username} friends={isPrivate ? null : sampleFriendsOf(golfer)} signedIn
+    backHref={`/dev/profile?user=${encodeURIComponent(golfer.username)}`} profileHref="/dev/profile?user={username}" befriend={async (id) => befriend(id, false)} />;
 }
 
 /** The same checks the real save route makes (the database's username checks aren't simulated). */

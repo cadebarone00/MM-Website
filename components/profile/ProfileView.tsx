@@ -35,7 +35,8 @@ const TABS: { key: Tab; label: string }[] = [
 /** `friendsCount`: people they've been on a golf trip with (lib/profile/friendsServer.ts); null = unknown. */
 /** `links`: where the gear, the pencil, the search icon, Back and Compare go (the dev profile preview points them at its sample screens). */
 /** `friendship` (someone else's profile): the Add friend button in the buttons row. `friendSave` (dev preview only): instead of the account. */
-type ProfileLinks = { settings: string; edit: string; search?: string; profile?: string };
+/** `friends`: my Friends count (Search → Friends tab). `friendsOf`: someone's Friends count, "{username}" = theirs. */
+type ProfileLinks = { settings: string; edit: string; search?: string; profile?: string; friends?: string; friendsOf?: string };
 
 /** `compare` ("?compare=<username>" on my profile, from someone's Compare button): opens my Stats with them picked. */
 export function ProfileView({ profile: real, friendsCount = null, links = { settings: "/settings", edit: "/settings" }, friendship, friendSave, compare = null }: { profile: ProfileReadModel; friendsCount?: number | null; links?: ProfileLinks;
@@ -43,6 +44,8 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
   const router = useRouter();
   const searchHref = links.search ?? "/profile/search";
   const profileHref = links.profile ?? "/profile";
+  const friendsHref = links.friends ?? "/profile/search?tab=friends";
+  const friendsOfHref = (links.friendsOf ?? "/profile/{username}/friends").replace("{username}", encodeURIComponent(real.identity.username));
   const compareName = real.isOwner ? compare : null;
   const [tab, setTab] = useState<Tab>(real.isOwner && compareName ? "stats" : "overview");
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
@@ -112,7 +115,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
                 <h2 className="truncate text-left font-serif text-[18px] font-bold leading-tight" title={identity.displayName}>{identity.displayName}</h2>
                 <p className="mt-0.5 truncate text-left text-[13px] font-semibold leading-tight text-gold-300">@{identity.username}</p>
                 <dl className="mt-2.5 grid grid-cols-3 text-center" aria-label="Profile numbers">
-                  <Link href="/profile/friends" aria-label={`Friends: ${friendsText}. See your friends`} className="flex flex-col-reverse items-center gap-0.5 rounded-lg text-cream-50 hover:text-gold-300">{stat("Friends", friendsText)}</Link>
+                  <Link href={friendsHref} aria-label={`Friends: ${friendsText}. See your friends`} className="flex flex-col-reverse items-center gap-0.5 rounded-lg text-cream-50 hover:text-gold-300">{stat("Friends", friendsText)}</Link>
                   <div className="flex flex-col-reverse items-center gap-0.5">{stat("Rounds", rounds)}</div>
                   <div className="flex flex-col-reverse items-center gap-0.5">{stat("Handicap", handicap)}</div>
                 </dl>
@@ -126,7 +129,8 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
               {avatar}
               <dl className={`grid flex-1 text-center ${isPrivate ? "grid-cols-2" : "grid-cols-3"}`} aria-label="Profile numbers">
                 <div className="flex flex-col-reverse items-center gap-0.5">{stat("Rounds", rounds)}</div>
-                {!isPrivate && <div className="flex flex-col-reverse items-center gap-0.5">{stat("Friends", friendsText)}</div>}
+                {/* A Public profile's Friends count opens their Friends list (owner request 2026-11-20). */}
+                {!isPrivate && <Link href={friendsOfHref} aria-label={`Friends: ${friendsText}. See ${identity.displayName}'s friends`} className="flex flex-col-reverse items-center gap-0.5 rounded-lg text-cream-50 hover:text-gold-300">{stat("Friends", friendsText)}</Link>}
                 <div className="flex flex-col-reverse items-center gap-0.5">{stat("Handicap", handicap)}</div>
               </dl>
             </div>

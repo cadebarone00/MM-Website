@@ -3,10 +3,10 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProfileSearch } from "@/components/profile/ProfileSearch";
-import { FriendsList } from "@/components/profile/FriendsList";
+import { UserFriendsList } from "@/components/profile/UserFriendsList";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { ContentTeamView, DeleteAccountView } from "@/components/settings/SettingsSubpages";
-import type { ContentTeamData, DeleteAccountData, FindGolfersData, FriendsData, PublicProfileData } from "@/lib/profile/profileScreensData";
+import type { ContentTeamData, DeleteAccountData, FindGolfersData, PublicProfileData, UserFriendsData } from "@/lib/profile/profileScreensData";
 import { useAppData } from "./useAppData";
 import { AppStatus } from "./AppStatus";
 import profileStyles from "@/app/profile/page.module.css";
@@ -21,11 +21,30 @@ export function AppFindGolfers() {
   return <ProfileSearch />;
 }
 
+/** App → the old Profile → Friends address: it's the Search page's Friends tab now (owner request 2026-11-20). */
 export function AppFriends() {
-  const [state, reload] = useAppData<FriendsData>("/api/app/profile?view=friends");
+  const router = useRouter();
+  useEffect(() => { router.replace("/profile/search/?tab=friends"); }, [router]);
+  return null;
+}
+
+/** App → someone's Friends list (/profile/user-friends/?username=…): Public profiles only, like the website. */
+function UserFriends() {
+  const router = useRouter();
+  const username = useSearchParams().get("username") ?? "";
+  const [state, reload] = useAppData<UserFriendsData>(username ? `/api/app/profile?view=user-friends&username=${encodeURIComponent(username)}` : null);
+  const self = state.status === "ok" && state.data.status === "self";
+  useEffect(() => { if (self) router.replace("/profile/search/?tab=friends"); }, [self, router]);
+  if (!username) return <AppStatus state={{ status: "error", error: "That profile wasn't found.", code: 404 }} onRetry={reload} />;
   if (state.status !== "ok") return <AppStatus state={state} onRetry={reload} />;
-  if (state.data.status !== "ok") return <AppStatus state={signInAgain} onRetry={reload} />;
-  return <FriendsList friends={state.data.friends} />;
+  if (state.data.status === "not-found") return <AppStatus state={{ status: "error", error: "That profile wasn't found.", code: 0 }} onRetry={reload} />;
+  if (state.data.status === "self") return null;
+  const data = state.data;
+  return <UserFriendsList username={data.username} friends={data.status === "ok" ? data.friends : null} signedIn={data.status === "ok" && data.signedIn}
+    backHref={`/profile/${encodeURIComponent(data.username)}`} />;
+}
+export function AppUserFriends() {
+  return <Suspense><UserFriends /></Suspense>;
 }
 
 function PublicProfile() {

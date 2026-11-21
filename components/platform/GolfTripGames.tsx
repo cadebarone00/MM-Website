@@ -98,7 +98,7 @@ export function GolfTripGames({ match, rounds, roundInfo, signedInName, saved, o
   const visible = mine.filter((game) => tripGameSettled(match, game) === (view === "Settled"));
 
   return <section className={styles.root} aria-label="Games">
-    <div className={`${homeStyles.slidingSelector} ${homeStyles.underlineSelector} ${homeStyles.bubbleUnderline} ${homeStyles.fullLineSelector}`} data-second={view === "Settled"} role="group" aria-label="Game status">
+    <div className={`${homeStyles.slidingSelector} ${homeStyles.underlineSelector} ${homeStyles.bubbleUnderline} ${homeStyles.fullLineSelector} ${homeStyles.gameStatusSelector}`} data-second={view === "Settled"} role="group" aria-label="Game status">
       {(["Active", "Settled"] as const).map((status) => <button key={status} type="button" className={`${homeStyles.tab} ${view === status ? homeStyles.tabActive : ""}`} aria-pressed={view === status} onClick={() => setView(status)}>{status}</button>)}
     </div>
     <header className={styles.gamesHeader}>

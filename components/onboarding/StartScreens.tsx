@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { AppleIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "@/components/dev/auth/AuthWelcomePreview";
 import type { OAuthProvider } from "@/lib/auth/oauth";
-import { errorOf, rememberEmail, send } from "@/lib/account/onboardingClient";
+import { errorOf, rememberEmail, send, useRememberedEmail } from "@/lib/account/onboardingClient";
 import { START, STATUS, afterLogInPath, progressWidth } from "@/lib/account/onboardingRoutes";
 import type { OnboardingStep } from "@/lib/account/onboardingApi";
 import styles from "@/components/dev/auth/AuthWelcomePreview.module.css";
@@ -30,11 +30,31 @@ export function WelcomeScreen() {
   </main>;
 }
 
-/** Email → Create password (the account is made there, with the password: decision D1). */
+/** Email → the code is sent → Email Verification (the password comes after the code: owner decision 2026-11-20). An email
+ *  that already has an account stays here with the message, and Continue becomes Log in (email filled in). */
 export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const ready = EMAIL.test(email.trim());
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [exists, setExists] = useState(false);
+  const ready = EMAIL.test(email.trim()) && !busy;
+
+  async function signUp() {
+    setBusy(true);
+    setError(null);
+    const sent = await send("/api/auth/signup", { email: email.trim(), next: "/onboarding" });
+    setBusy(false);
+    if (sent.json.code === "account_exists") { setExists(true); setError(errorOf(sent)); return; }
+    if (sent.json.ok !== true) { setError(errorOf(sent)); return; }
+    rememberEmail(email);
+    router.push(START.verify);
+  }
+  function logIn() {
+    rememberEmail(email);
+    router.push(START.logIn);
+  }
+
   // The first sign-up step: the small M + progress line of the steps after it at the top; everything below stays where it
   // was (owner request 2026-11-02).
   return <main className={styles.page}>
@@ -43,10 +63,14 @@ export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
       <div className={frame.progress} aria-hidden="true"><span style={{ width: progressWidth("sign-up") }} /></div>
     </div>
     <h1 className={`${styles.title} ${styles.signUpTitle}`}>Sign up</h1>
-    <form className={styles.form} onSubmit={(e) => { e.preventDefault(); if (!ready) return; rememberEmail(email); router.push(START.password); }}>
+    <form className={styles.form} onSubmit={(e) => { e.preventDefault(); if (exists) logIn(); else if (ready) void signUp(); }}>
       <input className={styles.input} type="email" name="email" placeholder="Email" autoComplete="email" autoCapitalize="none" spellCheck={false}
-        aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <button className={styles.primary} type="submit" disabled={!ready}>Continue</button>
+        aria-label="Email" value={email} onChange={(e) => { setEmail(e.target.value); setExists(false); setError(null); }} />
+      {/* Always rendered (two lines tall) so the button never moves when a message appears. */}
+      <p className={`${styles.error} ${styles.signUpMessage}`} role="alert">{error}</p>
+      {exists
+        ? <button className={styles.primary} type="submit">Log in</button>
+        : <button className={styles.primary} type="submit" disabled={!ready}>{busy ? "Sending code…" : "Continue"}</button>}
       <p className={styles.terms}>By continuing, you agree to The Maroon&apos;s Terms of Service and Privacy Policy.</p>
     </form>
     <ProviderButtons providers={providers} />
@@ -57,7 +81,10 @@ export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
  *  blocked → the account status page. */
 export function LogInScreen({ notice, providers, returnTo = null }: { notice: string | null; providers: OAuthProvider[]; returnTo?: string | null }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  // Coming from Sign up's "already an account": the email typed there is filled in until they type their own.
+  const remembered = useRememberedEmail();
+  const [typed, setEmail] = useState<string | null>(null);
+  const email = typed ?? remembered ?? "";
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

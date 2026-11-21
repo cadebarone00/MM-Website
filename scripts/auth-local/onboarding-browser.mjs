@@ -170,19 +170,24 @@ const path = (page) => new URL(page.url()).pathname;
 async function waitPath(page, pathname) { await page.waitForURL((url) => url.pathname === pathname, { timeout: 120000 }); }
 
 // === Screen helpers (what a person taps) ===
-async function signUpToCode(page, email, password) {
+// The email comes first, then the code, then the password (owner decision 2026-11-20); the birthday is asked after Name.
+async function signUpToCode(page, email) {
   await page.goto(`${ORIGIN}/start`);
   await page.getByRole("link", { name: "Sign up" }).click();
-  await waitPath(page, "/start/sign-up"); // the email comes first; the birthday is asked after Name
+  await waitPath(page, "/start/sign-up");
   await page.getByLabel("Email").fill(email);
   const sentAt = Date.now() - 1000;
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await waitPath(page, "/start/verify");
+  return latestCode(email, SIGNUP_MAIL, sentAt);
+}
+/** Email confirmed → Continue → Create a password → Name. */
+async function passwordStep(page, password) {
+  await page.getByRole("link", { name: "Continue", exact: true }).click();
   await waitPath(page, "/start/password");
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await waitPath(page, "/start/verify");
-  return latestCode(email, SIGNUP_MAIL, sentAt);
 }
 async function typeCode(page, code) {
   const input = page.locator('input[autocomplete="one-time-code"]');
@@ -235,8 +240,8 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
   await step("full sign-up flow", async () => {
     const old = await context.request.get(`${ORIGIN}/start/birthday`, { maxRedirects: 0 });
     check("the old birthday-first address forwards to Sign up", old.status() === 307 && old.headers().location?.endsWith("/start/sign-up"), `${old.status()} ${old.headers().location}`);
-    const { code } = await signUpToCode(page, ann.email, ann.password);
-    check("Welcome -> sign-up -> password -> code screen; account exists unverified", !!accountRow(ann.email) && !accountRow(ann.email).confirmed);
+    const { code } = await signUpToCode(page, ann.email);
+    check("Welcome -> sign-up -> code screen; account exists unverified", !!accountRow(ann.email) && !accountRow(ann.email).confirmed);
     await typeCode(page, wrong(code));
     await page.getByRole("alert").filter({ hasText: "wrong or has expired" }).waitFor();
     check("wrong code: message shown, still on the code screen, not verified", path(page) === "/start/verify" && !accountRow(ann.email).confirmed);
@@ -246,7 +251,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     check("Terms + Privacy recorded after verification", sql(`select count(*) from public.terms_acceptances where account_id = ${q(accountRow(ann.email).id)}`) === "2");
     check("no birthday stored yet (it comes after Name)",
       sql(`select count(*) from public.account_birthdates where account_id = ${q(accountRow(ann.email).id)}`) === "0");
-    await page.getByRole("link", { name: "Continue", exact: true }).click();
+    await passwordStep(page, ann.password);
     await nameStep(page, "Ann", "Browser");
     check("name + username saved -> Birthday next", accountRow(ann.email).username !== "");
     check("Birthday screen: progress 5 of 8 (62.5%)", (await progressOf(page)) === "62.5%", await progressOf(page));
@@ -348,10 +353,10 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
   await step("under-13 (birthday after Name: the account is never finalized)", async () => {
     const kid = { email: addr("kid"), password: "browser-pass-kid-1" };
     const { page: p, context: c } = await phone(browser);
-    const { code } = await signUpToCode(p, kid.email, kid.password);
+    const { code } = await signUpToCode(p, kid.email);
     await typeCode(p, code);
     await waitPath(p, "/start/confirmed");
-    await p.getByRole("link", { name: "Continue", exact: true }).click();
+    await passwordStep(p, kid.password);
     await nameStep(p, "Kid", "Browser");
     const kidId = accountRow(kid.email).id;
     await birthdayStep(p, new Date().getUTCFullYear() - 5);
@@ -408,7 +413,7 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     check("wrong password -> message, stays on Log in", path(p) === "/start/log-in");
 
     const fay = { email: addr("fay"), password: "browser-pass-fay-1" };
-    const first = await signUpToCode(p, fay.email, fay.password);
+    const first = await signUpToCode(p, fay.email);
     // Leave without verifying, then log in: sent back to the code screen with a fresh code.
     await p.goto(`${ORIGIN}/start/log-in`);
     await p.getByLabel("Email").fill(fay.email);
@@ -423,9 +428,9 @@ await withServer("B-enforced", { MAROON_V2_ONBOARDING: "on", MAROON_ACCOUNT_ENFO
     await p.goto(fresh.link ?? first.link);
     await waitPath(p, "/start/confirmed");
     check("email link -> Email confirmed, verified", await p.getByRole("heading", { name: "Email confirmed" }).isVisible() && accountRow(fay.email).confirmed);
-    await p.getByRole("link", { name: "Continue", exact: true }).click();
+    await passwordStep(p, fay.password);
     await waitPath(p, "/onboarding/name");
-    check("…and onboarding carries on at Name", true);
+    check("…and onboarding carries on at Create a password, then Name", true);
     await c.close();
   });
 
@@ -599,10 +604,10 @@ await withServer("C-unenforced", { MAROON_V2_ONBOARDING: "on" }, async (browser)
   await step("sign-up with enforcement off", async () => {
     const cy = { email: addr("cy"), password: "browser-pass-cy-1" };
     const { page, context } = await phone(browser);
-    const { code } = await signUpToCode(page, cy.email, cy.password);
+    const { code } = await signUpToCode(page, cy.email);
     await typeCode(page, code);
     await waitPath(page, "/start/confirmed");
-    await page.getByRole("link", { name: "Continue", exact: true }).click();
+    await passwordStep(page, cy.password);
     await nameStep(page, "Cy", "Browser");
     await birthdayStep(page, 1990);
     await waitPath(page, "/onboarding/photo");

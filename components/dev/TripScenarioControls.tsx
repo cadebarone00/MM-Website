@@ -1,4 +1,5 @@
 "use client";
+import { TEAM_COLORS } from "@/lib/platform/teamColors";
 import {normalizeTripScenario} from "@/lib/dev/tripScenario";
 import type {SimulatorState} from "@/lib/dev/simulator";
 import styles from "./DevSimulator.module.css";
@@ -8,6 +9,7 @@ export function TripScenarioControls({state,onChange,onReset}:{state:SimulatorSt
  return <aside className={styles.controls} aria-label="Trip scenario"><div className={styles.panelHeading}>Trip scenario</div><section className={styles.controlSection}>
  <label>Trip type<select aria-label="Scenario trip type" value={s.competition} onChange={event=>onChange({competition:event.target.value as SimulatorState["competition"],competitionSetup:event.target.value==="no"?"none":"both"})}><option value="yes">Competitive</option><option value="no">Social / non-competitive</option></select></label>
  {s.competition==="yes"&&<label>Competition<select aria-label="Scenario competition" value={s.competitionSetup} onChange={event=>onChange({competitionSetup:event.target.value as SimulatorState["competitionSetup"]})}><option value="individual">Individual only</option><option value="team">Matches / teams only</option><option value="both">Individual + matches</option></select></label>}
+ {team && ([{key:"scenarioTeamAColor", label:"Team A color", fallback:"maroon"},{key:"scenarioTeamBColor", label:"Team B color", fallback:"white"}] as const).map(({key,label,fallback})=><label key={key}>{label}<select aria-label={label} value={s[key] ?? fallback} onChange={event=>onChange({[key]:event.target.value})}>{TEAM_COLORS.map(color=><option key={color.id} value={color.id}>{color.name}</option>)}</select></label>)}
  <label>Players<input type="number" aria-label="Scenario players" min={team?2:1} max={64} value={s.playerCount??8} onChange={event=>onChange({playerCount:Math.max(team?2:1,Math.min(64,Number(event.target.value)||1))})}/></label>
  <label>Trip length (days)<input type="number" aria-label="Scenario trip length" min={1} max={14} value={s.tripLength} onChange={event=>onChange({tripLength:Math.max(1,Math.min(14,Number(event.target.value)||1))})}/></label>
  <label>Rounds per day<select aria-label="Scenario rounds per day" value={s.tripRoundsPerDay} onChange={event=>onChange({tripRoundsPerDay:Number(event.target.value)})}><option value={1}>1 round</option><option value={2}>2 rounds</option></select></label>

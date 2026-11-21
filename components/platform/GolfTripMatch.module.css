@@ -11,8 +11,8 @@
    box's edge (pulled out over the 14px padding), rounding off before the status box: the Match rows' fill, but taller. */
 .side{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px}
 .right.side{align-items:flex-end}
-.side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0 18px 18px 0;background:var(--team-left,#dcc495)}
-.side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:18px 0 0 18px;background:var(--team-right,#e89a9a)}
+.side.left.sideLeading{margin-left:-14px;margin-right:8px;padding-left:20px;border-radius:0;background:transparent}
+.side.right.sideLeading{margin-right:-14px;margin-left:8px;padding-right:20px;border-radius:0;background:transparent}
 .avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--team-left,#dcc495);color:var(--team-left-text,var(--color-maroon-900));font:800 15px/1 var(--font-spectral),Georgia,serif}
 /* A single player's avatar (shared ProfileAvatar) in the team circle's spot and size. */
 .avatarSlot{display:block;flex:none;width:44px;height:44px}
@@ -46,11 +46,7 @@
 .winFillLeft,.winFillRight{display:block;height:100%}
 .winFillLeft{background:var(--team-left-on-dark,#dcc495);border-radius:5px 0 0 5px}
 .winFillRight{background:var(--team-right-on-dark,#e89a9a);border-radius:0 5px 5px 0}
-/* Each side's line stops at its SCORE column, short of the gold center line. */
 .roundStats{position:relative}
-.roundStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);border-top:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 28%,transparent)}
-.roundStats.left::after{left:0;right:10px}
-.roundStats.right::after{left:10px;right:0}
 .roundStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0}
 .roundStats.left{padding-right:10px;border-right:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 55%,transparent)}
 .roundStats.right{padding-left:10px}
@@ -125,6 +121,7 @@
 .rank{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#fbf8f1;color:var(--color-maroon-900);font:800 13px/1 var(--font-spectral),Georgia,serif}
 .single{display:grid;grid-template-columns:30px minmax(0,1fr) 34px 34px 34px;align-items:center;gap:8px;padding:14px 0;border-top:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .pairing:first-child,.single:first-child{border-top:0}
+.noPlayerDividers .lineup > .single{border-top:0}
 .singleNet{grid-template-columns:30px minmax(0,1fr) 28px 34px 34px 34px}
 .columns{padding:0;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;color:color-mix(in srgb,var(--lm-ink-ffffff) 60%,transparent);text-align:center}
 .columnPlayer{grid-column:2;text-align:left;text-transform:uppercase}
@@ -331,7 +328,6 @@
 /* Predict: a rectangle the same height as the stat boxes beside it. */
 .predictRow .predictPill{align-self:stretch;padding:0 16px;border-radius:8px}
 .summaryStats{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0;padding:0 2px;border:0;border-radius:0;background:transparent}
-.summaryStats::after{content:"";position:absolute;top:calc(var(--label) + 7px);left:2px;right:2px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.4),transparent);pointer-events:none}
 .summaryStats .roundStat{gap:15px}
 .predictPill{justify-self:center;padding:9px 28px;border:1px solid var(--lm-ink-dcc495);border-radius:999px;background:transparent;color:var(--lm-ink-dcc495);font:700 14px var(--font-barlow),sans-serif;cursor:pointer}
 .predictPill:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
@@ -578,16 +574,15 @@
    ends instead of hard rules, soft stat panels instead of outlined boxes, small spaced-out labels, gold numbers.
    Same parts, same sizes, lead fills kept. Only the top boards (.boardBox / .roundInfo) are touched. ── */
 .boardBox .win:has(+ .predictRow)::after{border-top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.55),transparent)}
-.boardBox .roundStats::after{border-top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.4),transparent)}
 .boardBox .roundStats.left{border-right:0;background:linear-gradient(transparent,rgba(201,168,110,.5),transparent) no-repeat right/1px 100%}
 .roundInfoHalf+.roundInfoHalf{border-left:0;background:linear-gradient(transparent,rgba(201,168,110,.45),transparent) no-repeat left/1px 100%}
 /* Labels: small, spaced out, warm; numbers: bright cream. */
-.boardBox .roundStat dt{font:700 var(--label)/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#d4bfa9}
-.boardBox .roundStat dd{color:#fff5df}
-.boardBox .statusPlain{color:#edcf91}
-.boardBox .statusPlain small{font-family:var(--font-barlow),sans-serif;letter-spacing:.12em;color:#d4bfa9}
+.boardBox .roundStat dt{font:700 var(--label)/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--lm-ink-d4bfa9, #d4bfa9)}
+.boardBox .roundStat dd{color:var(--lm-ink-fff5df, #fff5df)}
+.boardBox .statusPlain{color:var(--lm-ink-edcf91, #edcf91)}
+.boardBox .statusPlain small{font-family:var(--font-barlow),sans-serif;letter-spacing:.12em;color:var(--lm-ink-d4bfa9, #d4bfa9)}
 /* Team stats use the same open labels, fading rule and values as match stats. Predict: gold-tinted glass. */
-.boardBox .predictPill{border:1px solid rgba(201,168,110,.5);background:rgba(201,168,110,.12);color:#edcf91;box-shadow:inset 0 1px 0 rgba(255,232,181,.12)}
+.boardBox .predictPill{border:1px solid rgba(201,168,110,.5);background:rgba(201,168,110,.12);color:var(--lm-ink-edcf91, #edcf91);box-shadow:inset 0 1px 0 rgba(255,232,181,.12)}
 .boardBox .predictPill:hover{background:rgba(201,168,110,.2)}
 /* Win bar: slimmer, on a quieter track. */
 .boardBox .winBar{height:4px;background:color-mix(in srgb,#fbf8f1 8%,transparent)}
@@ -595,8 +590,8 @@
 /* Lead fills: the same team colors, with a soft top highlight and depth so they sit in the board like the Big Board. */
 .boardBox :is(.summaryFill,.sideLeading){box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 16px color-mix(in srgb,#000 30%,transparent)}
 /* Individual board: gold labels in the same spaced-out style. */
-.roundInfo .summaryLabel{letter-spacing:.12em;color:#edcf91}
-.roundInfo .roundInfoTime,.roundInfo .topFivePlace{color:#edcf91}
+.roundInfo .summaryLabel{letter-spacing:.12em;color:var(--lm-ink-edcf91, #edcf91)}
+.roundInfo .roundInfoTime,.roundInfo .topFivePlace{color:var(--lm-ink-edcf91, #edcf91)}
 /* Individual leaderboard → a player's profile: a little taller than the other sheets (85%, like Chats) and the same
    dimmed, blurred background as Chats. */
 .leaderboardScoreSheet.playerProfileSheet{inset:15dvh 0 0;height:85dvh}
@@ -637,14 +632,14 @@
 /* …and the matches no longer tuck 16px up under it (that pulled the first box under the round line and cut its top off). */
 .matchesList .matchListHeading:empty + .lineup{margin-top:0}
 .boxStatusLabelled{flex-direction:column;align-items:center;gap:3px}
-.matchBoardOpen{display:block;margin:0;padding:2px 4px;border:0;background:transparent;color:#edcf91;font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;cursor:pointer}
+.matchBoardOpen{display:block;margin:0;padding:2px 4px;border:0;background:transparent;color:var(--lm-ink-edcf91, #edcf91);font:700 9px/1 var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;cursor:pointer}
 .matchBoardOpen:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
 .matchBoardRow .boardBox{min-height:100px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:color-mix(in srgb,var(--lm-ink-fbf8f1) 4%,var(--lm-bg-240001));box-shadow:inset 0 1px 0 rgba(255,232,181,.12),0 8px 24px rgba(0,0,0,.18)}
 
 /* Match boards retain the original match-row lead fill. */
 .matchBoardRow .matchupCompact .side{box-sizing:border-box;min-height:56px;padding-top:8px;padding-bottom:8px}
-.matchBoardRow .matchupCompact .side.left.sideLeading{margin-right:0;border-radius:0 16px 16px 0;box-shadow:none;background:var(--team-left,#dcc495)}
-.matchBoardRow .matchupCompact .side.right.sideLeading{margin-left:0;border-radius:16px 0 0 16px;box-shadow:none;background:var(--team-right,#e89a9a)}
+.matchBoardRow .matchupCompact .side.left.sideLeading{margin-right:0;border-radius:0;box-shadow:none;background:transparent}
+.matchBoardRow .matchupCompact .side.right.sideLeading{margin-left:0;border-radius:0;box-shadow:none;background:transparent}
 
 .leaderboardListHeading .columns{padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--lm-ink-ffffff) 30%,transparent)}
 .leaderboardListHeading .columnLabel{padding-bottom:0;border-bottom:0}
@@ -725,8 +720,29 @@
 .matchBoardRow .boardBox:has(.winBar) .roundStats{transform:translateY(5px)}
 
 /* Match status stays white; final F aligns with the centered names and results. */
-.matchBoardRow .boardBox .statusPlain,.matchBoardRow .boardBox .statusPlain small{color:#fff}
+.matchBoardRow .boardBox .statusPlain,.matchBoardRow .boardBox .statusPlain small{color:var(--lm-ink-ffffff, #fff)}
 .matchBoardRow .boardBox .statusPlain.matchFinal{position:absolute;left:50%;top:calc(50% + 7.5px);transform:translate(-50%,-50%);margin:0}
 
 /* Final and pre-round values match the 13px scores in match lead fills. */
 .matchBoardRow .matchupCompact .matchFinal .statusValue,.matchBoardRow .matchupCompact .statusTime{font-size:13px}
+
+/* Team colors radiate softly from the large board?s upper corners. */
+.boardBox .teamStripeSummary::before{height:150px;background:radial-gradient(ellipse 65% 100% at 0 0,color-mix(in srgb,var(--team-left-glow,#dcc495) 65%,transparent),transparent 72%),radial-gradient(ellipse 65% 100% at 100% 0,color-mix(in srgb,var(--team-right-glow,#e89a9a) 65%,transparent),transparent 72%)}
+.boardBox .teamStripeSummary .summaryFill .teamName,.boardBox .teamStripeSummary .summaryFillRight .teamName{color:var(--lm-ink-fbf8f1);text-shadow:0 1px 4px rgba(36,0,1,.8)}
+
+/* Match boards glow from the leading side?s upper corner; ties have no leading class. */
+.matchup .versus:has(.side.left.sideLeading){background-image:radial-gradient(ellipse 65% 100% at 0 0,color-mix(in srgb,var(--team-left-glow,#dcc495) 65%,transparent),transparent 72%)}
+.matchup .versus:has(.side.right.sideLeading){background-image:radial-gradient(ellipse 65% 100% at 100% 0,color-mix(in srgb,var(--team-right-glow,#e89a9a) 65%,transparent),transparent 72%)}
+.matchup .versus .side.sideLeading,.matchBoardRow .matchupCompact .side.sideLeading{background:transparent;box-shadow:none;border-radius:0}
+.matchup .versus .sideLeading :is(.boxStanding,.teamName,.teamMeta){color:var(--lm-ink-fbf8f1);text-shadow:0 1px 4px rgba(36,0,1,.8)}
+
+/* Light surfaces use maroon text and deeper gold while retaining the team glow. */
+:global(html[data-mode="light"]) .boardBox .roundStat dd,:global(html[data-mode="light"]) .matchBoardRow .boardBox .statusPlain,:global(html[data-mode="light"]) .matchBoardRow .boardBox .statusPlain small{color:#240001}
+:global(html[data-mode="light"]) .boardBox .statusPlain,:global(html[data-mode="light"]) .matchBoardOpen,:global(html[data-mode="light"]) .boardBox .predictPill,:global(html[data-mode="light"]) .roundInfo .summaryLabel,:global(html[data-mode="light"]) .roundInfo .roundInfoTime,:global(html[data-mode="light"]) .roundInfo .topFivePlace{color:#765018}
+:global(html[data-mode="light"]) .boardBox .teamStripeSummary .summaryFill .teamName,:global(html[data-mode="light"]) .boardBox .teamStripeSummary .summaryFillRight .teamName,:global(html[data-mode="light"]) .matchup .versus .sideLeading :is(.boxStanding,.teamName,.teamMeta){color:#240001;text-shadow:none}
+:global(html[data-mode="light"]) .boardBox .teamStripeSummary::before{opacity:.45}
+:global(html[data-mode="light"]) .matchup .versus:has(.side.left.sideLeading){background-image:radial-gradient(ellipse 65% 100% at 0 0,color-mix(in srgb,var(--team-left-glow,#dcc495) 28%,transparent),transparent 72%)}
+:global(html[data-mode="light"]) .matchup .versus:has(.side.right.sideLeading){background-image:radial-gradient(ellipse 65% 100% at 100% 0,color-mix(in srgb,var(--team-right-glow,#e89a9a) 28%,transparent),transparent 72%)}
+
+:global(html[data-mode="light"]) .matchBoardRow .boardBox{background-color:#fbf8f1;box-shadow:0 4px 16px rgba(36,0,1,.08)}
+:global(html[data-mode="light"]) .boardBox .roundStat dt,:global(html[data-mode="light"]) .boardBox .statusPlain small{color:#765018}

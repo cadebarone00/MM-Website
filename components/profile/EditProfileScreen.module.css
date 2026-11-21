@@ -52,7 +52,7 @@
 .input:focus-visible{box-shadow:inset 0 -2px 0 #dcc495}
 
 /* Errors float at the bottom so nothing on the screen moves. */
-.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));z-index:450;translate:-50% 0;width:min(520px,calc(100% - 32px));padding:12px 14px;border-radius:12px;background:#9b1c1c;color:#fff;font:600 14px/1.4 var(--font-spectral),Georgia,serif;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));z-index:450;translate:-50% 0;width:min(520px,calc(100% - 32px));padding:12px 14px;border-radius:12px;background:#9b1c1c;color:var(--lm-ink-ffffff, #fff);font:600 14px/1.4 var(--font-spectral),Georgia,serif;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 
 /* Links / Gender: a full screen over Edit profile with the same top bar. */
 .panel{position:fixed;inset:0;z-index:400;overflow-y:auto;padding:0 max(0px,calc((100% - 560px) / 2)) 40px;background:var(--lm-bg-1d0b11);color:var(--lm-ink-f4efe6);font-family:var(--font-spectral),Georgia,serif}
@@ -80,7 +80,7 @@
 
 /* Socials: list rows (icon, app + @name, remove), the app picker, and the username box. */
 .socialRow{display:grid;grid-template-columns:auto minmax(0,1fr) 44px;align-items:center;gap:12px;min-height:60px;padding-right:8px;background:linear-gradient(color-mix(in srgb,var(--lm-ink-f4efe6) 14%,transparent),color-mix(in srgb,var(--lm-ink-f4efe6) 14%,transparent)) right bottom/100% 1px no-repeat}
-.socialIcon{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:rgba(220,196,149,.12);color:#dcc495}
+.socialIcon{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid rgba(220,196,149,.5);border-radius:50%;background:rgba(220,196,149,.12);color:var(--lm-ink-dcc495, #dcc495)}
 .socialText{display:grid;min-width:0;font:500 16px/1.3 var(--font-spectral),Georgia,serif}
 .socialHandle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px;color:color-mix(in srgb,var(--lm-ink-f4efe6) 60%,transparent)}
 .socialPick{display:flex;align-items:center;gap:12px}

@@ -1,0 +1,5 @@
+# Home navigation and profile snapshot review
+
+2026-11-20. Status: review_required. Implemented locally; release and deployment are not verified.
+
+The home screen displays the signed-in viewer's existing profile name, username and avatar using the existing private, no-store profile endpoint and links to their own profile. It introduces no new profile storage, sharing, retention period, payment, subscription, advertising or sponsorship. Existing Explore content and its user-generated posts retain their existing controls and reviews. The existing Maroon logo is reused; rights remain subject to the existing asset review. Account security, privacy, personal data, access controls, retention/deletion, user-generated content, intellectual property, provider and platform rules, and qualified legal review remain subject to the existing platform reviews. Owners, distribution scope, asset rights and professional review remain unresolved and require follow-up before release. This record does not establish compliance.

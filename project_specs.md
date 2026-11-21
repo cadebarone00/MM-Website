@@ -5389,7 +5389,7 @@ slot when no `size` is given; initials scale with the circle). Not switched, on 
 - 11 Public tournament site: OPEN QUESTION for owner — it is a light, per-tournament-branded page; gold initials on its
   near-white background would be very hard to read.
 
-## Simulator: phone keyboard (owner request 2026-11-19) — SPEC, awaiting approval
+## Simulator: phone keyboard (owner request 2026-11-19) — APPROVED + BUILT 2026-11-20 (uncommitted; components/dev/SimulatorKeyboard.tsx)
 
 **What it is:** in the dev simulator (`/dev`), whenever you tap anywhere you type (search boxes, Edit profile fields,
 sign-up / log-in, chat, socials, trip forms…), an on-screen keyboard slides up from the bottom of the phone, so you can
@@ -5417,7 +5417,7 @@ see how each screen looks with the keyboard open — on **iPhone** and **Android
 iPhone and for Pixel; the screen shortens; email / number fields get their own layouts; tapping keys types; the switch hides
 it; tested in the browser.
 
-## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, AWAITING APPROVAL)
+## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, approved; steps 1–2 BUILT 2026-11-20, uncommitted)
 
 **Why.** Notifications live in 5 places that don't agree: the 12 kinds in `lib/notifications/types.ts`, the 6 Settings
 switches in `lib/profile/preferences.ts` (only 1–2 match a kind; friend requests, draft, your pick and chat have no kind),
@@ -5475,7 +5475,196 @@ V1/V2/V3; tests check every type has a switch, an icon, a safe tap link, 3 wordi
 every switch has at least one type; TypeScript, lint and the full test suite pass; checked in the browser at phone width.
 Nothing sent, no SQL. Steps 1–2 = one commit, step 3 = a second commit after you OK the fix list.
 
-## Fix: app magnifying glass says "That profile wasn't found" (owner request 2026-11-21) — SPEC, awaiting approval
+**Built 2026-11-20 (steps 1–2, uncommitted).** `lib/notifications/catalog.ts` (+ `catalog.test.ts`): 16 types, 8 switches,
+organizer messages always on (owner didn't pick; plan default). `types.ts` and `lib/profile/preferences.ts` now read it;
+Settings gains Big moments + Travel reminders, "Scores posted" shows as Round updates (same saved id).
+`supabase/profile_preferences.sql` (still NOT run in production) accepts the two new switch ids. Previews: new
+`/dev/notifications/types` (`components/notifications/NotificationCatalog.tsx`), Type + Wording choices on Phone, In-app and
+All types (`lib/dev/sampleNotificationTypes.ts` reads the Highlights snapshot; kept out of `lib/dev/simulator.ts`). Chat
+uses the message itself as the body (its 3 versions only change the title line). Step 3 (UI pass) not started.
+
+
+## Golf Trip create: skip the setup screen, Learn first time only, sign-up-style question pages, Settings → Tutorials (owner request 2026-11-20) — APPROVED + BUILT 2026-11-20 (uncommitted; GetStartedButton.tsx removed, TripWizardArt.tsx now unused)
+
+**1. Create goes straight in (no setup screen, no animation).** Tapping **Create a Golf Trip** no longer shows the "Golf Trip setup / Welcome to Golf Trips" screen.
+- **First time** (this account on this device): opens **Learn about Golf Trips** (`/golf-trips/new/learn`). Tapping **Skip for now** or finishing the tour marks it seen, and it never shows again from Create.
+- **Every time after that:** opens the first question ("What's the trip?", `/golf-trips/new`) directly.
+- How: the Create buttons (Golf Trips page, empty-list row, Create menu) and the old `/tournaments/create/golf-trip` address all go through the same first-time check (the one Get Started uses today). Back from the first question → Golf Trips page.
+
+**2. Question pages laid out like Sign up.** Every trip question page (What's the trip?, dates, players, golf, courses, teams, format, lodging, transportation, flights, review) drops the cream animation band at the top. Like the sign-up screens: maroon page, progress line, title, the fields, then **Next** right under the fields and **Back** under that — all at the top of the page, nothing pinned to the bottom, so the phone keyboard has room to pop up underneath without covering anything. Steps with long content (e.g. review list) still scroll.
+
+**2b. Follow-up (owner 2026-11-20, BUILT):** the page starts ~40px lower (clears the iPhone Dynamic Island), and **Back** (smaller, outlined, left) and **Next** (right) sit side by side in one row right under the last choice; Skip for now sits under that row. Same on Review (Back + Create Golf Trip).
+
+**3. Settings → Tutorials.** New **Tutorials** section in Settings (website + app) with a **Golf Trips** row → the guided Golf Trips tour; when it ends (or Skip) it returns to Settings. Built so more tutorials can be added as rows later. Signed-out visitors see it too.
+
+**Not changing:** the Learn page and tour content, the questions themselves and what they save, Join a Trip, other tournament types. No database changes.
+
+**Done =** first Create → Learn; Skip → first question; second Create → first question directly; question pages have everything at the top with Next under the fields and no animation; Settings → Tutorials → Golf Trips plays the tour and returns to Settings; typecheck + lint + tests pass; checked in the browser at phone size.
+
+## Friends page: Search · Friends · Suggested tabs + seeing someone's friends (owner request 2026-11-20) — APPROVED + BUILT 2026-11-20 (uncommitted; dev-checked on sample golfers; FriendsList.tsx now unused). Also: on the local dev site the bottom menu's Profile opens /dev/profile (sample golfer)
+
+**What it does:** one place for people. The Search page gets 3 tabs under the search bar; tapping a Friends count opens a friends list.
+
+**1. Search page tabs** (`/profile/search`, website + app + dev preview). Under the search bar: **Search · Friends · Suggested** (one row of tabs, the picked one highlighted).
+- **Search** (default, what's there today): friend requests, Recent, then results once you type 2+ letters (searches everyone).
+- **Friends**: your friends (golf trip mates + accepted requests), avatar, @username, name, "Golf trip" note. Typing in the bar filters your friends. Empty: "No friends yet" + a nudge to the Suggested tab.
+- **Suggested**: the "Suggested for you" list (mutual friends first) with Add buttons. Typing in the bar switches to the Search tab.
+- Tab is in the address (`?tab=friends` / `?tab=suggested`) so links and Back land on the right one.
+
+**2. Your own Friends count** (on your profile) → the Search page with the **Friends** tab picked (`/profile/search?tab=friends`). The old `/profile/friends` page forwards there.
+
+**3. Someone else's Friends count** → their friends list, `/profile/<username>/friends`: Back + @username at the top, a search bar that filters their list, then the list (tap someone → their profile, Add button on people you're not friends with yet).
+- **Public profile:** the count is tappable and the list shows.
+- **Private profile:** no count (as today), nothing to tap; opening the address directly shows "Private Profile" and no list.
+- Signed-out visitors: same rules as viewing the profile itself.
+
+**Data:** no database changes. Friends lists come from the existing friends logic (trip mates + accepted requests, `lib/profile/friendsServer.ts`); someone else's list is only read on the server after checking their profile is Public.
+
+**Dev simulator:** Search page conditionals for the Friends and Suggested tabs; Public profile → Friends list (sample golfers); Private profile → no list.
+
+**Not changing:** friend requests, Add friend / Compare buttons, profile layout, Recent, the search itself.
+
+**Done =** the 3 tabs work and filter; own Friends count opens the Friends tab; a Public profile's Friends count opens their list; a Private profile shows no list even by address; typecheck + lint + tests pass; checked on screen at phone size.
+
+## Sign up: "email already has an account" + password AFTER the code (owner request 2026-11-20) — APPROVED + BUILT 2026-11-21 (uncommitted; not deployed; local-stack regressions updated but NOT run: Docker was off)
+
+**Why:** in TestFlight the owner signed up with an email that already had an account. The app said "check your email", but no email is ever sent for an existing account, so they waited for a code that never came.
+
+**New sign-up order (app and website, same screens):**
+1. **Sign up:** type your email → Continue.
+   - **The email already has a verified account:** stay on this screen and show "There's already an account with this email." plus a **Log in** button that goes to Log in with the email filled in. No password screen, no email sent.
+   - **The email was started before but never verified:** treated like new. A fresh code is sent and you go to step 2.
+   - **New email:** the account is made and the code is sent → step 2.
+   - Not on the tester list or sign-ups closed: the same message as today, on this screen.
+2. **Email Verification:** type the 6-digit code (same screen as today).
+3. **Create a password:** moved here, after the code. Same screen, rules (8+ characters) and look as today.
+4. Then Name → Birthday → Photo → Settings → Finish, as today. The progress bar follows the new order.
+
+**How it works (plain):**
+- Supabase needs a password to make an email account, so on step 1 the server makes the account with a long random password that nobody ever sees or uses. Step 3 replaces it with the person's real one.
+- The "already has an account" check uses Supabase's own sign-up reply, which marks an email that is already verified. No database changes and no SQL to run.
+- The server remembers "password not set yet" on the login itself (`app_metadata`, which only the server can write). This covers people who verify and then close the app before step 3:
+  - Opening the app again (still signed in) sends them back to **Create a password** before anything else.
+  - If they got signed out, they can't log in (they never chose a password). **Forgot password** sends a code, lets them set one and clears the flag.
+- **New `POST /api/auth/create-password`:** only works for a signed-in account that still has the "password not set yet" flag. It saves the password, clears the flag and keeps you signed in, so onboarding carries on. Works with the website login and the app login.
+- The email templates, the code email and Supabase settings stay the same. Nothing to change in the Supabase dashboard.
+
+**Trade-off (owner's call, accepted by asking for this):** anyone can type an email on Sign up and learn whether it has an account. Most apps work this way. Supabase's sign-up limits per device (IP address) still apply.
+
+**Dev simulator:** the Sign up page gets a conditional for the "There's already an account with this email" state, and the progress bar shows the new order on every step.
+
+**Small messages are white (owner request 2026-11-20, approved):** the small helper and error lines on the sign-up, log-in, code, password and onboarding screens (e.g. "At least 8 characters.", "Passwords don't match.", "That code is wrong…") turn white (#fbf8f1) instead of red. Same size and position, so nothing moves.
+
+**Not changing:** Log in, Forgot password, Google/Apple, the tester list, the code screen's design, Name/Birthday and the later steps.
+
+**Done =**
+- An already-verified email shows the message and the Log in button on Sign up, and no email is sent.
+- A new email gets a code, then the password screen, then Name.
+- Closing the app after the code and opening it again lands on Create a password.
+- Typecheck, lint and tests pass.
+- Checked on screen in the website at phone size and in the app build (`npm run build:app`).
+- Live in TestFlight only after a commit, push, deploy + Promote, and a new TestFlight build.
+
+## Mock people: 5 pretend accounts for the main tabs (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; tests + lint pass; checked on screen in the simulator)
+
+**Why:** the owner wants to see how Play, Golf Trips, Tourneys, Leagues and Profile look for real kinds of people (busy, organizer, casual, just invited, brand new) without signing in or touching real data. Picked option 1 (preview pages in the simulator), not pretend sign-in on real pages or fake rows in Supabase.
+
+**The 5 people** (one file, `lib/dev/mockPeople.ts`; friends are the existing sample golfers in `lib/dev/sampleProfile.ts` so their profiles open):
+| Person | Their app |
+|---|---|
+| Cade Barone (heavy user) | 2 upcoming trips + 4 past trips, 2 tourneys playing + 3 past, 3 leagues, lots of friends |
+| Jake Parker (organizer) | Organizes 1 upcoming trip + 1 past, runs 1 code tourney, 1 league, some friends |
+| Mike Chen (casual) | 1 past trip, in 1 tourney, no leagues, a few friends |
+| Alex Rivera (just invited) | Member of 1 upcoming trip (someone else's), nothing else, 1 friend |
+| Sam Taylor (brand new) | Everything empty, no friends |
+
+Trip names, destinations, dates, player counts and league names are realistic and fixed (same every time), with a few long names to catch wrapping.
+
+**What you see:** a new simulator group **"Mock people"** with 5 pages: Play, Golf Trips, Tourneys, Leagues, Profile. Each page has 5 conditionals, "Signed in as Cade / Jake / Mike / Alex / Sam" (default Cade). Pick one and every tab shows that person's world.
+
+**How it works (plain):**
+- New dev-only pages under `/dev/people/…` (404 outside local dev). Each shows the **real** screen component with the chosen person's data handed in: `GolfTripsView` (trips list), `JoinTournamentPage` (tourneys), `LeaguesHome` (leagues), `PlatformHome` (Play), the existing profile preview (Profile).
+- Small additions to two real components so they can be handed data instead of loading it: `LeaguesHome` gets an optional `leagues` list (skips its fetch when given), and `PlatformHome` gets an optional profile (skips its profile fetch when given). With nothing handed in, both behave exactly as today.
+- Nothing is saved. No database, no SQL, no sign-in.
+
+**Not doing:** tapping *into* a trip, tourney or league from these previews won't open a pretend version of it (links go to the normal pages). Not changing the real pages' look or the existing "Signed in as" accounts used inside Golf Trip previews.
+
+**Builder's calls:** exact trip/league names and dates; which profile preview (full / a few / none) each person's Profile uses; Play's round invites stay hidden in the previews. Each person's Profile lists their own trips and past tourneys (same as their tabs); rounds/handicap are still the sample rounds.
+
+**Done =**
+- All 5 pages show in the simulator under "Mock people", and switching person changes every tab.
+- Sam (brand new) shows the empty states correctly; Cade shows full lists.
+- Real `/golf-trips`, `/tournaments/join`, `/leagues`, `/` and `/profile` still work as before.
+- Typecheck and lint pass; each page checked on screen at phone size.
+
+## Home screen widget: "What's next" for iPhone + Android (owner request 2026-11-21) — SPEC, awaiting approval
+
+**Why:** the owner wants people to glance at their home screen and see the one golf thing they're doing now, or the next one coming up, without opening the app. It's part of the notifications work, and the list of native pieces is here: https://claude.ai/artifact/3zFuCwWE5A5c9TvS14Gj72
+
+**What it shows (owner decisions 2026-11-21):**
+- The **active** thing, or else the **next** thing, from anything the person does in the app: a Golf Trip, a round on their own, a league round or a tournament round.
+- Tee times, course, score to par, holes played, match status. **View only:** no entering scores on the widget.
+- **Tapping it opens the right screen** in the app: the live scorecard, that round, that trip, or the start screen when there's nothing.
+
+**Which thing wins (builder's call, owner can correct):** a live round beats everything. Otherwise the soonest upcoming round or tee time wins. This uses the same live / now / next / upcoming order Trip Home's Upcoming already uses.
+
+**Sizes:**
+| Size | Shape | Nothing coming up | Coming up | Live round |
+|---|---|---|---|---|
+| Small | small square | "No rounds yet · Tap to start one" | course, day + tee time, "in 2 days" | score to par, thru, match status |
+| Medium | rectangle | same, plus a Start a round line | the next 2 things on the schedule | small view + your group's scores |
+| Large | big square | same as medium | the next 4–5 things on the schedule | your group's scores + the last few holes |
+| Lock screen | circle, small rectangle, one line of text by the clock | blank / logo | tee time | score + thru |
+On Android, people can resize the widget, so it picks the closest of the same three layouts.
+
+**How it works (plain):**
+- **One "widget snapshot"** built in our normal code (`lib/notifications/`, TypeScript, tested): what to show, the text for each size, and the link to open. Both phones get the same snapshot, so they always say the same thing. The words match the Live Activity text in `format.ts`.
+- **The app saves the snapshot** for the widget whenever it opens, a round starts, or you enter a score (through the bridge plugin, into storage that the app and widget share). The widget lists the upcoming times ahead, so "in 2 days" → "Tomorrow" → "8:40 AM" changes by itself.
+- **Live rounds:** the Live Activity / Live Update keeps updating from the server. The widget updates when the app saves a new snapshot.
+- **iPhone:** a WidgetKit widget extension in SwiftUI (`ios/App`, new Widget Extension target + App Group). **Android:** a Jetpack Glance widget in Kotlin (`android/app`). One small bridge plugin on each phone with the same commands: save snapshot, refresh widget.
+
+**Later step, not in this one:** the widget asking our server for fresh data by itself while the app is closed (so other players' scores show without opening the app). This needs the app's login to be shared with the widget. Do it after this works.
+
+**Not doing:** entering scores on the widget, an iPad extra-large size, more than one widget style to pick from, and a dark/light choice (the widget follows the phone).
+
+**Order:** (1) widget snapshot in TypeScript + tests + a `/dev` preview of every size × state (simulator conditionals). (2) iPhone bridge + widget in Xcode. (3) Android bridge + widget. (4) Lock screen sizes. Each step is approved separately.
+
+**Needs from the owner:** in Xcode, add the Widget Extension target and App Groups (walkthrough when we get there). Android Studio installed for step 3.
+
+**Done =**
+- `/dev` shows Small / Medium / Large / Lock screen for Nothing / Coming up / Live, with realistic data.
+- On a real iPhone (TestFlight) and an Android phone: the widget shows the right thing for a trip round, a solo round and nothing at all, and tapping it opens the right screen.
+- Typecheck, lint and tests pass. The app still builds for TestFlight.
+
+## Sign-up Simulator: run the whole real sign-up with fake everything (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; dev simulator only — owner approved without picking, so the recommended option; /dev/signup-sim)
+
+**What it does:** a practice run of the real sign-up that you can repeat as often as you like. It uses the real screens, in the real order, with the real checks (8+ character password, valid email, username rules, 13+ birthday). Every answer from the "server" is fake, and nothing is saved anywhere: no account, no email, no database row. The last step ends on an **End of simulation** screen instead of opening the app.
+
+**Who uses it:** the owner and testers, to try the flow and check changes without making real accounts.
+
+**How it works (plain):**
+- **Start:** a **Start sign-up simulation** button. It runs the same screens as the app: Sign up → Email Verification → Create a password → Email confirmed → Name + username → Birthday → Photo → Settings → **End of simulation**.
+- **Fake email:** any made-up address works. A **Random email** button fills one in (e.g. `sim-4821@example.test`).
+- **Fake code:** no email is sent. The code screen shows a small "Simulation code: 123456" note. A wrong code shows the real "That code is wrong…" message.
+- **Practice cases (pick from a short list before starting):**
+  - New person (normal path).
+  - Email already has an account → the "There's already an account with this email" message, and Log in.
+  - Under 13 → the real "can't finish" account screen.
+  - Wrong code first → the error message, then the right code.
+- **End of simulation:** a summary of what was "entered" (email, name, username, public/private), plus **Run again** and **Exit**. Nothing is kept after you leave.
+- **Underneath:** while the simulation runs, the screens' requests to the server are answered by a fake that lives only on that screen. The screens themselves don't change, so the simulator always matches the real thing.
+
+**Where it lives:**
+- The **dev simulator** on the website (Authentication group): **Sign-up simulation** with the practice cases as Conditionals.
+- **Open question for the owner:** should it also be in the **TestFlight app** (for example a hidden button in Settings → Tutorials, or long-press on the Welcome logo), so testers can run it on a real phone? Leaving it out of the app keeps the real app clean.
+
+**Not changing:** the real sign-up screens, the real server, the database or any setting. No SQL.
+
+**What it doesn't test:** the real server and email sending. Those stay covered by the local test scripts (`scripts/auth-local`, which need Docker Desktop on).
+
+**Done =** you can run all four practice cases start to finish as many times as you want; End of simulation shows the summary; nothing appears in Supabase or in any inbox; typecheck, lint and tests pass; checked on screen at phone size.
+
+## Fix: app magnifying glass says "That profile wasn't found" (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (+ tournament links)
 
 **What the owner asked for:** on Profile, search the golfers in the database, tap Add friend; the other golfer gets told
 someone wants to be friends; Accept → each shows in the other's Friends list; Decline → nothing happens.
@@ -5506,7 +5695,7 @@ build the magnifying glass opens Search, Friends opens the list, and a golfer's 
 tournament site (`/t/site/`) were read as a tournament called "new" / "join" / "invite" / "site". Same one-line fix to
 each rule in `lib/app/appPaths.ts`, with tests.
 
-## App: tabs open instantly — remember + pre-load (owner request 2026-11-21) — SPEC, awaiting approval
+## App: tabs open instantly — remember + pre-load (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (+ C: Vercel in yul1)
 
 **Problem:** in the iPhone app, every time you switch tabs (Play, Golf Trips, Profile, Tourneys) the screen starts over:
 loading screen, then a full trip to the server (login check with Supabase + several database lookups). Coming back to a
@@ -5542,7 +5731,7 @@ tab you just saw waits all over again.
 sign-out wipes it); type check + full test suite pass; `npm run build:app` succeeds; in the app build, switching back to
 a tab shows it instantly and the first tap on each main tab is instant after pre-load.
 
-## Profile photo: move it inside the circle (owner request 2026-11-21) — SPEC, awaiting approval
+## Profile photo: move it inside the circle (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21
 
 **What the owner asked for:** when choosing a profile picture, let the golfer move the picture inside the circle.
 

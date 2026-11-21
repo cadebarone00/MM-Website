@@ -1,11 +1,19 @@
 "use client";
+import { useEffect, useState } from "react";
 import { SetupNextStep } from "@/components/platform/SetupNextStep";
+import { GolfTripStart } from "@/components/platform/tour/GolfTripStart";
 import { setupTypeFromParam } from "@/lib/platform/setupTypes";
-import { useAppProfileId } from "@/lib/app/useAppProfileId";
+import { appSupabase } from "@/lib/app/appAuth";
 
-/** App → Create → a type: the shared screen, with the profile id from the phone's login. */
+/** App → Create → a type: Golf Trip goes straight on (Learn the first time, then the first question) once the phone's
+ *  login is known; other types show the shared coming-soon screen. */
 export function AppSetupNextStep({ param }: { param: string }) {
-  const profileId = useAppProfileId();
   const type = setupTypeFromParam(param);
-  return type ? <SetupNextStep type={type} profileId={profileId} /> : null;
+  const [profileId, setProfileId] = useState<string | null>(null);
+  useEffect(() => {
+    if (type?.key !== "golf-trip") return;
+    void appSupabase().auth.getUser().then(({ data }) => setProfileId(data.user?.id ?? "guest"), () => setProfileId("guest"));
+  }, [type?.key]);
+  if (!type) return null;
+  return type.key === "golf-trip" ? <GolfTripStart profileId={profileId} /> : <SetupNextStep type={type} />;
 }

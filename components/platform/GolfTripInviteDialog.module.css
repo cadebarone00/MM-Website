@@ -50,8 +50,8 @@
   height: 40px;
   border: 0;
   border-radius: 10px;
-  background: var(--color-maroon-700);
-  color: #fbf8f1;
+  background: var(--mode-surface-color-maroon-700, var(--color-maroon-700));
+  color: var(--lm-ink-fbf8f1, #fbf8f1);
   cursor: pointer;
 }
 .copy:hover { background: var(--lm-bg-240001); }
@@ -80,6 +80,6 @@
   letter-spacing: 0.02em;
   cursor: pointer;
 }
-.done:hover { background: var(--color-maroon-700); }
+.done:hover { background: var(--mode-surface-color-maroon-700, var(--color-maroon-700)); }
 
 .copy:focus-visible, .copyLink:focus-visible, .done:focus-visible { outline: 3px solid var(--lm-ink-dcc495); outline-offset: 2px; }

@@ -1,8 +1,8 @@
 .pageHeader {
   position: relative;
   isolation: isolate;
-  padding-top: calc(92px + var(--app-top-clearance, 0px));
-  background: var(--lm-bg-1d0b11);
+  padding-top: 0;
+  background: #240001;
 }
 
 .pageHeader::before {
@@ -11,7 +11,7 @@
   inset: 0 0 auto;
   height: calc(max(380px, 58svh) + var(--app-top-clearance, 0px));
   z-index: -1;
-  background: linear-gradient(180deg, color-mix(in srgb,var(--color-maroon-950) 37.6%,transparent), transparent 60%), url('/images/tourneys/course-hero.jpg') center 65% / cover no-repeat;
+  background: #240001;
 }
 
 .pageHeader > header {
@@ -39,4 +39,4 @@
 }
 
 /* Light mode: the page title sits on the photo, so it stays light. */
-:global(html[data-mode="light"]) .pageHeader > header { color: #fbf8f1; }
+:global(html[data-mode="light"]) .pageHeader > header { color: var(--lm-ink-fbf8f1, #fbf8f1); }

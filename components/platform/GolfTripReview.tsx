@@ -35,7 +35,7 @@ export function GolfTripReview() {
     {state.status === "error" && <p className={styles.reviewError} role="alert">
       {state.message}{state.needsLogin && <> <Link href="/login">Log in</Link></>}
     </p>}
-    <div className={styles.reviewActions}>
+    <div className={`${styles.reviewActions} ${styles.stepButtons}`}>
       <Link href="/golf-trips/new/transportation" className={styles.back} aria-disabled={creating}
         onClick={(event) => { if (creating) event.preventDefault(); }}>Back</Link>
       <button type="button" className={`${styles.continue} ${styles.start}`} onClick={createTrip} disabled={creating} aria-busy={creating}>

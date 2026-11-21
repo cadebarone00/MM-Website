@@ -4,7 +4,7 @@
 
 /* Team Draft: title row, then the countdown with Draft Room. */
 .draft{display:grid;gap:8px}
-.sectionStatus{display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0 18px;text-align:center;color:#edcf91;font:500 14px/1.5 var(--font-spectral),Georgia,serif}
+.sectionStatus{display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0 18px;text-align:center;color:var(--lm-ink-edcf91);font:500 14px/1.5 var(--font-spectral),Georgia,serif}
 .sectionStatus p{margin:0}
 .draftTop{display:flex;align-items:center;gap:7px;min-width:0;height:18px}
 .draftTitle{flex:none;font:700 15px/1 var(--font-spectral),Georgia,serif;color:var(--lm-ink-ffffff)}
@@ -35,22 +35,22 @@
 .momentum.dualDraft{height:160px;flex-shrink:0;justify-content:space-around}
 
 /* Draft cards share the Big Board outline, lower shadow and soft gold top lighting. */
-.draftWidget{position:relative;box-sizing:border-box;width:100%;padding:14px 14px 0;border:1px solid rgba(201,168,110,.6);border-radius:16px;overflow:hidden;color:#fbf8f1;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001;box-shadow:0 10px 28px color-mix(in srgb,#000 35%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
+.draftWidget{position:relative;box-sizing:border-box;width:100%;padding:14px 14px 0;border:1px solid rgba(201,168,110,.6);border-radius:16px;overflow:hidden;color:var(--lm-ink-fbf8f1);background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),var(--lm-bg-240001);box-shadow:0 10px 28px color-mix(in srgb,#000 35%,transparent),inset 0 1px 0 rgba(255,232,181,.12)}
 .draftWidget .draft{gap:12px}
 .draftWidget .draftTop{position:relative;display:block;height:auto;min-height:20px;padding:0 34px;text-align:center}
-.draftWidget .draftWhen{display:block;white-space:normal;overflow:visible;font:600 13px/1.4 var(--font-spectral),Georgia,serif;color:#edcf91}
-.draftWidget .edit{position:absolute;right:0;top:2px;color:#edcf91}
+.draftWidget .draftWhen{display:block;white-space:normal;overflow:visible;font:600 13px/1.4 var(--font-spectral),Georgia,serif;color:var(--lm-ink-edcf91)}
+.draftWidget .edit{position:absolute;right:0;top:2px;color:var(--lm-ink-edcf91)}
 .draftWidget .draftBottom{justify-content:center;height:auto;padding:0 0 2px}
 .draftWidget .countdown{flex:0 1 auto;justify-content:center}
-.draftWidget .digits{color:#edcf91}
-.draftWidget .label{color:#d4bfa9}
+.draftWidget .digits{color:var(--lm-ink-edcf91)}
+.draftWidget .label{color:var(--lm-ink-d4bfa9)}
 .draftWidget .colon{color:#bba075}
 .draftWidget .matchLabel{text-align:center}
 .draftActions{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0}
 .draftActions::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,110,.45),transparent)}
-.draftActions .room{width:100%;min-width:0;padding:0 8px;border-color:#dcc495;color:#f4dba8;background:rgba(220,196,149,.1);font-size:11px}
+.draftActions .room{width:100%;min-width:0;padding:0 8px;border-color:var(--lm-ink-dcc495);color:#f4dba8;background:rgba(220,196,149,.1);font-size:11px}
 .draftActions .room:hover:not(:disabled){background:rgba(220,196,149,.2)}
-.draftWidget :is(.edit,.room):focus-visible{outline-color:#edcf91}
+.draftWidget :is(.edit,.room):focus-visible{outline-color:var(--lm-ink-edcf91)}
 
 .matchLabel{margin:0;color:var(--lm-ink-dcc495);font:500 12px/1.4 var(--font-spectral),Georgia,serif;overflow-wrap:anywhere}
 .matchRoundHeading{font-size:16px}
@@ -58,8 +58,10 @@
 
 .room:disabled{opacity:.45;cursor:default}
 
-.scheduleButton{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 12px;border:1px solid rgba(220,196,149,.6);border-radius:999px;background:rgba(220,196,149,.1);color:#edcf91;font:600 12px/1.2 var(--font-spectral),Georgia,serif;text-decoration:none}
+.scheduleButton{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 12px;border:1px solid rgba(220,196,149,.6);border-radius:999px;background:rgba(220,196,149,.1);color:var(--lm-ink-edcf91);font:600 12px/1.2 var(--font-spectral),Georgia,serif;text-decoration:none}
 .scheduleButton:hover{background:rgba(220,196,149,.2)}
 .scheduleButton:focus-visible{outline:2px solid #edcf91;outline-offset:3px}
 /* Match Selection: the format on its own line under "Round x @ Course" (owner 2026-11-13). */
 .matchFormat{margin-top:-3px}
+
+:global(html[data-mode="light"]) .draftWidget{background:radial-gradient(120% 70% at 50% -18%,rgba(107,30,42,.16),transparent 70%),#fbf8f1;box-shadow:0 4px 16px rgba(36,0,1,.08)}

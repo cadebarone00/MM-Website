@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { PASSWORD_PENDING, passwordPending } from "@/lib/auth/signup";
 import { PASSWORD_LINK_ERROR } from "@/lib/auth/passwordSession";
 import { checkNewPassword } from "@/lib/auth/passwordPolicy";
 import { passwordErrorMessage } from "@/lib/auth/passwordErrors";
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.updateUser({ password: body!.password as string });
   if (error) {
     return NextResponse.json({ ok: false, error: error.name === "AuthSessionMissingError" ? PASSWORD_LINK_ERROR : passwordErrorMessage(error) }, { status: 400 });
+  }
+  // Someone who verified but never got to Create a password sets one here instead: they don't need that step any more.
+  if (passwordPending(user)) {
+    const cleared = await createSupabaseServiceRoleClient().auth.admin.updateUserById(user.id, { app_metadata: { [PASSWORD_PENDING]: null } });
+    if (cleared.error) console.error("reset-password flag clear failed:", cleared.error.code ?? "");
   }
   await supabase.auth.signOut({ scope: "global" }).catch(() => undefined);
   return NextResponse.json({ ok: true });

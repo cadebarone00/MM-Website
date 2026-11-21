@@ -5,12 +5,12 @@ import styles from "./Settings.module.css";
 
 /**
  * The Settings screen's layout (redo 2026-11-19): back to Profile, then Account, Notifications, Golf preferences,
- * Appearance, Organizer, Help & legal, and at the bottom Sign out then Delete account. A card shows only when it's given.
+ * Appearance, Organizer, Tutorials, Help & legal, and at the bottom Sign out then Delete account. A card shows only when it's given.
  * Profile things (photo, name, bio, Private profile) are in Edit profile, not here. Used by /settings and /dev/profile/settings.
  */
-export function SettingsScreen({ backHref, account, notifications, golf, appearance, organizer, help, signOut, deleteAccount }: {
+export function SettingsScreen({ backHref, account, notifications, golf, appearance, organizer, tutorials, help, signOut, deleteAccount }: {
   backHref: string; account: ReactNode; notifications?: ReactNode; golf?: ReactNode; appearance?: ReactNode; organizer?: ReactNode;
-  help?: ReactNode; signOut?: ReactNode; deleteAccount?: ReactNode;
+  tutorials?: ReactNode; help?: ReactNode; signOut?: ReactNode; deleteAccount?: ReactNode;
 }) {
   const card = (id: string, title: string, body: ReactNode) => body && <section aria-labelledby={`settings-${id}`} className={styles.card}>
     <h2 id={`settings-${id}`} className={styles.cardTitle}>{title}</h2>
@@ -27,6 +27,7 @@ export function SettingsScreen({ backHref, account, notifications, golf, appeara
       {card("golf", "Golf preferences", golf)}
       {appearance && <section aria-labelledby="settings-appearance" className={`${styles.card} ${styles.compactCard}`}>{appearance}</section>}
       {card("organizer", "Organizer", organizer)}
+      {card("tutorials", "Tutorials", tutorials)}
       {card("help", "Help & legal", help)}
       {/* Sign out, then Delete account at the very bottom. */}
       {signOut && <div className={styles.signOut}>{signOut}</div>}

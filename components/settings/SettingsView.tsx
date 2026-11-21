@@ -21,7 +21,8 @@ export interface SettingsDevOptions {
 
 /**
  * Settings (the gear on Profile), redo 2026-11-19: Account (email, password, devices), Notifications, Golf preferences,
- * Appearance, Organizer (shown to everyone: what organizer settings look like), Help & legal, Sign out, Delete account.
+ * Appearance, Organizer (shown to everyone: what organizer settings look like), Tutorials (guided tours, 2026-11-20; add a
+ * row per tutorial), Help & legal, Sign out, Delete account.
  * Signed-out visitors get Log In. Shared by the website's /settings, the iPhone / Android app's, and the dev preview.
  */
 export function SettingsView({ data, appearance, dev }: { data: SettingsData; appearance: AppMode; dev?: SettingsDevOptions }) {
@@ -47,6 +48,9 @@ export function SettingsView({ data, appearance, dev }: { data: SettingsData; ap
           : <span className={`${styles.row} ${styles.rowOff}`} aria-disabled="true"><span>Content team</span><span className={styles.soonTag}>For content admins</span></span>}</li>
       </ul>
     </>}
+    tutorials={<ul className={styles.rowList}>
+      <li><Link href="/golf-trips/new/tour?back=/settings" className={styles.row}><span>Golf Trips</span><span className={styles.muted}>Guided tour ›</span></Link></li>
+    </ul>}
     help={<HelpLegal version={APP_VERSION} />}
     signOut={dev?.signOut ?? (data.signedIn && <SignOutButton />)}
     deleteAccount={data.signedIn && <Link href={dev?.deleteHref ?? "/settings/delete-account"} className={deleteStyles.dangerLink}>Delete account</Link>} />;

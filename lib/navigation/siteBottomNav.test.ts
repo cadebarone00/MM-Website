@@ -31,7 +31,10 @@ test("dev profile preview pages wear the real screens' chrome", () => {
   assert.equal(chromePathname("/dev/trip-builder/tips"), "/golf-trips/preview");
   assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/profile"), "/dev/profile");
   assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/golf-trips"), "/golf-trips");
-  assert.equal(siteBottomNavTabHref("/settings", "/profile"), "/profile");
+  assert.equal(siteBottomNavTabHref("/settings", "/profile", false), "/profile");
+  // The local dev site: Profile always opens the sample-golfer preview; other tabs are unchanged.
+  assert.equal(siteBottomNavTabHref("/golf-trips", "/profile", true), "/dev/profile");
+  assert.equal(siteBottomNavTabHref("/golf-trips", "/leagues", true), "/leagues");
 });
 
 test("siteBottomNavTabActive", () => {

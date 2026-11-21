@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChevronRight, Flag, Plane, Plus, UserRound, type LucideIcon } from "lucide-react";
+import { ChevronRight, Flag, Plane, Plus, type LucideIcon } from "lucide-react";
 import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from "@/lib/platform/golfTripCreate";
 import { GolfTripsActions } from "./GolfTripsActions";
 import { PastTripImport } from "./PastTripImport";
 import styles from "@/app/golf-trips/page.module.css";
+import landing from "./SectionLanding.module.css";
 
 /** What the Golf Trips page knows about your trips (getUserGolfTrips on the website; GET /api/golf-trips in the app). */
 export type GolfTripsResult = { status: "ok"; trips: GolfTripSummary[] } | { status: "signed-out" } | { status: "unavailable" };
@@ -21,6 +22,7 @@ export function GolfTripsView({ result }: { result: GolfTripsResult }) {
   return (
     <main className={styles.page}>
       <div className={styles.content}>
+        <h1 className={landing.title}>Golf Trips</h1>
         <GolfTripsActions />
 
         <Link href="/golf-trips/live" className={styles.live} aria-labelledby="maroon-live-entry-title" aria-describedby="maroon-live-entry-description">
@@ -45,15 +47,9 @@ export function GolfTripsView({ result }: { result: GolfTripsResult }) {
             </div>} />
         </> : <section aria-labelledby="my-trips-heading">
           <h2 id="my-trips-heading" className={styles.heading}>My Trips</h2>
-          <div className={styles.card}>
-            {result.status === "signed-out"
-              ? <Link href="/login" className={styles.row}>
-                <span className={styles.iconBox} aria-hidden="true"><UserRound size={18} strokeWidth={2} /></span>
-                <span className={styles.rowText}><span className={styles.rowName}>Log in to see your trips</span></span>
-                <span className={styles.rowValue}>Log in <ChevronRight size={18} strokeWidth={2} aria-hidden="true" /></span>
-              </Link>
-              : <p className={styles.row}>We couldn&apos;t load your trips. Refresh to try again.</p>}
-          </div>
+          {result.status === "signed-out"
+            ? <Link href="/login" className={`${styles.rowName} ${styles.signedOut}`}>Log in to see your trips</Link>
+            : <div className={styles.card}><p className={styles.row}>We couldn&apos;t load your trips. Refresh to try again.</p></div>}
         </section>}
       </div>
     </main>
