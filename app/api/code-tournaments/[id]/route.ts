@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { addCodeTournamentRound, deleteCodeTournament, endCodeTournament, getCodeTournament, setCodeTournamentAttest, setCodeTournamentCut, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
+import { addCodeTournamentRound, deleteCodeTournament, endCodeTournament, getCodeTournament, setCodeTournamentAttest, setCodeTournamentCut, setCodeTournamentLive, setCodeTournamentPublic, setCodeTournamentStrokes, setCodeTournamentTeeSheet, submitCodeTournamentCard } from "@/lib/platform/codeTournamentsServer";
 import { attestAgrees, attestPairs, type TeeSheet } from "@/lib/platform/codeTournaments";
+import { liveSettingsFrom, liveSettingsFromBody } from "@/lib/platform/liveVisibility";
 import { badRequest, cutFrom, reply, roundFrom, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
 const whole = (n: unknown, min: number, max: number): n is number => Number.isInteger(n) && (n as number) >= min && (n as number) <= max;
@@ -25,10 +26,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!user) return signedOut();
   const result = await getCodeTournament(user.id, id);
   if (result.ok && !result.value) return NextResponse.json({ ok: false, code: "not_member" }, { status: 404 });
-  // The organizer also gets the watch code (none until supabase/watch_codes.sql is run).
+  // The organizer also gets the watch code (none until supabase/watch_codes.sql is run) and who can watch
+  // (supabase/maroon_live_visibility.sql; before it's run, the old Public / Private switch decides).
   if (result.ok && result.value?.organizer === user.id) {
-    const { data } = await createSupabaseServiceRoleClient().from("code_tournaments").select("watch_code").eq("id", id).maybeSingle();
-    if (data?.watch_code) result.value.watchCode = data.watch_code as string;
+    const service = createSupabaseServiceRoleClient();
+    const live = await service.from("code_tournaments").select("watch_code, live_visibility, live_players_can_share").eq("id", id).maybeSingle();
+    const data = (live.error ? (await service.from("code_tournaments").select("watch_code").eq("id", id).maybeSingle()).data : live.data) as { watch_code?: string; live_visibility?: string; live_players_can_share?: boolean } | null;
+    if (data?.watch_code) result.value.watchCode = data.watch_code;
+    const settings = liveSettingsFrom(data?.live_visibility, data?.live_players_can_share, result.value.isPublic ? "public" : "private");
+    result.value.liveVisibility = settings.visibility;
+    result.value.livePlayersCanShare = settings.playersCanShare;
   }
   return reply(result, (tournament) => ({ tournament }));
 }
@@ -36,13 +43,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 /**
  * POST { action }: "strokes" { round, hole, strokes (null clears) } · "attest" { round, player, hole, strokes } (the player I
  * keep score for this round) · "submit" { round } (my card, once my attester agrees) · "addRound" { setup, date }
- * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) }, "public" { isPublic } and "end" (organizer only).
+ * "teeSheet" { round, teeSheet }, "cut" { cut (null = none) }, "public" { isPublic }, "visibility" { visibility, playersCanShare } and "end" (organizer only).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   if (!user) return signedOut();
-  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown; isPublic?: unknown; player?: unknown } | null;
+  const body = await request.json().catch(() => null) as { action?: string; round?: unknown; hole?: unknown; strokes?: unknown; setup?: unknown; date?: unknown; teeSheet?: unknown; cut?: unknown; isPublic?: unknown; player?: unknown; visibility?: unknown; playersCanShare?: unknown } | null;
   switch (body?.action) {
     case "strokes":
       if (!whole(body.round, 1, 10) || !whole(body.hole, 1, 18) || !(body.strokes === null || whole(body.strokes, 1, 20))) return badRequest();
@@ -76,6 +83,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const cut = cutFrom(body.cut);
       if (cut === undefined) return badRequest();
       return reply(await setCodeTournamentCut(user.id, id, cut), () => ({}));
+    }
+    case "visibility": {
+      const parsed = liveSettingsFromBody(body);
+      if (!parsed.ok) return badRequest();
+      const saved = await setCodeTournamentLive(user.id, id, parsed.settings.visibility, parsed.settings.playersCanShare);
+      // Before supabase/maroon_live_visibility.sql is run, Public and Private still save through the old switch.
+      if (!saved.ok && saved.code === "not_installed" && parsed.settings.visibility !== "link") return reply(await setCodeTournamentPublic(user.id, id, parsed.settings.visibility === "public"), () => ({}));
+      return reply(saved, () => ({}));
     }
     case "public":
       if (typeof body.isPublic !== "boolean") return badRequest();

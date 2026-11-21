@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { apnsPayload, BODY_LIMIT, androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, opponentLabel, ordinal, matchMark, minutesUntil, pillStatus, resultMargin, resultTone, teeClock, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
+import { apnsPayload, BODY_LIMIT, LIVE_CARD_BACKGROUND, androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, opponentLabel, ordinal, matchMark, minutesUntil, pillStatus, resultMargin, resultTone, teeClock, liveActivityContent, newestFirst, safeAppLink, thruLabel, timeAgo, TITLE_LIMIT, unreadCount } from "./format.ts";
 import type { AppNotification, LiveRoundActivity } from "./types.ts";
 
 const note = (over: Partial<AppNotification> = {}): AppNotification => ({
@@ -148,9 +148,12 @@ test("opponent label: one player in full, a pair by last names", () => {
   assert.equal(opponentLabel(["", " "]), "");
 });
 
-test("Live Activity team text is the on-dark color a hair brighter", () => {
-  assert.equal(liveTeamText("#000000"), "#1f1f1f");
+test("Live Activity team text is the on-dark color, brightened until it reads on the dark card", () => {
+  const lum = (hex: string) => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  for (const color of ["#000000", "#6b1e2a", "#7a2a36", "#1d2b53"]) assert.ok(contrast(liveTeamText(color), LIVE_CARD_BACKGROUND) >= 7, color);
   assert.equal(liveTeamText("#ffffff"), "#ffffff");
+  assert.equal(liveTeamText("#f2c94c"), "#f4cf61"); // already bright: only the hair brighter
   assert.equal(liveTeamText("bad"), "bad");
 });
 

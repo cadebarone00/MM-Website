@@ -23,7 +23,8 @@ function useMockPerson(): MockPerson {
 
 export function MockPlay() {
   const person = useMockPerson();
-  return <PlatformHome key={person.id} signedIn preview={{ displayName: person.name, username: person.username }} />;
+  const profile = sampleProfileReadModel(person.profilePreview, mockPersonProfile(person), new Date().toLocaleDateString("en-CA"));
+  return <PlatformHome key={person.id} signedIn preview={{ displayName: person.name, username: person.username, handicapIndex: profile.modernStats?.handicapIndex }} />;
 }
 
 export function MockGolfTrips() {

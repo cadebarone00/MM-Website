@@ -83,6 +83,13 @@ export const SAMPLE_LIVE_ROUND: LiveRoundActivity = {
 /** Owner's example (2026-10-17): Cam on Maroon, +2 for the round, 3 UP thru 15, Maroon leads 3½ to 1½. */
 /** The preview's trip-local clock for the countdown: 2:11 PM (owner's example: 2:24 tee time → "13m 2:24"). */
 export const SAMPLE_LOCAL_NOW = "2026-10-16T14:11";
+/** The one clock every Notifications preview shows (lock screens, status bars, widget): "2:11", "Friday, October 16", "Fri, Oct 16". */
+export function previewClock(local: string = SAMPLE_LOCAL_NOW): { time: string; long: string; short: string } {
+  const date = new Date(`${local.slice(0, 16)}:00Z`);
+  const hours = date.getUTCHours() % 12 || 12;
+  const part = (options: Intl.DateTimeFormatOptions) => date.toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
+  return { time: `${hours}:${String(date.getUTCMinutes()).padStart(2, "0")}`, long: part({ weekday: "long", month: "long", day: "numeric" }), short: part({ weekday: "short", month: "short", day: "numeric" }) };
+}
 /** Maroon vs White in the app's own team colors (lib/platform/teamColors.ts). */
 function sampleTeams(mine: number, other: number) {
   const team = (id: string, points: number) => { const color = teamColor(id)!; return { name: color.name, color: color.base, onDark: color.onDark, points }; };

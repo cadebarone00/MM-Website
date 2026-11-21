@@ -1,15 +1,20 @@
 "use client";
 
 import { Camera, Flashlight, LockKeyhole } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { appleSystem, androidSystem } from "@/lib/fonts/notifications";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { widgetTimeline, type WidgetSnapshot } from "@/lib/notifications/widget";
+import { widgetCssVars } from "@/lib/notifications/widgetDesign";
+import { previewClock } from "@/lib/dev/sampleNotifications";
+import { IosStatusBar } from "./NotificationPreviews";
 import { sampleWidgetItems, WIDGET_SAMPLE_NOW, type WidgetPhone, type WidgetSize } from "@/lib/dev/sampleWidget";
 import phone from "./NotificationPreviews.module.css";
 import styles from "./WidgetPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
+/** Same clock as every Notifications preview. */
+const CLOCK = previewClock();
 const WALLPAPERS = { default: phone.wallpaper, dark: phone.wallpaperDark, light: phone.wallpaperLight } as const;
 /** Home screen cells each size covers, like the real 4-column grid: small 2×2, medium 4×2, large 4×4. */
 const CELLS: Record<Exclude<WidgetSize, "lock">, number> = { small: 4, medium: 8, large: 16 };
@@ -20,12 +25,13 @@ export function WidgetPreviewScreen() {
   const size = simulator?.state.widgetSize ?? "small";
   const os = simulator?.state.widgetPhone ?? "ios";
   const wall = WALLPAPERS[simulator?.state.wallpaper ?? "default"];
+  const designVars = widgetCssVars(simulator?.state.widgetIphone ?? "pro") as CSSProperties;
   const timeline = widgetTimeline(sampleWidgetItems(simulator?.state.widgetState ?? "next"), WIDGET_SAMPLE_NOW);
   const snap = timeline[0];
   const screen = size === "lock"
     ? os === "ios" ? <IosLock wall={wall} snap={snap} /> : <AndroidNoLock wall={wall} />
     : <Home wall={wall} os={os} size={size} snap={snap} />;
-  return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents" }}>
+  return <div className={`${appleSystem.variable} ${androidSystem.variable}`} style={{ display: "contents", ...designVars }}>
     {screen}
     {timeline.length > 1 && <ol className={styles.timeline} aria-label="When the words change by themselves">
       {timeline.map(entry => <li key={entry.at}><time>{entry.at.replace("T", " ")}</time> {entry.state === "nothing" ? "No rounds yet" : entry.line2}</li>)}
@@ -36,7 +42,8 @@ export function WidgetPreviewScreen() {
 function Home({ wall, os, size, snap }: { wall: string; os: WidgetPhone; size: Exclude<WidgetSize, "lock">; snap: WidgetSnapshot }) {
   const apps = 20 - CELLS[size];
   return <main className={`${phone.phone} ${os === "android" ? phone.androidScreen : ""} ${wall}`} aria-label={`${os === "ios" ? "iPhone" : "Android"} home screen with the widget`}>
-    {os === "android" && <div className={phone.androidStatus}><span className={phone.androidClock}>10:00</span><span className={phone.androidIcons} aria-hidden>▲ ◢ ▮</span></div>}
+    {os === "android" && <div className={phone.androidStatus}><span className={phone.androidClock}>{CLOCK.time}</span><span className={phone.androidIcons} aria-hidden>▲ ◢ ▮</span></div>}
+    {os === "ios" && <IosStatusBar />}
     <div className={styles.grid}>
       <div className={styles.slot} data-size={size}>
         <Widget size={size} snap={snap} os={os} />
@@ -53,7 +60,7 @@ function Widget({ size, snap, os }: { size: Exclude<WidgetSize, "lock">; snap: W
   const live = snap.state === "live";
   return <a className={styles.widget} data-size={size} data-os={os} data-state={snap.state} href={snap.link} title={`Opens ${snap.link}`}>
     <div className={styles.main}>
-      <p className={styles.eyebrow}>{live && <i className={styles.liveDot} aria-hidden />}{snap.eyebrow}</p>
+      <p className={styles.eyebrow}>{live && <i className={styles.liveDot} aria-hidden />}<span className={styles.eyebrowText}>{snap.eyebrow}</span></p>
       <p className={styles.title}>{snap.title}</p>
       <p className={styles.line1}>{snap.line1}</p>
       <p className={styles.line2}>{snap.line2}</p>
@@ -84,8 +91,8 @@ function IosLock({ wall, snap }: { wall: string; snap: WidgetSnapshot }) {
   return <main className={`${phone.phone} ${wall}`} aria-label="Locked iPhone with lock screen widgets">
     <div className={phone.lockTop}>
       <LockKeyhole size={16} strokeWidth={2.25} aria-hidden />
-      <p className={phone.lockDate}>Saturday, November 21{snap.lock.inline && <span className={styles.inline}> · {snap.lock.inline}</span>}</p>
-      <p className={phone.lockClock}>10:00</p>
+      <p className={phone.lockDate}>{CLOCK.long}{snap.lock.inline && <span className={styles.inline}> · {snap.lock.inline}</span>}</p>
+      <p className={phone.lockClock}>{CLOCK.time}</p>
       <div className={styles.lockRow}>
         <span className={styles.circle} aria-label="Circle widget">{snap.lock.circle || <img src={APP_ICON} alt="" />}</span>
         <span className={styles.rect} aria-label="Rectangle widget"><b>{snap.lock.rect[0]}</b><span>{snap.lock.rect[1]}</span></span>

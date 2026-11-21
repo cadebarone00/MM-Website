@@ -1,0 +1,84 @@
+{
+  "sample": "live",
+  "now": "2026-10-16T14:11",
+  "timeline": [
+    {
+      "at": "2026-10-16T14:11",
+      "upcoming": [
+        {
+          "title": "Pinehurst No. 4",
+          "when": "Mon 9:10",
+          "link": "/golf-trips/sample"
+        },
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [
+        {
+          "name": "Cade Barone",
+          "score": "+3",
+          "thru": "12"
+        },
+        {
+          "name": "Collin Ross",
+          "score": "+5",
+          "thru": "12"
+        },
+        {
+          "name": "Jake Parker",
+          "score": "+1",
+          "thru": "12"
+        },
+        {
+          "name": "Mike Chen",
+          "score": "+8",
+          "thru": "12"
+        }
+      ],
+      "holes": [
+        {
+          "hole": 10,
+          "par": 5,
+          "strokes": 5
+        },
+        {
+          "hole": 11,
+          "par": 3,
+          "strokes": 2
+        },
+        {
+          "hole": 12,
+          "par": 4,
+          "strokes": 6
+        }
+      ],
+      "state": "live",
+      "link": "/golf-trips/sample",
+      "eyebrow": "LIVE · PINEHURST NO. 2",
+      "title": "Pinehurst No. 2",
+      "line1": "+3 · Thru 12",
+      "line2": "2 UP vs Collin Ross",
+      "lock": {
+        "circle": "+3",
+        "rect": [
+          "Pinehurst No. 2",
+          "+3 · Thru 12"
+        ],
+        "inline": "+3 thru 12"
+      }
+    }
+  ]
+}

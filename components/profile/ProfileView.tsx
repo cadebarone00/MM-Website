@@ -80,7 +80,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
         and everything under it is cream (.profile-body in app/globals.css gives the tabs the light palette), so the maroon
         curve shows the same way on Overview, Rounds and Stats. */}
     <div className="profile-root flex min-h-screen min-w-0 flex-col bg-[#fbf8f1] text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
-      {/* The icon row starts on the app's icon line (--app-top-clearance, app/globals.css: 5px under the Dynamic Island /
+      {/* The icon row starts on the app's icon line (--app-top-clearance, app/globals.css: 8px below the safe area /
           status bar) and everything else lower, so nothing lands where the clock, battery or notch are. */}
       <header className="profile-hero relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-maroon-900 text-cream-50 px-5 pb-3" style={{ paddingTop: `calc(var(--app-top-clearance, 0px) + ${isOwner ? 60 : 56}px)` }}>
         {isOwner ? <>

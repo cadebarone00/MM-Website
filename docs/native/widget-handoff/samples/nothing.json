@@ -1,0 +1,26 @@
+{
+  "sample": "nothing",
+  "now": "2026-10-16T14:11",
+  "timeline": [
+    {
+      "at": "2026-10-16T14:11",
+      "upcoming": [],
+      "group": [],
+      "holes": [],
+      "state": "nothing",
+      "link": "/rounds/new",
+      "eyebrow": "THE MAROON",
+      "title": "No rounds yet",
+      "line1": "Tap to start one",
+      "line2": "",
+      "lock": {
+        "circle": "",
+        "rect": [
+          "The Maroon",
+          "No rounds yet"
+        ],
+        "inline": ""
+      }
+    }
+  ]
+}

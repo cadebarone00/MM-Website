@@ -1,0 +1,206 @@
+{
+  "sample": "next",
+  "now": "2026-10-16T14:11",
+  "timeline": [
+    {
+      "at": "2026-10-16T14:11",
+      "upcoming": [
+        {
+          "title": "Pinehurst No. 4",
+          "when": "Mon 9:10",
+          "link": "/golf-trips/sample"
+        },
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [],
+      "holes": [],
+      "state": "next",
+      "link": "/golf-trips/sample",
+      "eyebrow": "NEXT · TEE TIME",
+      "title": "Pinehurst No. 2",
+      "line1": "Sun 8:40",
+      "line2": "In 2 days",
+      "lock": {
+        "circle": "8:40",
+        "rect": [
+          "Pinehurst No. 2",
+          "Sun 8:40"
+        ],
+        "inline": "Pinehurst No. 2 8:40"
+      }
+    },
+    {
+      "at": "2026-10-17T00:00",
+      "upcoming": [
+        {
+          "title": "Pinehurst No. 4",
+          "when": "Mon 9:10",
+          "link": "/golf-trips/sample"
+        },
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [],
+      "holes": [],
+      "state": "next",
+      "link": "/golf-trips/sample",
+      "eyebrow": "NEXT · TEE TIME",
+      "title": "Pinehurst No. 2",
+      "line1": "Sun 8:40",
+      "line2": "Tomorrow",
+      "lock": {
+        "circle": "8:40",
+        "rect": [
+          "Pinehurst No. 2",
+          "Sun 8:40"
+        ],
+        "inline": "Pinehurst No. 2 8:40"
+      }
+    },
+    {
+      "at": "2026-10-18T00:00",
+      "upcoming": [
+        {
+          "title": "Pinehurst No. 4",
+          "when": "Mon 9:10",
+          "link": "/golf-trips/sample"
+        },
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [],
+      "holes": [],
+      "state": "next",
+      "link": "/golf-trips/sample",
+      "eyebrow": "NEXT · TEE TIME",
+      "title": "Pinehurst No. 2",
+      "line1": "Sun 8:40",
+      "line2": "Today",
+      "lock": {
+        "circle": "8:40",
+        "rect": [
+          "Pinehurst No. 2",
+          "Sun 8:40"
+        ],
+        "inline": "Pinehurst No. 2 8:40"
+      }
+    },
+    {
+      "at": "2026-10-18T08:40",
+      "upcoming": [
+        {
+          "title": "Pinehurst No. 4",
+          "when": "Mon 9:10",
+          "link": "/golf-trips/sample"
+        },
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [],
+      "holes": [],
+      "state": "next",
+      "link": "/golf-trips/sample",
+      "eyebrow": "NEXT · TEE TIME",
+      "title": "Pinehurst No. 2",
+      "line1": "Sun 8:40",
+      "line2": "Now",
+      "lock": {
+        "circle": "8:40",
+        "rect": [
+          "Pinehurst No. 2",
+          "Sun 8:40"
+        ],
+        "inline": "Pinehurst No. 2 8:40"
+      }
+    },
+    {
+      "at": "2026-10-18T09:40",
+      "upcoming": [
+        {
+          "title": "Cedar Crest",
+          "when": "Tue 5:30",
+          "link": "/leagues"
+        },
+        {
+          "title": "Stevens Park",
+          "when": "Fri 7:50",
+          "link": "/rounds/new"
+        },
+        {
+          "title": "Tenison Highlands",
+          "when": "Sat 11:00",
+          "link": "/tournaments/join"
+        }
+      ],
+      "group": [],
+      "holes": [],
+      "state": "next",
+      "link": "/golf-trips/sample",
+      "eyebrow": "NEXT · TEE TIME",
+      "title": "Pinehurst No. 4",
+      "line1": "Mon 9:10",
+      "line2": "Tomorrow",
+      "lock": {
+        "circle": "9:10",
+        "rect": [
+          "Pinehurst No. 4",
+          "Mon 9:10"
+        ],
+        "inline": "Pinehurst No. 4 9:10"
+      }
+    }
+  ]
+}

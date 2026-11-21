@@ -5417,7 +5417,7 @@ see how each screen looks with the keyboard open — on **iPhone** and **Android
 iPhone and for Pixel; the screen shortens; email / number fields get their own layouts; tapping keys types; the switch hides
 it; tested in the browser.
 
-## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, approved; steps 1–2 BUILT 2026-11-20, uncommitted)
+## Notifications cleanup — one catalog, every type on every screen (owner request 2026-11-19, approved; steps 1–2 BUILT 2026-11-20; step 3 UI pass BUILT 2026-11-21, uncommitted)
 
 **Why.** Notifications live in 5 places that don't agree: the 12 kinds in `lib/notifications/types.ts`, the 6 Settings
 switches in `lib/profile/preferences.ts` (only 1–2 match a kind; friend requests, draft, your pick and chat have no kind),
@@ -5481,7 +5481,15 @@ Settings gains Big moments + Travel reminders, "Scores posted" shows as Round up
 `supabase/profile_preferences.sql` (still NOT run in production) accepts the two new switch ids. Previews: new
 `/dev/notifications/types` (`components/notifications/NotificationCatalog.tsx`), Type + Wording choices on Phone, In-app and
 All types (`lib/dev/sampleNotificationTypes.ts` reads the Highlights snapshot; kept out of `lib/dev/simulator.ts`). Chat
-uses the message itself as the body (its 3 versions only change the title line). Step 3 (UI pass) not started.
+uses the message itself as the body (its 3 versions only change the title line).
+
+**Step 3 UI pass, built 2026-11-21 (owner OK'd all 10 fixes).** (1) Bell preview = the real slide-up sheet, 85% tall. (2) In-app
+previews use Spectral (Barlow only for tiny caps). (3) In-app top banner is one fixed size (title 1 line, message 2 lines,
+then …). (4) Bell badge no longer peeks out behind the banner. (5) New catalog flag `personal` (friend request): no trip
+name, just "The Maroon". (6) `liveTeamText` brightens dark team colors until contrast 7 on the Live Activity card (real
+code, not just preview). (7) Individual-only Live Activity header = trip name, not "The Maroon". (8) Lock screen buttons
+show on the darker wallpaper. (9) One preview clock everywhere: `previewClock()` = Fri Oct 16, 2:11 (widget samples moved to
+that date). (10) iPhone home screens get a status bar (hidden while a Live Activity pill is showing).
 
 
 ## Golf Trip create: skip the setup screen, Learn first time only, sign-up-style question pages, Settings → Tutorials (owner request 2026-11-20) — APPROVED + BUILT 2026-11-20 (uncommitted; GetStartedButton.tsx removed, TripWizardArt.tsx now unused)
@@ -5597,7 +5605,7 @@ Trip names, destinations, dates, player counts and league names are realistic an
 - Real `/golf-trips`, `/tournaments/join`, `/leagues`, `/` and `/profile` still work as before.
 - Typecheck and lint pass; each page checked on screen at phone size.
 
-## Home screen widget: "What's next" for iPhone + Android (owner request 2026-11-21) — SPEC, awaiting approval
+## Home screen widget: "What's next" for iPhone + Android (owner request 2026-11-21) — APPROVED; step 1 BUILT 2026-11-21
 
 **Why:** the owner wants people to glance at their home screen and see the one golf thing they're doing now, or the next one coming up, without opening the app. It's part of the notifications work, and the list of native pieces is here: https://claude.ai/artifact/3zFuCwWE5A5c9TvS14Gj72
 
@@ -5626,6 +5634,8 @@ On Android, people can resize the widget, so it picks the closest of the same th
 **Later step, not in this one:** the widget asking our server for fresh data by itself while the app is closed (so other players' scores show without opening the app). This needs the app's login to be shared with the widget. Do it after this works.
 
 **Not doing:** entering scores on the widget, an iPad extra-large size, more than one widget style to pick from, and a dark/light choice (the widget follows the phone).
+
+**Step 1 built 2026-11-21:** `lib/notifications/widget.ts` (+13 tests), `lib/dev/sampleWidget.ts`, `/dev` → Notifications → Home screen widget (Size × State × Phone). Checked on screen. Steps 2–4 (Xcode, Android, lock screen for real) not started.
 
 **Order:** (1) widget snapshot in TypeScript + tests + a `/dev` preview of every size × state (simulator conditionals). (2) iPhone bridge + widget in Xcode. (3) Android bridge + widget. (4) Lock screen sizes. Each step is approved separately.
 
@@ -5663,3 +5673,98 @@ On Android, people can resize the widget, so it picks the closest of the same th
 **What it doesn't test:** the real server and email sending. Those stay covered by the local test scripts (`scripts/auth-local`, which need Docker Desktop on).
 
 **Done =** you can run all four practice cases start to finish as many times as you want; End of simulation shows the summary; nothing appears in Supabase or in any inbox; typecheck, lint and tests pass; checked on screen at phone size.
+
+## Widget handoff pack: settle the widget here so SwiftUI just copies it (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; tests pass; checked on screen)
+
+**Why:** the real widget has to be written in SwiftUI (iPhone) and Kotlin (Android), and Swift can't run on Windows. If every size, color, font, spacing and example is decided and checked here first, the Xcode step is copying, not designing. Owner said "yes, plan it" without picking an option, so this uses the recommended one: pieces 1–3 now, Swift files later on the Mac.
+
+**Who uses it:** the owner (approves the look in `/dev`) and whoever writes the Swift/Kotlin later (reads the handoff files).
+
+**Tech:** TypeScript only, inside the existing Next.js app. No database, no SQL, no new services, nothing sent to phones.
+
+**What gets built:**
+1. **One design sheet in code:** `lib/notifications/widgetDesign.ts`. Every number the widget uses: colors (maroon background top/bottom, cream text, gold label, live-dot red, under/over-par colors), fonts (Spectral for title and score, Barlow caps for the top label, with their sizes and weights), padding, gaps, corner radius, and the box size for each size on two iPhone sizes: regular Pro (158×158 / 338×158 / 338×354) and Pro Max (170×170 / 364×170 / 364×382), plus the lock screen circle and rectangle. The `/dev` preview stops using its own hard-coded numbers and reads from this sheet, so the preview and the handoff can't drift apart.
+2. **Real sizes in the preview:** a new simulator switch **iPhone size: Pro / Pro Max** on the Home screen widget page. Android keeps the closest of the same three layouts.
+3. **Handoff files for Xcode:** a small script (`npm run widget:handoff`) writes plain data files into `docs/native/widget-handoff/`:
+   - `design.json`: the design sheet above
+   - `samples/nothing.json`, `next.json`, `live.json`, `long.json`: the exact widget snapshots the preview shows (from `widgetTimeline` + `sampleWidgetItems`), which Xcode's own preview can load
+   - `README.md`: one page saying what each field means, which field goes on which line for each size, and what tapping opens
+   A test fails if those files are out of date with the code (run the script to fix).
+
+**Not doing now:** the Swift and Kotlin files themselves (wait for the Mac so they can be tested), changing what the widget says or which round it picks (already approved), Android-specific sizes (Android resizes freely), and any dark/light versions.
+
+**Things to know:**
+- Using Spectral and Barlow on the real widget means adding those font files to the Xcode widget target later. The README says so.
+- The iPhone 17 Pro's exact widget sizes get checked in Xcode. The two sizes above are Apple's published sizes for the regular and Max phones.
+- `docs/native/` is a new folder inside `docs/`, not a new top-level folder.
+
+**Pages / flows:** dev only, at `/dev` → Notifications → Home screen widget. Nothing public changes.
+
+**Done =**
+- The widget preview reads every number from `widgetDesign.ts` and looks the same as today on the Pro size.
+- The Pro / Pro Max switch changes the box sizes, and nothing inside overflows in any of the 4 states.
+- `npm run widget:handoff` writes `design.json`, the 4 sample files and the README, and the "up to date" test passes.
+- Typecheck, lint and tests pass, and it's checked on screen.
+
+---
+
+## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT 2026-11-21, uncommitted; `supabase/maroon_live_visibility.sql` NOT run in prod; leagues have the columns only (their settings come with Step 3)
+
+**What it does / who uses it.** Every golf trip, tournament and league gets its own live site, built from one shared template, on the website and in the app. Anyone allowed in can follow the golf live: leaderboard, match play, scorecards, and each player's trip profile. Like the Masters app: you see Rory's scores, not his flight plans. Organizers can also put a scrolling leaderboard on a TV.
+
+**Who can see it: 3 settings, picked by the organizer and changeable any time**
+1. **Public:** anyone can find it (Tourneys search and Live / Upcoming / Past lists) and open it. No sign-in needed.
+2. **Link only:** not listed or searchable. Anyone with the share link can open it. Players can share the link only if the organizer turned on **"Players can share the link."** If it's off, only organizers see the Share button.
+3. **Private:** no live site and no working link. Only members see the event inside the app, the same as today.
+
+- Changing to Private shuts off the live site and the link right away. Changing back turns the same link back on.
+- New events start **Private**, to match how tournaments work today.
+
+**What's shown (golf only)**
+- Everything on the event's **Golf page**: individual leaderboard, match play / team leaderboard, rounds, scorecards, stats.
+- **Tap a player's name** to open their **trip profile**, the same screen as tapping a name on the leaderboard inside the event. It only shows golf for this event.
+- From the trip profile, a link goes to their **real Maroon profile**. That page follows the person's own Public / Private profile setting, like any profile visit.
+- **Never shown:** travel, flights, lodging, destination details, feed / chat, money / bets, emails, join codes, invites, or settings.
+
+**TV mode (BlueGolf-style).** Add `/tv` to the end of the live link for a full-screen leaderboard that scrolls slowly from top to bottom and repeats. It updates on its own, with no tapping, and is sized for a big screen. It shows the individual leaderboard, the match play leaderboard, or takes turns between the two if the event has both. The organizer picks. We'll design the look together first in the dev simulator.
+
+**Builds on what's already here (nothing thrown away)**
+- **Watch codes** (`/watch/<code>`, `lib/platform/watchView.ts`) already strip private data on the server for trips and tournaments. They become the **Link only** link.
+- The tournament **Public / Private** switch (`supabase/tournament_public.sql`, `is_public`) grows into the 3 settings.
+- `/tournaments/live/<id>` and `/watch/<code>` merge into **one live template** used by trips, tournaments and leagues.
+
+**Tech / data**
+- Same stack (Next.js + Supabase, Capacitor app). No new services.
+- New column `visibility` (`public` / `link` / `private`) and `players_can_share` (yes/no) on `golf_trips`, `code_tournaments` and `leagues`. Leagues also get a watch code. Existing public tournaments become `public`, and everything else becomes `private`. Note: watch codes are "always on" today, so existing trips that people already watch by code would go Private. **Owner to confirm, or we start those at Link only.**
+- Viewers never touch the database directly. The server reads with the service key and sends only the golf data (same rule as watch codes today).
+- One new SQL file. Not run in prod until you say.
+
+**Build order (one step per commit)**
+1. Settings: the 3-way switch and "Players can share the link" in each event's Settings, plus the SQL.
+2. One live template: Leaderboard, Matches and Scorecards for trips and tournaments, with tap-a-name → trip profile.
+3. Leagues on the same template.
+4. TV mode: design in the simulator, then build.
+5. Simulator conditionals for every state (Public, Link only, Private / unavailable, no scores yet, live, final).
+
+**Not in this step:** seeing who's watching, spectator chat or reactions, video streaming, custom web addresses per event.
+
+**Done =** a signed-out browser can open a Public event from search and a Link only event from its link, and see live golf update. Private and changed-to-Private events say "This event isn't available." Nothing private appears in any reply (checked by tests). The share-link toggle hides or shows Share for players. TV mode scrolls and updates on its own. Typecheck, lint and tests pass, and it's checked on screen.
+
+## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — SPEC, awaiting approval
+
+**Why:** the owner wants every version used, so people don't get the exact same words every time for the same thing.
+
+**What changes:**
+1. **Approve all 3 versions** of the 13 types whose wording lives in `lib/notifications/catalog.ts` (`approved: true`). The All types page then shows "Approved" for those.
+2. **Random pick when sending:** a new function `pickWording(kind, lastVersion?)` in `lib/notifications/catalog.ts` returns one of the type's 3 versions at random, **never the same version that person got last time for that type** (so it can't repeat back to back). The real sender (push / bell, built later) calls it and saves which version it used.
+3. **Sheet-worded types** (Big moment, Travel reminder, Organizer message) already pick a random wording per event in the Highlights engine. Their approval stays in the Highlights spreadsheet, row by row (owner sets each to Approved there). No code change for those.
+4. **`/dev` preview:** the All types page shows a small "Sent at random, never the same twice in a row" note on each type.
+
+**Not doing:** sending anything (that's the native push step), weighting some versions more than others, or more than 3 versions.
+
+**Tech:** TypeScript only. No database or SQL yet. Remembering "last version per person per type" gets its own small column when the real sender is built.
+
+**Done =**
+- All 13 catalog types show Approved; the 3 sheet types still follow the sheet.
+- Tests: `pickWording` only returns that type's versions, never repeats `lastVersion`, and over many picks uses all 3.
+- Typecheck, lint and tests pass; All types page checked on screen.

@@ -172,11 +172,27 @@ export function opponentLabel(names: string[]): string {
   return clean.map(name => name.split(/\s+/).at(-1)).join(" & ");
 }
 
-/** Team text on the Live Activity: the team's app on-dark color, a hair brighter (owner 2026-10-17). */
+/** The Live Activity card's background (dark maroon, --lm-bg-240001). */
+export const LIVE_CARD_BACKGROUND = "#240001";
+
+const luminance = (rgb: number[]) => {
+  const [r, g, b] = rgb.map(c => c / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const hexRgb = (hex: string) => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+
+/**
+ * Team text on the Live Activity: the team's app on-dark color, a hair brighter (owner 2026-10-17). Dark team colors
+ * (maroon, black, navy) keep brightening until they read clearly on the dark card (contrast 7, look-over pass 2026-11-21).
+ */
 export function liveTeamText(onDark: string): string {
   const hex = /^#([0-9a-f]{6})$/i.exec(onDark)?.[1];
   if (!hex) return onDark;
-  return `#${[0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)).map(c => Math.round(c + (255 - c) * 0.12).toString(16).padStart(2, "0")).join("")}`;
+  const background = luminance(hexRgb(LIVE_CARD_BACKGROUND.slice(1)));
+  const mix = (amount: number) => hexRgb(hex).map(c => Math.round(c + (255 - c) * amount));
+  let amount = 0.12;
+  while (amount < 1 && (luminance(mix(amount)) + 0.05) / (background + 0.05) < 7) amount = Math.min(1, amount + 0.02);
+  return `#${mix(amount).map(c => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /** "1" → "1st", "6" → "6th", "T2" stays "T2". */

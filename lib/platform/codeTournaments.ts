@@ -1,3 +1,4 @@
+import type { LiveVisibility } from "./liveVisibility.ts";
 import type { GolfLeaderboardEntry, GolfMatchPreview, GolfMatchSide } from "./golfTripPreviewFixture";
 import type { PlayerRoundTee } from "./playerRounds";
 import type { ScoringCourse } from "./personalRound";
@@ -18,6 +19,8 @@ export interface CodeTournament {
   cut?: TournamentCut | null;
   /** Shown in the Tourneys search and live feed (supabase/tournament_public.sql); new tournaments start private. */
   isPublic?: boolean;
+  /** The Maroon Live (supabase/maroon_live_visibility.sql): who can watch, and whether players get the link; sent to the organizer only. */
+  liveVisibility?: LiveVisibility; livePlayersCanShare?: boolean;
   /** The organizer's Info PDF (supabase/tournament_documents.sql): a storage path, or (simulator sample) a local file's
    *  address. Adds the Info tab (players only). */
   infoPdf?: string | null;
@@ -269,7 +272,8 @@ export function tournamentPreview(t: CodeTournament, shown: number): GolfMatchPr
 /** One change a player or organizer makes (the POST body for /api/code-tournaments/<id>). */
 export type TournamentChange = { action: "strokes"; round: number; hole: number; strokes: number | null } | { action: "submit"; round: number }
   | { action: "attest"; round: number; player: string; hole: number; strokes: number | null }
-  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "public"; isPublic: boolean } | { action: "end" };
+  | { action: "addRound"; setup: CodeRoundSetup; date: string } | { action: "teeSheet"; round: number; teeSheet: TeeSheet } | { action: "cut"; cut: TournamentCut | null } | { action: "public"; isPublic: boolean }
+  | { action: "visibility"; visibility: LiveVisibility; playersCanShare: boolean } | { action: "end" };
 
 /** The tournament after a change, as the database would make it (the app simulator's sample tournament uses this). */
 export function applyChange(t: CodeTournament, me: string, change: TournamentChange): CodeTournament {
@@ -287,6 +291,7 @@ export function applyChange(t: CodeTournament, me: string, change: TournamentCha
     case "teeSheet": return { ...t, rounds: t.rounds.map((r) => r.number === change.round ? { ...r, teeSheet: change.teeSheet } : r) };
     case "cut": return { ...t, cut: change.cut };
     case "public": return { ...t, isPublic: change.isPublic };
+    case "visibility": return { ...t, liveVisibility: change.visibility, livePlayersCanShare: change.playersCanShare, isPublic: change.visibility === "public" };
     case "end": return { ...t, status: "ended" };
   }
 }

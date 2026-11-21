@@ -187,6 +187,8 @@ export interface SavedGolfTrip {
     latitude?: number | null; longitude?: number | null; external_place_id?: string | null;
     /** The read-only watch code (supabase/watch_codes.sql); missing before that file is run. */
     watch_code?: string | null;
+    /** The Maroon Live: who can watch, and whether players get the link (supabase/maroon_live_visibility.sql); missing before that file is run. */
+    live_visibility?: string | null; live_players_can_share?: boolean | null;
     /** Made by Golf Trips → Import past trip (supabase/golf_trip_import.sql); missing before that file is run. */
     imported?: boolean;
   };

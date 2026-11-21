@@ -5,6 +5,9 @@ import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, FileUp, Plus, Sha
 import { AddRound } from "./CodeTournamentCreate";
 import { CutFields, cutSummary } from "./CodeTournamentCut";
 import { TeeSheetEditor } from "./CodeTournamentTeeSheet";
+import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
+import { TripTapInInvite } from "./TripTapInInvite";
+import { LIVE_VISIBILITY_COPY, liveSettingsFrom } from "@/lib/platform/liveVisibility";
 import { formatCode, roundTeeSheet, tournamentDocUrl, type CodeTournament, type TournamentChange, type TournamentCut, type TournamentDocKind } from "@/lib/platform/codeTournaments";
 import settingsStyles from "./GolfTripSettingsPreview.module.css";
 import styles from "./CodeTournament.module.css";
@@ -19,7 +22,7 @@ const roundDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateStr
  * Tournament Settings (organizer only), opened from the settings wheel on the tournament page; the same look as Trip
  * Settings: a card for each part, each opening its own page. Info (join code, End tournament), Rounds (+ Add round),
  * Tee Sheet (each round's groups), Cut, Info PDF and a Pin Sheet per round (each adds its tab on the tournament page),
- * and Public / Private (whether it shows in the Tourneys search and lists).
+ * and Who can watch (The Maroon Live: Public / Link only / Private, and whether players can share the link).
  * `act` sends a change (or applies it, for the simulator's sample); the page reloads the tournament after each one.
  */
 export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { t: CodeTournament; act: (change: TournamentChange) => Promise<{ ok: boolean; message?: string }>; upload: Upload;
@@ -30,6 +33,8 @@ export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { 
   const [problem, setProblem] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const live = t.status === "live";
+  // The Maroon Live: who can watch (Public / Link only / Private); the old switch decides until it's saved once.
+  const watching = liveSettingsFrom(t.liveVisibility, t.livePlayersCanShare, t.isPublic ? "public" : "private");
   async function send(change: TournamentChange, fallback: string) {
     const result = await act(change);
     setProblem(result.ok ? null : result.message ?? fallback);
@@ -49,14 +54,14 @@ export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { 
     Cut: t.cut ? cutSummary(t.cut) : "No cut",
     "Info PDF": t.infoPdf ? "Uploaded · shows an Info tab" : "None yet",
     "Pin Sheet": (() => { const n = t.rounds.filter((r) => r.pinSheetPdf).length; return n ? `${n} of ${t.rounds.length} rounds` : "None yet"; })(),
-    Visibility: t.isPublic ? "Public" : "Private",
+    Visibility: LIVE_VISIBILITY_COPY[watching.visibility].label,
   };
 
   return <main className={`${settingsStyles.page} ${panel ? settingsStyles.competitionPage : ""}`}>
     <div className={settingsStyles.content}>
       {panel ? <header className={settingsStyles.competitionHeader}>
         <button type="button" className={settingsStyles.close} aria-label="Back to tournament settings" onClick={() => open(null)}><ChevronLeft size={28} aria-hidden /></button>
-        <h1>{panel === "Visibility" ? "Public or Private" : panel}</h1>
+        <h1>{panel === "Visibility" ? "Who can watch" : panel}</h1>
       </header> : <header className={settingsStyles.header}>
         <button type="button" className={`${settingsStyles.close} ${styles.plainButton}`} aria-label="Back to tournament" onClick={onClose}><ChevronLeft size={26} strokeWidth={1.75} aria-hidden /></button>
         <div className={settingsStyles.heading}><h1>{t.name}</h1><p>Tournament Settings</p></div>
@@ -67,8 +72,8 @@ export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { 
         <h2 className={settingsStyles.settingsSectionHeading}>Organizer</h2>
         <div className={settingsStyles.grid}>
           {CARDS.map((title) => <button key={title} type="button" className={`${settingsStyles.card} ${settingsStyles.cardButton}`} onClick={() => open(title)}>
-            <h2>{title === "Visibility" ? (t.isPublic ? "Public" : "Private") : title}</h2>
-            <p className={styles.cardDetail}>{title === "Visibility" ? (t.isPublic ? "In the Tourneys search and live feed" : "Only players with the code") : detail[title]}</p>
+            <h2>{title === "Visibility" ? detail.Visibility : title}</h2>
+            <p className={styles.cardDetail}>{title === "Visibility" ? (watching.visibility === "public" ? "In the Tourneys search and live feed" : watching.visibility === "link" ? "Anyone with the link can watch" : "Only players with the code") : detail[title]}</p>
           </button>)}
           {/* Last: Delete Tournament, which asks first. */}
           <button type="button" className={`${settingsStyles.card} ${settingsStyles.cardButton} ${styles.deleteCard}`} onClick={() => setDeleting(true)}>
@@ -95,7 +100,9 @@ export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { 
           onChange={async (file) => { const result = await upload("info", file); setProblem(result.ok ? null : result.message ?? "Couldn't save that. Try again."); return result.ok; }} />
         : panel === "Pin Sheet" ? <PinSheetPanel t={t}
           onChange={async (round, file) => { const result = await upload("pinSheet", file, round); setProblem(result.ok ? null : result.message ?? "Couldn't save that. Try again."); return result.ok; }} />
-        : <VisibilityPanel isPublic={Boolean(t.isPublic)} onChange={(isPublic) => send({ action: "public", isPublic }, "Couldn't change it. Try again.")} />}
+        : <><LiveVisibilityPicker key={`${watching.visibility}|${watching.playersCanShare}`} settings={watching}
+          onChange={(next) => send({ action: "visibility", visibility: next.visibility, playersCanShare: next.playersCanShare }, "Couldn't change it. Try again.")} />
+          {watching.visibility !== "private" && t.watchCode && <TripTapInInvite code={t.watchCode} name={t.name} />}</>}
     </div>
     {deleting && <DeleteConfirm name={t.name} onCancel={() => setDeleting(false)} onDelete={onDelete} />}
   </main>;
@@ -214,20 +221,5 @@ function DocPanel({ kind, label, path, round, onChange }: { kind: TournamentDocK
       {path && <button type="button" className={styles.organizerButton} disabled={busy !== null} onClick={() => { if (window.confirm(`Remove the ${label}? Its tab goes away.`)) void send(null); }}>
         <Trash2 size={15} aria-hidden="true" /> {busy === "remove" ? "Removing…" : "Remove"}</button>}
     </div>
-  </section>;
-}
-
-/** Public or Private: saved as soon as it's tapped. */
-function VisibilityPanel({ isPublic, onChange }: { isPublic: boolean; onChange: (isPublic: boolean) => Promise<boolean> }) {
-  const [busy, setBusy] = useState(false);
-  const choose = async (next: boolean) => { if (next === isPublic) return; setBusy(true); await onChange(next); setBusy(false); };
-  return <section className={`${styles.settingsPanel} ${styles.cutEditor}`} aria-label="Public or private">
-    <div className={styles.cutChoices}>
-      {([[false, "Private"], [true, "Public"]] as const).map(([value, label]) =>
-        <button key={label} type="button" aria-pressed={isPublic === value} disabled={busy} onClick={() => void choose(value)}>{label}</button>)}
-    </div>
-    <p className={styles.cutBlurb}>{isPublic
-      ? "Anyone can find this tournament in the Tourneys search and the Live Tournaments feed, and follow its leaderboard and tee sheet. Only players with the code can join."
-      : "Only people with the code can find this tournament. It doesn't show in the Tourneys search or the Live Tournaments feed."}</p>
   </section>;
 }

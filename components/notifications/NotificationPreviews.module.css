@@ -1,5 +1,5 @@
-/* DEV ONLY: Notifications group previews, drawn as the phone will really show them. Our fonts (Barlow text, Spectral
-   titles) only where the app draws: the iPhone Live Activity, Dynamic Island and in-app. Everything the phone draws itself
+/* DEV ONLY: Notifications group previews, drawn as the phone will really show them. Our fonts (Spectral; Barlow only for
+   tiny caps labels) only where the app draws: the iPhone Live Activity, Dynamic Island and in-app. Everything the phone draws itself
    uses its own font: Inter stands in for Apple's SF Pro, Roboto for Android's. */
 .phone{position:relative;box-sizing:border-box;min-height:100vh;min-height:100svh;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-apple-system),sans-serif;color:var(--lm-ink-ffffff)}
 /* Beats the app's global top clearance (globals.css .app-camera-buffer); these screens place the camera spacing themselves. */
@@ -10,6 +10,7 @@
 .wallpaper{background:radial-gradient(120% 70% at 20% 0%,#c25a5f 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#c9a86e 0%,transparent 70%),linear-gradient(170deg,var(--color-maroon-500) 0%,var(--color-maroon-700) 75%)}
 .wallpaperDark{background:radial-gradient(110% 60% at 20% 0%,var(--lm-bg-2a0a0c) 0%,transparent 60%),linear-gradient(170deg,var(--lm-bg-120203) 0%,var(--lm-bg-050101) 75%)}
 .wallpaperLight{background:radial-gradient(120% 70% at 20% 0%,#ffffff 0%,transparent 60%),radial-gradient(90% 60% at 100% 100%,#eadcc0 0%,transparent 70%),linear-gradient(170deg,#fbf8f1 0%,#dfd3ba 80%);color:var(--color-maroon-900)}
+.wallpaperDark .lockButtons span{background:color-mix(in srgb,var(--lm-ink-ffffff) 16%,transparent)}
 .wallpaperLight .lockButtons span{background:rgba(255,255,255,.55);color:var(--color-maroon-900)}
 .wallpaperLight .homeApp i,.wallpaperLight .homeApp small:empty,.wallpaperLight .dock i{background:color-mix(in srgb,var(--lm-bg-240001) 10%,transparent)}
 .wallpaperLight .homeApp small{color:var(--color-maroon-900)}
@@ -38,6 +39,12 @@
 .stackCount{position:absolute;left:0;right:0;bottom:-24px;margin:0;text-align:center;font-size:13px;color:color-mix(in srgb,var(--lm-ink-ffffff) 75%,transparent)}
 
 /* Home screen */
+/* iPhone status bar (the phone draws it): time left of the Dynamic Island, signal / wifi / battery right, on the island's line. */
+.iosStatus{position:absolute;z-index:3;top:11px;left:0;right:0;height:37px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 44px;font:600 16px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text",var(--font-apple-system),sans-serif;pointer-events:none}
+.iosIcons{display:flex;align-items:center;gap:5px}
+.iosIcons i{width:16px;height:11px;background:currentColor;opacity:.9;clip-path:polygon(0 100%,100% 0,100% 100%)}
+.iosIcons i+i{width:15px;clip-path:polygon(50% 100%,0 25%,25% 0,75% 0,100% 25%)}
+.iosIcons b{width:24px;height:12px;box-sizing:border-box;padding:1.5px;border:1.5px solid currentColor;border-radius:4px;background:linear-gradient(90deg,currentColor 75%,transparent 75%) content-box;opacity:.9}
 .homeBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 4px);left:8px;right:8px;animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
 .homeGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px 0;padding:24px 18px 0;justify-items:center}
 .homeApp{display:flex;flex-direction:column;align-items:center;gap:5px;width:64px}
@@ -141,16 +148,18 @@
 
 /* In-app */
 .phone.appScreen{padding-top:0}
-.appScreen{background:var(--color-cream-100,#f5efe2);color:var(--color-maroon-900);font-family:var(--font-barlow),sans-serif}
+.appScreen{background:var(--color-cream-100,#f5efe2);color:var(--color-maroon-900);font-family:var(--font-spectral),Georgia,serif}
 .appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);font:700 20px/1 var(--font-spectral),Georgia,serif}
 .bell{position:relative;display:inline-flex}
 .bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:var(--color-maroon-900);font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
 .appPlaceholder{display:flex;flex-direction:column;gap:12px;padding:18px}
 .appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px color-mix(in srgb,var(--color-maroon-900) 8%,transparent)}
-.sheet{position:absolute;inset:0 0 auto;box-sizing:border-box;height:70%;overflow-y:auto;padding:16px 16px 20px;padding-top:calc(16px + env(safe-area-inset-top));border-radius:0 0 28px 28px;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);box-shadow:0 12px 30px color-mix(in srgb,var(--color-maroon-900) 35%,transparent)}
+/* The bell: the app's slide-up sheet, 85% of the screen tall, like the real one (GolfTripHome.module.css). */
+.sheetShade{position:absolute;z-index:1;inset:0;background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
+.sheet{position:absolute;z-index:2;inset:auto 0 0;box-sizing:border-box;height:85%;overflow-y:auto;padding:26px 16px calc(20px + env(safe-area-inset-bottom));border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-bottom:0;border-radius:28px 28px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);box-shadow:0 -12px 60px #0006;animation:sheetUp .38s cubic-bezier(.22,1,.36,1) both}
 .list h2{margin:0;font:700 22px/1 var(--font-spectral),Georgia,serif}
 .listHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.listHeader span{font-size:13px;font-weight:600;color:var(--lm-ink-dcc495)}
+.listHeader span{font:600 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
 .list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .list li{position:relative;display:flex;gap:12px;align-items:flex-start;padding:12px 26px 12px 10px;border-radius:14px}
 .list li.unread{background:color-mix(in srgb,var(--lm-ink-dcc495) 10%,transparent)}
@@ -161,19 +170,22 @@
 .dot{position:absolute;top:18px;right:10px;width:8px;height:8px;border-radius:50%;background:#b8945a}
 .listEmpty{margin:24px 8px;font-size:15px;line-height:1.4;color:color-mix(in srgb,var(--lm-ink-ffffff) 65%,transparent);text-align:center}
 .topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--lm-bg-380001);color:var(--lm-ink-ffffff);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);box-shadow:0 10px 26px rgba(0,0,0,.45);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
-.topBannerBody{margin:2px 0 0;font-size:14px;color:color-mix(in srgb,var(--lm-ink-ffffff) 78%,transparent)}
+.topBannerText{min-width:0;flex:1}
+.topBanner .listTitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topBannerBody{margin:2px 0 0;font-size:14px;line-height:1.3;height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:color-mix(in srgb,var(--lm-ink-ffffff) 78%,transparent)}
 
 /* Signed out → sign in first */
 .signIn{display:flex;flex-direction:column;align-items:center;padding:56px 28px 0;padding-top:calc(56px + env(safe-area-inset-top));text-align:center}
 .signInIcon{width:72px;height:72px;border-radius:17px;margin-bottom:18px}
-.signInEyebrow{margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#806331}
+.signInEyebrow{margin:0;font-family:var(--font-barlow),sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#806331}
 .signIn h1{margin:6px 0 0;font:700 28px/1.1 var(--font-spectral),Georgia,serif}
 .signInBody{margin:8px 0 0;font-size:16px;line-height:1.4;color:color-mix(in srgb,var(--color-maroon-900) 75%,transparent)}
 .primaryButton{margin-top:28px;width:100%;max-width:320px;height:50px;border:0;border-radius:25px;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);font:700 16px var(--font-barlow),sans-serif}
 .signInHint{margin:12px 0 0;font-size:13px;color:color-mix(in srgb,var(--color-maroon-900) 55%,transparent)}
 
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes bannerIn{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
-@media(prefers-reduced-motion:reduce){.homeBanner,.topBanner{animation:none}}
+@media(prefers-reduced-motion:reduce){.homeBanner,.topBanner,.sheet{animation:none}}
 
 /* All types page: one notification on each surface */
 .surfaces{display:flex;flex-direction:column;gap:10px}

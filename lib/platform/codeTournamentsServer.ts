@@ -1,5 +1,6 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import type { LiveVisibility } from "./liveVisibility.ts";
 import type { CodeRoundSetup, CodeTournament, CodeTournamentLookup, MyCodeTournament, PublicCodeTournament, TeeSheet, TournamentCut } from "./codeTournaments.ts";
 
 /**
@@ -44,6 +45,9 @@ export async function deleteCodeTournament(organizer: string, id: string): Promi
 export const setCodeTournamentAttest = (attester: string, id: string, round: number, player: string, hole: number, strokes: number | null) =>
   rpc<null>("set_code_tournament_attest", { p_attester: attester, p_tournament: id, p_round: round, p_player: player, p_hole: hole, p_strokes: strokes });
 /** supabase/tournament_public.sql: public or private; the public ones (words in the name, course or place; a round's date). */
+/** supabase/maroon_live_visibility.sql: The Maroon Live, who can watch (organizer only; keeps is_public in step). */
+export const setCodeTournamentLive = (organizer: string, id: string, visibility: LiveVisibility, playersCanShare: boolean) =>
+  rpc<boolean>("set_live_visibility", { p_profile: organizer, p_kind: "tournament", p_id: id, p_visibility: visibility, p_players_can_share: playersCanShare });
 export const setCodeTournamentPublic = (organizer: string, id: string, isPublic: boolean) =>
   rpc<null>("set_code_tournament_public", { p_organizer: organizer, p_tournament: id, p_public: isPublic });
 export const searchPublicCodeTournaments = (query: string, date: string | null) => rpc<PublicCodeTournament[]>("search_public_code_tournaments", { p_query: query.slice(0, 60), p_date: date });

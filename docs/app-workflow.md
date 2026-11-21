@@ -6,6 +6,22 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-21 - Home Feed and On The Range (implemented locally; deployment not verified).** Home previously showed a League box and the Explore–News categories directly below the profile circles. The League box is removed, a Feed heading appears below the circles with no Home feed data connected yet, and On The Range opens the existing Explore, Courses, Equipment, Teaching and News content with a return to Home. Round invites and code joining remain on Home. The Main Page description and Mermaid annotation are updated; existing content sources and destination routes are unchanged.
+
+**2026-11-21 - Home navigation boxes (implemented locally; deployment not verified).** Home previously showed white Play, Golf Trip and Tournament boxes beneath the circles; those three boxes are removed. The League box and bottom navigation remain. The Main Page description is affected; the circles remain visual placeholders and destination routes are unchanged.
+
+**2026-11-21 - Home circle contents (implemented locally; deployment not verified).** The three Home circles previously contained their labels. Their labels now sit below more widely spaced circles: Play shows the profile's existing modern handicap index (or a dash when unavailable), Live shows the M logo, and On The Range shows the Explore icon. Mock people use the same sample profile handicap as their profile screen. The Main Page description is affected; circles remain visual placeholders and handicap calculations and workflow paths are unchanged.
+
+**2026-11-21 - Home circles (presentation only; implemented locally; deployment not verified).** Home previously had no circle row below the profile snapshot. It now shows Play, Live and On The Range in three circles there. These labels are visual placeholders without actions; existing navigation remains below. The Main Page description is affected; workflow paths are unchanged.
+
+**2026-11-21 - Home profile snapshot (implemented locally; deployment not verified).** Home previously showed a collapsible YOUR PROFILE label and a right arrow around the profile snapshot. The label and arrow are removed, and the always-visible profile link sits closer to the logo. The Main Page description is affected; profile data and destinations are unchanged.
+
+**2026-11-21 - Phone header clearance and saved trip spacing (implemented locally; deployment not verified).** Shared phone header clearance previously used a capped camera offset, and saved trips could add that clearance twice because their save-status message preceded the trip page. The shared clearance now starts 8px below the reported device safe area, the saved-trip status follows the page so it does not push the header down, and the trip Feed header uses the same clearance. Sections 22 and 23 are affected; trip data and workflow paths are unchanged. Device-specific rendering and remaining individually styled screens require on-device verification.
+
+**2026-11-21 - Mock person phone navigation (implemented locally; deployment not verified).** Mock person screens previously used generic navigation chrome, giving Play a duplicate The Maroon header and leaving the corresponding bottom tab unselected. Their Play, Golf Trips, Tourneys, Leagues and Profile screens now use the chrome and active tab of their matching app screens. Section 22 is affected; mock data and workflow paths are unchanged.
+
+**2026-11-21 - Play heading position (presentation only; implemented locally; deployment not verified).** The Maroon heading on Play previously began at the top of the screen; on phones it now starts below the camera area using the app's existing safe-area clearance. Section 22 is affected; navigation and workflow paths are unchanged.
+
 **2026-11-20 - Home profile and navigation (implemented locally; deployment not verified).** Home previously led with a round photo and side-by-side tournament and trip links. It now centers The Maroon and its M logo above a collapsible profile snapshot linking to the signed-in user's profile, followed by Play, Golf Trip, Tournament and League links in a vertical list, then the existing Explore content. The snapshot reads the existing private profile endpoint; unavailable profile data falls back to a profile link. Round invites and code joining remain available. Home and profile descriptions in sections 22 and 23 are affected; destinations and workflow paths are unchanged. Review: docs/home-navigation-review-2026-11-20.md, review_required.
 
 **2026-11-20 - Trips, Tourneys and Leagues landing pages (presentation only; implemented locally; deployment not verified).** Their titles are centered at the same top position beneath the phone's camera area, and their page backgrounds are maroon, including in light mode. The Tourneys background photo is removed. Sections 22 and 23 are affected; navigation and workflow paths are unchanged.
@@ -836,7 +852,7 @@ flowchart TD
   Graphics --> Controls[Fullscreen and pausable scrolling]
   App[V2 app home and simulator] --> Profile[Existing V2 profile and player details]
   App --> Trips[Existing V2 trips and organizer settings]
-  %% Home presents the viewer profile followed by Play, Golf Trip, Tournament and League links, then Explore.
+  %% Home shows the profile, circles and an unconnected Feed area; On The Range opens Explore through News.
   App --> Play[Existing Play and Predict experiences]
   Profile --> Handicap[Shared handicap and round history]
   Trips --> PublicTap[Home Maroon Live box and View /tap-in/code]
@@ -962,7 +978,11 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 Platform headings for The Maroon home, Tourneys, Pick'ems, Profile, My Tournaments, and Create Tournament sit immediately beside the hamburger menu in the shared top bar. They use bold Spectral at 24?30px rather than large centered titles below the bar. Create Tournament retains its introductory headline below.
 
-**Main Page entry.** `/` shows The Maroon and its M logo above a collapsible profile snapshot. The signed-in viewer's name, username and avatar come from the private profile endpoint, with a direct link to `/profile`; signed-out visitors can sign in. Vertical links open Play (`/rounds/new`), Golf Trip (`/golf-trips`), Tournament (`/tournaments/join`) and League (`/leagues`). Round invites and joining by code remain available to signed-in users. Below, Explore switches between Explore, Courses, Equipment, Teaching and News with the existing content and controls. Authentication and destination access remain unchanged.
+**Main Page entry.** `/` shows The Maroon and its M logo above an always-visible profile snapshot, with the heading below the phone's camera area. The signed-in viewer's name, username and avatar come from the private profile endpoint, with a direct link to `/profile`; signed-out visitors can sign in. Three circles show the existing modern handicap index (or a dash), the M logo and the Explore icon, labeled Play, Live and On The Range. On The Range opens the existing Explore, Courses, Equipment, Teaching and News content with a return to Home; Play and Live remain visual placeholders. A Feed heading sits below the circles without Home feed data connected yet. Golf Trips, Tourneys and Leagues remain available from the bottom navigation. Round invites and joining by code remain available to signed-in users. Authentication and destination access remain unchanged.
+
+Shared phone header clearance is 8px below the reported top safe area. Saved trip Home and its Feed use that clearance without a preceding save-status message adding a second inset; some screens have separately styled headers.
+
+The development mock-person Play, Golf Trips, Tourneys, Leagues and Profile routes use their corresponding app screen's navigation chrome and active bottom tab while displaying fictional person data.
 
 The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Admin Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 

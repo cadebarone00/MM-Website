@@ -20,3 +20,8 @@ test("sheet-worded types count their Highlights rules", () => {
   assert.ok(sheetCounts("travel").rules >= 20);
   assert.equal(sheetCounts("announcement").rules, 1);
 });
+
+test("alerts that aren't about a trip carry no trip name (friend request)", () => {
+  for (const note of sampleNotesForType("friendRequest")) assert.equal(note.groupName, "");
+  for (const note of sampleNotesForType("invited")) assert.equal(note.groupName, "Desert Classic");
+});

@@ -49,7 +49,7 @@ export function sampleNotesForType(kind: NotificationKind, wording: Notification
   const versions = sampleWordings(kind);
   const order = [wording - 1, ...versions.map((_, index) => index).filter(index => index !== wording - 1)];
   return order.filter(index => versions[index]).map((index, step) => ({
-    ...SAMPLE_TRIP, id: `${kind}-v${index + 1}`, kind, title: versions[index].title, body: versions[index].body,
+    ...(entry.personal ? { groupId: "", groupName: "" } : SAMPLE_TRIP), id: `${kind}-v${index + 1}`, kind, title: versions[index].title, body: versions[index].body,
     link: fillBlanks(entry.link, CATALOG_SAMPLE_VALUES), createdAt: minutesAgo([0, 14, 75][step]), read: step === 2,
   }));
 }

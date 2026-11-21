@@ -23,7 +23,9 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
 /** Dev preview screens wear the same chrome (header, background) as the real screens they preview. The coach marks
  *  preview is the real Golf Trip home, so it gets the trip home's chrome (no big site header). */
 const DEV_PROFILE_PREVIEW: Record<string, string> = { "/dev/profile": "/profile", "/dev/profile/settings": "/settings", "/dev/profile/edit": "/profile/edit", "/dev/profile/search": "/profile/search", "/dev/profile/friends": "/profile/user-friends",
-  "/dev/trip-builder/tips": "/golf-trips/preview" };
+  "/dev/trip-builder/tips": "/golf-trips/preview",
+  "/dev/people/play": "/", "/dev/people/golf-trips": "/golf-trips", "/dev/people/tourneys": "/tournaments/join",
+  "/dev/people/leagues": "/leagues", "/dev/people/profile": "/profile" };
 export function chromePathname(pathname: string): string {
   return DEV_PROFILE_PREVIEW[pathname] ?? pathname;
 }
@@ -36,6 +38,7 @@ export function siteBottomNavTabHref(pathname: string, href: string, localDev = 
 }
 
 export function siteBottomNavTabActive(pathname: string, href: string): boolean {
+  pathname = chromePathname(pathname);
   // Tourneys stays lit on its My Tournaments list and the Create Tournament page too.
   if (href === "/tournaments/join") {
     return pathname === "/tournaments/join" || pathname.startsWith("/tournaments/join/") || pathname === "/tournaments/mine" || pathname === "/tournaments/create" || pathname === "/tournaments/code/new";

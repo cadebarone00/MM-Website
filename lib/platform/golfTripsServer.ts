@@ -10,6 +10,7 @@ import { golfTripSummaries, golfTripViewer, isGolfTripId, type GolfTripSummary, 
 import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
 import { profilePhotoUrl } from "@/lib/profile/profilePhoto";
 import { importedTripFromJson, type ImportedTrip } from "./pastTripImport.ts";
+import { canShareLiveLink, liveSettingsFrom } from "./liveVisibility.ts";
 
 /**
  * Server-side Golf Trips (supabase/golf_trips.sql, golf_trip_invitations.sql). The golfer is the signed-in
@@ -41,6 +42,10 @@ export async function getGolfTripForProfile(tripId: string, current: CurrentProf
   // Privacy at the server boundary: only the organizer gets other members' emails (lib/platform/golfTripMembers.ts).
   const trip = saved ? { ...saved, members: await withMemberPhotos(membersForViewer(saved.members, profileId), profileId) } : null;
   const viewer = trip ? golfTripViewer(trip, profileId) : null;
+  // The Maroon Live: the share link (watch code) only reaches people allowed to share it (lib/platform/liveVisibility.ts).
+  if (trip && viewer && !canShareLiveLink(liveSettingsFrom(trip.trip.live_visibility, trip.trip.live_players_can_share, "link"), viewer.isOrganizer)) {
+    trip.trip = { ...trip.trip, watch_code: null };
+  }
   return trip && viewer ? { status: "ok", trip, viewer } : { status: "not-found" };
 }
 

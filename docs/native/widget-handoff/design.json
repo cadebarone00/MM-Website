@@ -1,0 +1,128 @@
+{
+  "iphoneSizes": {
+    "pro": {
+      "small": {
+        "width": 158,
+        "height": 158
+      },
+      "medium": {
+        "width": 338,
+        "height": 158
+      },
+      "large": {
+        "width": 338,
+        "height": 354
+      },
+      "lockCircle": {
+        "width": 72,
+        "height": 72
+      },
+      "lockRect": {
+        "width": 160,
+        "height": 72
+      }
+    },
+    "proMax": {
+      "small": {
+        "width": 170,
+        "height": 170
+      },
+      "medium": {
+        "width": 364,
+        "height": 170
+      },
+      "large": {
+        "width": 364,
+        "height": 382
+      },
+      "lockCircle": {
+        "width": 76,
+        "height": 76
+      },
+      "lockRect": {
+        "width": 172,
+        "height": 76
+      }
+    }
+  },
+  "colors": {
+    "backgroundTop": "#4a0f19",
+    "backgroundBottom": "#2c0910",
+    "text": "#fbf8f1",
+    "gold": "#c9a86e",
+    "liveDot": "#e2554f",
+    "dividerOpacity": 0.12,
+    "holeBoxOpacity": 0.07,
+    "overParOpacity": 0.75
+  },
+  "text": {
+    "label": {
+      "font": "Barlow",
+      "weight": 600,
+      "size": 10,
+      "lineHeight": 14,
+      "uppercase": true,
+      "letterSpacing": 0.8
+    },
+    "title": {
+      "font": "Spectral",
+      "weight": 600,
+      "size": 17,
+      "lineHeight": 20
+    },
+    "score": {
+      "font": "Spectral",
+      "weight": 700,
+      "size": 22,
+      "lineHeight": 25
+    },
+    "detail": {
+      "font": "Spectral",
+      "weight": 400,
+      "size": 13,
+      "lineHeight": 17,
+      "opacity": 0.8
+    },
+    "row": {
+      "font": "Spectral",
+      "weight": 400,
+      "size": 13,
+      "lineHeight": 16
+    },
+    "rowSmall": {
+      "font": "Barlow",
+      "weight": 500,
+      "size": 11,
+      "lineHeight": 11,
+      "opacity": 0.7
+    },
+    "holeScore": {
+      "font": "Spectral",
+      "weight": 700,
+      "size": 18,
+      "lineHeight": 20
+    },
+    "holeSmall": {
+      "font": "Barlow",
+      "weight": 500,
+      "size": 10,
+      "lineHeight": 10,
+      "opacity": 0.7
+    }
+  },
+  "spacing": {
+    "padding": 14,
+    "gap": 10,
+    "mediumColumnGap": 14,
+    "titleTop": 4,
+    "labelDotGap": 5,
+    "rowInnerGap": 8,
+    "rowGap": 7,
+    "holeGap": 8,
+    "holeBoxRadius": 10,
+    "holeBoxPaddingY": 6,
+    "liveDot": 6,
+    "cornerRadiusPreviewIos": 22,
+    "cornerRadiusPreviewAndroid": 28
+  }
+}

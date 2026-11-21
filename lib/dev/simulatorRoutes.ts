@@ -225,6 +225,7 @@ export function simulatorPages(): SimulatorPage[] {
       ...choices("Size", "size", { small: "Small (square)", medium: "Medium (rectangle)", large: "Large (big square)", lock: "Lock screen" }),
       ...choices("State", "state", { next: "Coming up", live: "Live round", long: "Live · long names", nothing: "Nothing coming up" }),
       ...choices("Phone", "phone", { ios: "iPhone", android: "Android" }),
+      ...choices("iPhone size", "iphone", { pro: "Pro (158 / 338)", proMax: "Pro Max (170 / 364)" }),
     ] });
     pages.splice(pages.indexOf(widget), 1);
     const inApp = pages.findIndex(item => item.path === "/dev/notifications/in-app");

@@ -1,12 +1,18 @@
 .home{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;background:var(--app-maroon);color:var(--app-cream);min-height:calc(100svh - 72px)}
 .upper{max-width:1160px;margin:auto;padding:4px 0 0}
-.homeBrand{text-align:center;padding:12px 20px 16px;color:#fbf8f1}
+.homeBrand{text-align:center;padding:12px 20px 8px;color:#fbf8f1}
 .homeBrand h1{margin:0 0 8px;font:400 34px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
 .homeBrand img{display:block;margin:auto;object-fit:contain}
-.profileSnapshot{max-width:640px;margin:0 auto 16px;padding:12px 20px;border-bottom:1px solid #c9a86e70;color:#fbf8f1}
-.profileSnapshot summary{cursor:pointer;color:#dcc495;font:600 10px var(--font-barlow),sans-serif;letter-spacing:.12em}
+@media(max-width:1023px){.home{padding-top:var(--app-top-clearance,0px)}.upper{padding-top:0}.homeBrand{padding-top:0}}
+.profileSnapshot{max-width:640px;margin:0 auto 16px;padding:0 20px 12px;border-bottom:1px solid #c9a86e70;color:#fbf8f1}
 .profileLink{display:flex;align-items:center;gap:10px;padding:12px 0;color:#fbf8f1}
 .profileLink>span:nth-child(2){display:grid;gap:4px;flex:1}.profileLink strong{font:600 16px var(--font-spectral),Georgia,serif}.profileLink small{color:#dcc495;font:400 12px var(--font-barlow),sans-serif}
+.homeCircles{display:flex;justify-content:space-evenly;gap:12px;max-width:640px;margin:auto;padding:0 12px 12px}
+.homeCircles>div{display:flex;flex:1;min-width:0;flex-direction:column;align-items:center;gap:8px;color:#fbf8f1;text-align:center;font:600 14px/1.15 var(--font-spectral),Georgia,serif}
+.homeCircle{display:grid;place-items:center;width:72px;aspect-ratio:1;border:1px solid #b99c6b;border-radius:50%;background:transparent;color:inherit;font:inherit;font-size:22px}
+button.homeCircle{cursor:pointer}
+.homeFeed{max-width:640px;margin:0 auto;padding:16px 20px;color:#fbf8f1}.homeFeed h2{margin:0;font:700 24px/1.2 var(--font-spectral),Georgia,serif}
+.rangeHeader{display:flex;align-items:center;gap:14px;padding:8px 20px 12px}.rangeHeader button{display:grid;place-items:center;width:40px;height:40px;border:0;background:transparent;color:inherit;cursor:pointer}.rangeHeader h1{margin:0;font:700 26px/1.15 var(--font-spectral),Georgia,serif}
 .tagline{margin:0;padding:0 24px 22px;font:500 10px/1.5 var(--font-barlow),sans-serif;text-transform:uppercase;letter-spacing:.15em;color:#d6c5ca}
 .cards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:24px;padding:0 24px 8px;scrollbar-width:none}.cards::-webkit-scrollbar{display:none}
 .tripCard{flex:0 0 100%;min-width:0;overflow:hidden;border:1px solid #b99c6b;border-bottom:0;border-radius:14px;scroll-snap-align:start;background:var(--app-cream)}

@@ -7,6 +7,7 @@
     "docs:workflow": "node scripts/render-workflow.cjs",
     "docs:workflow:check": "node scripts/render-workflow.cjs --check",
     "build:career-archive": "tsx scripts/build-career-archive.ts",
+    "widget:handoff": "tsx scripts/widget-handoff.ts",
     "dev": "next dev -p 3001",
     "dev:app": "MAROON_APP_BUILD=1 NEXT_PUBLIC_MAROON_API_BASE=http://localhost:3001 next dev -p 3002",
     "build:app": "MAROON_APP_BUILD=1 next build && cap sync ios && next typegen",

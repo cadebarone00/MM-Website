@@ -6,6 +6,7 @@ import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
 import { isMockPersonId, type MockPersonId } from "./mockPeople";
 import { WIDGET_PHONES, WIDGET_SIZES, WIDGET_STATES, type WidgetPhone, type WidgetSampleState, type WidgetSize } from "./sampleWidget";
+import { WIDGET_IPHONES, type WidgetIphone } from "@/lib/notifications/widgetDesign";
 import { ALL_NOTIFICATION_PREVIEWS, NOTIFICATION_TYPE_CHOICES, NOTIFICATION_WORDINGS, type NotificationPreview, type NotificationTypeChoice, type NotificationWording } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
 import { validDraftSim, type DraftSimState } from "./draftSim";
@@ -112,6 +113,8 @@ export type SimulatorState = {
   widgetSize?: WidgetSize;
   widgetState?: WidgetSampleState;
   widgetPhone?: WidgetPhone;
+  /** Home screen widget: which iPhone's widget sizes (lib/notifications/widgetDesign.ts). Unset = pro. */
+  widgetIphone?: WidgetIphone;
   brandStyle?: "clean" | "gold";
   brandStage?: "drawing" | "finished" | "reduced";
   brandDuration?: number;
@@ -258,6 +261,7 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.widgetSize !== undefined && !(WIDGET_SIZES as readonly unknown[]).includes(state.widgetSize)) return null;
   if (state.widgetState !== undefined && !(WIDGET_STATES as readonly unknown[]).includes(state.widgetState)) return null;
   if (state.widgetPhone !== undefined && !(WIDGET_PHONES as readonly unknown[]).includes(state.widgetPhone)) return null;
+  if (state.widgetIphone !== undefined && !(WIDGET_IPHONES as readonly unknown[]).includes(state.widgetIphone)) return null;
   if (state.highlightSim !== undefined && !parseHighlightSim(state.highlightSim)) return null;
   if (state.brandStyle !== undefined && !["clean", "gold"].includes(String(state.brandStyle))) return null;
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;

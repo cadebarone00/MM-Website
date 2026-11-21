@@ -334,9 +334,9 @@ test("Mock draft conditionals: known setups and controllers only",()=>{
 });
 
 test("widget simulator choices validate", () => {
-  const state = { ...DEFAULT_SIMULATOR_STATE, widgetSize: "large" as const, widgetState: "long" as const, widgetPhone: "android" as const };
+  const state = { ...DEFAULT_SIMULATOR_STATE, widgetSize: "large" as const, widgetState: "long" as const, widgetPhone: "android" as const, widgetIphone: "proMax" as const };
   assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
-  for (const invalid of [{ widgetSize: "huge" }, { widgetState: "maybe" }, { widgetPhone: "pager" }]) {
+  for (const invalid of [{ widgetSize: "huge" }, { widgetState: "maybe" }, { widgetPhone: "pager" }, { widgetIphone: "mini" }]) {
     assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, ...invalid } }), null);
   }
 });

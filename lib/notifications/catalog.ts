@@ -50,6 +50,8 @@ export type CatalogEntry = {
   approved: boolean;
   /** Extra note shown on the All types page. */
   note?: string;
+  /** Not about a trip (e.g. a friend request): shown with no trip name, just "The Maroon". */
+  personal?: boolean;
 };
 
 const ALL: readonly NotificationSurface[] = ["phone", "bell", "banner"];
@@ -112,7 +114,7 @@ export const NOTIFICATION_CATALOG = [
     { title: "Link your history", body: "Accept to add {Count} rounds from {Trip} to your profile." },
   ] },
   // ---------- Friends ----------
-  { kind: "friendRequest", name: "Friend request", switch: "friendRequests", icon: "users", audience: "The person asked", trigger: "Someone sends me a friend request", link: "/profile/friends", surfaces: ALL, approved: false, wording: [
+  { kind: "friendRequest", name: "Friend request", switch: "friendRequests", icon: "users", audience: "The person asked", trigger: "Someone sends me a friend request", link: "/profile/friends", surfaces: ALL, approved: false, personal: true, wording: [
     { title: "{Player} sent you a friend request", body: "Tap to accept or decline." },
     { title: "New friend request", body: "{Player} wants to be friends on The Maroon." },
     { title: "{Player} wants to connect", body: "Accept to see each other's rounds." },

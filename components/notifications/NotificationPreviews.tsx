@@ -8,16 +8,22 @@ import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeam
 import type { AppNotification, LiveRoundActivity } from "@/lib/notifications/types";
 import { catalogEntry, type NotificationIcon, type NotificationKind } from "@/lib/notifications/catalog";
 import { sampleNotesForType } from "@/lib/dev/sampleNotificationTypes";
-import { NOTIFICATION_PREVIEWS, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
+import { NOTIFICATION_PREVIEWS, previewClock, SAMPLE_BY_TYPE, SAMPLE_LOST, SAMPLE_PAIRS, SAMPLE_LIVE_TOP3, SAMPLE_LOCAL_NOW, SAMPLE_NOTIFICATIONS, SAMPLE_TEAM_STEPS, SAMPLE_NOW, type NotificationPreview, type NotificationSurface } from "@/lib/dev/sampleNotifications";
 import { previewNotes } from "@/lib/dev/highlightScenarios";
 import { detectionPreviewNotes } from "@/lib/dev/detectionScenarios";
 import styles from "./NotificationPreviews.module.css";
 
 const APP_ICON = "/icons/mm-192.png";
+/** The one preview clock (Friday, October 16, 2:11), shared with the widget preview. */
+const CLOCK = previewClock();
+/** "The Maroon · Desert Classic", or just "The Maroon" for alerts that aren't about a trip (friend request). */
+const fromLine = (note: AppNotification) => note.groupName ? `The Maroon · ${note.groupName}` : "The Maroon";
+/** The bell row's small line: trip · when, or just when. */
+const metaLine = (note: AppNotification, now: Date) => [note.groupName, timeAgo(note.createdAt, now)].filter(Boolean).join(" · ");
 
 // What the phone draws itself uses the phone's font, never ours: Inter stands in for Apple's SF Pro (iPhone notifications,
 // lock screen clock), Roboto for Android's system font (status bar, chip, notifications). Our Barlow / Spectral appear
-// only where the app draws: the iPhone Live Activity / Dynamic Island and in-app.
+// only where the app draws: the iPhone Live Activity / Dynamic Island and in-app (Spectral; Barlow for tiny caps labels).
 
 /** DEV ONLY: one surface of the simulator's Notifications group; the simulator condition picks the screen. */
 export function NotificationPreviewScreen({ surface }: { surface: NotificationSurface }) {
@@ -85,8 +91,8 @@ function LockScreen({ children, wall }: { children?: ReactNode; wall: string }) 
   return <main className={`${styles.phone} ${wall}`} aria-label="Locked iPhone preview">
     <div className={styles.lockTop}>
       <LockKeyhole size={16} strokeWidth={2.25} aria-hidden />
-      <p className={styles.lockDate}>Friday, October 16</p>
-      <p className={styles.lockClock}>9:41</p>
+      <p className={styles.lockDate}>{CLOCK.long}</p>
+      <p className={styles.lockClock}>{CLOCK.time}</p>
     </div>
     <div className={styles.lockStack}>{children}</div>
     <div className={styles.lockButtons} aria-hidden><span><Flashlight size={20} /></span><span><Camera size={20} /></span></div>
@@ -95,6 +101,8 @@ function LockScreen({ children, wall }: { children?: ReactNode; wall: string }) 
 
 function HomeScreen({ banner, island, below, wall }: { banner?: ReactNode; island?: ReactNode; below?: ReactNode; wall: string }) {
   return <main className={`${styles.phone} ${wall}`} aria-label="iPhone home screen preview">
+    {/* A Live Activity pill widens the island over the time / battery, so the bar steps aside while it shows. */}
+    {!island && <IosStatusBar />}
     {island}
     {banner && <div className={styles.homeBanner}>{banner}</div>}
     {below && <div className={styles.tinyCompare}><p>Tiny circle (when another app&rsquo;s Live Activity is also running)</p><div className={styles.tinyCompareRow}>{below}</div></div>}
@@ -105,6 +113,11 @@ function HomeScreen({ banner, island, below, wall }: { banner?: ReactNode; islan
     </div>
     <div className={styles.dock} aria-hidden>{Array.from({ length: 4 }, (_, index) => <i key={index} />)}</div>
   </main>;
+}
+
+/** iPhone status bar: the time left of the Dynamic Island, signal / wifi / battery right (the phone draws it, in its font). */
+export function IosStatusBar() {
+  return <div className={styles.iosStatus} aria-hidden><span>{CLOCK.time}</span><span className={styles.iosIcons}><i /><i /><b /></span></div>;
 }
 
 /** iPhone notification card: app icon, title, body, time. Signed in or out, it shows the real update. */
@@ -124,7 +137,7 @@ function PhoneNotificationStack({ notes }: { notes: AppNotification[] }) {
     <PhoneNotification note={notes[0]} />
     {notes.length > 1 && <span className={styles.stackLayer} aria-hidden />}
     {notes.length > 2 && <span className={`${styles.stackLayer} ${styles.stackLayerBack}`} aria-hidden />}
-    <p className={styles.stackCount}>{notes.length - 1} more from {notes[0].groupName}</p>
+    <p className={styles.stackCount}>{notes.length - 1} more from {notes[0].groupName || "The Maroon"}</p>
   </div>;
 }
 
@@ -133,7 +146,7 @@ function SignInFirst({ note }: { note: AppNotification }) {
   return <main className={`${styles.phone} ${styles.appScreen}`} aria-label="Sign in to open a notification">
     <div className={styles.signIn}>
       <img src={APP_ICON} alt="" className={styles.signInIcon} />
-      <p className={styles.signInEyebrow}>{note.groupName}</p>
+      <p className={styles.signInEyebrow}>{note.groupName || "The Maroon"}</p>
       <h1>{note.title}</h1>
       <p className={styles.signInBody}>{note.body}</p>
       <button type="button" className={styles.primaryButton}>Sign in to see it</button>
@@ -149,7 +162,7 @@ function SignInFirst({ note }: { note: AppNotification }) {
  * (1) teams — the two teams in their color fills with their points (Both, Team only);
  * (2) leaderboard — three rows, cream rank badges, mine black (Both, Individual only);
  * (3) my status pill for this step of the round (always). None: the round line above the pill. Individual only: the
- * app icon + "The Maroon" and a line above the leaderboard.
+ * app icon + the trip name and a line above the leaderboard.
  * Used on the lock screen, the Android pinned notification and the expanded Dynamic Island.
  */
 function RoundLiveActivity({ activity, island = false }: { activity: LiveRoundActivity; island?: boolean }) {
@@ -157,8 +170,8 @@ function RoundLiveActivity({ activity, island = false }: { activity: LiveRoundAc
   const none = !activity.teams && board.rows.length === 0;
   return <article className={`${styles.both} ${island ? styles.bothIsland : ""}`} aria-label="Live Activity">
     {none && <p className={styles.roundLine}><img src={APP_ICON} alt="" /><b>{activity.groupName}</b></p>}
-    {/* Individual only: the app's name over the mini leaderboard, then a line (owner 2026-10-19). */}
-    {!activity.teams && board.rows.length > 0 && <p className={`${styles.roundLine} ${styles.appHeader}`}><img src={APP_ICON} alt="" /><b>The Maroon</b></p>}
+    {/* Individual only: the trip's name over the mini leaderboard, then a line (owner 2026-10-19; trip name instead of "The Maroon", look-over pass 2026-11-21). */}
+    {!activity.teams && board.rows.length > 0 && <p className={`${styles.roundLine} ${styles.appHeader}`}><img src={APP_ICON} alt="" /><b>{activity.groupName}</b></p>}
     {activity.teams && <div className={`${styles.bothTeams} ${board.rows.length ? "" : styles.bothTeamsBig}`}>
       {[activity.teams.mine, activity.teams.other].map((team, index) => <div key={team.name} className={`${styles.bothTeam} ${index ? styles.bothTeamRight : styles.bothTeamLeft}`}
         style={{ color: liveTeamText(team.onDark) }}>
@@ -277,7 +290,7 @@ function IslandMinimalTeam({ activity }: { activity: LiveRoundActivity }) {
 /** Android home screen: status bar (clock + chip on the left, icons on the right) under the Pixel's center camera. */
 function AndroidHome({ chip, wall }: { chip: ReactNode; wall: string }) {
   return <main className={`${styles.phone} ${styles.androidScreen} ${wall}`} aria-label="Android home screen preview">
-    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span>{chip}<span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.androidStatus}><span className={styles.androidClock}>{CLOCK.time}</span>{chip}<span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
     <div className={styles.homeGrid} aria-hidden>
       {Array.from({ length: 16 }, (_, index) => index === 5
         ? <span key={index} className={styles.homeApp}><img src={APP_ICON} alt="" className={styles.androidIcon} /><small>The Maroon</small></span>
@@ -308,8 +321,8 @@ function SmallIcon() {
 function AndroidLock({ activity, wall }: { activity: LiveRoundActivity; wall: string }) {
   const update = androidLiveUpdate(activity, SAMPLE_LOCAL_NOW);
   return <main className={`${styles.phone} ${styles.androidScreen} ${wall}`} aria-label="Android lock screen preview">
-    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span><AndroidChip activity={activity} /><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
-    <div className={styles.androidLockClock}><span>2:11</span><small>Fri, Oct 16</small></div>
+    <div className={styles.androidStatus}><span className={styles.androidClock}>{CLOCK.time}</span><AndroidChip activity={activity} /><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.androidLockClock}><span>{CLOCK.time}</span><small>{CLOCK.short}</small></div>
     <article className={styles.androidNote} aria-label="Live update">
       <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {activity.groupName} · now</span></header>
       <p className={styles.androidNoteTitle}>{update.title}</p>
@@ -326,10 +339,10 @@ function AndroidLock({ activity, wall }: { activity: LiveRoundActivity; wall: st
  */
 function AndroidNotificationScreen({ note, wall }: { note: AppNotification | null; wall: string }) {
   return <main className={`${styles.phone} ${styles.androidScreen} ${wall}`} aria-label="Android lock screen preview">
-    <div className={styles.androidStatus}><span className={styles.androidClock}>2:11</span><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
-    <div className={styles.androidLockClock}><span>2:11</span><small>Fri, Oct 16</small></div>
+    <div className={styles.androidStatus}><span className={styles.androidClock}>{CLOCK.time}</span><span className={styles.androidIcons} aria-hidden>▲ ◢ ▮</span></div>
+    <div className={styles.androidLockClock}><span>{CLOCK.time}</span><small>{CLOCK.short}</small></div>
     {note && <article className={styles.androidNote} aria-label="Notification">
-      <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
+      <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>{fromLine(note)} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
       <p className={styles.androidNoteTitle}>{note.title}</p>
       <p className={styles.androidNoteText}>{note.body}</p>
     </article>}
@@ -354,10 +367,10 @@ function AppScreen({ children, banner, notes = SAMPLE_NOTIFICATIONS }: { childre
   return <main className={`${styles.phone} ${styles.appScreen}`} aria-label="App preview">
     <header className={styles.appBar}>
       <span>Desert Classic</span>
-      <span className={styles.bell}><Bell size={24} strokeWidth={1.75} aria-hidden />{!children && unread > 0 && <b aria-label={`${unread} unread`}>{unread}</b>}</span>
+      <span className={styles.bell}><Bell size={24} strokeWidth={1.75} aria-hidden />{!children && !banner && unread > 0 && <b aria-label={`${unread} unread`}>{unread}</b>}</span>
     </header>
     {banner}
-    {children ? <div className={styles.sheet}>{children}</div> : <div className={styles.appPlaceholder} aria-hidden><i /><i /><i /></div>}
+    {children ? <><div className={styles.sheetShade} aria-hidden /><div className={styles.sheet}>{children}</div></> : <div className={styles.appPlaceholder} aria-hidden><i /><i /><i /></div>}
   </main>;
 }
 
@@ -372,18 +385,18 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
       : <ul>{sorted.map(note => {
         return <li key={note.id} className={note.read ? undefined : styles.unread}>
           <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
-          <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, now)}</p></div>
+          <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, now)}</p></div>
           {!note.read && <i className={styles.dot} aria-label="Unread" />}
         </li>;
       })}</ul>}
   </section>;
 }
 
-/** Slides down over the app while it's open; tap opens the link. */
+/** Slides down over the app while it's open; tap opens the link. One fixed size: title one line, message two lines. */
 export function TopBanner({ note }: { note: AppNotification }) {
   return <div className={styles.topBanner} role="status">
     <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
-    <div><p className={styles.listTitle}>{note.title}</p><p className={styles.topBannerBody}>{note.body}</p></div>
+    <div className={styles.topBannerText}><p className={styles.listTitle}>{note.title}</p><p className={styles.topBannerBody}>{note.body}</p></div>
   </div>;
 }
 
@@ -397,7 +410,7 @@ export function NotificationSurfaces({ note, surfaces }: { note: AppNotification
       <figure className={`${styles.surface} ${styles.wallpaper}`}><figcaption>iPhone</figcaption><PhoneNotification note={note} /></figure>
       <figure className={`${styles.surface} ${styles.androidScreen} ${styles.wallpaper}`}><figcaption>Android</figcaption>
         <article className={`${styles.androidNote} ${styles.androidNoteInline}`} aria-label="Notification">
-          <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>The Maroon · {note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
+          <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>{fromLine(note)} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
           <p className={styles.androidNoteTitle}>{note.title}</p>
           <p className={styles.androidNoteText}>{note.body}</p>
         </article>
@@ -406,7 +419,7 @@ export function NotificationSurfaces({ note, surfaces }: { note: AppNotification
     {surfaces.includes("bell") && <figure className={`${styles.surface} ${styles.surfaceApp} ${styles.list}`}><figcaption>Bell list</figcaption>
       <ul><li className={styles.unread}>
         <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
-        <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{note.groupName} · {timeAgo(note.createdAt, SAMPLE_NOW)}</p></div>
+        <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, SAMPLE_NOW)}</p></div>
         <i className={styles.dot} aria-label="Unread" />
       </li></ul>
     </figure>}
