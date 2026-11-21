@@ -5526,7 +5526,7 @@ uses the message itself as the body (its 3 versions only change the title line).
 
 **Done =** the 3 tabs work and filter; own Friends count opens the Friends tab; a Public profile's Friends count opens their list; a Private profile shows no list even by address; typecheck + lint + tests pass; checked on screen at phone size.
 
-## Sign up: "email already has an account" + password AFTER the code (owner request 2026-11-20) — APPROVED 2026-11-20
+## Sign up: "email already has an account" + password AFTER the code (owner request 2026-11-20) — APPROVED + BUILT 2026-11-21 (uncommitted; not deployed; local-stack regressions updated but NOT run: Docker was off)
 
 **Why:** in TestFlight the owner signed up with an email that already had an account. The app said "check your email", but no email is ever sent for an existing account, so they waited for a code that never came.
 
@@ -5564,3 +5564,102 @@ uses the message itself as the body (its 3 versions only change the title line).
 - Typecheck, lint and tests pass.
 - Checked on screen in the website at phone size and in the app build (`npm run build:app`).
 - Live in TestFlight only after a commit, push, deploy + Promote, and a new TestFlight build.
+
+## Mock people: 5 pretend accounts for the main tabs (owner request 2026-11-21) — SPEC, awaiting approval
+
+**Why:** the owner wants to see how Play, Golf Trips, Tourneys, Leagues and Profile look for real kinds of people (busy, organizer, casual, just invited, brand new) without signing in or touching real data. Picked option 1 (preview pages in the simulator), not pretend sign-in on real pages or fake rows in Supabase.
+
+**The 5 people** (one file, `lib/dev/mockPeople.ts`; friends are the existing sample golfers in `lib/dev/sampleProfile.ts` so their profiles open):
+| Person | Their app |
+|---|---|
+| Cade Barone (heavy user) | 2 upcoming trips + 4 past trips, 2 tourneys playing + 3 past, 3 leagues, lots of friends |
+| Jake Parker (organizer) | Organizes 1 upcoming trip + 1 past, runs 1 code tourney, 1 league, some friends |
+| Mike Chen (casual) | 1 past trip, in 1 tourney, no leagues, a few friends |
+| Alex Rivera (just invited) | Member of 1 upcoming trip (someone else's), nothing else, 1 friend |
+| Sam Taylor (brand new) | Everything empty, no friends |
+
+Trip names, destinations, dates, player counts and league names are realistic and fixed (same every time), with a few long names to catch wrapping.
+
+**What you see:** a new simulator group **"Mock people"** with 5 pages: Play, Golf Trips, Tourneys, Leagues, Profile. Each page has 5 conditionals, "Signed in as Cade / Jake / Mike / Alex / Sam" (default Cade). Pick one and every tab shows that person's world.
+
+**How it works (plain):**
+- New dev-only pages under `/dev/people/…` (404 outside local dev). Each shows the **real** screen component with the chosen person's data handed in: `GolfTripsView` (trips list), `JoinTournamentPage` (tourneys), `LeaguesHome` (leagues), `PlatformHome` (Play), the existing profile preview (Profile).
+- Small additions to two real components so they can be handed data instead of loading it: `LeaguesHome` gets an optional `leagues` list (skips its fetch when given), and `PlatformHome` gets an optional profile (skips its profile fetch when given). With nothing handed in, both behave exactly as today.
+- Nothing is saved. No database, no SQL, no sign-in.
+
+**Not doing:** tapping *into* a trip, tourney or league from these previews won't open a pretend version of it (links go to the normal pages). Not changing the real pages' look or the existing "Signed in as" accounts used inside Golf Trip previews.
+
+**Builder's calls:** exact trip/league names and dates; which profile preview (full / a few / none) each person's Profile uses; Play's round invites stay hidden in the previews.
+
+**Done =**
+- All 5 pages show in the simulator under "Mock people", and switching person changes every tab.
+- Sam (brand new) shows the empty states correctly; Cade shows full lists.
+- Real `/golf-trips`, `/tournaments/join`, `/leagues`, `/` and `/profile` still work as before.
+- Typecheck and lint pass; each page checked on screen at phone size.
+
+## Home screen widget: "What's next" for iPhone + Android (owner request 2026-11-21) — SPEC, awaiting approval
+
+**Why:** the owner wants people to glance at their home screen and see the one golf thing they're doing now, or the next one coming up, without opening the app. It's part of the notifications work, and the list of native pieces is here: https://claude.ai/artifact/3zFuCwWE5A5c9TvS14Gj72
+
+**What it shows (owner decisions 2026-11-21):**
+- The **active** thing, or else the **next** thing, from anything the person does in the app: a Golf Trip, a round on their own, a league round or a tournament round.
+- Tee times, course, score to par, holes played, match status. **View only:** no entering scores on the widget.
+- **Tapping it opens the right screen** in the app: the live scorecard, that round, that trip, or the start screen when there's nothing.
+
+**Which thing wins (builder's call, owner can correct):** a live round beats everything. Otherwise the soonest upcoming round or tee time wins. This uses the same live / now / next / upcoming order Trip Home's Upcoming already uses.
+
+**Sizes:**
+| Size | Shape | Nothing coming up | Coming up | Live round |
+|---|---|---|---|---|
+| Small | small square | "No rounds yet · Tap to start one" | course, day + tee time, "in 2 days" | score to par, thru, match status |
+| Medium | rectangle | same, plus a Start a round line | the next 2 things on the schedule | small view + your group's scores |
+| Large | big square | same as medium | the next 4–5 things on the schedule | your group's scores + the last few holes |
+| Lock screen | circle, small rectangle, one line of text by the clock | blank / logo | tee time | score + thru |
+On Android, people can resize the widget, so it picks the closest of the same three layouts.
+
+**How it works (plain):**
+- **One "widget snapshot"** built in our normal code (`lib/notifications/`, TypeScript, tested): what to show, the text for each size, and the link to open. Both phones get the same snapshot, so they always say the same thing. The words match the Live Activity text in `format.ts`.
+- **The app saves the snapshot** for the widget whenever it opens, a round starts, or you enter a score (through the bridge plugin, into storage that the app and widget share). The widget lists the upcoming times ahead, so "in 2 days" → "Tomorrow" → "8:40 AM" changes by itself.
+- **Live rounds:** the Live Activity / Live Update keeps updating from the server. The widget updates when the app saves a new snapshot.
+- **iPhone:** a WidgetKit widget extension in SwiftUI (`ios/App`, new Widget Extension target + App Group). **Android:** a Jetpack Glance widget in Kotlin (`android/app`). One small bridge plugin on each phone with the same commands: save snapshot, refresh widget.
+
+**Later step, not in this one:** the widget asking our server for fresh data by itself while the app is closed (so other players' scores show without opening the app). This needs the app's login to be shared with the widget. Do it after this works.
+
+**Not doing:** entering scores on the widget, an iPad extra-large size, more than one widget style to pick from, and a dark/light choice (the widget follows the phone).
+
+**Order:** (1) widget snapshot in TypeScript + tests + a `/dev` preview of every size × state (simulator conditionals). (2) iPhone bridge + widget in Xcode. (3) Android bridge + widget. (4) Lock screen sizes. Each step is approved separately.
+
+**Needs from the owner:** in Xcode, add the Widget Extension target and App Groups (walkthrough when we get there). Android Studio installed for step 3.
+
+**Done =**
+- `/dev` shows Small / Medium / Large / Lock screen for Nothing / Coming up / Live, with realistic data.
+- On a real iPhone (TestFlight) and an Android phone: the widget shows the right thing for a trip round, a solo round and nothing at all, and tapping it opens the right screen.
+- Typecheck, lint and tests pass. The app still builds for TestFlight.
+
+## Sign-up Simulator: run the whole real sign-up with fake everything (owner request 2026-11-21) — APPROVED 2026-11-21 (dev simulator only: owner approved without picking, so the recommended option)
+
+**What it does:** a practice run of the real sign-up that you can repeat as often as you like. It uses the real screens, in the real order, with the real checks (8+ character password, valid email, username rules, 13+ birthday). Every answer from the "server" is fake, and nothing is saved anywhere: no account, no email, no database row. The last step ends on an **End of simulation** screen instead of opening the app.
+
+**Who uses it:** the owner and testers, to try the flow and check changes without making real accounts.
+
+**How it works (plain):**
+- **Start:** a **Start sign-up simulation** button. It runs the same screens as the app: Sign up → Email Verification → Create a password → Email confirmed → Name + username → Birthday → Photo → Settings → **End of simulation**.
+- **Fake email:** any made-up address works. A **Random email** button fills one in (e.g. `sim-4821@example.test`).
+- **Fake code:** no email is sent. The code screen shows a small "Simulation code: 123456" note. A wrong code shows the real "That code is wrong…" message.
+- **Practice cases (pick from a short list before starting):**
+  - New person (normal path).
+  - Email already has an account → the "There's already an account with this email" message, and Log in.
+  - Under 13 → the real "can't finish" account screen.
+  - Wrong code first → the error message, then the right code.
+- **End of simulation:** a summary of what was "entered" (email, name, username, public/private), plus **Run again** and **Exit**. Nothing is kept after you leave.
+- **Underneath:** while the simulation runs, the screens' requests to the server are answered by a fake that lives only on that screen. The screens themselves don't change, so the simulator always matches the real thing.
+
+**Where it lives:**
+- The **dev simulator** on the website (Authentication group): **Sign-up simulation** with the practice cases as Conditionals.
+- **Open question for the owner:** should it also be in the **TestFlight app** (for example a hidden button in Settings → Tutorials, or long-press on the Welcome logo), so testers can run it on a real phone? Leaving it out of the app keeps the real app clean.
+
+**Not changing:** the real sign-up screens, the real server, the database or any setting. No SQL.
+
+**What it doesn't test:** the real server and email sending. Those stay covered by the local test scripts (`scripts/auth-local`, which need Docker Desktop on).
+
+**Done =** you can run all four practice cases start to finish as many times as you want; End of simulation shows the summary; nothing appears in Supabase or in any inbox; typecheck, lint and tests pass; checked on screen at phone size.

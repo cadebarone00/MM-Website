@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { AppleIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "@/components/dev/auth/AuthWelcomePreview";
 import type { OAuthProvider } from "@/lib/auth/oauth";
-import { errorOf, rememberEmail, rememberedEmail, send } from "@/lib/account/onboardingClient";
+import { errorOf, rememberEmail, send, useRememberedEmail } from "@/lib/account/onboardingClient";
 import { START, STATUS, afterLogInPath, progressWidth } from "@/lib/account/onboardingRoutes";
 import type { OnboardingStep } from "@/lib/account/onboardingApi";
 import styles from "@/components/dev/auth/AuthWelcomePreview.module.css";
@@ -81,9 +81,10 @@ export function SignUpScreen({ providers }: { providers: OAuthProvider[] }) {
  *  blocked → the account status page. */
 export function LogInScreen({ notice, providers, returnTo = null }: { notice: string | null; providers: OAuthProvider[]; returnTo?: string | null }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  // Coming from Sign up's "already an account": the email they typed there is filled in.
-  useEffect(() => { const remembered = rememberedEmail(); if (remembered) setEmail((typed) => typed || remembered); }, []);
+  // Coming from Sign up's "already an account": the email typed there is filled in until they type their own.
+  const remembered = useRememberedEmail();
+  const [typed, setEmail] = useState<string | null>(null);
+  const email = typed ?? remembered ?? "";
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

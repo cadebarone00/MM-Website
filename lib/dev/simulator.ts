@@ -4,6 +4,7 @@ import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
 import { PROFILE_PREVIEWS, type ProfilePreview } from "./sampleProfile";
+import { isMockPersonId, type MockPersonId } from "./mockPeople";
 import { ALL_NOTIFICATION_PREVIEWS, NOTIFICATION_TYPE_CHOICES, NOTIFICATION_WORDINGS, type NotificationPreview, type NotificationTypeChoice, type NotificationWording } from "./sampleNotifications";
 import { parseHighlightSim, type HighlightSim } from "./highlightScenarios";
 import { validDraftSim, type DraftSimState } from "./draftSim";
@@ -130,8 +131,12 @@ export type SimulatorState = {
   birthdayStage?: "empty" | "calendar" | "picked";
   /** Authentication → Sign up: the plain screen, or the "There's already an account with this email." state. Unset = "empty". */
   signUpStage?: "empty" | "account-exists";
+  /** Authentication → Sign-up simulation: which practice case runs (lib/dev/signupSim.ts SIM_CASES). Unset = the picker. */
+  signUpSimCase?: "new" | "exists" | "under13" | "wrong-code";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
+  /** Mock people group (/dev/people/…): which of the 5 pretend people is "signed in" (lib/dev/mockPeople.ts). Unset = Cade. */
+  mockPerson?: MockPersonId;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
   mockDraft?: MockDraftPresetId | "off";
   mockDraftViewer?: MockViewer;
@@ -250,12 +255,14 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
+  if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;
   for (const [key, allowed] of [["homeOverview", HOME_OVERVIEW_STAGES], ["homeMomentum", HOME_MOMENTUM_STAGES], ["homeUpcoming", HOME_UPCOMING_STAGES], ["homeCompetition", HOME_COMPETITION_STAGES], ["homeInvite", HOME_INVITE_STAGES], ["homePlayers", HOME_PLAYERS_STAGES]] as const)
     if (state[key] !== undefined && !(allowed as readonly unknown[]).includes(state[key])) return null;
   if (state.birthdayStage !== undefined && !["empty", "calendar", "picked"].includes(String(state.birthdayStage))) return null;
   if (state.signUpStage !== undefined && !["empty", "account-exists"].includes(String(state.signUpStage))) return null;
+  if (state.signUpSimCase !== undefined && !["new", "exists", "under13", "wrong-code"].includes(String(state.signUpSimCase))) return null;
   if (state.tripBuilderStage !== undefined && !(TRIP_BUILDER_STAGES as readonly unknown[]).includes(state.tripBuilderStage)) return null;
   if (state.photoStage !== undefined && !["empty", "crop", "chosen", "ios-menu", "ios-library", "android-picker"].includes(String(state.photoStage))) return null;
   if (state.brandReplay !== undefined && (typeof state.brandReplay !== "number" || !Number.isSafeInteger(state.brandReplay) || state.brandReplay < 0)) return null;

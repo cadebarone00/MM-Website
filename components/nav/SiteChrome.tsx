@@ -25,7 +25,7 @@ export function SiteChrome({ children, catalog }: { children: ReactNode; catalog
 function AppChrome({ children }: { children: ReactNode }) {
   const rawPathname = usePathname();
   const pathname = chromePathname(rawPathname);
-  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || isOnboardingScreen(pathname) || ["/new-user", "/signup", "/login", "/dev/gps"].includes(pathname) || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
+  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || isOnboardingScreen(pathname) || ["/new-user", "/signup", "/login", "/dev/gps", "/dev/signup-sim"].includes(pathname) || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
   const hideBottomNav = isSiteBottomNavHidden(rawPathname);
   const ownShell = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/") || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/") || pathname.startsWith("/rounds/") || pathname === "/dev/tourney"
     || pathname.startsWith("/leagues/") || pathname === "/dev/leagues"
@@ -36,7 +36,7 @@ function AppChrome({ children }: { children: ReactNode }) {
   const title = pathname === "/" ? "The Maroon" : pathname === "/leagues" ? "Leagues" : pathname === "/settings" ? "Settings" : pathname === "/profile/search" ? "Find Golfers" : pathname === "/profile/friends" ? "Friends" : pathname === "/profile" || pathname.startsWith("/profile/") ? "Profile" : undefined;
   return <>
     <div className={`app-camera-content ${hideBottomNav ? "" : SITE_BOTTOM_NAV_CONTENT_CLASS}`}>
-      {pathname === "/golf-trips" || pathname === "/leagues" ? <div className="hidden lg:absolute lg:inset-x-0 lg:top-0 lg:z-10 lg:block"><PlatformHeader wordmark={false} /></div> : !ownShell && <PlatformHeader home={pathname === "/"} title={title} />}
+      {pathname === "/" || pathname === "/golf-trips" || pathname === "/leagues" ? <div className="hidden lg:absolute lg:inset-x-0 lg:top-0 lg:z-10 lg:block"><PlatformHeader wordmark={false} /></div> : !ownShell && <PlatformHeader home={pathname === "/"} title={title} />}
       {children}
     </div>
     {!hideBottomNav && <SiteBottomNav />}

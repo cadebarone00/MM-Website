@@ -14,6 +14,7 @@ import { DRAFT_SIM_DEFAULTS, MATCH_SEL_PER_TEAM, MATCH_SEL_TYPES, TEAM_DRAFT_PAG
 import { teamDraftSize } from "@/lib/platform/teamDraft";
 import { MOCK_DRAFT_PRESETS } from "./mockDraft";
 import { MOCK_MATCH_PRESETS } from "./mockMatchSelection";
+import { mockPeople } from "./mockPeople";
 
 /** The MM-Website-authdev workspace's dev server (node authdev-start.mjs), connected only to maroon-auth-dev. */
 const AUTHDEV_ORIGIN = "http://localhost:3002";
@@ -66,6 +67,13 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "sign-up-empty", label: "New email", state: { signUpStage: "empty" } },
     { id: "sign-up-account-exists", label: "Email already has an account", state: { signUpStage: "account-exists" } },
   ];
+  // Sign-up simulation (owner request 2026-11-21): the real screens with fake answers, start to End of simulation.
+  pages.push({ id: "auth-signup-sim", path: "/dev/signup-sim", label: "Sign-up simulation", group: "Authentication", fixtures: false, conditions: [
+    { id: "signup-sim-new", label: "New person", state: { signUpSimCase: "new" } },
+    { id: "signup-sim-exists", label: "Email already has an account", state: { signUpSimCase: "exists" } },
+    { id: "signup-sim-under13", label: "Under 13", state: { signUpSimCase: "under13" } },
+    { id: "signup-sim-wrong-code", label: "Wrong code first", state: { signUpSimCase: "wrong-code" } },
+  ] });
   // Profile Photo: each state of the photo step (pick -> Move and scale -> round result), so the cropper can be designed.
   const birthday = pages.find(page => page.id === "auth-age-check");
   if (birthday) birthday.conditions = [
@@ -225,6 +233,13 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
     { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
+  // Mock people group: the main tabs for 5 pretend people (lib/dev/mockPeople.ts), in bottom-menu order.
+  for (const [slug, label] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
+    const page = pages.find(item => item.path === `/dev/people/${slug}`);
+    if (!page) continue;
+    Object.assign(page, { label, group: "Mock people", conditions: mockPeople().map(person => ({ id: `mock-person-${person.id}`, label: `Signed in as ${person.label}`, state: { mockPerson: person.id } })) });
+    pages.push(...pages.splice(pages.indexOf(page), 1));
+  }
   // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
   const importTrip = pages.find(page => page.path === "/dev/import-trip");
   if (importTrip) Object.assign(importTrip, { label: "Import past trip (sample)", group: "Golf Trip Active", conditions: [] });

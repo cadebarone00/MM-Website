@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-20 - Home profile and navigation (implemented locally; deployment not verified).** Home previously led with a round photo and side-by-side tournament and trip links. It now centers The Maroon and its M logo above a collapsible profile snapshot linking to the signed-in user's profile, followed by Play, Golf Trip, Tournament and League links in a vertical list, then the existing Explore content. The snapshot reads the existing private profile endpoint; unavailable profile data falls back to a profile link. Round invites and code joining remain available. Home and profile descriptions in sections 22 and 23 are affected; destinations and workflow paths are unchanged. Review: docs/home-navigation-review-2026-11-20.md, review_required.
+
 **2026-11-20 - Trips, Tourneys and Leagues landing pages (presentation only; implemented locally; deployment not verified).** Their titles are centered at the same top position beneath the phone's camera area, and their page backgrounds are maroon, including in light mode. The Tourneys background photo is removed. Sections 22 and 23 are affected; navigation and workflow paths are unchanged.
 
 **2026-11-20 - Big Board Live label (presentation only; implemented locally; deployment not verified).** The active round's red LIVE label no longer has a dot beside it. Section 22 is affected; status behavior and workflow paths are unchanged.
@@ -834,6 +836,7 @@ flowchart TD
   Graphics --> Controls[Fullscreen and pausable scrolling]
   App[V2 app home and simulator] --> Profile[Existing V2 profile and player details]
   App --> Trips[Existing V2 trips and organizer settings]
+  %% Home presents the viewer profile followed by Play, Golf Trip, Tournament and League links, then Explore.
   App --> Play[Existing Play and Predict experiences]
   Profile --> Handicap[Shared handicap and round history]
   Trips --> PublicTap[Home Maroon Live box and View /tap-in/code]
@@ -959,7 +962,7 @@ The season timing overview now distinguishes Archived, Active, Upcoming, and Fut
 
 Platform headings for The Maroon home, Tourneys, Pick'ems, Profile, My Tournaments, and Create Tournament sit immediately beside the hamburger menu in the shared top bar. They use bold Spectral at 24?30px rather than large centered titles below the bar. Create Tournament retains its introductory headline below.
 
-**Main Page tournament entry.** `/` has a mobile-first home with a #1D0B11 maroon header and upper region, horizontally snapping photo cards linking to Join Tournament (`/tournaments/join`) and Create Tournament (`/tournaments/new`), and Log In. Desktop shows the cards side by side. The rounded lower panel switches between Discover, Courses and News; its links open existing editorial destinations. A floating bottom navigation links Home, Tournaments (Join page) and Account (`/account/choose`). Images are existing local assets. No tournament scores, personalized trips, countdowns or live activity are invented. Authentication and tournament access are unchanged; `/the-maroon` and `/website` retain their existing experiences.
+**Main Page entry.** `/` shows The Maroon and its M logo above a collapsible profile snapshot. The signed-in viewer's name, username and avatar come from the private profile endpoint, with a direct link to `/profile`; signed-out visitors can sign in. Vertical links open Play (`/rounds/new`), Golf Trip (`/golf-trips`), Tournament (`/tournaments/join`) and League (`/leagues`). Round invites and joining by code remain available to signed-in users. Below, Explore switches between Explore, Courses, Equipment, Teaching and News with the existing content and controls. Authentication and destination access remain unchanged.
 
 The Website homepage (`/website`) desktop footer uses the supplied maroon-jacket cutout, cropped from the bottom across the white sponsor band and maroon information band. Content and its white separator occupy the area from 35% to 90% of the viewport. The white band reads ?Thank You to? above ?our sponsors? with both configured sponsor logos to its right; it replaces the newsletter signup prompt. The decorative top stripe is removed. Journal top navigation and the footer use `maroon-900`, matching the Admin Center and tournament secondary navigation. Journal home/category pages and other public routes retain only the maroon wordmark, divider, links, copyright and back-to-top section, with no sponsor band or cutout. The footer remains desktop-only and is absent from portal/broadcast routes.
 

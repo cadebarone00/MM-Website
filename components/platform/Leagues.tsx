@@ -29,15 +29,18 @@ const send = (url: string, body: unknown): Promise<PostResult | null> => fetch(u
   .then((r) => r.json() as Promise<PostResult>).catch(() => null);
 const problem = (reply: PostResult | null, fallback: string) => reply?.message ?? (reply === null ? "No connection. Try again when you're back online." : fallback);
 
-/** The Leagues tab: Create, Join with a code, then my leagues (Live, Upcoming, Past). */
-export function LeaguesHome() {
-  const [leagues, setLeagues] = useState<MyLeague[] | null>(null);
+/** The Leagues tab: Create, Join with a code, then my leagues (Live, Upcoming, Past).
+ *  `preview` (dev Mock people only): show these leagues instead of loading mine, and hide the sample-league row. */
+export function LeaguesHome({ preview }: { preview?: MyLeague[] } = {}) {
+  const [loaded, setLeagues] = useState<MyLeague[] | null>(null);
+  const leagues = preview ?? loaded;
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    if (preview) return;
     fetch("/api/leagues", { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; leagues?: MyLeague[]; code?: string }>)
       .then((body) => body.ok ? setLeagues(body.leagues ?? []) : setError(body.code === "signed_out" ? "Log in to see your leagues." : body.code === "not_installed" ? "Leagues aren't set up in the database yet (supabase/leagues.sql)." : "Couldn't load your leagues. Try again."))
       .catch(() => setError("No connection. Try again when you're back online."));
-  }, []);
+  }, [preview]);
   const day = today();
   return <main className={`${styles.page} ${league.landing}`}>
     <section className={styles.panel}>
@@ -47,11 +50,11 @@ export function LeaguesHome() {
         <JoinCodeCard kind="league" />
       </div>
       {/* Preview servers only (npm run dev / dev:app): the sample league, so the screens can be seen without a real one. */}
-      {process.env.NODE_ENV === "development" && <ul className={league.leagueList}><li><Link href="/dev/leagues">
+      {process.env.NODE_ENV === "development" && !preview && <ul className={league.leagueList}><li><Link href="/dev/leagues">
         <span><strong>Thursday Night League</strong><small>Example league · preview only, nothing saved</small></span>
         <ChevronRight size={18} aria-hidden="true" />
       </Link></li></ul>}
-      {error ? <p className={styles.error} role="alert">{error}</p>
+      {error && !preview ? <p className={styles.error} role="alert">{error}</p>
         : !leagues ? <p className={styles.note}>Loading your leagues…</p>
         : !leagues.length ? <div className={league.empty}><Handshake size={28} aria-hidden="true" /><p>No leagues yet. Create one, or join with the code from your organizer.</p></div>
         : (["Live", "Upcoming", "Past"] as const).map((section) => {
