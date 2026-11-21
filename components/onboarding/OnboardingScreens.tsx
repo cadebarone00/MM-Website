@@ -7,6 +7,7 @@ import { MaroonMark } from "@/components/brand/MaroonMark";
 import { GolfTripDatePicker } from "@/components/platform/GolfTripDatePicker";
 import { suggestUsername } from "@/components/dev/auth/AuthNamePreview";
 import { AddPhotoIcon } from "@/components/dev/auth/AuthPhotoPreview";
+import { PhotoCropper } from "@/components/profile/PhotoCropper";
 import { BellIcon, PersonIcon, Setting } from "@/components/dev/auth/AuthSettingsPreview";
 import { NAME_MAX, usernameProblem } from "@/lib/profile/profileEdit";
 import { errorOf, send } from "@/lib/account/onboardingClient";
@@ -114,14 +115,16 @@ export function BirthdayScreen() {
   </main>;
 }
 
-/** Optional photo → POST /api/account/photo. "Skip for now" saves nothing. */
+/** Optional photo → Move and scale → POST /api/account/photo (the framed circle). "Skip for now" saves nothing. */
 export function PhotoScreen() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null); // the original, while Move and scale is open
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  useEffect(() => () => { if (picked) URL.revokeObjectURL(picked); }, [picked]);
 
   async function next() {
     if (!file) { router.push(ONBOARDING.settings); return; }
@@ -143,7 +146,7 @@ export function PhotoScreen() {
     <p className={photoStyles.subtitle}>Pick a photo so your golf buddies know it&apos;s you.</p>
     <label className={photoStyles.tile}>
       <input type="file" accept="image/*" className={photoStyles.file}
-        onChange={(e) => { const picked = e.target.files?.[0]; if (picked) { setFile(picked); setPreview(URL.createObjectURL(picked)); } }} />
+        onChange={(e) => { const chosen = e.target.files?.[0]; e.target.value = ""; if (chosen) setPicked(URL.createObjectURL(chosen)); }} />
       {preview
         // eslint-disable-next-line @next/next/no-img-element -- a local blob preview, same as the dev design
         ? <img src={preview} alt="Your profile photo" className={photoStyles.photo} />
@@ -153,6 +156,8 @@ export function PhotoScreen() {
     <button type="button" className={frame.continue} disabled={busy} onClick={() => void next()}>
       {busy ? "Uploading…" : preview ? "Continue" : "Skip for now"}
     </button>
+    {picked && <PhotoCropper imageUrl={picked} onCancel={() => setPicked(null)}
+      onDone={(framed) => { setFile(framed); setPreview(URL.createObjectURL(framed)); setPicked(null); }} />}
   </main>;
 }
 
