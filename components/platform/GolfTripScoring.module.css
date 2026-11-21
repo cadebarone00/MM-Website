@@ -1,14 +1,11 @@
-/* Scoring pull-up sheet. Collapsed, it's a card 3% in from each side with just its handle (56px) showing above the strip
-   the floating bottom menu covers (--nav-zone: 12px gap + 68px menu + 8px). Pulled up, it rises to the top of the screen
-   and grows into full screen on the way: --sheet-open runs 0 (closed) → 1 (open) and drives the width, corners, border
-   and the drop below the phone's camera (the safe area), so the grabber ends up just under the front camera. While
-   dragging it follows the finger (set inline); otherwise it animates. The fixed frame lets taps through. */
+/* Collapsed, the sheet shows its handle above the bottom menu. On phones it opens to 85% of the viewport;
+   --sheet-open tracks the drag and drives its width and controls. The fixed frame lets taps through. */
 @property --sheet-open{syntax:"<number>";inherits:true;initial-value:0}
-.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));position:fixed;left:0;right:0;bottom:0;z-index:25;height:100svh;pointer-events:none}
+.frame{--nav-zone:calc(88px + env(safe-area-inset-bottom));--app-safe-top:0px;position:fixed;left:0;right:0;bottom:0;z-index:25;height:85svh;pointer-events:none}
 .sheet{--sheet-open:0;position:absolute;left:0;right:0;bottom:0;height:100%;max-height:100%;width:calc(94% + 6% * var(--sheet-open));margin:0 auto;display:flex;flex-direction:column;box-sizing:border-box;
-  /* The safe area runs a little past the camera; 8px less tucks the grabber just under it. */
+  /* Full-screen modes need the safe-area inset; slide mode starts below it. */
   padding-top:calc(var(--app-safe-top) * var(--sheet-open));
-  border-radius:calc(18px * (1 - var(--sheet-open))) calc(18px * (1 - var(--sheet-open))) 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,calc(.3 * (1 - var(--sheet-open))));border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  border-radius:18px 18px 0 0;background:linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%);border:1px solid rgba(126,81,59,calc(.3 * (1 - var(--sheet-open))));border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
   color:var(--color-maroon-900,var(--color-maroon-850));font-family:var(--font-spectral),Georgia,serif;pointer-events:auto;transform:translateY(calc(100% - 56px - var(--nav-zone)));transition:transform .28s cubic-bezier(.2,.8,.2,1),--sheet-open .28s cubic-bezier(.2,.8,.2,1);z-index:25}
 .open{transform:translateY(0);--sheet-open:1}
 
@@ -50,6 +47,27 @@
 .scorecardTable .sectionGap,.scorecardTable .totalRow .sectionGap{padding:0;border-bottom:0;background:transparent}
 .scorecardTable .totalRow th,.scorecardTable .totalRow td{background:color-mix(in srgb,var(--color-maroon-850) 6%,transparent);border-bottom:2px solid color-mix(in srgb,var(--color-maroon-850) 30%,transparent)}
 .scorecardTable .totalRow th{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+/* Each golfer's scores form a tall gold-outlined pill, aligned with the shared hole rows. */
+.scorecardView .scorecardTable{border-collapse:separate;border-spacing:3px 0}
+.scorecardView .scorecardTable tbody th,.scorecardView .scorecardTable tbody td{border-bottom:0}
+.scorecardView .scorecardTable .nameHead{border:0;background:transparent;padding-bottom:10px}
+.scorecardView .scorecardTable thead th{font:700 13px/1 var(--font-spectral),Georgia,serif;letter-spacing:0;color:var(--color-maroon-900,var(--color-maroon-850))}
+/* Hole, yards and par share one bubble, with their labels above it. */
+.scorecardView .scorecardTable thead th:nth-child(-n+3){border:0;background:transparent;padding-bottom:10px}
+.scorecardView .scorecardTable tbody tr > :nth-child(-n+3){position:relative;isolation:isolate;background:transparent}
+.scorecardView .scorecardTable tbody tr > :nth-child(-n+3)::before{content:"";position:absolute;z-index:-1;inset:0 -1.5px;background:rgba(201,168,110,.08)}
+.scorecardView .scorecardTable tbody tr > :first-child::before{left:0;border-left:1px solid rgba(201,168,110,.7)}
+.scorecardView .scorecardTable tbody tr > :nth-child(3)::before{right:0;border-right:1px solid rgba(201,168,110,.7)}
+.scorecardView .scorecardTable tbody tr:first-child > :nth-child(-n+3)::before{border-top:1px solid rgba(201,168,110,.7)}
+.scorecardView .scorecardTable tbody tr:first-child > :first-child::before{border-top-left-radius:14px}
+.scorecardView .scorecardTable tbody tr:first-child > :nth-child(3)::before{border-top-right-radius:14px}
+.scorecardView .scorecardTable tbody tr:last-child > :nth-child(-n+3)::before{border-bottom:1px solid rgba(201,168,110,.7)}
+.scorecardView .scorecardTable tbody tr:last-child > :first-child::before{border-bottom-left-radius:14px}
+.scorecardView .scorecardTable tbody tr:last-child > :nth-child(3)::before{border-bottom-right-radius:14px}
+.scorecardView .scorecardTable .playerColumn{position:relative;isolation:isolate;background:transparent;border:0}
+.scorecardTable .playerColumn::before{content:"";position:absolute;z-index:-1;inset:0 auto 0 50%;width:min(50px,calc(100% - 8px));box-sizing:border-box;transform:translateX(-50%);border-left:1px solid rgba(201,168,110,.7);border-right:1px solid rgba(201,168,110,.7);background:rgba(201,168,110,.08)}
+.scorecardTable tbody tr:first-child .playerColumn::before{border-top:1px solid rgba(201,168,110,.7);border-radius:14px 14px 0 0}
+.scorecardTable tbody tr:last-child .playerColumn::before{border-bottom:1px solid rgba(201,168,110,.7);border-radius:0 0 14px 14px}
 .scorecardView{display:flex;flex-direction:column;gap:14px;padding-top:8px}
 .gpsNote{margin:0;color:color-mix(in srgb,var(--color-maroon-850) 65%,transparent);font-size:13px;text-align:center}
 .scorecardButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
@@ -145,7 +163,7 @@
 @media (min-width:1024px){.frame{height:80svh}.sheet{--sheet-open:0}}
 /* Full-screen scoring ("Hold for scoring" and "Scoring button" views): the sheet covers the whole screen with no
    drag handle; GPS stays top left, Scorecard moves to the top middle, EXIT (styled like the settings SAVE) top right. */
-.frameFull{top:0;height:auto;z-index:110} /* above the bottom menu (100) */
+.frameFull{--app-safe-top:var(--app-top-clearance);top:0;height:auto;z-index:110} /* above the bottom menu (100) */
 .sheet.sheetFull{width:100%;height:100%;border-radius:0;border:0;transform:none;padding-top:var(--app-safe-top)}
 .sheetFull .scorecardButton{top:calc(46px + var(--app-safe-top))}
 .sheetFull .scorecardButtonCenter{right:auto;left:50%;transform:translateX(-50%)}
@@ -155,7 +173,7 @@
 /* "Scoring button" view, closed: a Next hole-style button in Next hole's spot, just above the bottom menu. */
 .openScoringButton{position:absolute;left:0;right:0;bottom:calc(var(--nav-zone) + 10px);pointer-events:auto;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 /* Pulled-up sheet: dim everything behind it (bottom menu included) and swallow taps there. */
-.backdrop{position:fixed;inset:0;z-index:101;background:rgba(10,4,6,.35);touch-action:none;animation:backdropIn .2s ease both}
+.backdrop{position:fixed;inset:0;z-index:101;background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);touch-action:none;animation:backdropIn .2s ease both}
 .frameAbove{z-index:102}
 @keyframes backdropIn{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.backdrop{animation:none}}
@@ -257,3 +275,23 @@
 .history li details summary{text-align:left;font-weight:600;letter-spacing:0}
 .snapshotTable{margin-top:6px}
 .holeParEdit{padding:4px 10px;border:1px dashed color-mix(in srgb,var(--color-maroon-850) 45%,transparent);border-radius:999px;background:transparent;cursor:pointer}
+
+/* Default dark appearance: cream ink and controls on the same maroon surface throughout scoring. */
+:global(html:not([data-mode="light"])) .sheet{--color-maroon-850:#fbf8f1;--color-maroon-900:#fbf8f1;background:radial-gradient(120% 55% at 50% -12%,rgba(201,168,110,.3),transparent 70%),#240001;color:#fbf8f1;border-color:rgba(220,196,149,.3)}
+:global(html:not([data-mode="light"])) .handleLabel{background:rgba(251,248,241,.12);border-color:rgba(251,248,241,.3);color:#fbf8f1}
+:global(html:not([data-mode="light"])) .scorecardButton:not(.gpsButton),:global(html:not([data-mode="light"])) .holeChip,:global(html:not([data-mode="light"])) .conflictRow button,:global(html:not([data-mode="light"])) .correctionButton,:global(html:not([data-mode="light"])) .correctionHoles button,:global(html:not([data-mode="light"])) .correctionActions button{background:#fbf8f1;color:#350001}
+:global(html:not([data-mode="light"])) .holeChipFilled,:global(html:not([data-mode="light"])) .puttOption[aria-pressed="true"],:global(html:not([data-mode="light"])) .compassButton[aria-pressed=true],:global(html:not([data-mode="light"])) .compassCenter[aria-pressed=true],:global(html:not([data-mode="light"])) .correctionHoles button[aria-pressed=true],:global(html:not([data-mode="light"])) .correctionActions button:last-child,:global(html:not([data-mode="light"])) .nextHoleButton{background:#dcc495;border-color:#dcc495;color:#350001}
+:global(html:not([data-mode="light"])) .stepButton:active{background:#dcc495;color:#350001}
+:global(html:not([data-mode="light"])) .grabber{background:rgba(251,248,241,.75)}
+:global(html:not([data-mode="light"])) .confirmDialog{background:#350001}
+:global(html:not([data-mode="light"])) .correctionForm{background:rgba(251,248,241,.08)}
+:global(html:not([data-mode="light"])) .scorecardTotals [data-check=ok] dt,:global(html:not([data-mode="light"])) .scorecardTotals [data-check=ok] dd,:global(html:not([data-mode="light"])) .syncStatus[data-state=verified]{color:#8cdb98}
+:global(html:not([data-mode="light"])) .scorecardTotals [data-check=wrong] dt,:global(html:not([data-mode="light"])) .scorecardTotals [data-check=wrong] dd,:global(html:not([data-mode="light"])) .syncStatus[data-state=conflict],:global(html:not([data-mode="light"])) .conflictRow{color:#ff9991}
+:global(html:not([data-mode="light"])) .syncStatus[data-state=saved]{color:#dcc495}
+:global(html:not([data-mode="light"])) .gpsFullScreen .exitButton{color:#350001}
+
+/* Scoring, GPS and Card are simple text controls rather than filled pills. */
+.sheet .handleLabel,.sheet .scorecardButton,:global(html:not([data-mode="light"])) .sheet .handleLabel,:global(html:not([data-mode="light"])) .sheet .scorecardButton{display:grid;place-items:center;width:118.8px;height:40.6px;padding:0;border:0;border-radius:0;background:transparent;color:inherit;box-shadow:none;font:700 11px/1 var(--font-spectral),Georgia,serif;letter-spacing:.06em;text-transform:uppercase}
+.sheet .scorecardButton::after{display:none}
+.sheet .scorecardButton[aria-pressed=true]{color:#c49b54}
+.sheet.gpsOverlay .scorecardButton,.sheet.gpsFullScreen .scorecardButton{color:#fbf8f1}

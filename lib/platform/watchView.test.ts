@@ -40,3 +40,25 @@ test("a watched trip drops pending invites, emails, destination, coordinates and
   assert.equal(shown.draft.tripName, "Pinehurst");
   assert.deepEqual((shown.scoring as unknown as { entries: { scoredProfileId: string }[] }).entries[0].scoredProfileId, "p2");
 });
+
+test("a watched league keeps names, handicaps, groups and scores but no ids, join code, organizer or tee times", async () => {
+  const { spectatorLeague } = await import("./watchView.ts");
+  const league = {
+    id: "dddddddd-0000-4000-8000-000000000009", code: "K7Q4MZ", name: "Thursday", organizer: CAM, date: "2026-11-21", status: "live" as const,
+    course: { name: "Stevens Park", place: null, par: Array(18).fill(4), strokeIndex: null, tee: null }, scoring: "Gross" as const,
+    players: [{ profileId: CAM, name: "Cam Latto", handicap: 3 }, { profileId: CADE, name: "Cade Barone", handicap: null }],
+    groups: [{ number: 1, time: "08:10", hole: 10, scorer: CAM, players: [CAM, CADE], submitted: false }],
+    skins: { on: true, net: false, carryover: true }, pairs: { on: true, format: "bestball" as const, net: false, segments: 18 as const, rule: "random" as const, locked: true, teams: [[CAM, CADE]] },
+    holes: [{ profileId: CADE, hole: 1, strokes: 5 }], watchCode: "W4K9PZ",
+  };
+  const shown = spectatorLeague(league, "watch-W4K9PZ");
+  const text = JSON.stringify(shown);
+  for (const secret of [CAM, CADE, "K7Q4MZ", "08:10", league.id]) assert.ok(!text.includes(secret), `leaked ${secret}`);
+  assert.deepEqual(shown.players.map((p) => [p.profileId, p.name, p.handicap]), [["p1", "Cam Latto", 3], ["p2", "Cade Barone", null]]);
+  assert.deepEqual(shown.groups[0].players, ["p1", "p2"]);
+  assert.deepEqual(shown.pairs.teams, [["p1", "p2"]]);
+  assert.deepEqual(shown.holes, [{ profileId: "p2", hole: 1, strokes: 5 }]);
+  assert.equal(shown.organizer, "");
+  assert.equal(shown.id, "watch-W4K9PZ");
+  assert.equal("watchCode" in shown, false, "the share code itself isn't sent back");
+});

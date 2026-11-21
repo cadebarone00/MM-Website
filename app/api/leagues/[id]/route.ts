@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { copyLeague, deleteLeague, endLeague, getLeague, setLeagueGroupGame, setLeagueGroups, setLeagueSettings, setLeagueStrokes, submitLeagueGroup } from "@/lib/platform/leaguesServer";
+import { copyLeague, deleteLeague, endLeague, getLeague, setLeagueGroupGame, setLeagueGroups, setLeagueSettings, setLeagueStrokes, setLeagueLive, submitLeagueGroup, withLeagueLive } from "@/lib/platform/leaguesServer";
+import { liveSettingsFromBody } from "@/lib/platform/liveVisibility";
 import { changeFrom, dateFrom } from "@/lib/platform/leaguesRequest";
 import { badRequest, reply, signedOut } from "@/lib/platform/codeTournamentsRequest";
 
@@ -11,19 +12,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!user) return signedOut();
   const result = await getLeague(user.id, id);
   if (result.ok && !result.value) return NextResponse.json({ ok: false, code: "not_member" }, { status: 404 });
+  if (result.ok && result.value) result.value = await withLeagueLive(result.value, user.id);
   return reply(result, (league) => ({ league, me: user.id }));
 }
 
 /**
  * POST a change (lib/platform/leagues.ts LeagueChange): "settings", "groups" and "end" (organizer); "strokes" { player,
  * hole, strokes }, "game" { group, game, inputs } and "submit" { group } (the group's scorer or the organizer).
- * "copy" { date } (organizer): a new league with the same players and settings.
+ * "copy" { date } (organizer): a new league with the same players and settings. "visibility" { visibility, playersCanShare }
+ * (organizer): The Maroon Live, who can watch.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: { user } } = await (await createSupabaseServerClient()).auth.getUser();
   if (!user) return signedOut();
   const body = await request.json().catch(() => null) as { action?: unknown; date?: unknown } | null;
+  // The Maroon Live: { visibility, playersCanShare } (organizer only).
+  if (body?.action === "visibility") {
+    const parsed = liveSettingsFromBody(body);
+    return parsed.ok ? reply(await setLeagueLive(user.id, id, parsed.settings.visibility, parsed.settings.playersCanShare), () => ({})) : badRequest();
+  }
   if (body?.action === "copy") {
     const date = dateFrom(body.date);
     return date ? reply(await copyLeague(user.id, id, date), (value) => value) : badRequest();

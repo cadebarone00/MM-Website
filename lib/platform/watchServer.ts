@@ -6,7 +6,8 @@ import { withMemberPhotos } from "./golfTripsServer.ts";
 import { setupForViewer } from "./savedTripSetup.ts";
 import { loadSavedTripSetup } from "./savedTripSetupServer.ts";
 import { getTripRoundScoring } from "./tripScoringServer.ts";
-import { spectatorTournament, spectatorTrip, type WatchView } from "./watchView.ts";
+import { getLeague } from "./leaguesServer.ts";
+import { spectatorLeague, spectatorTournament, spectatorTrip, type WatchView } from "./watchView.ts";
 
 /**
  * Watch codes (supabase/watch_codes.sql): anyone with the code, signed in or not, gets a read-only view. The server
@@ -24,7 +25,7 @@ export async function loadWatch(code: string, today = new Date().toISOString().s
     console.error("find_watch_code failed:", error.message);
     return { status: "failed" };
   }
-  const found = data as { kind: "tournament" | "trip"; id: string; organizer: string | null } | null;
+  const found = data as { kind: "tournament" | "trip" | "league"; id: string; organizer: string | null } | null;
   if (!found?.organizer) return { status: "missing" };
   const watchId = `watch-${code.toUpperCase().replace(/[^A-Z0-9]/g, "")}`;
 
@@ -32,6 +33,12 @@ export async function loadWatch(code: string, today = new Date().toISOString().s
     const result = await getCodeTournament(found.organizer, found.id);
     if (!result.ok) return { status: result.code === "not_installed" ? "not_installed" : "failed" };
     return result.value ? { status: "ok", view: { kind: "tournament", tournament: { ...spectatorTournament(result.value), id: watchId } } } : { status: "missing" };
+  }
+
+  if (found.kind === "league") {
+    const result = await getLeague(found.organizer, found.id);
+    if (!result.ok) return { status: result.code === "not_installed" ? "not_installed" : "failed" };
+    return result.value ? { status: "ok", view: { kind: "league", league: spectatorLeague(result.value, watchId) } } : { status: "missing" };
   }
 
   const { data: tripData, error: tripError } = await db.rpc("get_golf_trip", { p_profile: found.organizer, p_trip: found.id });

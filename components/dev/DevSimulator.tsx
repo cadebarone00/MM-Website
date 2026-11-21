@@ -1,8 +1,9 @@
 "use client";
 
+import { LIVE_SURFACES, type LiveSurface } from "@/lib/dev/livePreviews";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
-import { DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, syncSimulatorNavigation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { LEGACY_SIMULATOR_GROUPS, SIMULATOR_FEATURES, SIMULATOR_STAGES, type SimulatorStage, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, syncSimulatorNavigation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
 import { devTripScope, initializeTripScenario, resetDevSetup } from "@/lib/dev/tripSetupStore";
@@ -23,10 +24,20 @@ const bounded = (value: string, min: number, max: number, fallback: number) => v
 /** Same-origin pages load by path; a page served by another local dev server (page.origin) loads from there. */
 const frameUrl = (page: SimulatorPage) => `${page.origin ?? ""}${page.path}`;
 
-export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: { pages: SimulatorPage[]; unmapped: Record<string, unknown>; initialGroup?: string }) {
+/** The dev group with the Website desktop / Website mobile / App toggle (lib/dev/simulatorRoutes.ts). */
+const LIVE_GROUP = "The Maroon Live";
+
+const FEATURES: readonly string[] = SIMULATOR_FEATURES;
+
+export function DevSimulator({ pages: registryPages, unmapped, initialGroup, initialStage }: { pages: SimulatorPage[]; unmapped: Record<string, unknown>; initialGroup?: string; initialStage?: string }) {
   const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
   const pages = useMemo(() => [...registryPages, ...settingsRounds.map(round => ({ ...registryPages.find(page => page.id === "settings-competition-rounds")!, id: `settings-round-${round.id}`, label: `Round ${round.number}`, parentId: "settings-competition-rounds", navigation: { tab: "Home" as const, settingsView: `round-${round.id}` } }))], [registryPages, settingsRounds]);
-  const initialPage = pages.find(page => page.group === initialGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
+  // ?group=…&stage=… (an old group name like "Golf Trip Active" opens the feature + stage it moved to).
+  const [startGroup, startStage] = initialGroup && LEGACY_SIMULATOR_GROUPS[initialGroup] ? LEGACY_SIMULATOR_GROUPS[initialGroup] : [initialGroup, SIMULATOR_STAGES.find(item => item === initialStage)];
+  const initialPage = (startGroup && FEATURES.includes(startGroup) ? pages.find(page => page.group === startGroup && (page.stage ?? "Main") === (startStage ?? "Main") && !page.parentId) : undefined)
+    ?? pages.find(page => page.group === startGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
+  // Feature groups: the Main · Active · Onboarding switch. Picked by hand only when that stage has no pages yet; otherwise it follows the page.
+  const [stageChoice, setStageChoice] = useState<SimulatorStage | null>(startGroup && FEATURES.includes(startGroup) && startStage && initialPage.stage !== startStage ? startStage : null);
   const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialPage.viewport === "desktop" ? "desktop" : initialPage.viewport === "mobile" ? "iphone16" : initialDevice.id))!;
   const [pageId, setPageId] = useState(initialPage.id);
   const [frameSrc, setFrameSrc] = useState(`${frameUrl(initialPage)}?simulator=1`);
@@ -40,7 +51,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const [zoom, setZoom] = useState("fit");
   const [available, setAvailable] = useState({ width: 700, height: 850 });
   const [source, setSource] = useState<SimulatorSource>("maroon");
-  const [state, setState] = useState<SimulatorState>(DEFAULT_SIMULATOR_STATE);
+  const [state, setState] = useState<SimulatorState>({ ...DEFAULT_SIMULATOR_STATE, ...initialPage.state });
   const [navigation, setNavigation] = useState(initialPage.navigation);
   const [ready, setReady] = useState(false);
   const [hapticLevel, setHapticLevel] = useState(2);
@@ -90,6 +101,19 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   const conditions = scenarioVisible ? selectedPage.conditions?.filter(condition=>!condition.playerCount && !["competition-source","competitive","social","round-source","scheduled","round-live","round-end-match","round-end-mismatch","round-between","round-complete","dual-draft-momentum","home-draft-configured"].includes(condition.id) && !["home-match-draft-","match-draft-","format-"].some(prefix=>condition.id.startsWith(prefix))) : selectedPage.conditions;
   const groups = Array.from(new Set(pages.map(page => page.group ?? "Other")));
   const selectedGroup = selectedPage.group ?? "Other";
+  const isFeature = FEATURES.includes(selectedGroup);
+  const shownStage: SimulatorStage = stageChoice ?? selectedPage.stage ?? "Main";
+  const groupPages = pages.filter(page => (page.group ?? "Other") === selectedGroup && !page.parentId && (!isFeature || (page.stage ?? "Main") === shownStage));
+  function chooseStage(next: SimulatorStage) {
+    const first = pages.find(page => page.group === selectedGroup && (page.stage ?? "Main") === next && !page.parentId);
+    if (first) choosePage(first.id);
+    else {
+      setStageChoice(next);
+      const url = new URL(window.location.href);
+      url.searchParams.set("stage", next);
+      window.history.replaceState(null, "", url);
+    }
+  }
   const branchPath: SimulatorPage[] = [];
   let branchPage: SimulatorPage | undefined = selectedPage;
   while (branchPage) {
@@ -197,8 +221,13 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
     if (!next) return;
     const url = new URL(window.location.href);
     url.searchParams.set("group", next.group ?? "Other");
+    if (FEATURES.includes(next.group ?? "")) url.searchParams.set("stage", next.stage ?? "Main"); else url.searchParams.delete("stage");
     window.history.replaceState(null, "", url);
-    if (next.viewport || selectedPage.standalone) {
+    setStageChoice(null);
+    if (next.state) setState(current => ({ ...current, ...next.state }));
+    // The Maroon Live: its screens open at the size the Website desktop / Website mobile / App toggle is set to.
+    if (next.group === LIVE_GROUP && !next.standalone) chooseLiveSurface(state.liveSurface ?? "app", false);
+    else if (next.viewport || selectedPage.standalone) {
       chooseDevice(next.viewport === "desktop" ? "desktop" : next.viewport === "mobile" ? "iphone16" : initialDevice.id);
       if (next.standalone) setInsets({ top: 0, bottom: 0 });
     }
@@ -236,6 +265,12 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       setInsets({ top: next.top, bottom: next.bottom });
     }
   }
+  /** The Maroon Live toggle: the screen size, and (sent to the page) which version of the screen to draw. */
+  function chooseLiveSurface(surface: LiveSurface, remember = true) {
+    if (remember) setState(current => ({ ...current, liveSurface: surface }));
+    chooseDevice(surface === "desktop" ? "desktop" : surface === "mobile" ? "iphone16" : initialDevice.id);
+    if (surface !== "app") setInsets({ top: 0, bottom: 0 });
+  }
   function chooseSource(next:SimulatorSource){
     if(next===source)return;
     setSource(next);
@@ -258,13 +293,15 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
   return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
+      {selectedPage.group === LIVE_GROUP && !selectedPage.standalone && <div className={styles.appearanceToggle} role="group" aria-label="Where it's viewed">
+        {LIVE_SURFACES.map(([id, label]) => <button key={id} type="button" aria-pressed={(state.liveSurface ?? "app") === id} onClick={() => chooseLiveSurface(id)}>{label}</button>)}</div>}
       <div className={styles.appearanceToggle} role="group" aria-label="App appearance">{(["light", "dark"] as const).map(mode => <button key={mode} type="button" aria-pressed={appearance === mode} onClick={() => setSimulatorAppearance(mode)}>{mode === "light" ? "Light mode" : "Dark mode"}</button>)}</div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
     <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset || mockMatchPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
         <div className={styles.panelHeading}><SlidersHorizontal size={16} /> Groups</div>
-        <form className={styles.cards} action="/dev" method="get">{groups.map(group => <button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage(pages.find(page => (page.group ?? "Other") === group)!.id); }}>{group}</button>)}</form>
+        <form className={styles.cards} action="/dev" method="get">{groups.map((group, index) => <Fragment key={group}>{index > 0 && !FEATURES.includes(group) && FEATURES.includes(groups[index - 1]) && <h3 className={styles.conditionSection}>Other</h3>}<button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage((pages.find(page => page.group === group && (page.stage ?? "Main") === "Main" && !page.parentId) ?? pages.find(page => (page.group ?? "Other") === group))!.id); }}>{group}</button></Fragment>)}</form>
         <section className={styles.controlSection} aria-labelledby="device-heading">
           <h2 id="device-heading">Device</h2>
           <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -279,7 +316,9 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup }: {
       </aside>
       <aside className={styles.controls} aria-label="Pages">
         <div className={styles.panelHeading}>Pages</div>
-        <div className={styles.cards}>{pages.filter(page => (page.group ?? "Other") === selectedGroup && !page.parentId).map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
+        {isFeature && <div className={styles.stageToggle} role="group" aria-label={`${selectedGroup} stage`}>{SIMULATOR_STAGES.map(item => <button key={item} type="button" aria-pressed={shownStage === item} onClick={() => chooseStage(item)}>{item}</button>)}</div>}
+        {isFeature && !groupPages.length && <p className={styles.stageEmpty}>Nothing here yet</p>}
+        <div className={styles.cards}>{groupPages.map(page => <button data-page-id={page.id} className={styles.card} type="button" key={page.id} aria-pressed={activeIds.has(page.id)} onClick={() => choosePage(page.id)}>{page.label}<small>{page.path}</small></button>)}</div>
         {!pageId && <p>Unmapped route: {currentPath}</p>}
       </aside>
       {branchColumns.map(parent => <aside key={parent.id} className={styles.controls} aria-label={`${parent.label} pages`}>

@@ -25,7 +25,7 @@ export function SiteChrome({ children, catalog }: { children: ReactNode; catalog
 function AppChrome({ children }: { children: ReactNode }) {
   const rawPathname = usePathname();
   const pathname = chromePathname(rawPathname);
-  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || isOnboardingScreen(pathname) || ["/new-user", "/signup", "/login", "/dev/gps", "/dev/signup-sim"].includes(pathname) || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
+  if (pathname === "/dev" || pathname.startsWith("/dev/auth/") || isOnboardingScreen(pathname) || ["/new-user", "/signup", "/login", "/dev/gps", "/dev/signup-sim", "/dev/tv"].includes(pathname) || pathname.startsWith("/dev/live/") || pathname.startsWith("/dev/notifications/") || pathname === "/dev/brand" || pathname.startsWith("/dev/brand/")) return children;
   const hideBottomNav = isSiteBottomNavHidden(rawPathname);
   const ownShell = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/") || pathname.startsWith("/dev/invites/") || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/") || pathname.startsWith("/rounds/") || pathname === "/dev/tourney"
     || pathname.startsWith("/leagues/") || pathname === "/dev/leagues"

@@ -5708,7 +5708,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 ---
 
-## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT + committed (350d3c4b); Step 2 BUILT 2026-11-21, uncommitted (real /tap-in directory via /api/live + `supabase/maroon_live_directory.sql`, usernames kept for watchers so the trip profile name opens /profile/<username>, one top bar on every live page); NEITHER `maroon_live_visibility.sql` NOR `maroon_live_directory.sql` run in prod; leagues have the columns only (their settings come with Step 3)
+## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT + committed (350d3c4b); Step 2 BUILT 2026-11-21, uncommitted (real /tap-in directory via /api/live + `supabase/maroon_live_directory.sql`, usernames kept for watchers so the trip profile name opens /profile/<username>, one top bar on every live page); Step 3 BUILT 2026-11-21, uncommitted (leagues: watch code, Who can watch in League Settings, share link under the Leaderboard, read-only league live page with Leaderboard / Skins / Pairs, Public leagues in the directory — `supabase/maroon_live_leagues.sql`); Dev simulator group "The Maroon Live" BUILT 2026-11-21 (owner request: every screen on sample data — Directory, Event live page, Who can watch, 4 TV mode pages; Conditionals per state; /dev/live/*). Step 4 DESIGN BUILT 2026-11-21 at /dev/tv (sample players; `components/tap-in/LiveTvBoard.tsx`, awaiting owner approval of the look before it is connected to real events at /tap-in/<code>/tv); NONE of `maroon_live_visibility.sql`, `maroon_live_directory.sql`, `maroon_live_leagues.sql` run in prod (run in that order); leagues have the columns only (their settings come with Step 3)
 
 **What it does / who uses it.** Every golf trip, tournament and league gets its own live site, built from one shared template, on the website and in the app. Anyone allowed in can follow the golf live: leaderboard, match play, scorecards, and each player's trip profile. Like the Masters app: you see Rory's scores, not his flight plans. Organizers can also put a scrolling leaderboard on a TV.
 
@@ -5882,3 +5882,35 @@ faster too, but it touches the step rules — left for later if still wanted.)
 
 **Done looks like:** the waiting screen is maroon with the logo; type check, lint and tests pass; `npm run build:app`
 succeeds; checked in the browser at phone width that a sign-up step's waiting screen is maroon.
+
+## Dev simulator: 4 feature groups, each with Main · Active · Onboarding (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; Leagues/Play create+join pages not added — owner approved the spec as written)
+
+**What it does and who uses it:** The owner (and agents) use the `/dev` simulator to look at every screen. Today the Groups list is long and mixed (Golf Trip Active, Golf Trip Onboarding, Tourneys, Tournament Active, Public / Marketing, Mock people, Invitations…). This regroups the main features so each one is laid out the same way, which makes it easy to compare them side by side and keep the UI consistent across features.
+
+**The new layout (dev only, nothing in the real app changes):**
+- **Top of the Groups column: 4 feature groups** — Golf Trips, Tourneys, Leagues, Play (bottom-menu order).
+- Clicking one shows a **Main · Active · Onboarding** switch at the top of the Pages column. **Main** is picked by default.
+  - **Main** = the feature's main page, what you see when you tap its bottom-menu button.
+  - **Active** = inside the feature (a trip, tournament, league or round in progress) — where the tests/samples for that feature live.
+  - **Onboarding** = getting into an active feature: the walkthrough to create one, joining, and receiving an invite.
+- If a stage has nothing yet, it says "Nothing here yet" (same size panel, no jumping).
+- The link remembers it: `/dev?group=Golf Trips&stage=Active`.
+- **Every other group stays as it is, listed under the 4** (Website desktop/mobile, App Launch, Authentication, Live V2 Auth, Profile, Notifications, The Maroon Live, Dev tools). Conditionals, sub-pages and the phone preview work exactly as today.
+
+**Where today's pages go:**
+
+| Feature | Main | Active | Onboarding |
+|---|---|---|---|
+| **Golf Trips** | Golf Trips (`/golf-trips`), Mock people · Golf Trips | Everything now in "Golf Trip Active" (Home + its sub-pages, every tab/section, Settings preview, App settings, GPS prototype, Import past trip) | Everything now in "Golf Trip Onboarding" (Learn, Tour, Trip Basics + steps, coach marks, Your trip is ready, Join this trip) + Invitations → Golf Trip · Receive |
+| **Tourneys** | Tourneys (`/tournaments/join`), Mock people · Tourneys | Tournament (sample): player, Net round 2, organizer, organizer not playing, spectator, ended; old "Tournament Active" (`/dev/play`, only when DEV_PLAY_DEMO is on) | Create a tournament + Join with code (pulled out of the sample's Conditionals into their own pages) + Invitations → Tournament · Receive |
+| **Leagues** | Leagues (`/leagues`), Mock people · Leagues | Sample league (`/dev/leagues`) | Invitations → League · Receive |
+| **Play** | Play / Home (`/`), Mock people · Play | Sample round (`/dev/round`) | Invitations → Play · Receive |
+
+- The **Mock people** group goes away: each feature's mock page moves into that feature's Main (same "Signed in as…" Conditionals). Mock people · Profile moves into the Profile group.
+- The **Invitations** group goes away (each invite moves into its feature's Onboarding).
+- "One of each way to play" (`/dev/samples`) and the course-search harness move to **Dev tools**.
+- **Not added in this step** (can add after if wanted): the real create/join pages for Leagues and Play (`/leagues/new`, `/leagues/join`, `/rounds/new`, `/rounds/join`) under Onboarding.
+
+**Tech / data:** no database, no new services. `lib/dev/simulator.ts`: pages get an optional `stage` ("Main" | "Active" | "Onboarding"). `lib/dev/simulatorRoutes.ts`: sets `group` + `stage` for the pages above. `components/dev/DevSimulator.tsx`: the 4 features on top, the stage switch, `?stage=` in the link.
+
+**Done means:** `/dev` shows Golf Trips, Tourneys, Leagues, Play at the top; each opens on Main; Active and Onboarding show the pages in the table; every page that was in the simulator before is still reachable (nothing lost); old `?group=Golf Trip Active` links still open the right place; `tsc`, lint and the simulator tests pass; checked on screen at localhost:3001/dev.

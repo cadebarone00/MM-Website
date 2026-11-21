@@ -114,3 +114,33 @@ test("the directory lists only Public trips and tournaments, golf details only, 
   assert.deepEqual((await list()).map((e) => e.name), ["Pinehurst"], "Link only drops out of the directory");
   assert.equal(priv.length > 0, true);
 });
+
+// --- Database: supabase/maroon_live_leagues.sql (leagues on The Maroon Live) --------------------------------------
+
+test("leagues get a share code, open only when not Private, show in the directory when Public, organizer only", async () => {
+  const { db, cam, stranger } = await setup();
+  const course = { name: "Stevens Park", place: null, par: Array(18).fill(4), strokeIndex: null, tee: null };
+  const made = async (name: string) => (await db.query<{ r: { id: string; code: string } }>("select create_league($1, $2, $3, '2026-11-21', 'Gross', true, 5) as r", [cam, name, JSON.stringify(course)])).rows[0].r;
+  const before = await made("Thursday");
+  await db.exec(sqlFile("maroon_live_directory.sql"));
+  await db.exec(sqlFile("maroon_live_leagues.sql"));
+  await db.exec(sqlFile("maroon_live_leagues.sql")); // safe to run twice
+  const after = await made("Friday");
+  const league = async (id: string) => (await db.query<{ w: string; v: string }>("select watch_code w, live_visibility v from leagues where id = $1", [id])).rows[0];
+  const [a, b] = [await league(before.id), await league(after.id)];
+  for (const l of [a, b]) { assert.match(l.w, /^W[A-HJKMNP-Z2-9]{5}$/); assert.equal(l.v, "private"); }
+  assert.notEqual(a.w, b.w);
+  assert.ok(![before.code, after.code].includes(a.w));
+  // Private: the link doesn't open it and it isn't listed.
+  assert.equal(await find(db, a.w), null);
+  await assert.rejects(set(db, stranger, "league", before.id, "public", true), /Only the organizer/);
+  await set(db, cam, "league", before.id, "link", true);
+  assert.deepEqual(await find(db, a.w), { kind: "league", id: before.id, organizer: cam });
+  const list = async () => (await db.query<{ r: Record<string, unknown>[] }>("select list_public_live_events('') as r")).rows[0].r;
+  assert.ok(!(await list()).some((e) => e.kind === "league"), "Link only isn't listed");
+  await set(db, cam, "league", before.id, "public", false);
+  const shown = (await list()).find((e) => e.kind === "league")!;
+  assert.deepEqual([shown.name, shown.code, shown.course, shown.firstDate, shown.playerCount, shown.ended], ["Thursday", a.w, "Stevens Park", "2026-11-21", 1, false]);
+  // Trips and tournaments still work after the functions were replaced.
+  assert.ok((await list()).some((e) => e.kind === "tournament"));
+});

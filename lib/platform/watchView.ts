@@ -1,4 +1,5 @@
 import type { CodeTournament } from "./codeTournaments.ts";
+import type { League } from "./leagues.ts";
 import { savedTripAsDraft, type SavedGolfTrip } from "./golfTripCreate.ts";
 import type { GolfTripDraft } from "./golfTripDraft.ts";
 import type { TripSetupSnapshot } from "./savedTripSetup.ts";
@@ -11,7 +12,7 @@ import type { TripRoundScoring } from "./tripScoring.ts";
  */
 
 export interface SpectatorTrip { savedTrip: SavedGolfTrip; scoring: TripRoundScoring | null; setup: TripSetupSnapshot; draft: GolfTripDraft }
-export type WatchView = { kind: "tournament"; tournament: CodeTournament } | { kind: "trip"; trip: SpectatorTrip };
+export type WatchView = { kind: "tournament"; tournament: CodeTournament } | { kind: "trip"; trip: SpectatorTrip } | { kind: "league"; league: League };
 
 /** Replaces every real id in `value` with its stand-in (anywhere it appears: keys, values, nested). */
 function swapIds<T>(value: T, ids: Map<string, string>): T {
@@ -41,6 +42,18 @@ export function spectatorTournament(t: CodeTournament): CodeTournament {
   const shown: CodeTournament = { ...t, code: "", organizer: "", infoPdf: null, attests: [], players: t.players.map((p) => ({ ...p })),
     rounds: t.rounds.map((r) => ({ ...r, teeSheet: null })) };
   delete shown.watchCode;
+  return swapIds(shown, ids);
+}
+
+/**
+ * A league for spectators (The Maroon Live, Step 3): players as p1, p2… with names, handicaps and scores; no join code,
+ * no organizer id, no tee times (players only). Groups stay (with stand-in ids) so skins, pairs and the leaderboard add up.
+ */
+export function spectatorLeague(league: League, watchId: string): League {
+  const ids = new Map<string, string>(league.players.map((p, i) => [p.profileId, `p${i + 1}`]));
+  ids.set(league.id, watchId);
+  const shown: League = { ...league, code: "", organizer: "", groups: league.groups.map((g) => ({ ...g, time: "", hole: 1 })) };
+  delete (shown as Partial<League> & { watchCode?: string }).watchCode;
   return swapIds(shown, ids);
 }
 

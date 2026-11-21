@@ -9,16 +9,25 @@ import { LIVE_SECTIONS, liveEventDetail, liveSection, type LiveEvent } from "@/l
 import styles from "./MaroonLiveDirectory.module.css";
 
 /**
- * The Maroon Live directory (project_specs.md, "Feature: The Maroon Live", Step 2): every Public trip and tournament,
+ * The Maroon Live directory (project_specs.md, "Feature: The Maroon Live", Step 2): every Public trip, tournament and league,
  * in Live / Upcoming / Past, searchable; each opens its live page. Same screen on the website (/tap-in) and in the app
  * (Golf Trips → The Maroon Live). `sampleCount`: the dev website preview's fictional entries (nothing loaded).
+ * `sample` (the dev simulator): these events instead of loading, or "unavailable" for the not-set-up message.
  */
-export function MaroonLiveDirectory({ sampleCount, surface = "website" }: { sampleCount?: LiveTripCount; surface?: "app" | "website" }) {
+export function MaroonLiveDirectory({ sampleCount, sample, surface = "website" }: { sampleCount?: LiveTripCount; sample?: LiveEvent[] | "unavailable"; surface?: "app" | "website" }) {
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState<LiveEvent[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   useEffect(() => {
     if (sampleCount !== undefined) return;
+    if (sample !== undefined) {
+      const words = query.trim().toLowerCase();
+      const timer = window.setTimeout(() => {
+        if (sample === "unavailable") { setProblem("The Maroon Live isn't available right now."); return; }
+        setEvents(sample.filter((e) => !words || `${e.name} ${e.course ?? ""}`.toLowerCase().includes(words))); setProblem(null);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
     let current = true;
     const timer = window.setTimeout(() => {
       fetch(`/api/live?q=${encodeURIComponent(query.trim())}`).then((r) => r.json() as Promise<{ ok: boolean; events?: LiveEvent[] }>)
@@ -26,7 +35,7 @@ export function MaroonLiveDirectory({ sampleCount, surface = "website" }: { samp
         .catch(() => { if (current) setProblem("No connection. Try again when you're back online."); });
     }, query ? 250 : 0);
     return () => { current = false; window.clearTimeout(timer); };
-  }, [query, sampleCount]);
+  }, [query, sampleCount, sample]);
 
   const today = new Date().toLocaleDateString("en-CA");
   const sections = events && LIVE_SECTIONS.map((name) => ({ name, events: events.filter((event) => liveSection(event, today) === name) })).filter((s) => s.events.length);
@@ -46,7 +55,7 @@ export function MaroonLiveDirectory({ sampleCount, surface = "website" }: { samp
         </ul> : <Empty />}
       </> : <>
         <label className={styles.search}><Search size={16} aria-hidden="true" />
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search trips and tournaments" aria-label="Search trips and tournaments" maxLength={80} />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search trips, tournaments and leagues" aria-label="Search trips, tournaments and leagues" maxLength={80} />
         </label>
         {problem ? <p className={styles.notice} role="alert">{problem}</p>
           : !sections ? <p className={styles.notice}>Loading…</p>
@@ -54,7 +63,7 @@ export function MaroonLiveDirectory({ sampleCount, surface = "website" }: { samp
           : sections.map((section) => <div key={section.name} className={styles.section}>
             <div className={styles.listHeading}><h2>{section.name}</h2><span>{section.events.length}</span></div>
             <ul className={styles.list} aria-label={section.name}>
-              {section.events.map((event) => <li key={event.href} className={styles.trip}>
+              {section.events.map((event) => <li key={`${event.kind}-${event.name}-${event.href}`} className={styles.trip}>
                 <Link href={event.href} prefetch={false} className={styles.eventLink}>
                   <h3>{event.name}{section.name === "Live" && <span className={styles.livePill}>Live</span>}</h3><p>{liveEventDetail(event)}</p>
                 </Link>
@@ -67,5 +76,5 @@ export function MaroonLiveDirectory({ sampleCount, surface = "website" }: { samp
 }
 
 function Empty() {
-  return <div className={styles.empty}><h3>Nothing live right now</h3><p>Public trips and tournaments show here. Check back soon.</p></div>;
+  return <div className={styles.empty}><h3>Nothing live right now</h3><p>Public trips, tournaments and leagues show here. Check back soon.</p></div>;
 }

@@ -66,3 +66,6 @@
 .busyControls label:first-child{margin-top:0}
 
 .appearanceToggle{display:flex;flex:none;padding:3px;border:1px solid #dfe2e8;border-radius:8px;background:#f5f6f8}.appearanceToggle button{border:0;border-radius:5px;background:transparent;color:#697180;padding:6px 8px;font:600 10px/1 system-ui,sans-serif;white-space:nowrap;cursor:pointer}.appearanceToggle button[aria-pressed="true"]{background:#fff;color:#671329;box-shadow:0 1px 4px #0002}
+/* Feature groups (Golf Trips, Tourneys, Leagues, Play): the Main · Active · Onboarding switch above their pages. */
+.stageToggle{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 0 10px;padding:3px;border:1px solid #dfe2e8;border-radius:8px;background:#f5f6f8}.stageToggle button{border:0;border-radius:5px;background:transparent;color:#697180;padding:7px 4px;font:600 11px/1 system-ui,sans-serif;cursor:pointer}.stageToggle button[aria-pressed="true"]{background:#fff;color:#671329;box-shadow:0 1px 4px #0002}
+.stageEmpty{margin:8px 2px;color:#697180;font:500 12px/1.4 system-ui,sans-serif}

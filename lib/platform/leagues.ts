@@ -1,3 +1,4 @@
+import type { LiveVisibility } from "./liveVisibility.ts";
 import { courseHandicap, strokesReceived, type GameConfig, type GameCourse, type HoleInput } from "./roundGames";
 import { foursomes, type TeeTiming } from "./codeTournaments";
 
@@ -24,6 +25,9 @@ export interface League {
   skins: { on: boolean; net: boolean; carryover: boolean };
   pairs: { on: boolean; format: PairFormat; net: boolean; segments: PairSegments; rule: PairRule; locked: boolean; teams: string[][] };
   holes: { profileId: string; hole: number; strokes: number }[];
+  /** The Maroon Live (supabase/maroon_live_leagues.sql): the share link (only for people allowed to share it) and, for the
+   *  organizer, who can watch. Missing before those files are run. */
+  watchCode?: string; liveVisibility?: LiveVisibility; livePlayersCanShare?: boolean;
 }
 
 export const PAIR_FORMATS: { id: PairFormat; name: string; blurb: string }[] = [

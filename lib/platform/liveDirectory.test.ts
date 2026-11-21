@@ -8,7 +8,7 @@ test("rows become events with a working live link; broken rows are dropped", () 
   const rows = [
     { kind: "trip", name: "Pinehurst", code: "w4k9pz", firstDate: "2026-11-20", lastDate: "2026-11-23T00:00:00", ended: false, course: " Pinehurst No. 2 ", playerCount: 8 },
     { kind: "tournament", name: "Open", code: "WABCDE", firstDate: null, lastDate: null, ended: true, course: "", playerCount: "3" },
-    { kind: "trip", name: "No code", code: null }, { kind: "league", name: "Later", code: "WZZZZZ" }, null, "junk",
+    { kind: "trip", name: "No code", code: null }, { kind: "club", name: "Later", code: "WZZZZZ" }, null, "junk",
   ];
   assert.deepEqual(liveEventsFrom(rows), [
     event(),
@@ -29,4 +29,5 @@ test("Live during its dates, Upcoming before (or with no dates), Past after or o
 test("the line under the name: kind · dates · course · players", () => {
   assert.equal(liveEventDetail(event()), "Golf trip · Nov 20 – Nov 23 · Pinehurst No. 2 · 8 players");
   assert.equal(liveEventDetail(event({ kind: "tournament", lastDate: "2026-11-20", course: null, playerCount: 1 })), "Tournament · Nov 20 · 1 player");
+  assert.equal(liveEventDetail(event({ kind: "league", lastDate: "2026-11-20", playerCount: 12 })), "League · Nov 20 · Pinehurst No. 2 · 12 players");
 });

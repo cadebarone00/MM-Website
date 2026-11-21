@@ -11,6 +11,9 @@ import { teeTimeLabel, type TeeTiming } from "@/lib/platform/codeTournaments";
 import { appHref } from "@/lib/app/appPaths";
 import { DatePicker } from "./DatePicker";
 import { InviteCodeCard } from "./InviteCodeCard";
+import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
+import { TripTapInInvite } from "./TripTapInInvite";
+import { liveSettingsFrom, type LiveSettings } from "@/lib/platform/liveVisibility";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import { gameDef, scoreGame, type GameConfig, type GameId, type HoleInput } from "@/lib/platform/roundGames";
 import playStyles from "./PlayRound.module.css";
@@ -40,8 +43,9 @@ export type Act = (change: LeagueChange) => Promise<Reply>;
  * 18 hole winners, my Group's own game, and the Tee Times. Each group's scorer keeps the whole group's card with the golf
  * trip's scorecard. The organizer's settings wheel opens League Settings. Everyone's scores refresh every few seconds.
  * `sample` (the dev preview, /dev/leagues): a made-up league; changes stay on this page and nothing is sent.
+ * `watchCode` (The Maroon Live, /tap-in/<code>): a watcher, no sign-in: Leaderboard, Skins and Pairs only, read only.
  */
-export function LeagueHome({ id, sample }: { id?: string; sample?: { league: League; meId: string } }) {
+export function LeagueHome({ id, sample, watchCode }: { id?: string; sample?: { league: League; meId: string; spectator?: boolean }; watchCode?: string }) {
   const router = useRouter();
   const [league, setLeague] = useState<League | null>(sample?.league ?? null);
   const [meId, setMeId] = useState<string | null>(sample?.meId ?? null);
@@ -53,6 +57,13 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
   const sending = useRef<Promise<unknown>>(Promise.resolve());
 
   const load = useCallback(async () => {
+    if (watchCode) {
+      const watched = await fetch(`/api/watch/${encodeURIComponent(watchCode)}`, { cache: "no-store" })
+        .then((r) => r.json() as Promise<{ ok: boolean; kind?: string; league?: League; code?: string }>).catch(() => null);
+      if (watched?.ok && watched.league) { setLeague(watched.league); setMeId(""); setProblem(null); return; }
+      setProblem(watched === null ? "No connection. Scores will refresh when you're back online." : watched.code === "missing" ? "This event isn't available." : "Couldn't load the league. Trying again…");
+      return;
+    }
     if (sample || !id) return;
     const reply = await fetch(`/api/leagues/${encodeURIComponent(id)}`, { cache: "no-store" })
       .then((r) => r.json() as Promise<{ ok: boolean; league?: League; me?: string; code?: string }>).catch(() => null);
@@ -60,7 +71,7 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
     setProblem(reply === null ? "No connection. Scores will refresh when you're back online."
       : reply.code === "not_member" ? "You're not in this league. Join it with its code on the Leagues tab."
       : reply.code === "not_installed" ? "Leagues aren't set up in the database yet (supabase/leagues.sql)." : "Couldn't load the league. Trying again…");
-  }, [id, sample]);
+  }, [id, sample, watchCode]);
   useEffect(() => {
     const first = window.setTimeout(load, 0);
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, POLL_MS);
@@ -70,7 +81,7 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
   // Every change shows at once, then goes to the league one after another (the preview keeps it on this page).
   const act: Act = (change) => {
     setLeague((current) => current && applyLeagueChange(current, change));
-    if (sample || !id) return Promise.resolve({ ok: true });
+    if (sample || !id || watchCode) return Promise.resolve({ ok: true });
     const key = changeKey(change);
     pending.current.set(key, change);
     const result = (sending.current = sending.current.then(() => post(id, change))) as Promise<Reply>;
@@ -82,19 +93,27 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
     });
   };
 
-  const back = <Link href={sample ? "/dev" : "/leagues"} className={tourney.back}><ChevronLeft size={18} aria-hidden="true" /> Leagues</Link>;
-  if (!league || !meId) return <main className={homeStyles.page}>{back}<p className={tourney.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the league…"}</p></main>;
+  const spectating = Boolean(watchCode || sample?.spectator);
+  const back = !spectating && <Link href={sample ? "/dev" : "/leagues"} className={tourney.back}><ChevronLeft size={18} aria-hidden="true" /> Leagues</Link>;
+  if (!league || meId === null) return <main className={homeStyles.page}>{back}<p className={tourney.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the league…"}</p></main>;
 
-  const isOrganizer = league.organizer === meId;
-  const myGroup = league.groups.find((g) => g.players.includes(meId)) ?? null;
+  // A watcher is never the organizer (both ids are blank in a watcher's copy) and is in no group.
+  const isOrganizer = !spectating && league.organizer === meId;
+  const myGroup = spectating ? null : league.groups.find((g) => g.players.includes(meId)) ?? null;
   const live = league.status === "live";
-  const sections: Section[] = ["Leaderboard", ...(league.skins.on ? ["Skins" as const] : []), ...(league.pairs.on ? ["Pairs" as const] : []), ...(myGroup ? ["Group" as const] : []), "Tee Times"];
+  const sections: Section[] = ["Leaderboard", ...(league.skins.on ? ["Skins" as const] : []), ...(league.pairs.on ? ["Pairs" as const] : []), ...(myGroup ? ["Group" as const] : []), ...(spectating ? [] : ["Tee Times" as const])];
   const tab = sections.includes(section) ? section : "Leaderboard";
   const settings = (next: Partial<Pick<League, "scoring" | "skins" | "pairs">>) => act({ action: "settings", scoring: next.scoring ?? league.scoring, skins: next.skins ?? league.skins, pairs: next.pairs ?? league.pairs });
   const game = (group: League["groups"][number], next: Partial<{ game: League["groups"][number]["game"]; inputs: League["groups"][number]["inputs"] }>) =>
     act({ action: "game", group: group.number, game: next.game !== undefined ? next.game : group.game ?? null, inputs: next.inputs ?? group.inputs ?? [] });
 
   if (settingsOpen && isOrganizer) return <LeagueSettings league={league} sample={Boolean(sample)} problem={problem} onClose={() => setSettingsOpen(false)} onSettings={settings} act={act}
+    onLive={async (next) => {
+      if (sample || !id) { setLeague({ ...league, liveVisibility: next.visibility, livePlayersCanShare: next.playersCanShare }); return { ok: true }; }
+      const reply = await post(id, { action: "visibility", ...next });
+      setProblem(reply.ok ? null : reply.message ?? "Couldn't change who can watch. Try again.");
+      void load(); return reply;
+    }}
     onCopy={async (date) => {
       if (sample || !id) return "The preview doesn't save a copy.";
       const reply = await post(id, { action: "copy", date });
@@ -121,7 +140,7 @@ export function LeagueHome({ id, sample }: { id?: string; sample?: { league: Lea
     <div className={styles.tabs} role="tablist" aria-label="League sections">
       {sections.map((name) => <button key={name} type="button" role="tab" aria-selected={tab === name} className={styles.tab} onClick={() => setSection(name)}>{name}</button>)}
     </div>
-    {tab === "Leaderboard" ? <Leaderboard league={league} meId={meId} />
+    {tab === "Leaderboard" ? <><Leaderboard league={league} meId={meId} />{league.watchCode && <TripTapInInvite code={league.watchCode} name={league.name} />}</>
       : tab === "Skins" ? <SkinsView league={league} isOrganizer={isOrganizer && live} onCarryover={(carryover) => void settings({ skins: { ...league.skins, carryover } })} />
       : tab === "Pairs" ? <PairsView league={league} meId={meId} />
       : tab === "Group" && myGroup ? <GroupGame league={league} group={myGroup} meId={meId} editable={live && !myGroup.submitted} onGame={(next) => void game(myGroup, { game: next, inputs: [] })} />
@@ -286,7 +305,9 @@ function GroupGame({ league, group, meId, editable, onGame }: { league: League; 
  * League Settings (organizer): the join code to share; the tee times (make them, move players, pick each group's scorer);
  * the leaderboard's Gross / Net; skins; the pairs game (format, gross / net, winner segments, draw rule, draw and lock); then Copy, End and Delete.
  */
-function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onCopy, onDelete }: { league: League; sample: boolean; problem: string | null; onClose: () => void;
+function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onCopy, onDelete, onLive }: { league: League; sample: boolean; problem: string | null; onClose: () => void;
+  /** The Maroon Live: saves who can watch (the page reloads the league after). */
+  onLive: (next: LiveSettings) => Promise<Reply>;
   onSettings: (next: Partial<Pick<League, "scoring" | "skins" | "pairs">>) => Promise<Reply>; act: Act; onCopy: (date: string) => Promise<string | null>; onDelete: () => Promise<string | null> }) {
   const pairs = league.pairs;
   const setPairs = (next: Partial<League["pairs"]>) => void onSettings({ pairs: { ...pairs, ...next } });
@@ -302,6 +323,12 @@ function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onC
     <h1 className={tourney.name}>League Settings</h1>
     {problem && <p className={tourney.status} role="alert">{problem}</p>}
     <InviteCodeCard kind="league" id={league.id} code={league.code} name={league.name} canEmail={!sample && live} />
+
+    <section className={styles.card} aria-labelledby="live-settings">
+      <h2 id="live-settings">Who can watch</h2>
+      {(() => { const watching = liveSettingsFrom(league.liveVisibility, league.livePlayersCanShare, "private"); return <LiveVisibilityPicker key={`${watching.visibility}|${watching.playersCanShare}`} settings={watching}
+        onChange={async (next) => (await onLive(next)).ok} />; })()}
+    </section>
 
     {live && <TeeTimesEditor league={league} onGroups={(groups) => void act({ action: "groups", groups })} />}
 
