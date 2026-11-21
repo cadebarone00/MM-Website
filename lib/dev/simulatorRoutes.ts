@@ -216,6 +216,20 @@ export function simulatorPages(): SimulatorPage[] {
       pages.push(...pages.splice(pages.indexOf(page), 1)); // keep this order: phone, Live Activity, in-app
     }
   }
+  // Home screen widget (spec: Home screen widget): sits after Live Activity, before In-app.
+  const widget = pages.find(item => item.path === "/dev/notifications/widget");
+  if (widget) {
+    const choices = <K extends string>(section: string, key: string, labels: Record<K, string>) =>
+      (Object.entries(labels) as [K, string][]).map(([value, label]) => ({ id: `widget-${key}-${value}`, section, label, state: { [`widget${key[0].toUpperCase()}${key.slice(1)}`]: value } }));
+    Object.assign(widget, { label: "Home screen widget", group: "Notifications", conditions: [
+      ...choices("Size", "size", { small: "Small (square)", medium: "Medium (rectangle)", large: "Large (big square)", lock: "Lock screen" }),
+      ...choices("State", "state", { next: "Coming up", live: "Live round", long: "Live · long names", nothing: "Nothing coming up" }),
+      ...choices("Phone", "phone", { ios: "iPhone", android: "Android" }),
+    ] });
+    pages.splice(pages.indexOf(widget), 1);
+    const inApp = pages.findIndex(item => item.path === "/dev/notifications/in-app");
+    pages.splice(inApp >= 0 ? inApp : pages.length, 0, widget);
+  }
   const allTypes = pages.find(item => item.path === "/dev/notifications/types");
   if (allTypes) {
     Object.assign(allTypes, { label: "All types", group: "Notifications", conditions: notificationTypeConditions() });

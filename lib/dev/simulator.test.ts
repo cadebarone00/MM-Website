@@ -332,3 +332,11 @@ test("Mock draft conditionals: known setups and controllers only",()=>{
  assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraft:"nope"}}),null);
  assert.equal(parseSimulatorConfig({source:"maroon",state:{...DEFAULT_SIMULATOR_STATE,mockDraftViewer:"captain-z"}}),null);
 });
+
+test("widget simulator choices validate", () => {
+  const state = { ...DEFAULT_SIMULATOR_STATE, widgetSize: "large" as const, widgetState: "long" as const, widgetPhone: "android" as const };
+  assert.deepEqual(parseSimulatorConfig({ source: "maroon", state })?.state, state);
+  for (const invalid of [{ widgetSize: "huge" }, { widgetState: "maybe" }, { widgetPhone: "pager" }]) {
+    assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, ...invalid } }), null);
+  }
+});

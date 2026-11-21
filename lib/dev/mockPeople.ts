@@ -39,11 +39,15 @@ export function daysFromToday(days: number, today = new Date()): string {
 let tripCount = 0;
 function trip(name: string, destination: string, startIn: number, length: number, players: number, role: GolfTripSummary["role"], today: Date): GolfTripSummary {
   tripCount += 1;
-  return { id: `mock-trip-${tripCount}`, name, destination, startDate: daysFromToday(startIn, today), endDate: daysFromToday(startIn + length - 1, today), status: "active", expectedTravelerCount: players, memberCount: players, role };
+  // A real-looking id (UUID): the profile's trip list only accepts those.
+  return { id: `00000000-0000-4000-9000-${String(tripCount).padStart(12, "0")}`, name, destination, startDate: daysFromToday(startIn, today), endDate: daysFromToday(startIn + length - 1, today), status: "active", expectedTravelerCount: players, memberCount: players, role };
 }
 function past(name: string, destination: string, daysAgo: number): PastTournament {
   const start = daysFromToday(-daysAgo);
-  return { name, year: Number(start.slice(0, 4)), destination, startDate: start, endDate: daysFromToday(-daysAgo + 2), href: "/tournaments/join" };
+  const year = Number(start.slice(0, 4));
+  // Each row needs its own link (the list is keyed by it); these public-site links don't exist, like every tap-in here.
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return { name, year, destination, startDate: start, endDate: daysFromToday(-daysAgo + 2), href: `/t/${slug}/${year}` };
 }
 function coded(id: string, name: string, status: MyCodeTournament["status"], startIn: number, course: string): MyCodeTournament {
   return { id, name, status, firstDate: daysFromToday(startIn), lastDate: daysFromToday(startIn + 1), course };
@@ -131,6 +135,17 @@ export const isMockPersonId = (value: unknown): value is MockPersonId => MOCK_PE
 /** Their own profile, in the shape the sample profile screens use (no photo, no socials unless set here). */
 export function mockPersonProfile(person: MockPerson): SampleProfileEdits {
   return { ...DEFAULT_SAMPLE_PROFILE, displayName: person.name, username: person.username, bio: person.bio, links: [] };
+}
+
+/** Their profile's Golf Trips and Tournaments lists, from the same trips and past tourneys their tabs show. */
+export function mockPersonHistory(person: MockPerson) {
+  const tournaments = person.tourneys.past.signedIn && person.tourneys.past.ok ? person.tourneys.past.tournaments : [];
+  return {
+    restricted: false,
+    trips: person.trips.map((t) => ({ id: t.id, name: t.name, destination: t.destination, startDate: t.startDate, endDate: t.endDate, role: t.role, playerCount: t.memberCount })),
+    tournaments: tournaments.map((t, index) => ({ slug: t.href.split("/")[2], name: t.name, year: t.year, label: String(t.year), destination: t.destination, startDate: t.startDate, endDate: t.endDate,
+      team: index % 2 ? { name: "Team White", color: "#f4efe6" } : { name: "Team Maroon", color: "#500001" }, isCaptain: index === 0 })),
+  };
 }
 
 /** Their friends as sample golfers (only ones that exist in SAMPLE_GOLFERS). */

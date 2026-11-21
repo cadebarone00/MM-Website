@@ -61,7 +61,8 @@ const HISTORY = {
 };
 
 /** The sample profile for this preview (or a sample golfer by username), as the viewer (always "me") would see it. */
-export function sampleProfileReadModel(preview: ProfilePreview, mine: SampleProfileEdits, today: string, username?: string | null): ProfileReadModel {
+/** `history` (dev Mock people): my own trips / tournaments in place of the sample ones; same shape as HISTORY. */
+export function sampleProfileReadModel(preview: ProfilePreview, mine: SampleProfileEdits, today: string, username?: string | null, history: unknown = HISTORY): ProfileReadModel {
   const other = sampleGolfer(username) ?? (preview === "public" || preview === "private" ? sampleGolfer(PREVIEW_GOLFER[preview]) : null);
   if (other) {
     const { rounds: count, skill, mutuals: _mutuals, ...row } = other;
@@ -71,5 +72,5 @@ export function sampleProfileReadModel(preview: ProfilePreview, mine: SampleProf
   }
   const subject: ProfileSubjectRow = { id: ME, displayName: mine.displayName, username: mine.username, createdAt: "2025-04-02T12:00:00Z", legacyMaroonPlayerSlug: null, roundsVisibility: mine.visibility, bio: mine.bio, avatarUrl: mine.photoUrl, links: mine.links };
   const rounds = sampleProfileRounds(ROUNDS[preview as keyof typeof ROUNDS], 0, 7);
-  return buildProfileReadModel(ME, subject, { history: HISTORY, rounds, legacy: null }, () => false, today);
+  return buildProfileReadModel(ME, subject, { history, rounds, legacy: null }, () => false, today);
 }

@@ -5565,7 +5565,7 @@ uses the message itself as the body (its 3 versions only change the title line).
 - Checked on screen in the website at phone size and in the app build (`npm run build:app`).
 - Live in TestFlight only after a commit, push, deploy + Promote, and a new TestFlight build.
 
-## Mock people: 5 pretend accounts for the main tabs (owner request 2026-11-21) — SPEC, awaiting approval
+## Mock people: 5 pretend accounts for the main tabs (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; tests + lint pass; checked on screen in the simulator)
 
 **Why:** the owner wants to see how Play, Golf Trips, Tourneys, Leagues and Profile look for real kinds of people (busy, organizer, casual, just invited, brand new) without signing in or touching real data. Picked option 1 (preview pages in the simulator), not pretend sign-in on real pages or fake rows in Supabase.
 
@@ -5589,7 +5589,7 @@ Trip names, destinations, dates, player counts and league names are realistic an
 
 **Not doing:** tapping *into* a trip, tourney or league from these previews won't open a pretend version of it (links go to the normal pages). Not changing the real pages' look or the existing "Signed in as" accounts used inside Golf Trip previews.
 
-**Builder's calls:** exact trip/league names and dates; which profile preview (full / a few / none) each person's Profile uses; Play's round invites stay hidden in the previews.
+**Builder's calls:** exact trip/league names and dates; which profile preview (full / a few / none) each person's Profile uses; Play's round invites stay hidden in the previews. Each person's Profile lists their own trips and past tourneys (same as their tabs); rounds/handicap are still the sample rounds.
 
 **Done =**
 - All 5 pages show in the simulator under "Mock people", and switching person changes every tab.
@@ -5636,7 +5636,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 - On a real iPhone (TestFlight) and an Android phone: the widget shows the right thing for a trip round, a solo round and nothing at all, and tapping it opens the right screen.
 - Typecheck, lint and tests pass. The app still builds for TestFlight.
 
-## Sign-up Simulator: run the whole real sign-up with fake everything (owner request 2026-11-21) — APPROVED 2026-11-21 (dev simulator only: owner approved without picking, so the recommended option)
+## Sign-up Simulator: run the whole real sign-up with fake everything (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; dev simulator only — owner approved without picking, so the recommended option; /dev/signup-sim)
 
 **What it does:** a practice run of the real sign-up that you can repeat as often as you like. It uses the real screens, in the real order, with the real checks (8+ character password, valid email, username rules, 13+ birthday). Every answer from the "server" is fake, and nothing is saved anywhere: no account, no email, no database row. The last step ends on an **End of simulation** screen instead of opening the app.
 

@@ -7,7 +7,7 @@ import { GolfTripsView } from "@/components/platform/GolfTripsView";
 import { JoinTournamentPage } from "@/components/platform/JoinTournamentPage";
 import { LeaguesHome } from "@/components/platform/Leagues";
 import { ProfileView } from "@/components/profile/ProfileView";
-import { mockPerson, mockPersonFriends, mockPersonProfile, type MockPerson } from "@/lib/dev/mockPeople";
+import { mockPerson, mockPersonFriends, mockPersonHistory, mockPersonProfile, type MockPerson } from "@/lib/dev/mockPeople";
 import { sampleProfileReadModel } from "@/lib/dev/sampleProfile";
 import tourneyStyles from "@/app/tournaments/join/page.module.css";
 import profileStyles from "@/app/profile/page.module.css";
@@ -46,7 +46,7 @@ const PROFILE_LINKS = { settings: "/dev/profile/settings", edit: "/dev/profile/e
 
 export function MockProfile() {
   const person = useMockPerson();
-  const profile = useMemo(() => sampleProfileReadModel(person.profilePreview, mockPersonProfile(person), new Date().toISOString().slice(0, 10)), [person]);
+  const profile = useMemo(() => sampleProfileReadModel(person.profilePreview, mockPersonProfile(person), new Date().toISOString().slice(0, 10), null, mockPersonHistory(person)), [person]);
   return <div className={profileStyles.page}>
     <ProfileView key={person.id} profile={profile} friendsCount={mockPersonFriends(person).length} links={PROFILE_LINKS} compare={null} />
   </div>;
