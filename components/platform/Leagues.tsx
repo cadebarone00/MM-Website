@@ -13,6 +13,7 @@ import { JoinCodeCard } from "./JoinCodeCard";
 import styles from "./PlayRound.module.css";
 import own from "./CodeTournament.module.css";
 import league from "./League.module.css";
+import landing from "./SectionLanding.module.css";
 
 /**
  * Leagues (project_specs.md "Feature: Leagues"): the Leagues tab (my leagues, Create, Join with a code), Create a
@@ -38,8 +39,9 @@ export function LeaguesHome() {
       .catch(() => setError("No connection. Try again when you're back online."));
   }, []);
   const day = today();
-  return <main className={styles.page}>
+  return <main className={`${styles.page} ${league.landing}`}>
     <section className={styles.panel}>
+      <h1 className={landing.title}>Leagues</h1>
       <div className={league.homeActions}>
         <Link href="/leagues/new" className={`${styles.primary} ${league.create}`}><Plus size={16} aria-hidden="true" /> Create a league</Link>
         <JoinCodeCard kind="league" />

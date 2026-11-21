@@ -5,6 +5,7 @@ import { golfTripUrl, splitGolfTrips, tripDateRange, type GolfTripSummary } from
 import { GolfTripsActions } from "./GolfTripsActions";
 import { PastTripImport } from "./PastTripImport";
 import styles from "@/app/golf-trips/page.module.css";
+import landing from "./SectionLanding.module.css";
 
 /** What the Golf Trips page knows about your trips (getUserGolfTrips on the website; GET /api/golf-trips in the app). */
 export type GolfTripsResult = { status: "ok"; trips: GolfTripSummary[] } | { status: "signed-out" } | { status: "unavailable" };
@@ -21,7 +22,7 @@ export function GolfTripsView({ result }: { result: GolfTripsResult }) {
   return (
     <main className={styles.page}>
       <div className={styles.content}>
-        <h1 className={styles.pageTitle}>Golf Trips</h1>
+        <h1 className={landing.title}>Golf Trips</h1>
         <GolfTripsActions />
 
         <Link href="/golf-trips/live" className={styles.live} aria-labelledby="maroon-live-entry-title" aria-describedby="maroon-live-entry-description">

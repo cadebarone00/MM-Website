@@ -44,12 +44,26 @@ export function AppStartScreen({ screen }: { screen: string }) {
     if (needsSession !== "missing") return;
     router.replace(screen === "confirmed" ? `${START.logIn}/?error=invalid_link` : `${START.forgot}/`);
   }, [needsSession, screen, router]);
+  // Create a password: only right after the email code, while the server says it's this account's step (owner decision
+  // 2026-11-20). Signed out → Log in; any other step → that step.
+  const [passwordStep, setPasswordStep] = useState<"checking" | "ok">("checking");
+  useEffect(() => {
+    if (screen !== "password") return;
+    let alive = true;
+    void resume().then((r) => {
+      if (!alive) return;
+      if (r.signedOut) router.replace(`${START.logIn}/`);
+      else if (r.next !== "password") router.replace(r.next ? `${stepPath(r.next)}/`.replace(/^\/\/$/, "/") : `${STATUS}/`);
+      else setPasswordStep("ok");
+    });
+    return () => { alive = false; };
+  }, [screen, router]);
   if (!START_SCREENS.includes(screen as StartScreen) || needsSession !== "ok") return <Waiting />;
   const returnTo = authReturnPath(query.get("next") ?? undefined);
   switch (screen as StartScreen) {
     case "birthday": return <Waiting />;
     case "sign-up": return <SignUpScreen providers={[]} />;
-    case "password": return <PasswordScreen kind="create" />;
+    case "password": return passwordStep === "ok" ? <PasswordScreen kind="create" /> : <Waiting />;
     case "verify": return <CodeScreen kind="signup" />;
     case "confirmed": return <AuthLinkResultPreview nextHref={ONBOARDING.resume} />;
     case "log-in": {

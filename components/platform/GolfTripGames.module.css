@@ -196,3 +196,9 @@ div.gameSheet.newGameSheet::before{content:"";position:absolute;top:9px;left:50%
 .setGame:disabled{background:color-mix(in srgb,var(--lm-ink-ffffff) 10%,transparent);color:color-mix(in srgb,var(--lm-ink-ffffff) 45%,transparent);cursor:default}
 .setGame:not(:disabled):active{transform:scale(.98)}
 .setGame:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:3px}
+
+/* Align the status row with the Team/Indi row beneath Golf navigation. */
+.root{margin-top:-8px}
+
+/* Keep the Games heading, action and empty message 16px from mobile screen edges. */
+@media(max-width:592px){.gamesHeader,.emptyGames{margin-inline:calc(16px - var(--page-gutter))}}

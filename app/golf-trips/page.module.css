@@ -23,7 +23,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: var(--app-top-clearance) max(var(--page-gutter), calc((100% - 560px) / 2)) 0;
+  padding: calc(var(--app-top-clearance) + 12px) max(var(--page-gutter), calc((100% - 560px) / 2)) 0;
 }
 @media (min-width: 1024px) { .content { padding-top: 80px; } }
 
@@ -170,7 +170,7 @@ a.row:focus-visible { outline: 3px solid var(--lm-ink-c9a86e); outline-offset: -
 }
 .rowValue + .rowArrow { margin-left: 0; }
 
-:global(html[data-mode="light"]) .page,:global(html[data-mode="light"]) .live,:global(html[data-mode="light"]) .actionButton{background:#fbf8f1}
+:global(html[data-mode="light"]) .live,:global(html[data-mode="light"]) .actionButton{background:#fbf8f1}
 :global(html[data-mode="light"]) .pageTitle,:global(html[data-mode="light"]) .liveDescription,:global(html[data-mode="light"]) .signedOut{color:#240001}
 :global(html[data-mode="light"]) .live,:global(html[data-mode="light"]) .actionButton{color:#765018}
 

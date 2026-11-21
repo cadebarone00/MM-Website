@@ -27,6 +27,7 @@ export function stepPath(step: OnboardingStep): string {
   switch (step) {
     case "welcome": return START.welcome;
     case "verification": return START.logIn; // only reachable signed out: Supabase gives unverified email logins no session
+    case "password": return START.password; // verified, password not chosen yet (owner decision 2026-11-20)
     case "name_username": return ONBOARDING.name;
     case "birthday": return ONBOARDING.birthday;
     case "terms": case "settings": return ONBOARDING.settings;
@@ -54,9 +55,9 @@ export function onboardingRedirect(screen: OnboardingScreen, step: OnboardingSte
   return allowed ? null : stepPath(step);
 }
 
-/** Progress bar on the email sign-up screens, in the order they really come (password before the code: decision D1). */
-// Birthday comes after Name (owner decision 2026-11-02: the account is made first, like a normal app).
-const PROGRESS = ["sign-up", "password", "verify", "name", "birthday", "photo", "settings", "created"] as const;
+/** Progress bar on the email sign-up screens, in the order they really come. The password comes AFTER the code (owner
+ *  decision 2026-11-20, replacing decision D1); Birthday after Name (owner decision 2026-11-02). */
+const PROGRESS = ["sign-up", "verify", "password", "name", "birthday", "photo", "settings", "created"] as const;
 export type ProgressScreen = (typeof PROGRESS)[number];
 export const progressWidth = (screen: ProgressScreen) => `${((PROGRESS.indexOf(screen) + 1) / PROGRESS.length) * 100}%`;
 

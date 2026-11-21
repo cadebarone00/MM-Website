@@ -67,7 +67,6 @@
 .slideKind{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .slideStatus{display:inline-flex;align-items:center;gap:6px;flex:none;color:var(--lm-ink-edcf91)}
 .slideStatus[data-live=true]{color:#ff6b6b}
-.slideStatus[data-live=true]::before{content:"";width:7px;height:7px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 0 3px rgba(255,107,107,.2)}
 .slideWhen{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 16px/1.2 var(--font-spectral),Georgia,serif;color:var(--lm-ink-fbf8f1)}
 .slideDetail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 12px/1.2 var(--font-spectral),Georgia,serif;color:color-mix(in srgb,#fbf8f1 65%,transparent)}
 

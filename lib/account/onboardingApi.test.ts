@@ -16,6 +16,16 @@ const code = (r: { body: unknown }) => (r.body as { code?: string }).code;
 const progress = (p: Partial<OnboardingProgress> = {}): OnboardingProgress =>
   ({ verified: true, birthday: true, termsConfigured: true, termsAccepted: true, activationEnabled: true, ...p });
 
+test("resume: a verified account still on its throwaway sign-up password goes to Create a password first (2026-11-20)", () => {
+  const flagged = { ...account, app_metadata: { password_pending: true } } as unknown as User;
+  const pendingFlagged: AccountLifecycle = { state: "pending", account: flagged, profileId: null, details: "missing" };
+  assert.equal(resumeReply(pendingFlagged, progress()).body.next, "password");
+  assert.equal(resumeReply(pendingFlagged, progress({ verified: false })).body.next, "verification", "the code still comes first");
+  const cleared = { ...account, app_metadata: { password_pending: null } } as unknown as User;
+  assert.equal(resumeReply({ state: "pending", account: cleared, profileId: null, details: "missing" }, progress()).body.next, "name_username");
+  assert.equal(resumeReply({ state: "active", account: flagged, profile }, null).body.next, "play", "only Pending accounts are sent back");
+});
+
 test("resume: Pending accounts go to their first unfinished required step, in the approved order", () => {
   assert.equal(resumeReply(pending("complete"), progress({ verified: false })).body.next, "verification");
   assert.equal(resumeReply(pending("missing"), progress()).body.next, "name_username");

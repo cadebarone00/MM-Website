@@ -4,7 +4,8 @@ import { CodeScreen } from "@/components/onboarding/CodeScreen";
 import { ForgotScreen, PasswordScreen } from "@/components/onboarding/PasswordScreens";
 import { LogInScreen, SignUpScreen } from "@/components/onboarding/StartScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
-import { ONBOARDING, START, START_SCREENS, type StartScreen } from "@/lib/account/onboardingRoutes";
+import { ONBOARDING, START, START_SCREENS, STATUS, stepPath, type StartScreen } from "@/lib/account/onboardingRoutes";
+import { currentOnboardingStep } from "@/lib/account/onboardingResume";
 import { getAccountLifecycle } from "@/lib/profile/currentProfile";
 import { oauthErrorMessage } from "@/lib/auth/oauth";
 import { enabledOAuthProviders } from "@/lib/auth/oauthServer";
@@ -31,7 +32,14 @@ export default async function StartScreenPage({ params, searchParams }: {
     case "birthday": redirect(START.signUp);
     // No Apple / Google on Sign up during the beta (owner decision 2026-10-30): new accounts are email only.
     case "sign-up": return <SignUpScreen providers={[]} />;
-    case "password": return <PasswordScreen kind="create" />;
+    case "password": {
+      // Right after the email code, for a verified account still on its throwaway sign-up password (owner decision
+      // 2026-11-20). Signed out → Log in; any other step → that step.
+      const { lifecycle, step } = await currentOnboardingStep();
+      if (lifecycle.state === "signed-out") redirect(START.logIn);
+      if (step !== "password") redirect(step ? stepPath(step) : STATUS);
+      return <PasswordScreen kind="create" />;
+    }
     case "verify": return <CodeScreen kind="signup" />;
     case "confirmed": {
       const lifecycle = await getAccountLifecycle();

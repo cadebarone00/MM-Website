@@ -21,4 +21,4 @@
 
 /* Phase 6 real screen (components/onboarding/CodeScreen.tsx): the wrong-code message, always reserving its line so the
    buttons never move. Not used by the dev preview. */
-.error{min-height:18px;margin:8px 0 0;font-size:13px;line-height:18px;color:#ffb4b4}
+.error{min-height:18px;margin:8px 0 0;font-size:13px;line-height:18px;color:#fbf8f1}

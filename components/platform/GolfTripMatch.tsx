@@ -481,6 +481,13 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
     ? [blank(left, leftComp.name ?? left.name, leftPct), blank(right, rightComp?.name ?? right.name, 100 - leftPct)]
     : [blank(left, left.name, 50), blank(right, right.name, 50)]);
 
+  const ppg = (competitor: typeof leftComp) => {
+    if (!competitor || status?.kind === "tee") return "";
+    const names = new Set(competitor.golfers.map(golfer => golfer.name));
+    const putts = match.leaderboard.filter(row => names.has(row.golfer.name)).flatMap(row => row.putts ?? []).filter((value): value is number => value !== null && Number.isFinite(value));
+    return putts.length ? (putts.reduce((sum, value) => sum + value, 0) / putts.length).toFixed(2) : "";
+  };
+
   return <div className={`${styles.matchup} ${compact ? styles.matchupCompact : ""}`}>
     <section className={`${styles.versus} ${compact ? styles.boardBox : ""}`} aria-label="Match" data-board-compact={!predictOn && !showStats || undefined} data-board-predict-only={predictOn && !showStats || undefined} {...swipe}>
       <div className={styles.teams}>
@@ -497,8 +504,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
       </div>
       {(predictOn || showStats) && <div className={styles.stats}>
         {predictOn && <WinBar left={boxLeft.winPct} right={boxRight.winPct} />}
-        {showStats && <RoundStats side={boxLeft} align="left" />}
-        {showStats && <RoundStats side={boxRight} align="right" />}
+        {showStats && <RoundStats side={boxLeft} align="left" ppg={ppg(leftComp)} />}
+        {showStats && <RoundStats side={boxRight} align="right" ppg={ppg(pairing?.right ? rightComp : undefined)} />}
       </div>}
     </section>
 
@@ -862,7 +869,7 @@ function RoundStats({ side, align }: { side: GolfMatchSide; align: "left" | "rig
   const stats = [["FWY", side.fairwayPct], ["GREEN", side.greenPct], ["PUTTS", side.putts], ["SCORE", side.score]];
   return <dl className={`${styles.roundStats} ${styles[align]}`} aria-label={`${side.name} round stats`}>
     {(align === "right" ? [...stats].reverse() : stats).map(([label, value]) => <div key={label} className={styles.roundStat}>
-      <dt>{label}</dt><dd>{value}</dd>
+      <dt>{label}</dt><dd>{/^(?:[-—?]|\?%)$/.test(value?.trim() ?? "") ? "" : value}</dd>
     </div>)}
   </dl>;
 }
@@ -872,7 +879,7 @@ function SummaryStats({ align, team, onOpen }: { align: "left" | "right"; team: 
   const labels = ["PPG", "FWY", "GIR"];
   return <button type="button" className={styles.summaryStatsTrigger} onClick={onOpen} aria-label={team + " player stats"} aria-haspopup="dialog">
     <dl className={styles.summaryStats}>{(align === "right" ? [...labels].reverse() : labels).map(label => <div key={label} className={styles.roundStat}>
-      <dt>{label}</dt><dd>{label === "PPG" ? "?" : "?%"}</dd>
+      <dt>{label}</dt><dd />
     </div>)}</dl>
   </button>;
 }

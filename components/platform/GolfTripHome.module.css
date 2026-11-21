@@ -416,7 +416,7 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 :global(html[data-mode="light"]) .accountHead{background:#f3eee6;box-shadow:0 25px 0 #f3eee6}
 :global(html[data-mode="light"]) .account{background:linear-gradient(#f3eee6 120px,#f7f8f7 120px)}
 
-.leaderboardBoard{min-width:0}
+.leaderboardBoard{min-width:0;margin-top:-8px}
 .slidingSelector{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),var(--lm-bg-240001)}
 .slidingSelector::before{content:"";position:absolute;z-index:-1;box-sizing:border-box;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/2);border:1px solid rgba(220,196,149,.8);border-radius:12px;background:radial-gradient(ellipse at center,rgba(220,196,149,.16),rgba(220,196,149,.035) 80%);box-shadow:inset 0 0 12px rgba(220,196,149,.12),0 0 6px rgba(220,196,149,.12);transition:transform 220ms ease}
 .slidingSelector[data-second=true]::before{transform:translateX(100%)}
@@ -482,3 +482,25 @@ button.itineraryBox:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline
 @media(prefers-reduced-motion:reduce){.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{transition:none}}
 
 :global(html[data-mode="light"]) .golfTop :is(.golfTopSize,.golfTopFill) section,:global(html[data-mode="light"]) :is(.itineraryBox,.slidingSelector,.slidingSelector.underlineSelector.bubbleUnderline){background:radial-gradient(120% 70% at 50% -18%,rgba(107,30,42,.16),transparent 70%),#fbf8f1;box-shadow:0 4px 16px rgba(36,0,1,.08)}
+
+/* Round and Team/Indi selections glow without an enclosing pill. */
+.roundPills::before{display:none}
+.leaderboardBoard .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector,:global(html[data-mode="light"]) .leaderboardBoard .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.leaderboardBoard .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector::before,.leaderboardBoard .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab::after{display:none}
+.leaderboardBoard .slidingSelector .tab[aria-pressed=true],.roundPillActive{color:var(--lm-ink-dcc495);text-shadow:0 0 10px color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent)}
+
+/* Slightly larger Golf leaderboard and round labels. */
+.roundPill{font-size:14px}
+.leaderboardBoard .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector .tab{font-size:15px}
+
+/* Unframed Golf section navigation; retain the selected sliding indicator. */
+.slidingSelector.golfSectionSelector,:global(html[data-mode="light"]) .slidingSelector.golfSectionSelector{border:0;background:transparent;box-shadow:none}
+
+/* Board/Overview through Predict navigation labels. */
+.slidingSelector.golfSectionSelector .tab{font-size:14px}
+
+/* Games status matches the unframed Team/Indi selector. */
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector.gameStatusSelector,:global(html[data-mode="light"]) .slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector.gameStatusSelector{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector.gameStatusSelector::before,.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector.gameStatusSelector .tab::after{display:none}
+.slidingSelector.underlineSelector.bubbleUnderline.fullLineSelector.gameStatusSelector .tab{font-size:15px}
+.slidingSelector.gameStatusSelector .tab[aria-pressed=true]{color:var(--lm-ink-dcc495);text-shadow:0 0 10px color-mix(in srgb,var(--lm-ink-dcc495) 45%,transparent)}

@@ -4,6 +4,7 @@
  * birthdate, an age, or another account's data.
  */
 import type { AccountLifecycle } from "@/lib/profile/currentProfile";
+import { passwordPending } from "@/lib/auth/signup";
 
 /** Yes/no facts from account_onboarding_progress() (supabase/account_activation.sql). */
 export type OnboardingProgress = {
@@ -16,7 +17,7 @@ export type OnboardingProgress = {
 
 /** The approved screen order (project_specs.md §1); photo is optional and never "required next". */
 export type OnboardingStep =
-  | "welcome" | "verification" | "name_username" | "birthday" | "terms" | "settings" | "play" | "ineligible" | "restricted" | "closed";
+  | "welcome" | "verification" | "password" | "name_username" | "birthday" | "terms" | "settings" | "play" | "ineligible" | "restricted" | "closed";
 
 export type ResumeReply =
   | { status: 200; body: { ok: true; state: AccountLifecycle["state"]; next: OnboardingStep; activationAvailable: boolean } }
@@ -36,6 +37,8 @@ export function resumeReply(lifecycle: AccountLifecycle, progress: OnboardingPro
       if (!progress) return { status: 503, body: { ok: false, code: "unavailable", next: null } };
       const available = progress.activationEnabled && progress.termsConfigured;
       if (!progress.verified) return ok("pending", "verification", available);
+      // Verified, but still on the throwaway sign-up password (owner decision 2026-11-20): Create a password comes first.
+      if (passwordPending(lifecycle.account)) return ok("pending", "password", available);
       if (lifecycle.details !== "complete") return ok("pending", "name_username", available);
       if (!progress.birthday) return ok("pending", "birthday", available);
       if (progress.termsConfigured && !progress.termsAccepted) return ok("pending", "terms", available);

@@ -93,6 +93,9 @@
 .copyRow{display:grid;gap:10px}
 .danger{border-color:#e66b6b88;color:#f0a0a0}
 /* The Leagues tab (on Play a round's page). */
+.landing.landing{min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:#240001;color:#f4efe6}
+.landing.landing > section{padding-top:13px}
+:global(html[data-mode="light"]) .landing.landing{background:#240001;color:#f4efe6}
 .homeActions{display:grid;gap:10px;margin:8px 0 18px}
 .empty{display:grid;justify-items:center;gap:10px;margin:28px 0;text-align:center;font:500 14px/1.5 var(--font-barlow),sans-serif;color:#e8d7b2}
 .leagueList{display:grid;gap:8px;margin:0 0 16px;padding:0;list-style:none}

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
 import { PasswordField } from "@/components/dev/auth/AuthPasswordPreview";
 import { PASSWORD_MIN_CHARS, checkNewPassword } from "@/lib/auth/passwordPolicy";
-import { errorOf, rememberEmail, send, useRememberedEmail } from "@/lib/account/onboardingClient";
-import { progressWidth, START } from "@/lib/account/onboardingRoutes";
+import { errorOf, rememberEmail, send } from "@/lib/account/onboardingClient";
+import { ONBOARDING, progressWidth, START } from "@/lib/account/onboardingRoutes";
 import frame from "@/components/dev/auth/AuthNamePreview.module.css";
 import styles from "@/components/dev/auth/AuthPasswordPreview.module.css";
 import forgotStyles from "@/components/dev/auth/AuthForgotPreview.module.css";
@@ -14,34 +14,36 @@ import forgotStyles from "@/components/dev/auth/AuthForgotPreview.module.css";
 /**
  * Pending accounts Phase 6: the real "Create a password", "Set a new password" and "Forgot password" screens — the
  * approved AuthPasswordPreview / AuthForgotPreview designs connected to the real APIs:
- * - Create a password → POST /api/auth/signup (email from Sign up) → the code email → Email Verification.
+ * - Create a password (right AFTER the email code, owner decision 2026-11-20) → POST /api/auth/create-password for the
+ *   signed-in, just-verified account → the next onboarding step (Name).
  * - Set a new password → POST /api/auth/reset-password, which only accepts a session from the reset code / link within
  *   the hour and signs every session out afterwards → Log in.
  * - Forgot password → POST /api/auth/forgot-password (same answer whether or not the address has an account) → code.
  */
 export function PasswordScreen({ kind, returnTo = null }: { kind: "create" | "reset"; returnTo?: string | null }) {
   const router = useRouter();
-  const email = useRememberedEmail();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  useEffect(() => { if (kind === "create" && email === "") router.replace(START.signUp); }, [kind, email, router]);
 
   const check = checkNewPassword(password);
   const tooShort = password.length > 0 && [...password].length < PASSWORD_MIN_CHARS;
   // Short passwords are flagged straight away; anything else only once they've started confirming.
   const problem = tooShort ? `At least ${PASSWORD_MIN_CHARS} characters.`
     : !confirm ? null : !check.ok ? check.error : confirm !== password ? "Passwords don't match." : null;
-  const ready = check.ok && confirm === password && !busy && (kind === "reset" || !!email);
+  const ready = check.ok && confirm === password && !busy;
 
   async function save() {
     setBusy(true);
     setServerError(null);
     if (kind === "create") {
-      const sent = await send("/api/auth/signup", { email, password, next: "/onboarding" });
-      if (sent.json.ok !== true) { setServerError(errorOf(sent)); setBusy(false); return; }
-      router.push(START.verify);
+      const sent = await send("/api/auth/create-password", { password });
+      if (sent.json.code === "signed_out") { router.replace(START.logIn); return; }
+      // Already set (e.g. saved on another device): carry on to the next step anyway.
+      if (sent.json.ok !== true && sent.json.code !== "already_set") { setServerError(errorOf(sent)); setBusy(false); return; }
+      router.replace(ONBOARDING.resume);
+      router.refresh();
       return;
     }
     const sent = await send("/api/auth/reset-password", { password });

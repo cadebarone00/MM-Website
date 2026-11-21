@@ -11,7 +11,7 @@
 .field input{width:100%;min-width:0;padding:0;border:0;outline:0;background:transparent;color:#fbf8f1;font:500 17px/1.4 var(--font-barlow),sans-serif}
 .handle{display:flex;align-items:center;gap:1px;color:#e1cec4;font:500 17px/1.4 var(--font-barlow),sans-serif}
 .note,.error{display:flex;align-items:flex-start;gap:6px;min-height:36px;margin:2px 0 0;font-size:12px;color:#e1cec4}
-.error{color:#ffb4b4}
+.error{color:#fbf8f1}
 .lock{flex:none;width:13px;height:13px;margin-top:1px}
 .continue{height:48px;margin-top:6px;border:0;border-radius:12px;background:#c9a86e;color:#240001;font:600 17px var(--font-barlow),sans-serif;cursor:pointer}
 .continue:disabled{background:rgba(251,248,241,.1);color:rgba(251,248,241,.35);cursor:not-allowed}

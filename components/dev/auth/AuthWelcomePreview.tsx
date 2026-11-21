@@ -6,6 +6,7 @@ import { MaroonMark } from "@/components/brand/MaroonMark";
 import styles from "./AuthWelcomePreview.module.css";
 import frame from "./AuthNamePreview.module.css";
 import { signUpProgress } from "@/lib/dev/authScreens";
+import { useSimulator } from "@/components/dev/SimulatorBridge";
 
 /** DEV ONLY: Authentication screen 1 (Welcome): the fork. Two buttons, Sign up or Log in, each to its own page, so the
  * app never has to look up whether an email already has an account. */
@@ -19,17 +20,21 @@ export function AuthWelcomePreview() {
   </main>;
 }
 
-/** DEV ONLY: Sign up: email → the code screen, or Google / Apple (which also log existing accounts in). */
+/** DEV ONLY: Sign up: email → the code screen, or Google / Apple (which also log existing accounts in). Simulator
+ *  Conditional "Email already has an account": the message line + Continue turned into Log in (owner decision 2026-11-20). */
 export function AuthSignUpPreview() {
+  const exists = useSimulator()?.state.signUpStage === "account-exists";
   return <main className={styles.page}>
     <div className={styles.stepTop}>
       <div className={frame.logo}><MaroonMark color="#fbf8f1" /></div>
       <div className={frame.progress} aria-hidden="true"><span style={{ width: signUpProgress("sign-up") }} /></div>
     </div>
     <h1 className={`${styles.title} ${styles.signUpTitle}`}>Sign up</h1>
-    <form className={styles.form} action="/dev/auth/password">
-      <input className={styles.input} type="email" name="email" placeholder="Email" autoComplete="email" aria-label="Email" />
-      <button className={styles.primary} type="submit">Continue</button>
+    <form className={styles.form} action={exists ? "/dev/auth/sign-in" : "/dev/auth/verification-code"}>
+      <input className={styles.input} type="email" name="email" placeholder="Email" autoComplete="email" aria-label="Email"
+        defaultValue={exists ? "cade@example.com" : undefined} />
+      <p className={`${styles.error} ${styles.signUpMessage}`} role="alert">{exists ? "There's already an account with this email." : null}</p>
+      <button className={styles.primary} type="submit">{exists ? "Log in" : "Continue"}</button>
     </form>
     <p className={styles.or}>or</p>
     <div className={styles.form}>

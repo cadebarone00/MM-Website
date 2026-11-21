@@ -6,6 +6,12 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-20 - Trips, Tourneys and Leagues landing pages (presentation only; implemented locally; deployment not verified).** Their titles are centered at the same top position beneath the phone's camera area, and their page backgrounds are maroon, including in light mode. The Tourneys background photo is removed. Sections 22 and 23 are affected; navigation and workflow paths are unchanged.
+
+**2026-11-20 - Big Board Live label (presentation only; implemented locally; deployment not verified).** The active round's red LIVE label no longer has a dot beside it. Section 22 is affected; status behavior and workflow paths are unchanged.
+
+**2026-11-20 - Dev phone match screen crash fix (implemented locally; deployment not verified).** An invalid match-stat placeholder expression prevented the phone simulator from loading. The expression now correctly hides missing-stat placeholders, allowing the screen to render. Section 22 is affected; workflow paths are unchanged.
+
 ### 2026-11-19 - Match confirmation handoff and Home selection queue
 
 Implemented locally, not deployed: completed picks now show **Confirm Selections** to the organizer and **Waiting for Organizer** to other viewers. Confirmation changes the room action to **Go To Matches**, opening Golf on that round; the room back arrow returns Home. All selection rounds remain accessible in the room selector. Home advances to the next unconfirmed selection, falling back to the last completed room with **Matches Selected** instead of a countdown. Saved viewers reload member-filtered setup after confirmation; existing tee times are preserved. Affected: section 22, saved setup reads, selection controls and workflow below. Hosted SQL installation and multi-device deployment remain unverified.
@@ -769,10 +775,10 @@ flowchart TD
   %% Team round browsing does not rewind Indi; historical individual rounds remain in player profiles.
   %% Predict uses an inline Golf section; its old Wallet slide-up and team board entry are removed.
   %% Personal Golf board blends into page, extends 10px per side and retains softer 28px bottom curves.
-  %% Team/Indi and Games Active/Settled share a sliding gold bubble selector below the overview.
+  %% Board/Overview?Predict navigation labels are 14px and the row is unframed; Team/Indi and subsequent content sit 8px closer to it and active labels glow softly.
   %% Personal Golf board: open top and sides, no enclosing shadow, rounded bottom outline retained.
   %% Team summary style: team-color glows fade from the upper corners behind light team names; points and To win remain.
-  %% Team round picker: unframed, edge-to-edge mobile scrolling row with sliding selection; course and format remain below.
+  %% Team round picker: unframed, edge-to-edge mobile scrolling row with a glowing selected label; course and format remain below.
   %% Golf personal board presentation: tighter padding and row gaps, smaller type and 32px footer selectors; content and scoring unchanged.
   %% Selecting Golf defaults to Team leaderboard when available; individual-only defaults Indi and social defaults Overview.
   %% Golf personal header: both competitions show trip total, position and match points; individual only total/position; team-only/social no header; no weather/location.
@@ -795,7 +801,7 @@ flowchart TD
   %% Trip Games: Active / Settled selectors; complete participant scorecards move games to read-only Settled; historical results use own-round snapshots.
   %% Golf trip individual leaderboard: left-aligned POS and Player headers, one continuous rule below column labels, and no rules between players.
   %% Team owns the large tournament summary above its day slider and per-match boards; Indi shows standings without the summary.
-  %% Match and large team box stat labels have no underline.
+  %% Match stats use FWY/GIR/PPG/SCORE; missing values and big-board summary placeholders are blank.
   %% Light appearance uses soft-white trip surfaces with maroon lighting, maroon text and deeper gold accents; team-color glows remain.
   %% Developer workspace appearance buttons switch the device appearance and same-origin simulator preview.
   %% Mock and Busy scenario controls select either team?s offered color for the Golf preview.
@@ -1336,9 +1342,9 @@ The separate test-season controls operate on a designated database season. This 
 
 **Golf match-box text (2026-11-13):** Compact match boards use 13px player names and side scores. The F or completed-hole number is 12px in match rows above the existing 10px THRU label, with the progress stack lowered 3px. Other compact boards retain 9px progress values. Tee-time sizes, existing wrapping and ellipsis behavior remain unchanged.
 
-**Games status selector (2026-11-13):** Active/Settled and Team/Indi share identical selector classes, background, text and compact 32px height. Both selectors use solid gold underlines centered at 80% of the selected tab width, resting on the frame bottom border and fading in when selected. They share the same frame and 12px rounded corners. Filtering remains unchanged.
+**Games status selector:** On mobile, Your Games, New game and the empty-state message sit 16px from the screen edges. Active/Settled matches Team/Indi in vertical position and uses unframed 15px labels with a subtle glow on the active choice. Filtering remains unchanged.
 
-**Compact selectors:** Team/Indi retains its compact frame. The Team round selector is an unframed horizontal row with a sliding selected-round indicator, extending to the screen edges on mobile; the selected course and format remain below. Round selection and scrolling are unchanged.
+**Compact selectors:** Board?Predict and Overview?Predict navigation labels are 14px. Team/Indi and the content below it sit 8px closer to the unframed Board?Predict navigation. Team/Indi labels are 15px and round labels are 14px. Both use softly glowing selected labels without a frame or selection pill. The rounds scroll to the screen edges on mobile; the selected course and format remain below. Round selection and scrolling are unchanged.
 
 **Format-to-match spacing (2026-11-13):** The round details area has a -4px bottom margin, reducing clearance before the match content by 4px while retaining the centered course/format layout.
 
@@ -1372,7 +1378,7 @@ The separate test-season controls operate on a designated database season. This 
 
 **Team leaderboard color header (2026-11-13):** The 50/50 team color band is 40px tall and contains both team names using their configured contrast colors. TO sits on the left color and WIN on the right, with the existing points-to-win target beneath; team scores remain below the band.
 
-**Team summary stats styling (2026-11-13):** PPG/FWY/GIR beside Predict matches the open Matches FWY/GREEN/PUTTS/SCORE styling, with a fading horizontal separator and 15px label/value gap instead of tinted rounded panels. Existing team stat buttons still open the same dialog; displayed values and data sources are unchanged.
+**Team summary stats styling:** PPG/FWY/GIR uses open labels without a separator; unavailable summary values are blank. Match boxes use FWY/GIR/PPG/SCORE. Team stat buttons still open the same dialog.
 
 **Match board lead glow:** Match boxes softly glow from the upper corner of the leading or winning side using its team color, with no solid lead fill. Tied or all-square and unstarted matches have no lead glow. Existing match standings determine the leading side.
 
@@ -1380,11 +1386,11 @@ The separate test-season controls operate on a designated database season. This 
 
 **Golf team board colors:** The large team standings board uses softened team-color glows from its upper left and right corners, fading into the maroon surface. Team names use light text; points and the expandable player list retain their existing behavior.
 
-**Golf box stat labels:** The FWY through SCORE labels in match boxes and PPG through GIR labels in the large team box have no underline; their stat values remain visible.
+**Golf box stat labels:** Match boxes use FWY, GIR, PPG and SCORE with no underline; missing values are blank. Match PPG averages recorded per-hole putts for the match side, and is blank when none are loaded. Large team-board PPG/FWY/GIR summary placeholders are blank and the team player-stat sheet remains available.
 
 **Golf individual leaderboard rows:** Player rows have no separating lines in the trip leaderboard or social Overview; the column heading rule remains. The shared code tournament leaderboard retains its player separators.
 
-**Golf leaderboard selector placement (2026-11-12):** For Team & Individual trips, Team/Indi uses the same compact standalone rounded navigation board in both views, with an outlined, softly glowing rounded rectangle that slides between equal-width halves, matching Games Active/Settled. It stays beneath the overview and above the large Team score board when Team is selected. Round controls and leaderboard content follow. Existing section, Games/Predict and competition conditions still control availability.
+**Golf leaderboard selector placement (2026-11-12):** For Team & Individual trips, Team/Indi uses unframed labels with a subtle glow on the selected choice. It stays beneath the overview and above the large Team score board when Team is selected. Round controls and leaderboard content follow. Existing section, Games/Predict and competition conditions still control availability.
 
 **Big Board indicators (2026-11-12):** The dots beneath the board count its bottom-section items. One item shows one round gold dot; multiple items retain the highlighted current-item marker and clickable dot navigation. With no items there are no dots. This does not count unread account notifications or change their data source.
 
@@ -1468,7 +1474,7 @@ Golf uses a shared header across sections: date above course, with competitive r
 
 **Golf round box presentation:** Golf Schedule, Scorecards, competition-format and Match Selection settings round cards share the itinerary-style header divider and fixed 90px height, with 14px course titles, compact padding and 2px additional spacing beneath the divider and left-aligned content limited to 60% of the content width. Course names wrap up to two lines, with clipped excess text; location sits closer beneath the name. Itinerary golf boxes use the same height; other itinerary items retain their existing sizing. Scorecards round state (Upcoming, Live or Finished) occupies the top-right header. This changes presentation only, preserving existing data, state calculation and round actions.
 
-**Team player stats:** The two PPG/FWY/GIR summary boxes open a bottom-aligned 60dvh modal. The tapped side is initially selected; two team-name tabs reuse the Home/Itinerary selector styling. The internally scrolling table lists unique players from that side of the supplied match pairings. Saved trip-wide stats supply FWY and GIR percentages; PPG (Putts Per Green) is recorded putts divided by holes with recorded putts, formatted with two decimals. It is not a percentage. Missing data shows a dash and team-level summary values remain placeholders. The modal supports X, Escape, backdrop dismissal and reduced motion. No new fetches, writes or persistence. Privacy, identity matching and existing data rights remain review_required as recorded in docs/team-player-stats-review.md.
+**Team player stats:** The two PPG/FWY/GIR summary boxes open a bottom-aligned 60dvh modal. The tapped side is initially selected; two team-name tabs reuse the Home/Itinerary selector styling. The internally scrolling table lists unique players from that side of the supplied match pairings. Saved trip-wide stats supply FWY and GIR percentages; PPG (Putts Per Green) is recorded putts divided by holes with recorded putts, formatted with two decimals. It is not a percentage. Missing data shows a dash and team-level summary values remain placeholders and are displayed blank. The modal supports X, Escape, backdrop dismissal and reduced motion. No new fetches, writes or persistence. Privacy, identity matching and existing data rights remain review_required as recorded in docs/team-player-stats-review.md.
 
 **Predict entry and availability:** Competitive trips with loaded preview data always expose Predict from the summary pill below the win bar. Predict retains an internal navigation destination for dev shortcuts but is absent from the Golf tab strip. Single-competition summaries offer the same entry. The existing master On/Off preference no longer controls availability; stored Off is interpreted as On and its organizer toggle is removed. Per-bet settings still apply. Predict opens over the leaderboard as a bottom-aligned 80dvh modal with internal scrolling and reduced-motion support. X, Escape or backdrop dismissal returns to the first Golf section. Existing local coin storage and market calculations remain unchanged; noncompetitive trips do not expose entry. No new money, purchasable/redeemable coins, prizes, external data recipients or production outcome writes are introduced. Existing market/privacy/retention/legal review remains required before release.
 
@@ -1558,7 +1564,7 @@ Copy Snapshot and Download Snapshot locally render the current same-origin ifram
 
 **Golf Team match boards:** The Team summary uses an 8px top strip split 50/50 between configured team colors, with centered team names and points below; To win is lowered 20px. The strip is decorative rather than a score-proportion bar. The Team summary-to-round-picker gap is 12px, with no extra picker top margin; the course/format line below the pills uses 15px text matching match-board player names. Lead fills use the original match-row styling: flat team color, minimum 56px height, 16px inward rounding and no fill shadow. All Golf subsections share the personal day board above their selectors; Team retains its course/day slider and per-match boards beneath it. Below the existing Team-only course/day slider and scoring control, every scheduled match uses the shared compact matchup board, including its players, status, lead display and settings-controlled stats/win bar. The Match N button opens the existing match detail. The list Gross/Net control sets each board standing; match numbering retains its round offset. Empty rounds retain draft status; individual standings remain on Indi.
 
-**Team/Indi selector:** Trips with both competitions show Team and Indi in a shared rounded rectangle track with a sliding gold outline and soft interior glow around the selected choice. Games uses the same selector for Active/Settled. Both tracks are 40px high, with 30px buttons and the existing 4px inset. Existing placement, conditional visibility, selection actions and game filtering are preserved; reduced-motion preferences disable sliding.
+**Team/Indi selector:** Trips with both competitions show unframed Team and Indi labels; the selected label glows subtly. Games uses the same unframed glowing treatment for Active/Settled. Existing placement, conditional visibility, selection actions and game filtering are preserved.
 
 **Personal Golf board separator treatment:** The board reaches the phone edges. Summary, additional-round and navigation rules fade to transparent across the outer 15% on each side. A gold bottom outline follows the 28px rounded lower corners into the phone sides, fading upward over a 40px outline region. Content positions are preserved with 26px inner padding.
 
