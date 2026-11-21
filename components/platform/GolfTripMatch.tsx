@@ -504,8 +504,8 @@ export function GolfMatchup({ match, compact = false, below, swipe, featured = 0
       </div>
       {(predictOn || showStats) && <div className={styles.stats}>
         {predictOn && <WinBar left={boxLeft.winPct} right={boxRight.winPct} />}
-        {showStats && <RoundStats side={boxLeft} align="left" ppg={ppg(leftComp)} />}
-        {showStats && <RoundStats side={boxRight} align="right" ppg={ppg(pairing?.right ? rightComp : undefined)} />}
+        {showStats && <RoundStats side={boxLeft} align="left" />}
+        {showStats && <RoundStats side={boxRight} align="right" />}
       </div>}
     </section>
 
