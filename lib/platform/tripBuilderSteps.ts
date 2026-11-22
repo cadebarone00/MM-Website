@@ -55,7 +55,7 @@ export function clampRoundsToDates(draft: GolfTripDraft): GolfTripDraft {
   for (let day = keepDays + 1; day <= golfDays; day++) { delete out[`day${day}Date`]; delete out[`day${day}Rounds`]; }
   const keptRounds = plannedRounds(out).length;
   for (const key of Object.keys(out)) {
-    const match = key.match(/^round(\d+)(Course|Format)$/);
+    const match = key.match(/^round(\d+)(Course|CourseRef|CoursePlace|CoursePar|Format)$/);
     if (match && Number(match[1]) > keptRounds) delete out[key];
   }
   return out;

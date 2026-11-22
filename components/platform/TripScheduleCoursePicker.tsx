@@ -53,8 +53,9 @@ function useCourseSearch(query: string): Search {
 /**
  * A golf course search bar: type a course, club or city and tap a result. `floating`: the results open over the page below
  * (nothing moves); otherwise they list right under the bar (inside the Edit course pop-up). Closes once one is picked.
+ * `onUseTyped`: a last row "Use “…”" keeps the typed name as the course (no scorecard) for a course that isn't listed.
  */
-export function CourseSearchBar({ roundLabel, onPick, floating = true, autoFocus = false }: { roundLabel: string; onPick: (course: PickedCourse) => void; floating?: boolean; autoFocus?: boolean }) {
+export function CourseSearchBar({ roundLabel, onPick, onUseTyped, floating = true, autoFocus = false }: { roundLabel: string; onPick: (course: PickedCourse) => void; onUseTyped?: (name: string) => void; floating?: boolean; autoFocus?: boolean }) {
   const [query, setQuery] = useState("");
   const search = useCourseSearch(query);
   const open = query.trim().length >= 2;
@@ -77,6 +78,10 @@ export function CourseSearchBar({ roundLabel, onPick, floating = true, autoFocus
           </button>)}
           {search.attribution && <p className={styles.credit}>{search.attribution}</p>}
         </>)}
+      {onUseTyped && search.status !== "loading" && <button type="button" className={gameStyles.sheetGame}
+        onClick={() => { onUseTyped(query.trim()); setQuery(""); }}>
+        <strong>Use “{query.trim()}”</strong><span>Not listed? Keep this name (no scorecard)</span>
+      </button>}
     </div>}
   </div>;
 }
