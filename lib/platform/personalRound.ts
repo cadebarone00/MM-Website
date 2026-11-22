@@ -52,6 +52,8 @@ export interface PersonalRoundSetup {
   guests?: RoundGuest[];
   /** Round with friends: joined players may enter their own putts / fairway / green (strokes stay with the host). */
   playerStats?: boolean;
+  /** Wolf / Sixes playing order (profile ids and guest ids), set or shuffled by the host in Round settings. */
+  playerOrder?: string[];
 }
 
 /** Hole indexes (0-based, end exclusive) for the holes choice. */

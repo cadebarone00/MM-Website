@@ -29,6 +29,12 @@ type Saved = { setup: PersonalRoundSetup; startedAt: string; card?: SheetCard; i
 type MemberSave = { name: string; saved: boolean };
 type SaveState = { status: "idle" | "saving" } | { status: "saved"; round: PlayerRound; game: GameResult | null; members?: MemberSave[] } | { status: "error"; message: string };
 type Player = SharedRound["players"][number];
+/** A random order (Fisher–Yates), for Randomize on the playing order. */
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+}
 const newGuestId = () => `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 /** How often every phone in a shared round checks for the others' scores. */
 const POLL_MS = 4000;
@@ -562,13 +568,24 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const nameOf = (p: Player) => p.profileId === me ? "You" : firstName(p.name);
   const handicapFor = (p: Player) => p.profileId === snap.host ? setup.myHandicap ?? null : setup.players?.find((x) => x.profileId === p.profileId)?.handicap ?? null;
   // Everyone in the game, in order: players (host first) then guests.
-  const gamePlayers = [...active.map((p) => ({ name: nameOf(p), handicap: handicapFor(p) })), ...guests.map((g) => ({ name: firstName(g.name), handicap: g.handicap }))];
+  // Everyone in the game, in the playing order: the host's chosen / shuffled order (Round settings), else players then guests.
+  const people = [...active.map((p) => ({ key: p.profileId, name: nameOf(p), handicap: handicapFor(p), strokes: () => strokesOf(p.profileId) })),
+    ...guests.map((g) => ({ key: g.id, name: firstName(g.name), handicap: g.handicap, strokes: () => guestRow(g.id) }))];
+  const orderOf = (key: string) => { const i = setup.playerOrder?.indexOf(key) ?? -1; return i < 0 ? 100 + people.findIndex((x) => x.key === key) : i; };
+  const ordered = [...people].sort((a, b) => orderOf(a.key) - orderOf(b.key));
+  const gamePlayers = ordered.map((x) => ({ name: x.name, handicap: x.handicap }));
   const gameCourse = { par, strokeIndex: setup.course.strokeIndex, rating: setup.tee?.rating ?? null, slope: setup.tee?.slope ?? null };
   const def = setup.game ? gameDef(setup.game.id) : null;
   const gameFits = !def || def.players.includes(gamePlayers.length);
   // What's actually been entered (no par for untouched holes): the leaderboard, friends' standings and the P&L use this.
-  const enteredRows = () => [...active.map((p) => strokesOf(p.profileId)), ...guests.map((g) => guestRow(g.id))];
-  const boardRows = () => [...active.map((p) => ({ name: nameOf(p), strokes: strokesOf(p.profileId) })), ...guests.map((g) => ({ name: firstName(g.name), strokes: guestRow(g.id) }))];
+  const enteredRows = () => ordered.map((x) => x.strokes());
+  const boardRows = () => ordered.map((x) => ({ name: x.name, strokes: x.strokes() }));
+  /** Wolf / Sixes: the order decides who's the Wolf / who partners whom. It can change until the first hole is scored. */
+  const orderMatters = setup.game?.id === "wolf" || setup.game?.id === "sixes";
+  const orderLocked = enteredRows().some((row) => row.some((v) => v != null)) || inputs.some((i) => Object.keys(i).length > 0);
+  const setOrder = (keys: string[]) => { const next = { ...setup, playerOrder: keys }; setSnap({ ...snap, setup: next }); void hostAction({ action: "setup", setup: next }); };
+  const shuffle = () => setOrder(shuffled(ordered.map((x) => x.key)));
+  const move = (from: number, to: number) => { const keys = ordered.map((x) => x.key); const [k] = keys.splice(from, 1); keys.splice(to, 0, k); setOrder(keys); };
   const liveResult = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
   const holeMoney = setup.game && gameFits ? moneyByHole(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
   const doubledHoles = inputs.map((i) => setup.game?.doubles === true && i.doubled === true);
@@ -585,7 +602,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
     setSave({ status: "saving" });
     const result = await submitCard(setup, scored, id);
     if ("error" in result) { setSave({ status: "error", message: result.error }); return { ok: false, message: result.error }; }
-    const game = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes([...active.map((p) => p.profileId === me ? scored.strokes : strokesOf(p.profileId)), ...guests.map((g) => guestRow(g.id))], par, 18, () => true), inputs) : null;
+    const game = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes(ordered.map((x) => x.key === me ? scored.strokes : x.strokes()), par, 18, () => true), inputs) : null;
     write(null);
     setSave({ status: "saved", round: result.round, game, members: result.members });
     return { ok: true };
@@ -641,6 +658,18 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
             }} />
           </div>}
         </>}
+        {orderMatters && gameFits && <section className={styles.orderBox} aria-label="Playing order">
+          <div className={styles.orderHead}><p className={styles.settingsLabel}>{setup.game?.id === "wolf" ? "Wolf order" : "Playing order"}</p>
+            {isHost && !orderLocked && !ended && <button type="button" className={styles.secondary} onClick={shuffle}>Randomize</button>}</div>
+          <ol className={styles.orderList}>{ordered.map((x, i) => <li key={x.key}>
+            <span className={styles.orderNum}>{i + 1}</span><span className={styles.orderName}>{x.name}</span>
+            {isHost && !orderLocked && !ended && <>
+              <button type="button" aria-label={`Move ${x.name} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</button>
+              <button type="button" aria-label={`Move ${x.name} down`} disabled={i === ordered.length - 1} onClick={() => move(i, i + 1)}>↓</button>
+            </>}
+          </li>)}</ol>
+          <p className={styles.blurb}>{orderLocked ? "The order is set once the first hole is scored." : setup.game?.id === "wolf" ? "The Wolf goes in this order, starting on the first hole." : "Partners change every 6 holes in this order."}</p>
+        </section>}
         {/* The code to share lives here, not under the leaderboard (owner 2026-11-22). */}
         {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
         <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."

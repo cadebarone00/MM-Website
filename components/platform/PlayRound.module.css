@@ -195,3 +195,14 @@
 .settingsTitle{margin:0;font:600 22px/1.2 var(--font-spectral),Georgia,serif}
 .settingsLabel{margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1cec4}
 .settingsBody .roster{margin:0}
+
+/* Playing order (owner 2026-11-22): Wolf / Sixes order in Round settings — Randomize, or ↑ / ↓ to set it by hand. */
+.orderBox{display:grid;gap:8px}
+.orderHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.orderHead .secondary{min-height:36px;padding:0 14px;font-size:14px}
+.orderList{display:grid;margin:0;padding:0;list-style:none;border-top:1px solid #b99c6b33}
+.orderList li{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid #b99c6b33}
+.orderNum{width:22px;font-weight:700;color:#c9a86e;text-align:center}
+.orderName{flex:1;min-width:0;font:600 16px var(--font-barlow),sans-serif}
+.orderList button{width:36px;height:36px;border:1px solid #b99c6b77;border-radius:10px;background:transparent;color:inherit;font-size:16px;cursor:pointer}
+.orderList button:disabled{opacity:.3;cursor:default}

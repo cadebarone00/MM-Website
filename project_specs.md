@@ -6154,3 +6154,6 @@ last), not pill buttons.
   screen is the course, the leaderboard and the scoring tab.
 - **Owner (2026-11-22):** the invite code card moves from under the leaderboard into Round settings (gear).
 - **Fix (2026-11-22):** in the iPhone app the bottom menu still showed on Play (the app's address is /rounds/new/), covering the scoring tab; the hide rule now ignores an ending "/".
+- **Owner (2026-11-22): playing order in Round settings** for games where order matters (Wolf: who's the Wolf each hole;
+  Sixes: partner rotation) — **Randomize**, or ↑ / ↓ to set it by hand (`setup.playerOrder`, profile + guest ids). It
+  can change until the first hole is scored, then it's set (so earlier Wolf picks keep their meaning).
