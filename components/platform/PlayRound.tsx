@@ -12,6 +12,7 @@ import gamesStyles from "./GolfTripGames.module.css";
 import { InviteCodeCard } from "./InviteCodeCard";
 import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, type RoundGuest, type RoundPlayer, type ScoringCourse } from "@/lib/platform/personalRound";
 import { guestStrokes } from "@/lib/platform/sharedRoundCards";
+import { customRef, isCustomRef } from "@/lib/platform/golfGps/courseRefs";
 import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import type { PlayerRound, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import type { SheetCard } from "@/lib/platform/liveCards";
@@ -97,7 +98,8 @@ export function PlayRound({ openRound }: { openRound?: string }) {
   return <main className={styles.page}>
     {header}
     <LiveRoundBanner />
-    <div className={styles.search}><ExploreCourseSearch onPick={setPicked} kicker="Step 1 · Course" title="Where are you playing?" /></div>
+    <div className={styles.search}><ExploreCourseSearch onPick={setPicked} onAddByHand={(name) => setPicked({ ref: customRef(name), name, city: null, state: null, par: null })}
+      kicker="Step 1 · Course" title="Where are you playing?" /></div>
   </main>;
 }
 
@@ -132,7 +134,8 @@ function OpenShared({ id, header, onOpen }: { id: string; header: ReactNode; onO
 }
 
 function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: () => void; onStart: (saved: Saved) => void }) {
-  const [course, setCourse] = useState<ScoringCourse | null>(null);
+  // A course added by hand has no scorecard on file: build it while playing (pars remembered by name on this phone).
+  const [course, setCourse] = useState<ScoringCourse | null>(() => isCustomRef(picked.ref) ? customCourse(picked.ref, picked.name, place(picked), builtPars(picked.ref)) : null);
   const [error, setError] = useState<string | null>(null);
   const [tee, setTee] = useState(0);
   const [holes, setHoles] = useState<HolesChoice>("18");
@@ -157,6 +160,7 @@ function SetupStep({ picked, onBack, onStart }: { picked: CourseResult; onBack: 
   /** Joined players may keep their own putts / fairways / greens (strokes stay with the host). */
   const [playerStats, setPlayerStats] = useState(false);
   useEffect(() => {
+    if (isCustomRef(picked.ref)) return;
     const controller = new AbortController();
     fetch(`/api/rounds/course/${encodeURIComponent(picked.ref)}`, { signal: controller.signal })
       .then((response) => response.json() as Promise<{ ok: boolean; course?: ScoringCourse; code?: string }>)

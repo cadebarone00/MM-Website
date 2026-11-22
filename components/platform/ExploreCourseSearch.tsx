@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, FlagTriangleRight, LoaderCircle, LocateFixed, MapPin, Search } from "lucide-react";
+import { ChevronRight, FlagTriangleRight, LoaderCircle, LocateFixed, MapPin, Search, Plus } from "lucide-react";
 import { ExploreCourseProfile } from "./ExploreCourseProfile";
 import styles from "./ExploreCourseSearch.module.css";
 import { cityState } from "@/lib/data/usStates";
@@ -25,15 +25,16 @@ export const place = (course: Pick<CourseResult, "city" | "state">) => cityState
 
 /**
  * Explore → Courses: search golf courses by name, club or city, and pick one. Searches run on the server
- * (/api/courses/search → the OpenGolf provider) a moment after typing stops; older replies are dropped. Picking a
+ * (/api/courses/search → our course library, then the OpenGolf provider) a moment after typing stops; older replies are dropped. Picking a
  * course opens its preview here (ExploreCourseProfile).
  */
 /**
  * `onPick` (Play a round): picking a course hands it back instead of opening its preview. `kicker` / `title` change the
  * heading. Before typing, "Near you" lists the closest courses to the phone's location (asked for only on tap, unless
- * location was already allowed for this site).
+ * location was already allowed for this site). `onAddByHand` (Play): under the results (or when search is down) a
+ * "Not listed?" row hands back what was typed, to build that course's scorecard while playing.
  */
-export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", title = "Find a course." }: { onPick?: (course: CourseResult) => void; kicker?: string; title?: string } = {}) {
+export function ExploreCourseSearch({ onPick, onAddByHand, kicker = "The Maroon · Courses", title = "Find a course." }: { onPick?: (course: CourseResult) => void; onAddByHand?: (name: string) => void; kicker?: string; title?: string } = {}) {
   const [query, setQuery] = useState("");
   const [near, setNear] = useState<NearState>({ status: "off" });
 
@@ -124,5 +125,12 @@ export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", 
     {search.status === "done" && (search.courses.length === 0
       ? <p className={styles.hint}>No courses found for &ldquo;{query.trim()}&rdquo;. Try the club name or the city.</p>
       : <>{list(search.courses, "Courses")}{search.attribution && <p className={styles.credit}>Course data {search.attribution}</p>}</>)}
+    {onAddByHand && (search.status === "done" || search.status === "error") && <ul className={styles.results} aria-label="Add a course">
+      <li><button type="button" onClick={() => onAddByHand(query.trim().slice(0, 100))}>
+        <span className={styles.flag} aria-hidden="true"><Plus size={18} /></span>
+        <span className={styles.resultText}><strong>Not listed? Add &ldquo;{query.trim()}&rdquo;</strong><small>Build its scorecard as you play</small></span>
+        <ChevronRight size={18} aria-hidden="true" className={styles.chevron} />
+      </button></li>
+    </ul>}
   </section>;
 }

@@ -55,7 +55,8 @@ function PlatformHomeContent({ signedIn, preview }: { signedIn: boolean; preview
         </Link>
       </div>
       <div className={styles.homeCircles}>
-        <div><span className={styles.homeCircle} aria-label={handicap == null ? "Handicap unavailable" : `Handicap ${handicap}`}>{handicap ?? "—"}</span><span>Play</span></div>
+        {/* Play (owner request 2026-11-21): the circle shows the handicap and opens Play a round. */}
+        <div><Link href="/rounds/new" className={styles.homeCircle} aria-label={`Play a round${handicap == null ? "" : ` (handicap ${handicap})`}`}>{handicap ?? "—"}</Link><span>Play</span></div>
         <div><span className={styles.homeCircle}><Image src="/brand/maroon-m-white.svg" alt="" width={36} height={36} /></span><span>Live</span></div>
         <div><button type="button" className={styles.homeCircle} aria-label="Open On The Range" onClick={() => setOnRange(true)}><ExploreIcon size={36} aria-hidden="true" /></button><span>On The Range</span></div>
       </div>

@@ -6005,3 +6005,49 @@ players track their own putts / fairways / greens (the only thing they can edit)
 **Tech / data:** no database, no new services. `lib/dev/simulator.ts`: pages get an optional `stage` ("Main" | "Active" | "Onboarding"). `lib/dev/simulatorRoutes.ts`: sets `group` + `stage` for the pages above. `components/dev/DevSimulator.tsx`: the 4 features on top, the stage switch, `?stage=` in the link.
 
 **Done means:** `/dev` shows Golf Trips, Tourneys, Leagues, Play at the top; each opens on Main; Active and Onboarding show the pages in the table; every page that was in the simulator before is still reachable (nothing lost); old `?group=Golf Trip Active` links still open the right place; `tsc`, lint and the simulator tests pass; checked on screen at localhost:3001/dev.
+
+## Play works without course search + a course library we fill ourselves (owner request 2026-11-21) — Part A + search order BUILT 2026-11-21 (owner: library first → OpenGolfAPI → add by hand; first course Eagle Pointe)
+
+**Why now:** a tester plays tomorrow. Play's course search (`ExploreCourseSearch` → `/api/courses/search`) only asks
+OpenGolfAPI, which is down (its database is disconnected). With no search results there's no way to start a round —
+"Build the scorecard as I play" only shows after picking a search result.
+
+**What exists:**
+- **Maroon course library** (`golf_course_data.sql`: golf_courses, tee sets, holes): built for GPS, filled only by
+  importing OpenGolfAPI courses from dev tools. Play reads it when *loading* a picked course, but search never looks in
+  it, and there's no way to add a course by hand.
+- **Old tournament course bank** (`live_courses`): host-only routes to add courses (name, holes/pars, tees, rating/slope)
+  still exist, but no screen uses them and Play doesn't read it.
+
+**Part A — for tomorrow (small, no database change):** on Play's "Where are you playing?" search, a **"Course not
+listed? Add it"** row (always shown under results / when search is down): type the course name and city → the existing
+**build-the-scorecard** setup (every hole par 4 until changed on the scoring screen; optional rating + slope so it can
+count toward handicap). Pars built there are remembered on that phone for next time (as today).
+
+**Part B — our own course library (next):**
+1. **Add a course** screen (Profile → Settings → Course library; for the owner / content admins): name, city/state,
+   18 pars, stroke index (optional), and tees (name, rating, slope, yardage optional). Saved in the Maroon course library
+   as provider "maroon".
+2. **Search looks in our library first**, then OpenGolfAPI (when it works). Library courses load with their scorecard
+   and tees, so rounds count toward handicap.
+3. A course built during a round can be **saved to the library** by the host at the end ("Save this scorecard for everyone").
+4. Later: AI fills a course from its website scorecard (separate spec).
+Needs `golf_course_data.sql` run in Supabase (check first) and small new server functions; spec details before building B.
+
+**Done looks like (A):** with course search down, Play → "Add it" → name → round setup → start a round with a guest and a
+code; checked in the browser and `npm run build:app`; pushed for TestFlight.
+
+**Built 2026-11-21 (owner direction: "check our course library, if not there search the golfapi library, if not in either,
+prompt to add by hand"):**
+- `/api/courses/search` searches the Maroon library first (`searchCourseLibrary`, name contains every typed word), then
+  OpenGolfAPI; if OpenGolfAPI is down the library's results still answer. Library courses we entered have a
+  `maroon:<id>` ref (`lib/platform/golfGps/courseRefs.ts`); imported ones keep their OpenGolf ref.
+- Play, Explore and trip round pars load a picked course from the library by either ref (`findLibraryCourse`).
+- Play's search: **"Not listed? Add "…""** → round setup building that scorecard (`custom:<name>` ref; pars remembered
+  by name on that phone).
+- **First course: `supabase/course_eagle_pointe.sql`** (owner reviewed the preview: par 71, hole 10 par 4, Blue 70.2;
+  tees Black 75.1/133, Blue 70.2/126, Green 69.3/120, Red 70.0/122; yardages from the post-2024 card; stroke index not on
+  file). Tested on a practice database: saved once even when run twice; Play reads the 18 pars and 4 tees.
+- Still to do (Part B): the Add a course screen, and saving a built scorecard to the library.
+- **Play circle (owner request 2026-11-21):** Cade's new Play home (circles: Play · Live · On The Range) had no way to
+  start a round; the **Play** circle (handicap) now opens Play a round (`/rounds/new`). Look unchanged.

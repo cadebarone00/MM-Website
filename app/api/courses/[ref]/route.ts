@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCoursePreview } from "@/lib/platform/golfGps/coursePreview";
 import { GolfProviderError } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
 import { createOpenGolfProvider } from "@/lib/platform/golfGps/providers/openGolf/provider";
-import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
+import { findLibraryCourse } from "@/lib/platform/golfGps/repository/courseLibrarySearch";
 import { getGpsProvisioner } from "@/lib/platform/golfGps/gpsProvisioningServer";
 
 /**
@@ -14,9 +14,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ref
   const { ref } = await params;
   const headers = { "Cache-Control": "no-store" };
   try {
-    const library = getCourseLibrary();
     const course = await getCoursePreview(ref, {
-      findSaved: (id) => library.findCourseByExternalId("open_golf", id),
+      findSaved: (id) => findLibraryCourse(id),
       getDetail: (id) => createOpenGolfProvider().getCourseDetail(id),
       canPrepare: (stored) => getGpsProvisioner().canPrepare(stored),
     });
