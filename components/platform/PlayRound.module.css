@@ -190,7 +190,7 @@
 .playerCard td{overflow:visible}
 
 /* Round settings (owner 2026-11-22): the gear top right opens a sheet with the players, Manage, the tip and Leave. */
-.settingsButton{margin-left:auto}
+.settingsButton{margin-left:auto;border:0}
 .settingsBody{display:grid;gap:12px;padding:18px 18px calc(18px + env(safe-area-inset-bottom));color:#fbf8f1}
 .settingsTitle{margin:0;font:600 22px/1.2 var(--font-spectral),Georgia,serif}
 .settingsLabel{margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1cec4}
