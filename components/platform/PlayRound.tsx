@@ -796,7 +796,8 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   const game = new Map((result?.standings ?? []).map((s) => [s.label, s]));
   const perPlayer = rows.every((row) => game.has(row.name));
   const hasMoney = perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined);
-  const gameLabel = result && perPlayer ? (/skins?$/.test(game.get(rows[0].name)?.value ?? "") ? "SKINS" : "PTS") : null;
+  // A SKINS column for Skins only (owner 2026-11-22: no PTS column); money shows in $.
+  const gameLabel = result && perPlayer && /skins?$/.test(game.get(rows[0].name)?.value ?? "") ? "SKINS" : null;
   const lines = rows.map((row, index) => {
     const played = holes.filter((h) => row.strokes[h] != null);
     const toPar = played.reduce((sum, h) => sum + (row.strokes[h]! - par[h]), 0);

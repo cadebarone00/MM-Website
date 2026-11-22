@@ -468,7 +468,6 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
           {onParChange && !submitted
             ? <button type="button" className={`${styles.holePar} ${styles.holeParEdit}`} aria-label={`Par ${holePar ?? 4} for hole ${current + 1}. Tap to change`} onClick={() => onParChange(current, (holePar ?? 4) >= 6 ? 3 : (holePar ?? 4) + 1)}>Par {holePar ?? "—"} ✎</button>
             : <span className={styles.holePar}>Par {holePar ?? "—"}</span>}
-          {smallNextHole && !submitted && <button type="button" className={styles.smallNext} onClick={nextHole}>{lastHole ? "Scorecard ›" : "Next hole ›"}</button>}
         </div>
         <dl className={styles.holeStat}><dt>To Par</dt><dd>{toPar !== null && thru ? formatToPar(toPar) : "—"}</dd></dl>
       </div>
@@ -502,6 +501,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
           {!solo && <ScoreCard label={`${opponentName.trim().split(/\s+/)[0]} Score`} strokes={holesCompetitor[current]} holePar={shownPar} step={stepCompetitor} disabled={!attestEditable} compact />}
           {group?.names.map((name, g) => <ScoreCard key={g} label={name.trim().split(/\s+/)[0]} strokes={group.strokes[g][current]} holePar={shownPar} step={(delta) => stepGroup(g, delta)} disabled={submitted || group.editable?.[g] === false} compact />)}
         </div>
+        {smallNextHole && !submitted && <button type="button" className={styles.smallNext} onClick={nextHole}>{lastHole ? "Scorecard ›" : "Next hole ›"}</button>}
       </div>
 
       {playerStats && <>

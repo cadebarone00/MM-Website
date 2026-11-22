@@ -6139,3 +6139,6 @@ last), not pill buttons.
   pills). A small **Next hole ›** under the par (plus the one at the bottom): tapping Next sends every player's score
   for that hole to the round, so the leaderboard updates (`onNextHole` → `finishHole`). A finished Wolf hole with no
   partner picked shows **red** in the hole chips (`holeAlert`). No THRU column on the leaderboard (everyone is on the same hole).
+- **Owner (2026-11-22):** scorecards use fixed, equal hole columns so a card looks the same whatever's been scored and the
+  nines line up (×2 in the corner); no PTS column on the leaderboard (SKINS stays for Skins); the small Next hole sits
+  right under the score boxes.

@@ -176,3 +176,11 @@
 .wolfRow button[aria-pressed=true]{background:color-mix(in srgb,#c9a86e 24%,transparent);box-shadow:inset 0 -3px 0 #c9a86e}
 .wolfRow button[aria-pressed=true] .wolfInitial{background:#c9a86e;color:#240001}
 .wolfRow .wolfName{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Scorecard alignment (owner 2026-11-22): fixed, equal hole columns so the card looks the same whatever's been scored,
+   and the front and back nine line up; the ×2 mark sits in the corner instead of widening its hole. */
+.playerCard table{table-layout:fixed}
+.playerCard th,.playerCard td{position:relative;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.playerCard tr>:first-child{width:48px}
+.playerCard tr>:last-child{width:40px}
+.playerCard sup{position:absolute;top:2px;right:1px;margin:0;line-height:1}
