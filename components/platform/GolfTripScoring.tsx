@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, smallNextHole = false }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, smallNextHole = false, cardTotals = true }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -107,6 +107,8 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   holeAlert?: (hole: number) => boolean;
   /** A small "Next hole" button under the hole's par, besides the one at the bottom. */
   smallNextHole?: boolean;
+  /** The Card's name + total list under the table (Play hides it: the leaderboard has the totals). */
+  cardTotals?: boolean;
 }) {
   const [firstHole, endHole] = holeRange;
   const inPlay = (i: number) => i >= firstHole && i < endHole;
@@ -440,7 +442,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
-          <ScorecardSection solo={solo} stats={stats} holeRange={holeRange} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
+          <ScorecardSection solo={solo} stats={stats} holeRange={holeRange} showTotals={cardTotals} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
             myTotal={sumOf(submittedHoles.map((h, i) => inPlay(i) ? h : null))} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} edits={edits} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
           {conflicts && conflicts.length > 0 && <div className={styles.conflicts} role="group" aria-label="Score conflicts">
@@ -714,8 +716,8 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
-  solo?: boolean; stats?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
+function ScorecardSection({ solo = false, stats = true, showTotals = true, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
+  solo?: boolean; stats?: boolean; showTotals?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
   myTotal: number | "—"; opponentTotal: number | "—"; myCheck: "ok" | "wrong" | null; opponentCheck: "ok" | "wrong" | null;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; edits?: ScoreEdit[];
 }) {
@@ -759,11 +761,11 @@ function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], 
     </table>
     {shownEdit !== null && editsFor(shownEdit).map((e, k) => <p key={k} className={styles.editNote}>Hole {e.hole} edited by organizer{e.kind === "pushThrough" ? " (push-through)" : ""}: {String(e.from ?? "—")} → {String(e.to ?? "—")}. {e.reason}</p>)}
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
-    <dl className={styles.scorecardTotals}>
+    {showTotals && <dl className={styles.scorecardTotals}>
       <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{displayTotal(myTotal)}</dd></div>
       {!solo && <div data-check={opponentCheck ?? undefined} aria-label={opponentCheck === "wrong" ? `${opponentName}: scores don't match` : undefined}><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{displayTotal(opponentTotal)}</dd></div>}
       {groupNames.map((name, g) => <div key={g}><dt title={name} style={{ "--chars": shortName(name).length } as CSSProperties}>{shortName(name)}</dt><dd>{displayTotal(sumOf(groupHoles[g].map((h, i) => i >= holeRange[0] && i < holeRange[1] ? h ?? par?.[i] : null)))}</dd></div>)}
-    </dl>
+    </dl>}
   </section>;
 }
 

@@ -472,7 +472,7 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
       <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
         leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Discard this round? Scores on this phone will be deleted.")) onDiscard(); }}>Discard round</button>} />
     </section>
-    {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu
+    {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}
       par={setup.course.par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit}
       onCardChange={(next) => update(saved, { card: next })}
       onParChange={setup.course.custom ? (hole, value) => { const next = withPar(setup, hole, value); setSetup(next); update(saved, { setup: next }); saveBuiltPars(next.course.ref, next.course.par); } : undefined} />}
@@ -639,7 +639,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
         </>}
     </section>
-    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu smallNextHole
+    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu smallNextHole cardTotals={false}
       onNextHole={finishHole} holeAlert={(h) => setup.game?.id === "wolf" && gameFits && inputs[h]?.wolfPartner === undefined && enteredRows().every((row) => row[h] != null)}
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}
