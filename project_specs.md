@@ -5883,6 +5883,97 @@ faster too, but it touches the step rules — left for later if still wanted.)
 **Done looks like:** the waiting screen is maroon with the logo; type check, lint and tests pass; `npm run build:app`
 succeeds; checked in the browser at phone width that a sign-up step's waiting screen is maroon.
 
+## Create a trip: course search with a drop-down + scorecard ready (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (owner: tees later in Trip Settings)
+
+**What the owner asked for:** on the create-a-trip Courses step, as you type a round's course a drop-down suggests
+courses from the golf course scorecard API; picking one sets that round up with its scorecard, ready for the trip.
+
+**What exists today:**
+- Create a trip → **Courses** step (`components/platform/GolfTripCoursesStep.tsx`): one row per round with a **plain text
+  box** (its own note says "a course search API comes later"). Only the typed name is saved (`golf_trip_rounds.course_name`).
+- **Trip Settings** already has the real thing: `CourseSearchBar` (`TripScheduleCoursePicker.tsx`) searches
+  `/api/courses/search` (OpenGolfAPI) as you type and saves the pick (`pickedCourses` in `golf_trip_setup`); then
+  **Round pars** loads that course's scorecard (`loadRoundCoursePars`) and the organizer confirms it
+  (`confirm_trip_round_pars`, plus the tee's rating + slope when one tee is picked).
+
+**The change:**
+1. **Drop-down on the Courses step.** Each round's box becomes the same course search used in Trip Settings: after 2
+   letters, a moment after typing stops, a list drops down (course name · city, state · par). Tap one → the row shows the
+   picked course with an × to clear it. If the course isn't in the list, a last row **Use "what you typed"** keeps a plain
+   name like today (no scorecard).
+2. **Saved with the trip.** The questionnaire keeps each pick (name + handle + place) for the Review step and Back/Next.
+   When the trip is created, the server also:
+   - saves the picks into the trip's settings (`pickedCourses`, same slots Trip Settings uses), so Trip Settings shows
+     them already picked;
+   - loads each picked course's scorecard (course library first, then OpenGolfAPI — the same code as Round pars) and
+     confirms the round's **pars from the course** (as the organizer), so scoring is ready the moment the trip exists.
+3. **Never blocks creating the trip.** If the course search or scorecard can't be reached, or the course has no full
+   18-hole scorecard, the trip is still created with the course name; Trip Settings → Round pars works as today to finish it.
+
+**Tees (question below):** the course's scorecard pars are the same from every tee on almost every course. A tee only
+matters for **course rating + slope** (handicap). Plan default: **no tee at create** — the pars are ready, and the
+organizer picks the tee later in Trip Settings (which adds rating + slope so rounds count toward handicap).
+
+**Who:** organizers creating a trip, on the website and in the iPhone app.
+
+**Data:** no new tables or SQL — uses `golf_trip_setup` (`save_golf_trip_setup`) and `confirm_trip_round_pars`, which exist.
+No new services: OpenGolfAPI is already used.
+
+**Done looks like:** typing on the Courses step shows the drop-down; picking fills the row; the Review step shows it;
+creating the trip saves the course to Trip Settings and the round's pars come from the scorecard; a typed-only name or a
+scorecard failure still creates the trip; tests for the slot mapping and the "never blocks" rule; type check, lint and
+tests pass; `npm run build:app` succeeds; checked in the browser at phone width.
+
+**Question for the owner:** pick the **tee at create** too (one more tap per round, rounds can count toward handicap right
+away), or **later in Trip Settings** (plan default)?
+
+## Play a round: one scorekeeper, join code, guests (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (A: yes; B: host option for players' own stats; `supabase/shared_round_scorekeeper.sql` NOT run yet)
+
+**What the owner asked for:** only one person in the group needs the app. The organizer (host) is the scorekeeper.
+Friends with the app join with an invite code and watch live scores and standings. Friends without the app are added
+as guests by name.
+
+**What exists today (built Oct–Nov 2026):** host + up to 4 friends, all Maroon accounts (invite by search, or the
+"Let friends join with a code" invite card — `join_codes.sql`); no guests; every player enters their own score and the
+host can enter anyone's; each player taps Submit & Save on their own phone to put the round on their profile.
+
+**The change:**
+1. **Joining (app users):** unchanged ways in — the invite code / link (Play → "Have a code?") or the host's search
+   invite. Still up to 5 in the group, guests included.
+2. **Guests (no app):** in round setup and in the host menu, **Add a guest** → type a name (e.g. "Uncle Rob"). Guests
+   get a scorecard row like everyone else. Their scores stay on this round only — never saved to any profile.
+3. **One scorekeeper:** only the **host** enters scores (every player, every hole). Players who joined with the app see
+   the **same live card and game standings, view-only** (no score boxes to type in). Scores sync every few seconds as now.
+4. **Saving:** the **host's Submit & Save** saves the round to the host's profile **and** to every joined app player's
+   profile at once (Profile → Rounds, counts toward handicap when it qualifies, the host as attester — same rule as
+   League group cards). Joined players don't have to do anything. Guests are never saved.
+5. **Stats (owner answer B):** round setup / host menu has **"Let players track their own stats"** (off by default).
+   - Off: joined players are fully view-only; their saved rounds have strokes only.
+   - On: in a joined player's view, **their own putts / fairway / green are the only thing they can edit** (strokes stay
+     host-only; other players stay view-only). Those stats are saved with their round.
+   The host's own putts / fairways / greens stay optional for the host as now.
+
+**Who:** anyone playing a round with friends, on the website and in the iPhone app.
+
+**Data — new SQL (owner runs it), `supabase/shared_round_scorekeeper.sql`** (prereqs `shared_rounds.sql`,
+`join_codes.sql`, `player_rounds.sql`):
+- guests on a round (name, order in the group) and their hole scores;
+- only the host can write strokes; a player can write only their own putts / fairway / green, and only when the host turned stats on;
+- the stats option on the round;
+- the host's submit publishes each joined player's round to their profile (`publish_player_round`), once.
+Tested against Postgres before you run it; safe to run twice. Until it's run: starting a round with guests or player stats
+says it needs the database update, and the host's submit can't save friends' rounds (the host still keeps score).
+
+**Not in this change:** push notifications; guests turning into accounts later; letting a player take over scoring.
+
+**Done looks like:** host starts a round, adds a guest and shares the code; a friend joins with the code and sees the
+live card and standings but can't type scores; the host scores all players; Submit & Save puts the round on the host's
+and the friend's profiles (not the guest's); tests for the rules + the SQL; type check, lint, full tests pass;
+`npm run build:app` succeeds; checked in the browser at phone width.
+
+**Owner answers (2026-11-21):** A — yes, host-scored rounds count toward the friend's handicap. B — a host option lets
+players track their own putts / fairways / greens (the only thing they can edit).
+
 ## Dev simulator: 4 feature groups, each with Main · Active · Onboarding (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted; Leagues/Play create+join pages not added — owner approved the spec as written)
 
 **What it does and who uses it:** The owner (and agents) use the `/dev` simulator to look at every screen. Today the Groups list is long and mixed (Golf Trip Active, Golf Trip Onboarding, Tourneys, Tournament Active, Public / Marketing, Mock people, Invitations…). This regroups the main features so each one is laid out the same way, which makes it easy to compare them side by side and keep the UI consistent across features.
@@ -5941,3 +6032,150 @@ succeeds; checked in the browser at phone width that a sign-up step's waiting sc
 **Tech / data:** new provider folder `lib/platform/golfGps/providers/golfCourseApi/` (client, reply checking, adapter, provider, tests), same shape as the OpenGolf one, which is deleted (`providers/openGolf/`, its tests, the `courses/near` route, `nearbyCourses.ts`). New provider name `golf_course_api` replaces `open_golf` everywhere (domain type, course library, GPS provisioning, dev course-search page, `/dev/gps`). Key: `GOLF_COURSE_API_KEY` in `.env` (saved 2026-11-21, server-only) + Vercel env vars before deploy; `.env.example` gets the blank line. Sent as `Authorization: Key <key>`. Server cache: search 1 hour, course detail 24 hours. Small SQL file `supabase/golf_course_api_provider.sql` (owner runs it in Supabase): allows `golf_course_api` in the course library, treats it as refreshable like OpenStreetMap, and removes the old OpenGolf test courses.
 
 **Done means:** searching "Pinehurst" in the app shows GolfCourseAPI courses; opening one shows its tees and 18-hole scorecard; a course's GPS map still builds from OpenStreetMap; no code mentions OpenGolf any more; missing key / bad key / timeout / daily limit show the existing "unavailable" / "busy" messages (no crash); unit tests for the new provider (good replies, bad replies, errors) pass; existing course/GPS tests updated and passing; `tsc` and lint pass; checked on screen at localhost.
+
+## Play works without course search + a course library we fill ourselves (owner request 2026-11-21) — Part A + search order BUILT 2026-11-21 (owner: library first → OpenGolfAPI → add by hand; first course Eagle Pointe)
+
+**Why now:** a tester plays tomorrow. Play's course search (`ExploreCourseSearch` → `/api/courses/search`) only asks
+OpenGolfAPI, which is down (its database is disconnected). With no search results there's no way to start a round —
+"Build the scorecard as I play" only shows after picking a search result.
+
+**What exists:**
+- **Maroon course library** (`golf_course_data.sql`: golf_courses, tee sets, holes): built for GPS, filled only by
+  importing OpenGolfAPI courses from dev tools. Play reads it when *loading* a picked course, but search never looks in
+  it, and there's no way to add a course by hand.
+- **Old tournament course bank** (`live_courses`): host-only routes to add courses (name, holes/pars, tees, rating/slope)
+  still exist, but no screen uses them and Play doesn't read it.
+
+**Part A — for tomorrow (small, no database change):** on Play's "Where are you playing?" search, a **"Course not
+listed? Add it"** row (always shown under results / when search is down): type the course name and city → the existing
+**build-the-scorecard** setup (every hole par 4 until changed on the scoring screen; optional rating + slope so it can
+count toward handicap). Pars built there are remembered on that phone for next time (as today).
+
+**Part B — our own course library (next):**
+1. **Add a course** screen (Profile → Settings → Course library; for the owner / content admins): name, city/state,
+   18 pars, stroke index (optional), and tees (name, rating, slope, yardage optional). Saved in the Maroon course library
+   as provider "maroon".
+2. **Search looks in our library first**, then OpenGolfAPI (when it works). Library courses load with their scorecard
+   and tees, so rounds count toward handicap.
+3. A course built during a round can be **saved to the library** by the host at the end ("Save this scorecard for everyone").
+4. Later: AI fills a course from its website scorecard (separate spec).
+Needs `golf_course_data.sql` run in Supabase (check first) and small new server functions; spec details before building B.
+
+**Done looks like (A):** with course search down, Play → "Add it" → name → round setup → start a round with a guest and a
+code; checked in the browser and `npm run build:app`; pushed for TestFlight.
+
+**Built 2026-11-21 (owner direction: "check our course library, if not there search the golfapi library, if not in either,
+prompt to add by hand"):**
+- `/api/courses/search` searches the Maroon library first (`searchCourseLibrary`, name contains every typed word), then
+  OpenGolfAPI; if OpenGolfAPI is down the library's results still answer. Library courses we entered have a
+  `maroon:<id>` ref (`lib/platform/golfGps/courseRefs.ts`); imported ones keep their OpenGolf ref.
+- Play, Explore and trip round pars load a picked course from the library by either ref (`findLibraryCourse`).
+- Play's search: **"Not listed? Add "…""** → round setup building that scorecard (`custom:<name>` ref; pars remembered
+  by name on that phone).
+- **First course: `supabase/course_eagle_pointe.sql`** (owner reviewed the preview: par 71, hole 10 par 4, Blue 70.2;
+  tees Black 75.1/133, Blue 70.2/126, Green 69.3/120, Red 70.0/122; yardages from the post-2024 card; stroke index not on
+  file). Tested on a practice database: saved once even when run twice; Play reads the 18 pars and 4 tees.
+- Still to do (Part B): the Add a course screen, and saving a built scorecard to the library.
+- **Play circle (owner request 2026-11-21):** Cade's new Play home (circles: Play · Live · On The Range) had no way to
+  start a round; the **Play** circle (handicap) now opens Play a round (`/rounds/new`). Look unchanged.
+
+## Play a round, round 2: trip-builder look, game section with stakes, simpler invites + stats (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 with owner changes (4 pages; push notifications later)
+
+**What the owner asked for:** no "join with a code" option — the code is just on screen to send; adding someone with the
+app sends them an app notification, and accepting brings them into the game; one short stats toggle; the game is its
+own section with more options ($ per point, birdies double, eagles triple, …); the UI looks like the trip builder.
+
+**1. Setup in the trip builder's look** (`SetupSheet` + step pages, same progress bar, cards, Back / Next):
+   **Owner layout (2026-11-21), 4 pages:** 1) **Round** — course (search: library → OpenGolfAPI → add by hand), tees,
+   holes, date, and the small round questions (Track stats, Count toward handicap, rating/slope for a built card) ·
+   2) **Players** · 3) **Game** · 4) **Review** → Start.
+**2. Players + invites:** add friends with the app (search) and guests (name). **No code switch:** every round with
+   friends has a code, shown big on the round screen (and on Players once started) with Copy / Share, like the trip's.
+**3. Invite notification:** an invited friend gets the invite **in the app** — a card at the top of Play ("Cam invited
+   you to play Eagle Pointe · Skins") plus a red badge on the Play tab; **Accept** opens the round, Decline removes it.
+   *A real phone notification (lock screen) needs Apple push set up first — see question B.*
+**4. One stats toggle:** "Track stats" (putts · fairways · greens) — on = the host and every joined player keep their own;
+   off = strokes only. Replaces "Keep stats" + "Let players track their own stats".
+**5. Game section** (its own step), options shown only when they apply to the chosen game:
+   - **Stakes:** $ per point / skin / hole / match (games with points or matches) → standings show each player's $ up/down.
+   - **Birdies double**, **Eagles triple** (points / skins games).
+   - **Carryovers** on/off (Skins). **Net (handicaps)** with allowance % (100 / 90 / 80).
+   - **Nassau:** $ front / back / overall, automatic press when 2 down (on/off).
+   - Teams (team games) as today. Money is shown only — nothing is paid or collected in the app.
+**Data:** game options live in the round's setup (no new tables). The invite badge reads the existing invites list.
+**Not in this round:** lock-screen push (question B), payments.
+
+**Done looks like:** create a round step by step in the trip-builder look; invite a friend (card + badge, Accept opens the
+round), add a guest, share the code; one stats toggle; pick Skins with $5 a skin, birdies double, eagles triple and see
+$ standings; tests for the new game scoring (multipliers, stakes, carryovers, press); type check, lint, full tests;
+`npm run build:app`; checked in the browser.
+
+**Questions for the owner:**
+- A. Which game options matter most? (plan: the list above)
+- B. **Owner: hold off (2026-11-21).** Later project — lock-screen push notifications: an Apple push key (App Store
+  Connect → Users and Access → Keys → Apple Push Notifications service, made by the Account Holder), the Capacitor push
+  plugin in the app, a table of each phone's push token, and the server sending pushes (round invites first, then friend
+  requests, trips, tournaments) respecting Settings → Notifications. Until then invites show in the app (card + badge).
+- C. Tester tomorrow: push tonight's working version first (course search, Eagle Pointe, Play circle) and build this
+  after? (plan: yes — this rebuild is too big to rush tonight)
+
+## Play a round, round 3: double the hole, cleaner scoring + leaderboard, better Wolf picker (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (A: the pull-up tab at the bottom holds hole-by-hole scoring, score entry, partner pick and Double bet; B: plan default — one double per hole, scorekeeper only)
+
+**What the owner asked for:** a mid-round double toggle in the game settings that adds a "Double bet" button to double
+the bet on a hole; hole-by-hole scoring more intuitive with slide scoring like the trip; a better-looking leaderboard
+showing scores, money and what hole you're on — cleaner, simpler, less jumbled; a better Wolf partner picker.
+
+**1. Mid-round doubles.** Game page: **"Allow doubles"** toggle (points games and Skins). When on, the scoring screen
+shows a **Double bet** button on each hole; the scorekeeper taps it to double that hole (points / skins and their $),
+tap again to undo. The hole shows a **×2** tag, and it stacks with birdies double / eagles triple (a doubled birdie = ×4).
+Saved with the hole like the other game picks, so every phone sees it.
+**2. Scoring screen.** Same scoring sheet as trips (Play already uses it), made easier: swipe left / right between holes,
+bigger score boxes for each player, and the hole's game bits (Wolf pick, Double bet) in one tidy strip under the scores.
+*See question A.*
+**3. Leaderboard.** One clean card instead of today's standings + table: top line "**Hole 8 · thru 7**", then one row
+per player — position, name, score to par (E / +2), and when there's a game its count (3 skins / +4 pts) and **money**
+(+$15 green / −$5 red). Same card on the host's scoring sheet (short) and on friends' live view (full), with a
+**Leaderboard | Scorecard** switch so the hole-by-hole table is one tap away instead of always on screen.
+**4. Wolf picker.** A card for the hole: "**Cade is the Wolf**" (rotates as today), the other players as big buttons to
+pick the partner, and a separate **Lone Wolf ×2** button; the pick shows clearly and can be changed until the next hole.
+
+**Data:** no new tables — the double lives with the hole's game pick (`shared_round_picks`); `HoleInput.doubled`.
+**Done looks like:** double a hole in Skins and Wolf and see points + $ double (tests); swipe between holes; the new
+leaderboard on host and friend phones; Wolf pick in two taps; type check, lint, full tests; `npm run build:app`;
+checked in the browser at phone width.
+
+**Questions for the owner:**
+- A. "Slide scoring like on trip": which part — (1) swiping left/right between holes, (2) a scroll wheel to pick each
+  score instead of − / +, or (3) something else (a screenshot of the trip screen you like helps)?
+- B. Doubles: one double per hole (plan), or allow re-doubling (×2, ×4…)? Only the scorekeeper can tap it (plan)?
+
+**Added by the owner while building (2026-11-21):** scorecards don't show all 18 holes all the time — **tap a player's
+name** on the leaderboard to open their scorecard (front / back nine: Par, Score, and a **$ row with what they won or
+lost on each hole**, a P&L; `moneyByHole` in roundGames.ts). The always-on table is gone; friends see the leaderboard
+first. Scoring in Play always uses the pull-up tab (`scoringViewOverride="slide"`), swipe left/right on the score boxes
+to change holes (`swipeHoles`).
+
+**Owner changes (2026-11-22):** the leaderboard is the trip's individual leaderboard (`GolfTripLeaderboard` look: POS ·
+PLAYER · TOT · THRU, avatars, par colors) plus a **$** column (and SKINS / PTS for those games); tapping a name opens the
+scorecard as two 9-hole rows with a $ row per hole. Leaderboard first on every phone; the scorekeeper's player list folds
+into "N players · Manage". The bottom menu is hidden on /rounds/new so the scoring tab sits at the bottom
+(`noBottomMenu`). "Allow doubles" starts on for points games. The Wolf pick is a list (one row per player, Lone Wolf
+last), not pill buttons.
+- **Owner (2026-11-22): no leaderboard inside the scoring tab** — only score entry, the Wolf pick and Double bet; the leaderboard is on the main screen.
+- **Owner (2026-11-22):** Wolf picker is one horizontal row (players as columns split by thin lines, Lone Wolf last; no
+  pills). A small **Next hole ›** under the par (plus the one at the bottom): tapping Next sends every player's score
+  for that hole to the round, so the leaderboard updates (`onNextHole` → `finishHole`). A finished Wolf hole with no
+  partner picked shows **red** in the hole chips (`holeAlert`). No THRU column on the leaderboard (everyone is on the same hole).
+- **Owner (2026-11-22):** scorecards use fixed, equal hole columns so a card looks the same whatever's been scored and the
+  nines line up (×2 in the corner); no PTS column on the leaderboard (SKINS stays for Skins); the small Next hole sits
+  right under the score boxes.
+- **Owner (2026-11-22):** scorecard score row — all numbers and shapes white: circle = birdie (double circle = eagle),
+  square = bogey (double square = double bogey or worse), par plain.
+  The leaderboard's TOT keeps red for under par (the trip leaderboard's colors).
+- **Owner (2026-11-22):** Play's Card tab (in the scoring tab) drops the names + totals list under the table
+  (`cardTotals={false}`); double circles / double squares are a thin second ring with a see-through gap (outline), the
+  same on the Card tab and the leaderboard scorecard (no thick ring on the dark sheet).
+- **Owner (2026-11-22):** no small Next hole button; the Next hole at the bottom of the scoring tab still sends every score.
+- **Owner (2026-11-22):** a settings button (gear) top right of the round screen opens **Round settings**: the players
+  (remove), Add players · Change game · End round (scorekeeper), the scoring tip, and Leave round on this phone. The main
+  screen is the course, the leaderboard and the scoring tab.

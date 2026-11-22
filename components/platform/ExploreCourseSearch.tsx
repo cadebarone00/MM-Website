@@ -20,7 +20,7 @@ export const place = (course: Pick<CourseResult, "city" | "state">) => cityState
 
 /**
  * Explore → Courses: search golf courses by name, club or city, and pick one. Searches run on the server
- * (/api/courses/search → GolfCourseAPI) a moment after typing stops; older replies are dropped. Picking a
+ * (/api/courses/search → our course library, then the GolfCourseAPI provider) a moment after typing stops; older replies are dropped. Picking a
  * course opens its preview here (ExploreCourseProfile).
  */
 /**

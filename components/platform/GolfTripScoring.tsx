@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { useRecordMyStats } from "@/lib/platform/playerStatsSetting";
 import { createPortal } from "react-dom";
 import { LockKeyhole, Minus, Plus } from "lucide-react";
-import { useScoringView } from "@/lib/platform/scoringViewPreference";
+import { useScoringView, type ScoringView } from "@/lib/platform/scoringViewPreference";
 import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import { countedStrokes, sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
 import { holeEditable, type RevisionHole } from "@/lib/platform/tripCorrections";
@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, cardTotals = true }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -95,6 +95,18 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   gameSlot?: (hole: number) => ReactNode;
   /** Play a round on a course with no scorecard on file: tapping Par cycles 3 → 4 → 5 → 6 for this hole. */
   onParChange?: (hole: number, par: number) => void;
+  /** Use this scoring view instead of the player's General setting (Play a round: always the pull-up tab). */
+  scoringViewOverride?: ScoringView;
+  /** Swipe left / right on the score boxes to go to the next / previous hole. */
+  swipeHoles?: boolean;
+  /** The page hides the bottom menu: the closed sheet sits at the very bottom instead of above the menu. */
+  noBottomMenu?: boolean;
+  /** Next hole (or Scorecard on the last hole) was tapped on this hole: Play sends every player's score for it. */
+  onNextHole?: (hole: number) => void;
+  /** Holes to mark red in the hole chips (Play: a finished Wolf hole with no partner picked). */
+  holeAlert?: (hole: number) => boolean;
+  /** The Card's name + total list under the table (Play hides it: the leaderboard has the totals). */
+  cardTotals?: boolean;
 }) {
   const [firstHole, endHole] = holeRange;
   const inPlay = (i: number) => i >= firstHole && i < endHole;
@@ -171,7 +183,9 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const [dragRange, setDragRange] = useState(0);
   const chipsRef = useRef<HTMLDivElement>(null);
   // The player's scorecard view (General settings). "slide" is the pull-up sheet; the others open scoring full screen.
-  const scoringView = useScoringView();
+  const preferredView = useScoringView();
+  const scoringView = scoringViewOverride ?? preferredView;
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const fullScreen = scoringView !== "slide";
 
   // Hold for scoring: pressing an empty spot anywhere on the page for HOLD_MS opens scoring. Buttons, links, fields
@@ -338,6 +352,8 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const complete = submittedHoles.every((_, i) => !inPlay(i) || holeFilled(i));
   // The last hole has no next hole: its button opens the Card (where Submit & Save is) once that hole is filled in.
   const lastHole = current === endHole - 1;
+  /** Next hole (Scorecard on the last hole): tells the page this hole is done, then moves on. */
+  const nextHole = () => { onNextHole?.(current); if (lastHole) setView("scorecard"); else setCurrent((value) => Math.min(value + 1, endHole - 1)); };
   // Each player is checked against the other phone: my scores for myself vs what my opponent entered for me, and what I
   // entered for my opponent vs what they entered for themselves. With a dev prefill the other phone's card is the starting
   // card (plus any otherCardDiff); otherwise opponentCardMatches stands in for both. Green = agrees, red = needs fixing.
@@ -397,7 +413,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const blocking = !fullScreen && (open || dragOffset !== null);
   // The GPS prototype (dev only): its satellite map fills the whole sheet, with the handle, pills and yardages on top.
   const showGpsMap = view === "gps" && process.env.NODE_ENV === "development";
-  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} data-coach="scoring" data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
+  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`} style={noBottomMenu ? { "--nav-zone": "env(safe-area-inset-bottom)" } as CSSProperties : undefined}><section ref={sheetRef} data-coach="scoring" data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && ((gps ? ["gps", "scorecard"] : ["scorecard"]) as ("gps" | "scorecard")[]).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";
@@ -424,7 +440,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       {view === "gps" ? showGpsMap ? <GolfGpsScreen holeNumber={current + 1} className={`${styles.gpsMap} ${fullScreen ? styles.gpsMapFull : styles.gpsMapFill}`} /> : <GpsSection hole={current + 1} holePar={holePar} />
         : view === "scorecard" ? <>
           {courseName && <h3 className={styles.scorecardCourse}>{courseName}</h3>}
-          <ScorecardSection solo={solo} stats={stats} holeRange={holeRange} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
+          <ScorecardSection solo={solo} stats={stats} holeRange={holeRange} showTotals={cardTotals} groupNames={group?.names} groupHoles={group?.strokes} par={par} parIsReference={parIsReference} holes={holes} opponentHoles={holesCompetitor} playerName={playerName} opponentName={opponentName} putts={putts} fairways={fairways} greens={greens}
             myTotal={sumOf(submittedHoles.map((h, i) => inPlay(i) ? h : null))} opponentTotal={sumOf(submittedOpponentHoles)} myCheck={check(meMatches)} opponentCheck={check(opponentMatches)} edits={edits} />
           {/* Always shown; only lights up once both cards are complete and the opponent's card agrees. */}
           {conflicts && conflicts.length > 0 && <div className={styles.conflicts} role="group" aria-label="Score conflicts">
@@ -459,7 +475,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
         {holes.map((h, i) => { if (!inPlay(i)) return null; const correctable = Boolean(correctionOpen?.own?.includes(i + 1) || correctionOpen?.attest?.includes(i + 1));
           return <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}${correctable ? ", can be corrected" : ""}`}
-          data-correctable={correctable || undefined}
+          data-correctable={correctable || undefined} data-alert={holeAlert?.(i) || undefined}
           className={`${styles.holeChip} ${h !== null ? styles.holeChipFilled : ""} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
           <span className={styles.holeChipNumber}>{i + 1}</span>
         </button>; })}
@@ -468,7 +484,16 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
 
       </div>
 
-      <div className={styles.stepperWrap}>
+      <div className={styles.stepperWrap}
+        onTouchStart={swipeHoles ? (event) => { const t = event.touches[0]; swipe.current = { x: t.clientX, y: t.clientY }; } : undefined}
+        onTouchEnd={swipeHoles ? (event) => {
+          const start = swipe.current; swipe.current = null;
+          const t = event.changedTouches[0];
+          if (!start || !t) return;
+          const dx = t.clientX - start.x, dy = t.clientY - start.y;
+          // A clear sideways swipe: left = next hole, right = previous.
+          if (Math.abs(dx) > 60 && Math.abs(dy) < 40) setCurrent((value) => Math.min(Math.max(value + (dx < 0 ? 1 : -1), firstHole), endHole - 1));
+        } : undefined}>
 
         <div className={styles.scoreSplit}>
           <ScoreCard label="My Score" strokes={strokes} holePar={shownPar} step={step} disabled={!ownEditable} compact />
@@ -504,9 +529,9 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       </>}
       {gameSlot?.(current)}
 
-      {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={() => setView("scorecard")}>
+      {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={nextHole}>
         Scorecard
-      </button> : <button type="button" className={styles.nextHoleButton} aria-label="Next hole" onClick={() => setCurrent((value) => Math.min(value + 1, endHole - 1))}>
+      </button> : <button type="button" className={styles.nextHoleButton} aria-label="Next hole" onClick={nextHole}>
         Next hole
       </button>}
       </>}
@@ -688,8 +713,8 @@ const shortName = (name: string) => (name.trim().split(/\s+/).at(-1) ?? name).sl
  * Three sections, each lightly tinted maroon with a narrow clear gap between them: the hole (Hole · Yds · Par, against the
  * left edge), your stats (FWY · GRN · PUT), then the scores (your last name · the opponent's last name, up to 8 letters).
  */
-function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
-  solo?: boolean; stats?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
+function ScorecardSection({ solo = false, stats = true, showTotals = true, holeRange = [0, HOLES], groupNames = [], groupHoles = [], par, parIsReference = false, holes, opponentHoles, playerName, opponentName, putts, fairways, greens, myTotal, opponentTotal, myCheck, opponentCheck, edits }: {
+  solo?: boolean; stats?: boolean; showTotals?: boolean; holeRange?: [number, number]; groupNames?: string[]; groupHoles?: (number | null)[][]; par?: number[]; parIsReference?: boolean; holes: (number | null)[]; opponentHoles: (number | null)[]; playerName: string; opponentName: string;
   myTotal: number | "—"; opponentTotal: number | "—"; myCheck: "ok" | "wrong" | null; opponentCheck: "ok" | "wrong" | null;
   putts: (number | null)[]; fairways: (Direction | null)[]; greens: (Direction | null)[]; edits?: ScoreEdit[];
 }) {
@@ -735,11 +760,11 @@ function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], 
     </table>
     {shownEdit !== null && editsFor(shownEdit).map((e, k) => <p key={k} className={styles.editNote}>Hole {e.hole} edited by organizer{e.kind === "pushThrough" ? " (push-through)" : ""}: {String(e.from ?? "—")} → {String(e.to ?? "—")}. {e.reason}</p>)}
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
-    <dl className={styles.scorecardTotals}>
+    {showTotals && <dl className={styles.scorecardTotals}>
       <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{displayTotal(myTotal)}</dd></div>
       {!solo && <div data-check={opponentCheck ?? undefined} aria-label={opponentCheck === "wrong" ? `${opponentName}: scores don't match` : undefined}><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{displayTotal(opponentTotal)}</dd></div>}
       {groupNames.map((name, g) => <div key={g}><dt title={name} style={{ "--chars": shortName(name).length } as CSSProperties}>{shortName(name)}</dt><dd>{displayTotal(sumOf(groupHoles[g].map((h, i) => i >= holeRange[0] && i < holeRange[1] ? h ?? par?.[i] : null)))}</dd></div>)}
-    </dl>
+    </dl>}
   </section>;
 }
 

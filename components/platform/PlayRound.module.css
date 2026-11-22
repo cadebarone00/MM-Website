@@ -79,3 +79,119 @@
 
 /* Light mode: the page goes white; its cream panels and maroon buttons stay as they are. */
 :global(html[data-mode="light"]) .page{background:#fff;color:var(--color-maroon-950)}
+/* One scorekeeper (2026-11-21): add a guest, the live card players watch, and a player's own stats. */
+.addGuest{display:flex;gap:8px}
+.addGuest input{flex:1;min-width:0;min-height:46px;padding:0 12px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:500 15px var(--font-barlow),sans-serif}
+.addGuest .secondary{min-height:46px;padding:0 14px;font-size:14px}
+.addGuest .secondary:disabled{opacity:.5;cursor:default}
+.roster b[data-status=guest]{color:var(--lm-ink-d6c5ca)}
+.myStats{display:grid;gap:10px;margin:14px 0 4px;padding:12px;border:1px solid #b99c6b55;border-radius:12px}
+.myStatsHole{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.myStatsHole button{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
+.myStatsHole button:disabled{opacity:.35;cursor:default}
+.myStatsPutts{min-width:28px;text-align:center;font-size:16px}
+.myStats .pickRow button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+/* Round setup in the trip builder's look (owner request 2026-11-21): dark page, gold-edged fields, gold selections. */
+.setup .note,.setup .blurb{color:#e1cec4}
+.setup .blurb{font-size:13px}
+.setup .needs{background:rgba(246,214,139,.14);color:#f6d68b}
+.setup .players li{min-height:52px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .players small{color:#e1cec4}
+.setup .remove{color:#fbf8f1}
+.setup .handicap{border:1px solid rgba(201,168,110,.35);border-radius:10px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .addPlayer input,.setup .addGuest input{min-height:52px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .addPlayer input::placeholder,.setup .addGuest input::placeholder{color:rgba(251,248,241,.45)}
+.setup .addGuest .secondary{min-height:52px;border-radius:12px;color:#fbf8f1}
+.setup .results button{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .results small{color:#e1cec4}
+.setup .teams button{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .teams button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+.setup .gameButton{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .courseSearch{position:relative}
+.pickedCourse{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #c9a86e;border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.pickedCourse span{display:grid;flex:1;min-width:0}
+.pickedCourse strong{font:600 17px/1.3 var(--font-barlow),sans-serif}
+.pickedCourse small{font-size:13px;color:#e1cec4}
+.pickedCourse button{border:0;background:transparent;color:#c9a86e;font:600 14px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wizToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:8px 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 16px/1.3 var(--font-barlow),sans-serif;cursor:pointer}
+.wizToggle small{display:block;margin-top:2px;font-size:12px;color:#e1cec4}
+.wizToggle input{width:44px;height:26px;accent-color:#c9a86e;flex:none}
+.wizChoices{margin:0;padding:0;border:0;min-width:0}
+.wizChoices legend{padding:0 0 6px;font:400 12px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
+.wizChoices>div{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.wizChoices button{min-height:48px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.wizChoices button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+.stakeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.review{display:grid;gap:8px;margin:0}
+.review>div{padding:12px 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08)}
+.review dt{font:400 12px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
+.review dd{margin:2px 0 0;font:500 16px/1.35 var(--font-barlow),sans-serif;color:#fbf8f1}
+.money{font-style:normal;font-weight:700}
+.money[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
+.money[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
+.setup .gameButton small{color:#e1cec4}
+/* Round 3 (2026-11-21): leaderboard, tap-a-name scorecards with a P&L row, Double bet, the Wolf card. Colors follow
+   the text color, so they read on the light scoring sheet (scorekeeper) and the dark page (friends). */
+.board{display:grid;gap:6px;margin:4px 0;color:inherit}
+.boardHead{margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;opacity:.8}
+.boardHead b{font-weight:700;opacity:1}
+.boardName{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.board .money{min-width:44px;text-align:right}
+.playerCard{display:grid;gap:8px;margin:6px 0 4px;overflow-x:auto}
+.playerCard table{width:100%;border-collapse:collapse;font:500 12px/1 var(--font-barlow),sans-serif}
+.playerCard th,.playerCard td{padding:6px 2px;text-align:center;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.playerCard th[scope=row]{width:44px;padding-left:4px;text-align:left;font-weight:600}
+.playerCard thead th{border-top:0;opacity:.7}
+.playerCard sup{margin-left:1px;font-size:8px;color:#c9a86e}
+.playerCardPar td,.playerCardPar th{opacity:.55}
+.playerCard td[data-vs="-1"]{color:var(--lm-ink-b9e0b0,#2e7d32);font-weight:700}
+.playerCardPnl td{font-weight:700}
+.playerCardPnl td[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
+.playerCardPnl td[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
+.doubleBet{width:100%;min-height:44px;border:1px dashed #b99c6b;border-radius:12px;background:transparent;color:inherit;font:700 15px var(--font-barlow),sans-serif;letter-spacing:.02em;cursor:pointer}
+.doubleBet[aria-pressed=true]{border-style:solid;background:#c9a86e;border-color:#c9a86e;color:#240001}
+.wolfCard{display:grid;gap:8px;padding:12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:14px}
+.wolfTitle{margin:0;font:500 17px/1.3 var(--font-spectral),Georgia,serif}
+.wolfHint{margin:0;font-size:13px;opacity:.75}
+.wolfInitial{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,currentColor 12%,transparent);font-size:13px;font-weight:700}
+
+/* Leaderboard in the trip's look (GolfTripMatch.module.css classes); these add the caption, $ column and open card. */
+.board{gap:6px}
+.board .boardName{flex:1;min-width:0;overflow:hidden;font:600 16px/1.2 var(--font-spectral),Georgia,serif;text-overflow:ellipsis;white-space:nowrap}
+.board .money{font-size:14px}
+.boardCompact .boardName{font-size:15px}
+.boardCard{padding:0 0 10px;list-style:none}
+/* Wolf: the other players as a list (one row each), Lone Wolf last. */
+.wolfName{flex:1;min-width:0}
+
+/* Wolf (owner 2026-11-22): one horizontal row — each player a column split by thin lines, Lone Wolf last; no pills. */
+.wolfRow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent);border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+.wolfRow button{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:10px 4px;border:0;border-left:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfRow button:first-child{border-left:0}
+.wolfRow button[aria-pressed=true]{background:color-mix(in srgb,#c9a86e 24%,transparent);box-shadow:inset 0 -3px 0 #c9a86e}
+.wolfRow button[aria-pressed=true] .wolfInitial{background:#c9a86e;color:#240001}
+.wolfRow .wolfName{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Scorecard alignment (owner 2026-11-22): fixed, equal hole columns so the card looks the same whatever's been scored,
+   and the front and back nine line up; the ×2 mark sits in the corner instead of widening its hole. */
+.playerCard table{table-layout:fixed}
+.playerCard th,.playerCard td{position:relative;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.playerCard tr>:first-child{width:48px}
+.playerCard tr>:last-child{width:40px}
+.playerCard sup{position:absolute;top:2px;right:1px;margin:0;line-height:1}
+
+/* Score marks (owner 2026-11-22): every number and shape white — circle = birdie (double: eagle), square = bogey
+   (double: double bogey or worse), par plain. */
+.scoreMark{display:inline-grid;place-items:center;width:22px;height:22px;box-sizing:border-box;font-weight:700;line-height:1;color:#fff}
+.scoreMark[data-mark=birdie]{border:1px solid #fff;border-radius:50%}
+.scoreMark[data-mark=eagle]{border:1px solid #fff;border-radius:50%;outline:1px solid #fff;outline-offset:2px}
+.scoreMark[data-mark=bogey]{border:1px solid #fff}
+.scoreMark[data-mark=double]{border:1px solid #fff;outline:1px solid #fff;outline-offset:2px}
+.playerCard td{overflow:visible}
+
+/* Round settings (owner 2026-11-22): the gear top right opens a sheet with the players, Manage, the tip and Leave. */
+.settingsButton{margin-left:auto;border:0}
+.settingsBody{display:grid;gap:12px;padding:18px 18px calc(18px + env(safe-area-inset-bottom));color:#fbf8f1}
+.settingsTitle{margin:0;font:600 22px/1.2 var(--font-spectral),Georgia,serif}
+.settingsLabel{margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1cec4}
+.settingsBody .roster{margin:0}

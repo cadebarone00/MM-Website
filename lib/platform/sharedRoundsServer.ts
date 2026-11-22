@@ -2,9 +2,11 @@ import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { PersonalRoundSetup } from "./personalRound.ts";
 import type { HoleInput } from "./roundGames.ts";
+import type { ShotResult } from "./playerRounds.ts";
 
 /**
- * Invite-only shared rounds (supabase/shared_rounds.sql). Profile ids always come from the signed-in session — callers
+ * Shared rounds (supabase/shared_rounds.sql + shared_round_scorekeeper.sql: the host keeps score, guests, player stats).
+ * Profile ids always come from the signed-in session — callers
  * pass `user.id`, never a value from the request body. Never import this from a client component.
  * "not_installed" = shared_rounds.sql hasn't been run in this database yet.
  */
@@ -13,7 +15,9 @@ export type SharedPlayerStatus = "invited" | "joined" | "declined" | "removed";
 export interface SharedRound {
   id: string; host: string; status: "live" | "ended"; setup: PersonalRoundSetup; startedAt: string;
   players: { profileId: string; name: string; position: number; status: SharedPlayerStatus }[];
-  holes: { profileId: string; hole: number; strokes: number | null }[];
+  holes: { profileId: string; hole: number; strokes: number | null; putts?: number | null; fairway?: ShotResult | null; green?: ShotResult | null }[];
+  /** Missing until shared_round_scorekeeper.sql is run. */
+  guestHoles?: { guestId: string; hole: number; strokes: number | null }[];
   picks: { hole: number; pick: HoleInput }[];
 }
 export interface RoundInvite { roundId: string; hostName: string; setup: PersonalRoundSetup; startedAt: string }
@@ -40,6 +44,12 @@ export const inviteToSharedRound = (host: string, round: string, profile: string
 export const removeFromSharedRound = (host: string, round: string, profile: string) => rpc<null>("remove_from_shared_round", { p_host: host, p_round: round, p_profile: profile });
 export const setSharedStrokes = (me: string, round: string, player: string, hole: number, strokes: number | null) =>
   rpc<null>("set_shared_round_strokes", { p_profile: me, p_round: round, p_player: player, p_hole: hole, p_strokes: strokes });
+export const setGuestStrokes = (me: string, round: string, guest: string, hole: number, strokes: number | null) =>
+  rpc<null>("set_shared_round_guest_strokes", { p_profile: me, p_round: round, p_guest: guest, p_hole: hole, p_strokes: strokes });
+export const setSharedStats = (me: string, round: string, hole: number, stats: { putts: number | null; fairway: ShotResult | null; green: ShotResult | null }) =>
+  rpc<null>("set_shared_round_stats", { p_profile: me, p_round: round, p_hole: hole, p_putts: stats.putts, p_fairway: stats.fairway, p_green: stats.green });
+/** Whether shared_round_scorekeeper.sql has been run (guests and player stats need it). */
+export const scorekeeperReady = async () => (await rpc<boolean>("shared_round_guests_ready", {})).ok;
 export const setSharedPick = (me: string, round: string, hole: number, pick: HoleInput) => rpc<null>("set_shared_round_pick", { p_profile: me, p_round: round, p_hole: hole, p_pick: pick });
 export const updateSharedRound = (host: string, round: string, setup: PersonalRoundSetup | null, end: boolean) =>
   rpc<null>("update_shared_round", { p_host: host, p_round: round, p_setup: setup, p_end: end });

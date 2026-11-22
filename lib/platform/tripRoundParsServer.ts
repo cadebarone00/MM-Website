@@ -1,8 +1,9 @@
+import { GolfProviderError } from "./golfGps/providers/GolfCourseProvider";
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { GolfProviderError } from "./golfGps/providers/GolfCourseProvider";
 import { createGolfCourseApiProvider } from "./golfGps/providers/golfCourseApi/provider";
-import { getCourseLibrary } from "./golfGps/repository/courseLibrary";
+import { findLibraryCourse } from "./golfGps/repository/courseLibrarySearch";
+import { libraryIdFromRef } from "./golfGps/courseRefs";
 import type { SavedGolfTrip } from "./golfTripCreate";
 import { loadSavedTripSetup } from "./savedTripSetupServer";
 import { coursePars, roundCoursePick, type CourseParsResult } from "./tripRoundPars";
@@ -25,8 +26,8 @@ export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: numb
   const teeName = pick.tees?.tee ?? null;
   try {
     let course = null;
-    try { course = (await getCourseLibrary().findCourseByExternalId("golf_course_api", pick.ref))?.course ?? null; } catch { /* library not set up: use the provider */ }
-    course ??= (await createGolfCourseApiProvider().getCourseDetail(pick.ref))?.course ?? null;
+    try { course = (await findLibraryCourse(pick.ref))?.course ?? null; } catch { /* library not set up: use the provider */ }
+    if (!course && !libraryIdFromRef(pick.ref)) course = (await createGolfCourseApiProvider().getCourseDetail(pick.ref))?.course ?? null;
     if (!course) return { status: "not-found", ref: pick.ref, name: pick.name, tee: teeName };
     const result: CourseParsResult = coursePars(pick.ref, course, pick.tees);
     return result.ok ? { status: "ok", ref: pick.ref, name: pick.name, tee: result.tee, pars: result.pars, rating: result.rating, slope: result.slope }

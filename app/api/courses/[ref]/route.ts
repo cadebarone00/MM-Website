@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getCoursePreview } from "@/lib/platform/golfGps/coursePreview";
 import { GolfProviderError } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
 import { createGolfCourseApiProvider } from "@/lib/platform/golfGps/providers/golfCourseApi/provider";
-import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
+import { libraryIdFromRef } from "@/lib/platform/golfGps/courseRefs";
+import { findLibraryCourse } from "@/lib/platform/golfGps/repository/courseLibrarySearch";
 import { getGpsProvisioner } from "@/lib/platform/golfGps/gpsProvisioningServer";
 
 /**
@@ -14,10 +15,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ref
   const { ref } = await params;
   const headers = { "Cache-Control": "no-store" };
   try {
-    const library = getCourseLibrary();
     const course = await getCoursePreview(ref, {
-      findSaved: (id) => library.findCourseByExternalId("golf_course_api", id),
-      getDetail: (id) => createGolfCourseApiProvider().getCourseDetail(id),
+      findSaved: (id) => findLibraryCourse(id),
+      getDetail: (id) => libraryIdFromRef(id) ? Promise.resolve(null) : createGolfCourseApiProvider().getCourseDetail(id),
       canPrepare: (stored) => getGpsProvisioner().canPrepare(stored),
     });
     if (!course) return NextResponse.json({ ok: false, code: "not_found" }, { status: 404, headers });

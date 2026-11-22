@@ -3,6 +3,8 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { golfTripCreateFailure, golfTripPayloadFromBody, golfTripUrl } from "@/lib/platform/golfTripCreate";
 import { golfTripListResponse } from "@/lib/platform/golfTripReadApi";
+import { tripCoursePicks } from "@/lib/platform/tripCreateCourses";
+import { prepareTripCourses } from "@/lib/platform/tripCreateCoursesServer";
 
 export async function GET(request: Request) {
   return golfTripListResponse(request);
@@ -11,7 +13,8 @@ export async function GET(request: Request) {
 /**
  * Create Golf Trip: saves the questionnaire as a trip owned by the signed-in golfer's profile, in one
  * all-or-nothing create_golf_trip call. The same requestId always returns the same trip, so a
- * double tap or a retry never makes two.
+ * double tap or a retry never makes two. Courses picked from the search then go into Trip Settings with their scorecard
+ * pars (prepareTripCourses), before the reply, so the trip opens ready to score.
  */
 export async function POST(request: Request) {
   const current = await getCurrentProfile();
@@ -40,5 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: failure.error }, { status: failure.status });
   }
 
+  const picks = tripCoursePicks(body as Record<string, unknown>, parsed.payload.rounds.map((round) => round.roundNumber));
+  await prepareTripCourses(current, current.profile.profileId, tripId, picks);
   return NextResponse.json({ ok: true, tripId, url: golfTripUrl(tripId) }, { status: 201 });
 }
