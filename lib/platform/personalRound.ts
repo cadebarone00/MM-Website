@@ -1,3 +1,4 @@
+import type { SideGames } from "./sideGames.ts";
 import type { GolfCourse } from "./golfGps/domain";
 import { buildPlayerRound, holesFromCard, playerRoundId, type PlayerRound, type PlayerRoundTee, type ScoredCard } from "./playerRounds.ts";
 import { gameDef, type GameConfig } from "./roundGames.ts";
@@ -54,6 +55,8 @@ export interface PersonalRoundSetup {
   playerStats?: boolean;
   /** Wolf / Sixes playing order (profile ids and guest ids), set or shuffled by the host in Round settings. */
   playerOrder?: string[];
+  /** Side games, each with the $ its winner collects from every other player (lib/platform/sideGames.ts). */
+  sideGames?: SideGames;
 }
 
 /** Hole indexes (0-based, end exclusive) for the holes choice. */
