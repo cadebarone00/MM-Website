@@ -79,3 +79,23 @@
 
 /* Light mode: the page goes white; its cream panels and maroon buttons stay as they are. */
 :global(html[data-mode="light"]) .page{background:#fff;color:var(--color-maroon-950)}
+/* One scorekeeper (2026-11-21): add a guest, the live card players watch, and a player's own stats. */
+.addGuest{display:flex;gap:8px}
+.addGuest input{flex:1;min-width:0;min-height:46px;padding:0 12px;border:1px solid #b99c6b;border-radius:10px;background:#fffdf8;color:var(--app-maroon);font:500 15px var(--font-barlow),sans-serif}
+.addGuest .secondary{min-height:46px;padding:0 14px;font-size:14px}
+.addGuest .secondary:disabled{opacity:.5;cursor:default}
+.roster b[data-status=guest]{color:var(--lm-ink-d6c5ca)}
+.liveCard{overflow-x:auto;margin:4px 0 14px;border:1px solid #b99c6b55;border-radius:12px}
+.liveCard table{width:max-content;min-width:100%;border-collapse:collapse;font:500 13px/1 var(--font-barlow),sans-serif}
+.liveCard th,.liveCard td{min-width:26px;padding:8px 4px;text-align:center;border-top:1px solid #b99c6b33}
+.liveCard thead tr:first-child th{border-top:0;font-weight:600;opacity:.75}
+.liveCard th[scope=row]{position:sticky;left:0;z-index:1;min-width:64px;padding-left:10px;text-align:left;background:var(--lm-bg-240001,#240001);font-weight:600}
+.liveCardPar td,.liveCardPar th{opacity:.6;font-size:12px}
+.liveCard td[data-vs="-1"]{color:var(--lm-ink-b9e0b0);font-weight:700}
+.liveCard td[data-vs="1"]{color:var(--lm-ink-f6d68b)}
+.myStats{display:grid;gap:10px;margin:14px 0 4px;padding:12px;border:1px solid #b99c6b55;border-radius:12px}
+.myStatsHole{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.myStatsHole button{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
+.myStatsHole button:disabled{opacity:.35;cursor:default}
+.myStatsPutts{min-width:28px;text-align:center;font-size:16px}
+.myStats .pickRow button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}

@@ -5882,3 +5882,94 @@ faster too, but it touches the step rules — left for later if still wanted.)
 
 **Done looks like:** the waiting screen is maroon with the logo; type check, lint and tests pass; `npm run build:app`
 succeeds; checked in the browser at phone width that a sign-up step's waiting screen is maroon.
+
+## Create a trip: course search with a drop-down + scorecard ready (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (owner: tees later in Trip Settings)
+
+**What the owner asked for:** on the create-a-trip Courses step, as you type a round's course a drop-down suggests
+courses from the golf course scorecard API; picking one sets that round up with its scorecard, ready for the trip.
+
+**What exists today:**
+- Create a trip → **Courses** step (`components/platform/GolfTripCoursesStep.tsx`): one row per round with a **plain text
+  box** (its own note says "a course search API comes later"). Only the typed name is saved (`golf_trip_rounds.course_name`).
+- **Trip Settings** already has the real thing: `CourseSearchBar` (`TripScheduleCoursePicker.tsx`) searches
+  `/api/courses/search` (OpenGolfAPI) as you type and saves the pick (`pickedCourses` in `golf_trip_setup`); then
+  **Round pars** loads that course's scorecard (`loadRoundCoursePars`) and the organizer confirms it
+  (`confirm_trip_round_pars`, plus the tee's rating + slope when one tee is picked).
+
+**The change:**
+1. **Drop-down on the Courses step.** Each round's box becomes the same course search used in Trip Settings: after 2
+   letters, a moment after typing stops, a list drops down (course name · city, state · par). Tap one → the row shows the
+   picked course with an × to clear it. If the course isn't in the list, a last row **Use "what you typed"** keeps a plain
+   name like today (no scorecard).
+2. **Saved with the trip.** The questionnaire keeps each pick (name + handle + place) for the Review step and Back/Next.
+   When the trip is created, the server also:
+   - saves the picks into the trip's settings (`pickedCourses`, same slots Trip Settings uses), so Trip Settings shows
+     them already picked;
+   - loads each picked course's scorecard (course library first, then OpenGolfAPI — the same code as Round pars) and
+     confirms the round's **pars from the course** (as the organizer), so scoring is ready the moment the trip exists.
+3. **Never blocks creating the trip.** If the course search or scorecard can't be reached, or the course has no full
+   18-hole scorecard, the trip is still created with the course name; Trip Settings → Round pars works as today to finish it.
+
+**Tees (question below):** the course's scorecard pars are the same from every tee on almost every course. A tee only
+matters for **course rating + slope** (handicap). Plan default: **no tee at create** — the pars are ready, and the
+organizer picks the tee later in Trip Settings (which adds rating + slope so rounds count toward handicap).
+
+**Who:** organizers creating a trip, on the website and in the iPhone app.
+
+**Data:** no new tables or SQL — uses `golf_trip_setup` (`save_golf_trip_setup`) and `confirm_trip_round_pars`, which exist.
+No new services: OpenGolfAPI is already used.
+
+**Done looks like:** typing on the Courses step shows the drop-down; picking fills the row; the Review step shows it;
+creating the trip saves the course to Trip Settings and the round's pars come from the scorecard; a typed-only name or a
+scorecard failure still creates the trip; tests for the slot mapping and the "never blocks" rule; type check, lint and
+tests pass; `npm run build:app` succeeds; checked in the browser at phone width.
+
+**Question for the owner:** pick the **tee at create** too (one more tap per round, rounds can count toward handicap right
+away), or **later in Trip Settings** (plan default)?
+
+## Play a round: one scorekeeper, join code, guests (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (A: yes; B: host option for players' own stats; `supabase/shared_round_scorekeeper.sql` NOT run yet)
+
+**What the owner asked for:** only one person in the group needs the app. The organizer (host) is the scorekeeper.
+Friends with the app join with an invite code and watch live scores and standings. Friends without the app are added
+as guests by name.
+
+**What exists today (built Oct–Nov 2026):** host + up to 4 friends, all Maroon accounts (invite by search, or the
+"Let friends join with a code" invite card — `join_codes.sql`); no guests; every player enters their own score and the
+host can enter anyone's; each player taps Submit & Save on their own phone to put the round on their profile.
+
+**The change:**
+1. **Joining (app users):** unchanged ways in — the invite code / link (Play → "Have a code?") or the host's search
+   invite. Still up to 5 in the group, guests included.
+2. **Guests (no app):** in round setup and in the host menu, **Add a guest** → type a name (e.g. "Uncle Rob"). Guests
+   get a scorecard row like everyone else. Their scores stay on this round only — never saved to any profile.
+3. **One scorekeeper:** only the **host** enters scores (every player, every hole). Players who joined with the app see
+   the **same live card and game standings, view-only** (no score boxes to type in). Scores sync every few seconds as now.
+4. **Saving:** the **host's Submit & Save** saves the round to the host's profile **and** to every joined app player's
+   profile at once (Profile → Rounds, counts toward handicap when it qualifies, the host as attester — same rule as
+   League group cards). Joined players don't have to do anything. Guests are never saved.
+5. **Stats (owner answer B):** round setup / host menu has **"Let players track their own stats"** (off by default).
+   - Off: joined players are fully view-only; their saved rounds have strokes only.
+   - On: in a joined player's view, **their own putts / fairway / green are the only thing they can edit** (strokes stay
+     host-only; other players stay view-only). Those stats are saved with their round.
+   The host's own putts / fairways / greens stay optional for the host as now.
+
+**Who:** anyone playing a round with friends, on the website and in the iPhone app.
+
+**Data — new SQL (owner runs it), `supabase/shared_round_scorekeeper.sql`** (prereqs `shared_rounds.sql`,
+`join_codes.sql`, `player_rounds.sql`):
+- guests on a round (name, order in the group) and their hole scores;
+- only the host can write strokes; a player can write only their own putts / fairway / green, and only when the host turned stats on;
+- the stats option on the round;
+- the host's submit publishes each joined player's round to their profile (`publish_player_round`), once.
+Tested against Postgres before you run it; safe to run twice. Until it's run: starting a round with guests or player stats
+says it needs the database update, and the host's submit can't save friends' rounds (the host still keeps score).
+
+**Not in this change:** push notifications; guests turning into accounts later; letting a player take over scoring.
+
+**Done looks like:** host starts a round, adds a guest and shares the code; a friend joins with the code and sees the
+live card and standings but can't type scores; the host scores all players; Submit & Save puts the round on the host's
+and the friend's profiles (not the guest's); tests for the rules + the SQL; type check, lint, full tests pass;
+`npm run build:app` succeeds; checked in the browser at phone width.
+
+**Owner answers (2026-11-21):** A — yes, host-scored rounds count toward the friend's handicap. B — a host option lets
+players track their own putts / fairways / greens (the only thing they can edit).

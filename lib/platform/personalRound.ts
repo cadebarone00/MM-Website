@@ -30,6 +30,8 @@ export function customCourse(ref: string, name: string, place: string, par?: num
 
 /** Someone invited to the round (a Maroon account). */
 export interface RoundPlayer { name: string; profileId: string | null; handicap: number | null }
+/** Someone playing without the app: the host keeps their score; it stays on this round only (supabase/shared_round_scorekeeper.sql). */
+export interface RoundGuest { id: string; name: string; handicap: number | null }
 
 export interface PersonalRoundSetup {
   course: ScoringCourse;
@@ -46,6 +48,10 @@ export interface PersonalRoundSetup {
   myHandicap?: number | null;
   /** The group's game, if any. */
   game?: GameConfig | null;
+  /** Guests the host scores for (no app). Up to 5 in a round, guests included. */
+  guests?: RoundGuest[];
+  /** Round with friends: joined players may enter their own putts / fairway / green (strokes stay with the host). */
+  playerStats?: boolean;
 }
 
 /** Hole indexes (0-based, end exclusive) for the holes choice. */
