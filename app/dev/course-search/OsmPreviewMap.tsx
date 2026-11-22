@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
+import { loadMapLibre } from "@/lib/platform/golfGps/loadMapLibre";
 import { usgsSatelliteStyle } from "@/lib/platform/golfGps/usgsImagery";
 import styles from "./CourseSearch.module.css";
 
@@ -38,7 +39,7 @@ export function OsmPreviewMap({ shapes, attribution }: { shapes: PreviewShape[];
     if (!container.current) return;
     let cancelled = false;
     let map: import("maplibre-gl").Map | null = null;
-    import("maplibre-gl").then(({ Map, LngLatBounds }) => {
+    loadMapLibre().then(({ Map, LngLatBounds }) => {
       if (cancelled || !container.current) return;
       map = new Map({ container: container.current, style: usgsSatelliteStyle("#1d2128"), dragRotate: false, touchPitch: false, maxPitch: 0 });
       const features: GeoJSON.Feature[] = shapes.flatMap((shape): GeoJSON.Feature[] => {

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import { moveAlong } from "@/lib/platform/golfGps/distance";
 import { holeCamera } from "@/lib/platform/golfGps/holeView";
+import { loadMapLibre } from "@/lib/platform/golfGps/loadMapLibre";
 import type { GpsHole, LatLng, PlayerFix } from "@/lib/platform/golfGps/types";
 import { usgsSatelliteStyle } from "@/lib/platform/golfGps/usgsImagery";
 import styles from "./GolfGps.module.css";
@@ -72,7 +73,7 @@ export function GolfGpsMap({ hole, player, target, onTap, recenterToken, focusPl
     if (!containerRef.current) return;
     let cancelled = false;
     let created: MapLibreMap | null = null;
-    import("maplibre-gl").then(({ Map, Marker }) => {
+    loadMapLibre().then(({ Map, Marker }) => {
       if (cancelled || !containerRef.current) return;
       markerClassRef.current = Marker;
       const map = created = new Map({
