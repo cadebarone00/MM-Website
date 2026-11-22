@@ -6134,3 +6134,4 @@ scorecard as two 9-hole rows with a $ row per hole. Leaderboard first on every p
 into "N players · Manage". The bottom menu is hidden on /rounds/new so the scoring tab sits at the bottom
 (`noBottomMenu`). "Allow doubles" starts on for points games. The Wolf pick is a list (one row per player, Lone Wolf
 last), not pill buttons.
+- **Owner (2026-11-22): no leaderboard inside the scoring tab** — only score entry, the Wolf pick and Double bet; the leaderboard is on the main screen.

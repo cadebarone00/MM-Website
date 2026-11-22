@@ -493,7 +493,6 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const [attempt, setAttempt] = useState(0);
   const [card, setCard] = useState(saved.card);
-  const [liveCard, setLiveCard] = useState(saved.card);
   const [menu, setMenu] = useState<null | "players" | "game">(null);
   const [pickingGame, setPickingGame] = useState(false);
   /** Changes sent but not confirmed yet ("profile:hole" / "guest:id:hole" → strokes; "pick:hole" → pick; "stats:hole" → stats), so a poll never undoes them. */
@@ -563,13 +562,9 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const handicapFor = (p: Player) => p.profileId === snap.host ? setup.myHandicap ?? null : setup.players?.find((x) => x.profileId === p.profileId)?.handicap ?? null;
   // Everyone in the game, in order: players (host first) then guests.
   const gamePlayers = [...active.map((p) => ({ name: nameOf(p), handicap: handicapFor(p) })), ...guests.map((g) => ({ name: firstName(g.name), handicap: g.handicap }))];
-  const rowFor = (p: Player) => p.profileId === me && isHost ? liveCard?.strokes.map((s, h) => s ?? myRemote[h]) ?? myRemote : strokesOf(p.profileId);
-  const allRows = () => [...active.map(rowFor), ...guests.map((g) => guestRow(g.id))];
-  const touched = (h: number) => allRows().some((row) => row[h] != null) || (isHost && liveCard ? liveCard.strokes[h] !== par[h] || liveCard.putts[h] != null : false);
   const gameCourse = { par, strokeIndex: setup.course.strokeIndex, rating: setup.tee?.rating ?? null, slope: setup.tee?.slope ?? null };
   const def = setup.game ? gameDef(setup.game.id) : null;
   const gameFits = !def || def.players.includes(gamePlayers.length);
-  const standingsNow = (upTo: number) => setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes(allRows(), par, upTo, touched), inputs) : null;
   // What's actually been entered (no par for untouched holes): the leaderboard, friends' standings and the P&L use this.
   const enteredRows = () => [...active.map((p) => strokesOf(p.profileId)), ...guests.map((g) => guestRow(g.id))];
   const boardRows = () => [...active.map((p) => ({ name: nameOf(p), strokes: strokesOf(p.profileId) })), ...guests.map((g) => ({ name: firstName(g.name), strokes: guestRow(g.id) }))];
@@ -641,7 +636,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}
       onCardChange={(next) => {
-        setLiveCard(next); update(saved, { card: next });
+        update(saved, { card: next });
         // Send only the holes I changed (compared with what the round already has for me, untouched = par).
         const sent = sentMine.current ??= par.map((p, h) => myRemote[h] ?? p);
         next.strokes.forEach((s, h) => { if (h >= range[0] && h < range[1] && s !== sent[h]) { sent[h] = s; sendStrokes(me, h, s); } });
@@ -656,17 +651,16 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           row.forEach((s, h) => { if (s !== before[h]) { if (guest) sendGuestStrokes(guest.id, h, s); else sendStrokes(others[g].profileId, h, s); } });
         }),
       } : undefined}
-      gameSlot={(hole) => <div className={styles.game}>
-        {setup.game && gameFits && <HolePicks game={setup.game} hole={hole} range={range} names={gamePlayers.map((p) => p.name)} input={inputs[hole]} onChange={(part) => {
+      gameSlot={setup.game && gameFits ? (hole) => <div className={styles.game}>
+        {<HolePicks game={setup.game!} hole={hole} range={range} names={gamePlayers.map((p) => p.name)} input={inputs[hole]} onChange={(part) => {
           const next = { ...inputs[hole], ...part };
           void send(`pick:${hole}`, next, { action: "pick", hole: hole + 1, pick: next });
         }} />}
-        {setup.game?.doubles && gameFits && !ended && <button type="button" className={styles.doubleBet} aria-pressed={inputs[hole]?.doubled === true} onClick={() => {
+        {setup.game!.doubles && !ended && <button type="button" className={styles.doubleBet} aria-pressed={inputs[hole]?.doubled === true} onClick={() => {
           const next = { ...inputs[hole], doubled: !inputs[hole]?.doubled };
           void send(`pick:${hole}`, next, { action: "pick", hole: hole + 1, pick: next });
         }}>{inputs[hole]?.doubled ? "Doubled ×2 · tap to undo" : "Double bet"}</button>}
-        <Leaderboard compact range={range} par={par} hole={hole} result={standingsNow(hole)} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} />
-      </div>} />}
+      </div> : undefined} />}
     {!isHost && <section className={styles.panel}>
       {setup.playerStats && !ended && <MyStats range={range} par={par} holes={snap.holes.filter((h) => h.profileId === me)} pending={pending}
         onChange={(hole, stats) => void send(`stats:${hole}`, stats, { action: "stats", hole: hole + 1, ...stats })} />}
