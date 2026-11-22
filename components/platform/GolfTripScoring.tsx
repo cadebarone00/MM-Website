@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -99,6 +99,8 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   scoringViewOverride?: ScoringView;
   /** Swipe left / right on the score boxes to go to the next / previous hole. */
   swipeHoles?: boolean;
+  /** The page hides the bottom menu: the closed sheet sits at the very bottom instead of above the menu. */
+  noBottomMenu?: boolean;
 }) {
   const [firstHole, endHole] = holeRange;
   const inPlay = (i: number) => i >= firstHole && i < endHole;
@@ -403,7 +405,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const blocking = !fullScreen && (open || dragOffset !== null);
   // The GPS prototype (dev only): its satellite map fills the whole sheet, with the handle, pills and yardages on top.
   const showGpsMap = view === "gps" && process.env.NODE_ENV === "development";
-  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`}><section ref={sheetRef} data-coach="scoring" data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
+  return <>{blocking && <div className={styles.backdrop} aria-hidden />}<div className={`${styles.frame} ${fullScreen ? styles.frameFull : ""} ${blocking ? styles.frameAbove : ""}`} style={noBottomMenu ? { "--nav-zone": "env(safe-area-inset-bottom)" } as CSSProperties : undefined}><section ref={sheetRef} data-coach="scoring" data-scroll-modal={blocking || undefined} className={`${styles.sheet} ${open ? styles.open : ""} ${dragOffset !== null ? styles.dragging : ""} ${fastClose ? styles.fastClose : ""} ${fullScreen ? styles.sheetFull : ""} ${fullScreen && view === "gps" ? styles.gpsFullScreen : ""} ${!fullScreen && showGpsMap ? styles.gpsOverlay : ""}`} style={style} aria-label="Scoring">
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && ((gps ? ["gps", "scorecard"] : ["scorecard"]) as ("gps" | "scorecard")[]).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";

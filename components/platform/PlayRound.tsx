@@ -2,7 +2,7 @@
 
 import { DatePicker } from "@/components/platform/DatePicker";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { CourseSearchBar } from "./TripScheduleCoursePicker";
@@ -19,6 +19,7 @@ import type { PlayerRound, ScoredCard, ShotResult } from "@/lib/platform/playerR
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { SharedRound } from "@/lib/platform/sharedRoundsServer";
 import styles from "./PlayRound.module.css";
+import trip from "./GolfTripMatch.module.css";
 import { AppSelect } from "@/components/platform/AppSelect";
 
 /** The round in progress, kept on this phone so a refresh or closed app doesn't lose it. `sharedId` = an invite round in the database. */
@@ -161,7 +162,8 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
   const [stake, setStake] = useState("");
   const [nassau, setNassau] = useState(["", "", ""]);
   const [autoPress, setAutoPress] = useState(false);
-  const [doubles, setDoubles] = useState(false);
+  // On by default for points games (owner: the Double bet button should be there); the toggle turns it off.
+  const [doubles, setDoubles] = useState(true);
   const [teams, setTeams] = useState<number[]>([]);
   const [pickingGame, setPickingGame] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -470,7 +472,7 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
       <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
         leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Discard this round? Scores on this phone will be deleted.")) onDiscard(); }}>Discard round</button>} />
     </section>
-    {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles
+    {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu
       par={setup.course.par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit}
       onCardChange={(next) => update(saved, { card: next })}
       onParChange={setup.course.custom ? (hole, value) => { const next = withPar(setup, hole, value); setSetup(next); update(saved, { setup: next }); saveBuiltPars(next.course.ref, next.course.par); } : undefined} />}
@@ -592,9 +594,10 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
       <h1 className={styles.title}>{setup.course.name}</h1>
       <p className={styles.place}>{[setup.tee?.name, holesLabel(setup.holes), def?.name, ended ? "Round ended" : null].filter(Boolean).join(" · ")}</p>
       {problem && <p className={styles.error} role="alert">{problem}</p>}
-      {/* Friends: the leaderboard first (it lists everyone); the scorekeeper keeps the roster to manage players. */}
-      {!isHost && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} />}
-      {isHost && save.status !== "saved" && <ul className={styles.roster} aria-label="Players">
+      {/* The leaderboard first for everyone; the scorekeeper's player list folds into "N players · Manage". */}
+      {save.status !== "saved" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} />}
+      {isHost && save.status !== "saved" && <details className={styles.manage}><summary>{active.length + guests.length} players</summary>
+      <ul className={styles.roster} aria-label="Players">
         {active.map((p) => <li key={p.profileId}><span>{p.profileId === me ? "You" : p.name}{p.profileId === snap.host && <small>Scorekeeper</small>}</span>
           <b data-status={p.status}>{p.status === "joined" ? "Joined" : "Invited"}</b>
           {isHost && p.profileId !== me && !ended && <button type="button" className={styles.remove} aria-label={p.status === "invited" ? `Cancel ${p.name}'s invite` : `Remove ${p.name}`}
@@ -604,25 +607,26 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           {isHost && !ended && <button type="button" className={styles.remove} aria-label={`Remove ${g.name}`}
             onClick={() => { if (window.confirm(`Remove ${g.name} from the round?`)) setGuests(guests.filter((x) => x.id !== g.id)); }}><X size={16} aria-hidden="true" /></button>}
         </li>)}
-      </ul>}
-      {isHost && !ended && save.status !== "saved" && <div className={styles.hostMenu} role="group" aria-label="Host">
+      </ul>
+      {!ended && <div className={styles.hostMenu} role="group" aria-label="Host">
         <button type="button" className={styles.secondary} aria-expanded={menu === "players"} onClick={() => setMenu(menu === "players" ? null : "players")}>Add players</button>
         <button type="button" className={styles.secondary} aria-expanded={menu === "game"} onClick={() => setMenu(menu === "game" ? null : "game")}>Change game</button>
         <button type="button" className={styles.secondary} onClick={() => hostAction({ action: "end" }, "End the round for everyone without saving? Submit & Save on your card saves everyone's round.")}>End round</button>
       </div>}
-      {isHost && menu === "players" && !ended && (room
+      {menu === "players" && !ended && (room
         ? <div className={styles.form}>
             <InvitePlayer taken={active.map((p) => p.profileId)} onInvite={(player) => { void hostAction({ action: "invite", profileId: player.profileId }); setMenu(null); }} />
             <AddGuest onAdd={(name) => { setGuests([...guests, { id: newGuestId(), name, handicap: null }]); setMenu(null); }} />
           </div>
         : <p className={styles.note}>A round has up to 5 players, guests included.</p>)}
-      {isHost && menu === "game" && !ended && <div className={styles.form}>
+      {menu === "game" && !ended && <div className={styles.form}>
         <GamePicker gameId={setup.game?.id ?? ""} open={pickingGame} setOpen={setPickingGame} onPick={(gameId) => {
           const next = gameId ? gameDef(gameId) : null;
           void hostAction({ action: "setup", setup: { ...setup, game: next ? { id: next.id, net: !next.teamFormat && (setup.game?.net ?? false), birdiesDouble: next.points && (setup.game?.birdiesDouble ?? false) } : null } });
           setMenu(null);
         }} />
       </div>}
+      </details>}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {gamePlayers.length} in the round, so it isn&apos;t scored right now.</p>}
       {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
       {isHost ? <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
@@ -633,7 +637,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
         </>}
     </section>
-    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles
+    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}
       onCardChange={(next) => {
@@ -734,11 +738,18 @@ export function HolePicks({ game, hole, range, names, input, onChange }: { game:
     return <div className={styles.wolfCard} role="group" aria-label="Wolf partner">
       <p className={styles.wolfTitle}><b>{names[wolf]}</b> {names[wolf] === "You" ? "are" : "is"} the Wolf</p>
       <p className={styles.wolfHint}>{chosen === undefined ? "Pick a partner, or go it alone" : chosen === null ? `${names[wolf]} ${names[wolf] === "You" ? "go" : "goes"} Lone Wolf · points ×2` : `${names[wolf]} + ${names[chosen]} vs the rest`}</p>
-      <div className={styles.wolfPartners}>
-        {everyone.filter((i) => i !== wolf).map((i) => <button key={i} type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
-          <span className={styles.wolfInitial} aria-hidden="true">{names[i].slice(0, 1).toUpperCase()}</span>{names[i]}</button>)}
-      </div>
-      <button type="button" className={styles.wolfLone} aria-pressed={chosen === null} onClick={() => set(null)}>Lone Wolf ×2</button>
+      <ul className={styles.wolfList}>
+        {everyone.filter((i) => i !== wolf).map((i) => <li key={i}><button type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
+          <span className={styles.wolfInitial} aria-hidden="true">{names[i].slice(0, 1).toUpperCase()}</span>
+          <span className={styles.wolfName}>{names[i]}</span>
+          <span className={styles.wolfMark}>{chosen === i ? "Partner ✓" : "Pick"}</span>
+        </button></li>)}
+        <li><button type="button" className={styles.wolfLoneRow} aria-pressed={chosen === null} onClick={() => set(null)}>
+          <span className={styles.wolfInitial} aria-hidden="true">1</span>
+          <span className={styles.wolfName}>Lone Wolf</span>
+          <span className={styles.wolfMark}>{chosen === null ? "×2 ✓" : "×2"}</span>
+        </button></li>
+      </ul>
     </div>;
   }
   if (kind === "daytona") {
@@ -771,8 +782,9 @@ export function HolePicks({ game, hole, range, names, input, onChange }: { game:
 }
 
 /**
- * The leaderboard (owner request 2026-11-21): "Hole 8 · thru 7", then one row per player — place, name, score to par,
- * and with a game its count and money. Team games and Nassau show their own lines under it.
+ * The leaderboard (owner request 2026-11-21): the trip's individual leaderboard (GolfTripLeaderboard's look — POS ·
+ * PLAYER · TOT · THRU, avatars, red under par / gold E), plus the game's count and a $ column. Tapping a name opens that
+ * player's scorecard under the row (two 9-hole rows, with a $ row per hole). Team games / Nassau add their lines below.
  */
 export function Leaderboard({ rows, par, range, hole, result, compact = false, holeMoney = null, doubled = [] }: { rows: { name: string; strokes: (number | null)[] }[]; par: number[]; range: [number, number];
   /** The hole on screen (scorekeeper); otherwise the first hole not everyone has finished. */ hole?: number; result: GameResult | null; compact?: boolean;
@@ -783,24 +795,51 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   const now = hole ?? holes.find((h) => !done.includes(h)) ?? range[1] - 1;
   const game = new Map((result?.standings ?? []).map((s) => [s.label, s]));
   const perPlayer = rows.every((row) => game.has(row.name));
+  const hasMoney = perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined);
+  const gameLabel = result && perPlayer ? (/skins?$/.test(game.get(rows[0].name)?.value ?? "") ? "SKINS" : "PTS") : null;
   const lines = rows.map((row, index) => {
     const played = holes.filter((h) => row.strokes[h] != null);
     const toPar = played.reduce((sum, h) => sum + (row.strokes[h]! - par[h]), 0);
     return { ...row, played: played.length, toPar, standing: perPlayer ? game.get(row.name) : undefined, pnl: holeMoney?.[index] ?? null };
   }).sort((a, b) => (b.standing?.rank ?? 0) - (a.standing?.rank ?? 0) || (a.played && b.played ? a.toPar - b.toPar : b.played - a.played));
-  const toParText = (n: number, played: number) => !played ? "–" : n === 0 ? "E" : n > 0 ? `+${n}` : String(n);
-  return <div className={`${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
+  type Line = typeof lines[number];
+  // Ties share a place (T2), like the trip's board.
+  const key = (line: Line) => `${line.standing?.rank ?? 0}|${line.played ? line.toPar : "x"}`;
+  const position = (i: number) => { const first = lines.findIndex((l) => key(l) === key(lines[i])); const tied = lines.filter((l) => key(l) === key(lines[i])).length > 1; return `${tied ? "T" : ""}${first + 1}`; };
+  const totText = (line: Line) => !line.played ? "–" : line.toPar === 0 ? "E" : line.toPar > 0 ? `+${line.toPar}` : String(line.toPar);
+  const parTone = (line: Line) => !line.played ? undefined : line.toPar < 0 ? "under" : line.toPar === 0 ? "even" : "over";
+  const thru = (line: Line) => line.played === holes.length ? "F" : line.played || "–";
+  const gameValue = (value: string) => value.replace(/\s*(skins?|pts)$/, "");
+  const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""} 34px${hasMoney ? " 52px" : ""}`;
+  const initialsOf = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  return <div className={`${trip.match} ${trip.leaderboard} ${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
     <p className={styles.boardHead}><b>Hole {now + 1}</b>{done.length ? ` · thru ${done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
-    <ol className={styles.boardRows}>{lines.map((line, i) => <li key={line.name}>
-      <button type="button" className={styles.boardRow} aria-expanded={open === line.name} onClick={() => setOpen(open === line.name ? null : line.name)}>
-        <span className={styles.boardPos}>{i + 1}</span>
-        <span className={styles.boardName}>{line.name}</span>
-        <span className={styles.boardToPar} data-sign={Math.sign(line.toPar)}>{toParText(line.toPar, line.played)}</span>
-        {line.standing && <span className={styles.boardGame}>{line.standing.value}</span>}
-        {line.standing?.money !== undefined && <span className={styles.money} data-sign={Math.sign(line.standing.money)}>{line.standing.money === 0 ? "$0" : money(line.standing.money)}</span>}
-      </button>
-      {open === line.name && <PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={line.pnl} doubled={doubled} />}
-    </li>)}</ol>
+    <div>
+      <div className={trip.leaderboardListHeading}>
+        <div className={`${trip.single} ${trip.columns}`} style={{ gridTemplateColumns: columns }} aria-hidden>
+          <span className={trip.columnPosition}>POS</span>
+          <span className={trip.columnPlayer}>Player</span>
+          <span className={trip.columnLabel}>TOT</span>
+          {gameLabel && <span className={trip.columnLabel}>{gameLabel}</span>}
+          <span className={trip.columnLabel}>THRU</span>
+          {hasMoney && <span className={trip.columnLabel}>$</span>}
+        </div>
+      </div>
+      <ul className={trip.lineup}>{lines.map((line, i) => <Fragment key={line.name}>
+        <li className={trip.single} style={{ gridTemplateColumns: columns }}>
+          <span className={trip.rank}>{position(i)}</span>
+          <button type="button" className={trip.playerCardTrigger} aria-expanded={open === line.name} aria-label={`${line.name} scorecard`} onClick={() => setOpen(open === line.name ? null : line.name)}>
+            <span className={trip.leaderboardAvatar} aria-hidden="true">{initialsOf(line.name)}</span>
+            <span className={styles.boardName}>{line.name}</span>
+          </button>
+          <span className={trip.number} data-par={parTone(line)}>{totText(line)}</span>
+          {gameLabel && <span className={trip.number}>{line.standing ? gameValue(line.standing.value) : "—"}</span>}
+          <span className={trip.number}>{thru(line)}</span>
+          {hasMoney && <span className={`${trip.number} ${styles.money}`} data-sign={Math.sign(line.standing?.money ?? 0)}>{line.standing?.money ? money(line.standing.money) : "$0"}</span>}
+        </li>
+        {open === line.name && <li className={styles.boardCard}><PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={line.pnl} doubled={doubled} /></li>}
+      </Fragment>)}</ul>
+    </div>
     {result && !perPlayer && <Standings result={result} compact />}
     {result?.note && perPlayer && <p className={styles.standingsNote}>{result.note}</p>}
   </div>;

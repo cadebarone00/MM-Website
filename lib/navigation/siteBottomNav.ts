@@ -15,6 +15,8 @@ export function isSiteBottomNavHidden(pathname: string): boolean {
   if (pathname === "/t" || pathname.startsWith("/t/")) return true;
   if (pathname.startsWith("/admin/")) return true;
   if (pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/")) return true;
+  // Play a round: setup and scoring are full screen (owner request 2026-11-21), so the scoring tab sits at the bottom.
+  if (pathname === "/rounds/new") return true;
   if (pathname === "/tournaments" || pathname === "/tournaments/new" || pathname === "/tournaments/request-access") return true;
   if (ORGANIZER_TOURNAMENT.test(pathname)) return true;
   return false;

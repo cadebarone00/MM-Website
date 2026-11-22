@@ -135,15 +135,7 @@
 .board{display:grid;gap:6px;margin:4px 0;color:inherit}
 .boardHead{margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;opacity:.8}
 .boardHead b{font-weight:700;opacity:1}
-.boardRows{display:grid;gap:4px;margin:0;padding:0;list-style:none}
-.boardRow{display:grid;grid-template-columns:22px 1fr auto auto auto;align-items:center;gap:10px;width:100%;min-height:46px;padding:6px 12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:12px;background:color-mix(in srgb,currentColor 5%,transparent);color:inherit;font:500 15px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
-.boardRow[aria-expanded=true]{border-color:#c9a86e}
-.boardCompact .boardRow{min-height:38px;padding:4px 10px;font-size:14px}
-.boardPos{font-weight:700;opacity:.55;text-align:center}
 .boardName{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-.boardToPar{min-width:28px;font-weight:700;text-align:right}
-.boardToPar[data-sign="-1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
-.boardGame{font-size:13px;opacity:.75;white-space:nowrap}
 .board .money{min-width:44px;text-align:right}
 .playerCard{display:grid;gap:8px;margin:6px 0 4px;overflow-x:auto}
 .playerCard table{width:100%;border-collapse:collapse;font:500 12px/1 var(--font-barlow),sans-serif}
@@ -161,8 +153,24 @@
 .wolfCard{display:grid;gap:8px;padding:12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:14px}
 .wolfTitle{margin:0;font:500 17px/1.3 var(--font-spectral),Georgia,serif}
 .wolfHint{margin:0;font-size:13px;opacity:.75}
-.wolfPartners{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
-.wolfPartners button,.wolfLone{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 10px;border:1px solid #b99c6b;border-radius:12px;background:transparent;color:inherit;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
-.wolfPartners button[aria-pressed=true],.wolfLone[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
 .wolfInitial{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,currentColor 12%,transparent);font-size:13px;font-weight:700}
-.wolfLone{border-style:dashed}
+
+/* Leaderboard in the trip's look (GolfTripMatch.module.css classes); these add the caption, $ column and open card. */
+.board{gap:6px}
+.board .boardName{flex:1;min-width:0;overflow:hidden;font:600 16px/1.2 var(--font-spectral),Georgia,serif;text-overflow:ellipsis;white-space:nowrap}
+.board .money{font-size:14px}
+.boardCompact .boardName{font-size:15px}
+.boardCard{padding:0 0 10px;list-style:none}
+/* Wolf: the other players as a list (one row each), Lone Wolf last. */
+.wolfList{display:grid;margin:0;padding:0;list-style:none;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+.wolfList button{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 4px;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;font:600 16px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
+.wolfList button[aria-pressed=true]{background:color-mix(in srgb,#c9a86e 22%,transparent);box-shadow:inset 3px 0 0 #c9a86e}
+.wolfName{flex:1;min-width:0}
+.wolfMark{font-size:13px;font-weight:700;opacity:.6}
+.wolfList button[aria-pressed=true] .wolfMark{opacity:1;color:#c9a86e}
+.wolfLoneRow .wolfInitial{font-size:12px}
+.manage{margin:12px 0}
+.manage summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 14px;border:1px solid #b99c6b55;border-radius:12px;font:600 15px var(--font-barlow),sans-serif;cursor:pointer;list-style:none}
+.manage summary::after{content:"Manage ›";font-size:13px;color:#c9a86e}
+.manage[open] summary{margin-bottom:10px}
+.manage summary::-webkit-details-marker{display:none}

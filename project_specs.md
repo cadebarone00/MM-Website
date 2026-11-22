@@ -6127,3 +6127,10 @@ name** on the leaderboard to open their scorecard (front / back nine: Par, Score
 lost on each hole**, a P&L; `moneyByHole` in roundGames.ts). The always-on table is gone; friends see the leaderboard
 first. Scoring in Play always uses the pull-up tab (`scoringViewOverride="slide"`), swipe left/right on the score boxes
 to change holes (`swipeHoles`).
+
+**Owner changes (2026-11-22):** the leaderboard is the trip's individual leaderboard (`GolfTripLeaderboard` look: POS ·
+PLAYER · TOT · THRU, avatars, par colors) plus a **$** column (and SKINS / PTS for those games); tapping a name opens the
+scorecard as two 9-hole rows with a $ row per hole. Leaderboard first on every phone; the scorekeeper's player list folds
+into "N players · Manage". The bottom menu is hidden on /rounds/new so the scoring tab sits at the bottom
+(`noBottomMenu`). "Allow doubles" starts on for points games. The Wolf pick is a list (one row per player, Lone Wolf
+last), not pill buttons.
