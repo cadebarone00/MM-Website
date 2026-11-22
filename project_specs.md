@@ -6153,3 +6153,4 @@ last), not pill buttons.
   (remove), Add players · Change game · End round (scorekeeper), the scoring tip, and Leave round on this phone. The main
   screen is the course, the leaderboard and the scoring tab.
 - **Owner (2026-11-22):** the invite code card moves from under the leaderboard into Round settings (gear).
+- **Fix (2026-11-22):** in the iPhone app the bottom menu still showed on Play (the app's address is /rounds/new/), covering the scoring tab; the hide rule now ignores an ending "/".

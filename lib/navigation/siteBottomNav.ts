@@ -7,7 +7,9 @@ const ORGANIZER_TOURNAMENT =
   /^\/tournaments\/[^/]+\/\d+/;
 
 /** Routes that use their own full-screen chrome (broadcast, play app, organizer studio, etc.). */
-export function isSiteBottomNavHidden(pathname: string): boolean {
+export function isSiteBottomNavHidden(rawPathname: string): boolean {
+  // The iPhone app's addresses end in "/" (/rounds/new/); the rules below are written without it.
+  const pathname = rawPathname.replace(/(.)\/+$/, "$1");
   if (pathname === "/dev/tournament/settings") return true;
   if (pathname === "/new-user" || pathname === "/login" || pathname.startsWith("/login/") || pathname === "/signup") return true;
   if (pathname.startsWith("/broadcast")) return true;
