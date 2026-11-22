@@ -6091,3 +6091,39 @@ $ standings; tests for the new game scoring (multipliers, stakes, carryovers, pr
   requests, trips, tournaments) respecting Settings → Notifications. Until then invites show in the app (card + badge).
 - C. Tester tomorrow: push tonight's working version first (course search, Eagle Pointe, Play circle) and build this
   after? (plan: yes — this rebuild is too big to rush tonight)
+
+## Play a round, round 3: double the hole, cleaner scoring + leaderboard, better Wolf picker (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (A: the pull-up tab at the bottom holds hole-by-hole scoring, score entry, partner pick and Double bet; B: plan default — one double per hole, scorekeeper only)
+
+**What the owner asked for:** a mid-round double toggle in the game settings that adds a "Double bet" button to double
+the bet on a hole; hole-by-hole scoring more intuitive with slide scoring like the trip; a better-looking leaderboard
+showing scores, money and what hole you're on — cleaner, simpler, less jumbled; a better Wolf partner picker.
+
+**1. Mid-round doubles.** Game page: **"Allow doubles"** toggle (points games and Skins). When on, the scoring screen
+shows a **Double bet** button on each hole; the scorekeeper taps it to double that hole (points / skins and their $),
+tap again to undo. The hole shows a **×2** tag, and it stacks with birdies double / eagles triple (a doubled birdie = ×4).
+Saved with the hole like the other game picks, so every phone sees it.
+**2. Scoring screen.** Same scoring sheet as trips (Play already uses it), made easier: swipe left / right between holes,
+bigger score boxes for each player, and the hole's game bits (Wolf pick, Double bet) in one tidy strip under the scores.
+*See question A.*
+**3. Leaderboard.** One clean card instead of today's standings + table: top line "**Hole 8 · thru 7**", then one row
+per player — position, name, score to par (E / +2), and when there's a game its count (3 skins / +4 pts) and **money**
+(+$15 green / −$5 red). Same card on the host's scoring sheet (short) and on friends' live view (full), with a
+**Leaderboard | Scorecard** switch so the hole-by-hole table is one tap away instead of always on screen.
+**4. Wolf picker.** A card for the hole: "**Cade is the Wolf**" (rotates as today), the other players as big buttons to
+pick the partner, and a separate **Lone Wolf ×2** button; the pick shows clearly and can be changed until the next hole.
+
+**Data:** no new tables — the double lives with the hole's game pick (`shared_round_picks`); `HoleInput.doubled`.
+**Done looks like:** double a hole in Skins and Wolf and see points + $ double (tests); swipe between holes; the new
+leaderboard on host and friend phones; Wolf pick in two taps; type check, lint, full tests; `npm run build:app`;
+checked in the browser at phone width.
+
+**Questions for the owner:**
+- A. "Slide scoring like on trip": which part — (1) swiping left/right between holes, (2) a scroll wheel to pick each
+  score instead of − / +, or (3) something else (a screenshot of the trip screen you like helps)?
+- B. Doubles: one double per hole (plan), or allow re-doubling (×2, ×4…)? Only the scorekeeper can tap it (plan)?
+
+**Added by the owner while building (2026-11-21):** scorecards don't show all 18 holes all the time — **tap a player's
+name** on the leaderboard to open their scorecard (front / back nine: Par, Score, and a **$ row with what they won or
+lost on each hole**, a P&L; `moneyByHole` in roundGames.ts). The always-on table is gone; friends see the leaderboard
+first. Scoring in Play always uses the pull-up tab (`scoringViewOverride="slide"`), swipe left/right on the score boxes
+to change holes (`swipeHoles`).

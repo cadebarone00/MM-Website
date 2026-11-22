@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { useRecordMyStats } from "@/lib/platform/playerStatsSetting";
 import { createPortal } from "react-dom";
 import { LockKeyhole, Minus, Plus } from "lucide-react";
-import { useScoringView } from "@/lib/platform/scoringViewPreference";
+import { useScoringView, type ScoringView } from "@/lib/platform/scoringViewPreference";
 import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import { countedStrokes, sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
 import { holeEditable, type RevisionHole } from "@/lib/platform/tripCorrections";
@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -95,6 +95,10 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   gameSlot?: (hole: number) => ReactNode;
   /** Play a round on a course with no scorecard on file: tapping Par cycles 3 → 4 → 5 → 6 for this hole. */
   onParChange?: (hole: number, par: number) => void;
+  /** Use this scoring view instead of the player's General setting (Play a round: always the pull-up tab). */
+  scoringViewOverride?: ScoringView;
+  /** Swipe left / right on the score boxes to go to the next / previous hole. */
+  swipeHoles?: boolean;
 }) {
   const [firstHole, endHole] = holeRange;
   const inPlay = (i: number) => i >= firstHole && i < endHole;
@@ -171,7 +175,9 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const [dragRange, setDragRange] = useState(0);
   const chipsRef = useRef<HTMLDivElement>(null);
   // The player's scorecard view (General settings). "slide" is the pull-up sheet; the others open scoring full screen.
-  const scoringView = useScoringView();
+  const preferredView = useScoringView();
+  const scoringView = scoringViewOverride ?? preferredView;
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const fullScreen = scoringView !== "slide";
 
   // Hold for scoring: pressing an empty spot anywhere on the page for HOLD_MS opens scoring. Buttons, links, fields
@@ -468,7 +474,16 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
 
       </div>
 
-      <div className={styles.stepperWrap}>
+      <div className={styles.stepperWrap}
+        onTouchStart={swipeHoles ? (event) => { const t = event.touches[0]; swipe.current = { x: t.clientX, y: t.clientY }; } : undefined}
+        onTouchEnd={swipeHoles ? (event) => {
+          const start = swipe.current; swipe.current = null;
+          const t = event.changedTouches[0];
+          if (!start || !t) return;
+          const dx = t.clientX - start.x, dy = t.clientY - start.y;
+          // A clear sideways swipe: left = next hole, right = previous.
+          if (Math.abs(dx) > 60 && Math.abs(dy) < 40) setCurrent((value) => Math.min(Math.max(value + (dx < 0 ? 1 : -1), firstHole), endHole - 1));
+        } : undefined}>
 
         <div className={styles.scoreSplit}>
           <ScoreCard label="My Score" strokes={strokes} holePar={shownPar} step={step} disabled={!ownEditable} compact />

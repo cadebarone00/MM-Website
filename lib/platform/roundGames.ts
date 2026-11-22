@@ -75,6 +75,8 @@ export interface GameConfig {
   nassauStakes?: [number, number, number];
   /** Nassau: a new bet starts whenever a side goes 2 down in a nine (presses can press). */
   autoPress?: boolean;
+  /** Mid-round doubles: the scorekeeper can double a hole (HoleInput.doubled) in points games and Skins. */
+  doubles?: boolean;
 }
 
 /** What a game's stake is counted in, for the setup screen ("$ per skin"). */
@@ -97,6 +99,8 @@ export interface HoleInput {
   snake?: number;
   /** Team 0 or 1 for each player on this hole (Golf trip → Vegas picks teams hole by hole). */
   teams?: number[];
+  /** Mid-round double: this hole's points / skins count twice (when the game allows doubles). */
+  doubled?: boolean;
 }
 
 export interface GamePlayer { name: string; /** Handicap index, for net games. */ handicap: number | null }
@@ -111,7 +115,8 @@ export interface GameStanding {
   /** $ up (+) or down (−) when the game has a stake. */
   money?: number;
 }
-export interface GameResult { title: string; standings: GameStanding[]; /** One line under the standings (e.g. "Snake: Cam"). */ note?: string }
+export interface GameResult { title: string; standings: GameStanding[]; /** One line under the standings (e.g. "Snake: Cam"). */ note?: string;
+  /** $ up / down for each player (by index) when the game has a stake and it can be split per player. */ playerMoney?: number[] }
 
 /** The Wolf on a hole: rotates through the group in order, starting with player 1 on the first hole played. */
 export const wolfFor = (hole: number, range: [number, number], players: number) => (hole - range[0]) % players;
@@ -167,13 +172,16 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
   const side = (t: number) => players.map((_, i) => i).filter((i) => teams[i] === t);
   const sideName = (members: number[]) => members.map((i) => players[i].name).join(" & ");
   const best = (members: number[], h: number) => lowest(members.map((p) => score(p, h)));
-  const birdie = (value: number, h: number) => config.eaglesTriple && value <= course.par[h] - 2 ? 3 : config.birdiesDouble && value <= course.par[h] - 1 ? 2 : 1;
+  // A hole's multiplier: eagles triple / birdies double for the winning score, times 2 when the hole was doubled mid-round.
+  const birdie = (value: number, h: number) => (config.eaglesTriple && value <= course.par[h] - 2 ? 3 : config.birdiesDouble && value <= course.par[h] - 1 ? 2 : 1)
+    * (config.doubles && inputs[h]?.doubled ? 2 : 1);
   const stake = config.stake && config.stake > 0 ? config.stake : 0;
   /** Standings sorted best first, each with its $ when there's a stake (`counts` higher = better, settled pairwise). */
   const ranked = (title: string, rows: GameStanding[], counts: number[] | null, note?: string): GameResult => {
     const money = stake && counts ? pairwiseMoney(counts, stake) : null;
     const order = rows.map((_, i) => i).sort((a, b) => rows[b].rank - rows[a].rank);
-    return { title, note, standings: withMoney(order.map((i) => rows[i]), money, order) };
+    // Rows are players unless the game ranks sides (team formats).
+    return { title, note, standings: withMoney(order.map((i) => rows[i]), money, order), ...(money && rows.length === n ? { playerMoney: money } : {}) };
   };
   const points = new Array<number>(n).fill(0);
   /** Each winner takes `each` points from each loser. */
@@ -183,7 +191,8 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
   // Zero-sum points: each point is already won from someone, so it's worth the stake as it stands.
   const pointStandings = (title: string, note?: string): GameResult => {
     const order = players.map((_, i) => i).sort((a, b) => points[b] - points[a]);
-    return { title, note, standings: withMoney(order.map((i) => ({ label: players[i].name, value: signed(points[i]), rank: points[i] })), stake ? points.map((p) => p * stake) : null, order) };
+    const money = stake ? points.map((p) => p * stake) : null;
+    return { title, note, standings: withMoney(order.map((i) => ({ label: players[i].name, value: signed(points[i]), rank: points[i] })), money, order), ...(money ? { playerMoney: money } : {}) };
   };
   const thru = holes.length ? ` · thru ${holes.at(-1)! + 1}` : "";
 
@@ -221,7 +230,7 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
         const money = new Array<number>(n).fill(0);
         settle(m.up, stake, money);
         const rows: GameStanding[] = [{ label: sideName(a), value: m.up > 0 ? `${m.up} UP` : m.up === 0 ? "AS" : "", rank: m.up }, { label: sideName(b), value: m.up < 0 ? `${-m.up} UP` : m.up === 0 ? "AS" : "", rank: -m.up }];
-        return { title: `${def.name}${thru}`, note: m.label, standings: stake ? rows.map((row, i) => ({ ...row, money: money[(i === 0 ? a : b)[0]] })) : rows };
+        return { title: `${def.name}${thru}`, note: m.label, standings: stake ? rows.map((row, i) => ({ ...row, money: money[(i === 0 ? a : b)[0]] })) : rows, ...(stake ? { playerMoney: money } : {}) };
       }
       const full = range[1] - range[0] === 18;
       const segments: [string, number, number][] = full ? [["Front", 0, 9], ["Back", 9, 18], ["Overall", 0, 18]] : [["Match", range[0], range[1]]];
@@ -245,7 +254,7 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
         return starts;
       }
       const totals = stake || config.nassauStakes ? [{ label: sideName(a), value: "", rank: money[a[0]], money: money[a[0]] }, { label: sideName(b), value: "", rank: money[b[0]], money: money[b[0]] }] : [];
-      return { title: `${def.name}${thru}`, standings: [...rows, ...totals] };
+      return { title: `${def.name}${thru}`, standings: [...rows, ...totals], ...(totals.length ? { playerMoney: money } : {}) };
     }
     case "bestball": case "shamble": case "scramble": case "alternate": case "chapman": {
       const sides = [side(0), side(1)].filter((s) => s.length);
@@ -343,4 +352,24 @@ export function scoreGame(config: GameConfig, players: GamePlayer[], course: Gam
       return { ...pointStandings(`${def.name}${thru}`), note: holder === null ? "Nobody has the snake yet" : `${players[holder].name} has the snake` };
     }
   }
+}
+
+/**
+ * Money won or lost on each hole, per player (the scorecard's P&L row): how each player's $ moved when that hole was
+ * finished. Null when the game has no money; a hole not everyone has finished is null.
+ */
+export function moneyByHole(config: GameConfig, players: GamePlayer[], course: GameCourse, range: [number, number],
+  strokes: (number | null)[][], inputs: HoleInput[] = []): (number | null)[][] | null {
+  if (!(config.stake || config.nassauStakes)) return null;
+  const out = players.map(() => new Array<number | null>(course.par.length).fill(null));
+  let before = players.map(() => 0);
+  for (let h = range[0]; h < range[1]; h++) {
+    if (strokes.some((row) => row[h] == null)) continue;
+    const upTo = strokes.map((row) => row.map((value, i) => (i <= h ? value : null)));
+    const after = scoreGame(config, players, course, range, upTo, inputs).playerMoney;
+    if (!after) return null;
+    after.forEach((value, p) => { out[p][h] = Math.round((value - before[p]) * 100) / 100; });
+    before = after;
+  }
+  return out;
 }

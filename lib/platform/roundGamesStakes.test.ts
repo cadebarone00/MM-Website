@@ -74,3 +74,28 @@ test("net allowance scales the course handicap; the setup's stake label fits the
   assert.equal(courseHandicap(20, course, [0, 9], 90), 9);
   assert.deepEqual(["skins", "stroke", "nassau", "wolf", "snake"].map((id) => stakeUnit(id as GameConfig["id"])), ["skin", "stroke", "match", "point", "player"]);
 });
+
+test("mid-round doubles: a doubled hole counts twice (and stacks with birdies), only when the game allows doubles", () => {
+  const strokes = card(3, { 0: { 0: 3 }, 1: { 1: 3 } }); // P0 birdies hole 1, P1 birdies hole 2
+  const inputs = [{ doubled: true }, {}];
+  const skins = scoreGame(config({ id: "skins", birdiesDouble: true, doubles: true, stake: 1 }), players(3), course, range, strokes, inputs);
+  assert.deepEqual(skins.standings.map((s) => [s.label, s.value]), [["P0", "4 skins"], ["P1", "2 skins"], ["P2", "0 skins"]]);
+  const off = scoreGame(config({ id: "skins", birdiesDouble: true, stake: 1 }), players(3), course, range, strokes, inputs);
+  assert.equal(off.standings[0].value, "2 skins", "doubles off: the tap is ignored");
+  const wolf = scoreGame(config({ id: "wolf", doubles: true }), players(4), course, range, card(4, { 1: { 0: 3 } }), [{ wolfPartner: 1, doubled: true }]);
+  assert.deepEqual(Object.fromEntries(wolf.standings.map((s) => [s.label, s.value])), { P0: "+4", P1: "+4", P2: "-4", P3: "-4" });
+});
+
+test("money by hole: each player's P&L per hole adds up to their total", async () => {
+  const { moneyByHole } = await import("./roundGames.ts");
+  const strokes = card(3, { 0: { 0: 3 }, 1: { 1: 2 } });
+  strokes[2][17] = null as unknown as number; // hole 18 not finished for everyone
+  const cfg = config({ id: "skins", birdiesDouble: true, eaglesTriple: true, stake: 5 });
+  const byHole = moneyByHole(cfg, players(3), course, range, strokes)!;
+  // Hole 1: P0's birdie skin ×2 = 2 skins × $5 from each of 2 others. Hole 2: P1's eagle skin ×3 = 3 skins.
+  assert.deepEqual(byHole.map((row) => row.slice(0, 2)), [[20, -15], [-10, 30], [-10, -15]]);
+  assert.equal(byHole[0][17], null, "an unfinished hole has no P&L yet");
+  const total = scoreGame(cfg, players(3), course, range, strokes).playerMoney!;
+  byHole.forEach((row, p) => assert.equal(row.reduce<number>((sum, v) => sum + (v ?? 0), 0), total[p]));
+  assert.equal(moneyByHole(config({ id: "skins" }), players(3), course, range, strokes), null, "no stake = no P&L");
+});

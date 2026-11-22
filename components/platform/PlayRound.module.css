@@ -85,14 +85,6 @@
 .addGuest .secondary{min-height:46px;padding:0 14px;font-size:14px}
 .addGuest .secondary:disabled{opacity:.5;cursor:default}
 .roster b[data-status=guest]{color:var(--lm-ink-d6c5ca)}
-.liveCard{overflow-x:auto;margin:4px 0 14px;border:1px solid #b99c6b55;border-radius:12px}
-.liveCard table{width:max-content;min-width:100%;border-collapse:collapse;font:500 13px/1 var(--font-barlow),sans-serif}
-.liveCard th,.liveCard td{min-width:26px;padding:8px 4px;text-align:center;border-top:1px solid #b99c6b33}
-.liveCard thead tr:first-child th{border-top:0;font-weight:600;opacity:.75}
-.liveCard th[scope=row]{position:sticky;left:0;z-index:1;min-width:64px;padding-left:10px;text-align:left;background:var(--lm-bg-240001,#240001);font-weight:600}
-.liveCardPar td,.liveCardPar th{opacity:.6;font-size:12px}
-.liveCard td[data-vs="-1"]{color:var(--lm-ink-b9e0b0);font-weight:700}
-.liveCard td[data-vs="1"]{color:var(--lm-ink-f6d68b)}
 .myStats{display:grid;gap:10px;margin:14px 0 4px;padding:12px;border:1px solid #b99c6b55;border-radius:12px}
 .myStatsHole{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .myStatsHole button{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
@@ -138,3 +130,39 @@
 .money[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
 .money[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
 .setup .gameButton small{color:#e1cec4}
+/* Round 3 (2026-11-21): leaderboard, tap-a-name scorecards with a P&L row, Double bet, the Wolf card. Colors follow
+   the text color, so they read on the light scoring sheet (scorekeeper) and the dark page (friends). */
+.board{display:grid;gap:6px;margin:4px 0;color:inherit}
+.boardHead{margin:0;font:500 13px/1.3 var(--font-barlow),sans-serif;opacity:.8}
+.boardHead b{font-weight:700;opacity:1}
+.boardRows{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.boardRow{display:grid;grid-template-columns:22px 1fr auto auto auto;align-items:center;gap:10px;width:100%;min-height:46px;padding:6px 12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:12px;background:color-mix(in srgb,currentColor 5%,transparent);color:inherit;font:500 15px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
+.boardRow[aria-expanded=true]{border-color:#c9a86e}
+.boardCompact .boardRow{min-height:38px;padding:4px 10px;font-size:14px}
+.boardPos{font-weight:700;opacity:.55;text-align:center}
+.boardName{min-width:0;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.boardToPar{min-width:28px;font-weight:700;text-align:right}
+.boardToPar[data-sign="-1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
+.boardGame{font-size:13px;opacity:.75;white-space:nowrap}
+.board .money{min-width:44px;text-align:right}
+.playerCard{display:grid;gap:8px;margin:6px 0 4px;overflow-x:auto}
+.playerCard table{width:100%;border-collapse:collapse;font:500 12px/1 var(--font-barlow),sans-serif}
+.playerCard th,.playerCard td{padding:6px 2px;text-align:center;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.playerCard th[scope=row]{width:44px;padding-left:4px;text-align:left;font-weight:600}
+.playerCard thead th{border-top:0;opacity:.7}
+.playerCard sup{margin-left:1px;font-size:8px;color:#c9a86e}
+.playerCardPar td,.playerCardPar th{opacity:.55}
+.playerCard td[data-vs="-1"]{color:var(--lm-ink-b9e0b0,#2e7d32);font-weight:700}
+.playerCardPnl td{font-weight:700}
+.playerCardPnl td[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
+.playerCardPnl td[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
+.doubleBet{width:100%;min-height:44px;border:1px dashed #b99c6b;border-radius:12px;background:transparent;color:inherit;font:700 15px var(--font-barlow),sans-serif;letter-spacing:.02em;cursor:pointer}
+.doubleBet[aria-pressed=true]{border-style:solid;background:#c9a86e;border-color:#c9a86e;color:#240001}
+.wolfCard{display:grid;gap:8px;padding:12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:14px}
+.wolfTitle{margin:0;font:500 17px/1.3 var(--font-spectral),Georgia,serif}
+.wolfHint{margin:0;font-size:13px;opacity:.75}
+.wolfPartners{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.wolfPartners button,.wolfLone{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 10px;border:1px solid #b99c6b;border-radius:12px;background:transparent;color:inherit;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfPartners button[aria-pressed=true],.wolfLone[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+.wolfInitial{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,currentColor 12%,transparent);font-size:13px;font-weight:700}
+.wolfLone{border-style:dashed}
