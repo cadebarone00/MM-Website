@@ -99,3 +99,42 @@
 .myStatsHole button:disabled{opacity:.35;cursor:default}
 .myStatsPutts{min-width:28px;text-align:center;font-size:16px}
 .myStats .pickRow button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+/* Round setup in the trip builder's look (owner request 2026-11-21): dark page, gold-edged fields, gold selections. */
+.setup .note,.setup .blurb{color:#e1cec4}
+.setup .blurb{font-size:13px}
+.setup .needs{background:rgba(246,214,139,.14);color:#f6d68b}
+.setup .players li{min-height:52px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .players small{color:#e1cec4}
+.setup .remove{color:#fbf8f1}
+.setup .handicap{border:1px solid rgba(201,168,110,.35);border-radius:10px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .addPlayer input,.setup .addGuest input{min-height:52px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .addPlayer input::placeholder,.setup .addGuest input::placeholder{color:rgba(251,248,241,.45)}
+.setup .addGuest .secondary{min-height:52px;border-radius:12px;color:#fbf8f1}
+.setup .results button{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .results small{color:#e1cec4}
+.setup .teams button{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .teams button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+.setup .gameButton{border-color:rgba(201,168,110,.35);background:rgba(251,248,241,.08);color:#fbf8f1}
+.setup .courseSearch{position:relative}
+.pickedCourse{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #c9a86e;border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1}
+.pickedCourse span{display:grid;flex:1;min-width:0}
+.pickedCourse strong{font:600 17px/1.3 var(--font-barlow),sans-serif}
+.pickedCourse small{font-size:13px;color:#e1cec4}
+.pickedCourse button{border:0;background:transparent;color:#c9a86e;font:600 14px var(--font-barlow),sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wizToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:8px 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:500 16px/1.3 var(--font-barlow),sans-serif;cursor:pointer}
+.wizToggle small{display:block;margin-top:2px;font-size:12px;color:#e1cec4}
+.wizToggle input{width:44px;height:26px;accent-color:#c9a86e;flex:none}
+.wizChoices{margin:0;padding:0;border:0;min-width:0}
+.wizChoices legend{padding:0 0 6px;font:400 12px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
+.wizChoices>div{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.wizChoices button{min-height:48px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08);color:#fbf8f1;font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+.wizChoices button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+.stakeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.review{display:grid;gap:8px;margin:0}
+.review>div{padding:12px 14px;border:1px solid rgba(201,168,110,.35);border-radius:12px;background:rgba(251,248,241,.08)}
+.review dt{font:400 12px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
+.review dd{margin:2px 0 0;font:500 16px/1.35 var(--font-barlow),sans-serif;color:#fbf8f1}
+.money{font-style:normal;font-weight:700}
+.money[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
+.money[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
+.setup .gameButton small{color:#e1cec4}

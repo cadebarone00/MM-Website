@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Flag, Handshake, Plane, UserRound } from "lucide-react";
 import { siteBottomNavTabActive, siteBottomNavTabHref } from "@/lib/navigation/siteBottomNav";
 import { FriendRequestBadge } from "@/components/profile/FriendRequestBadge";
+import { RoundInviteBadge } from "@/components/platform/RoundInviteBadge";
 import { LeaderboardIcon } from "./LeaderboardIcon";
 import styles from "./SiteBottomNav.module.css";
 
@@ -37,7 +38,7 @@ export function SiteBottomNav() {
           >
             {/* Oversized icons overlap their margin so every label stays on one line. */}
             {/* Profile: a red count while friend requests are waiting. */}
-            <span className={styles.iconWrap}><Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />{tab.href === "/profile" && <FriendRequestBadge />}</span>
+            <span className={styles.iconWrap}><Icon size={size} style={{ margin: `${(ICON_SIZE - size) / 2}px 0` }} aria-hidden="true" />{tab.href === "/profile" && <FriendRequestBadge />}{tab.href === "/" && <RoundInviteBadge />}</span>
             <span>{tab.label}</span>
           </Link>
         );

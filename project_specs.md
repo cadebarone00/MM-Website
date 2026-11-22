@@ -6051,3 +6051,43 @@ prompt to add by hand"):**
 - Still to do (Part B): the Add a course screen, and saving a built scorecard to the library.
 - **Play circle (owner request 2026-11-21):** Cade's new Play home (circles: Play · Live · On The Range) had no way to
   start a round; the **Play** circle (handicap) now opens Play a round (`/rounds/new`). Look unchanged.
+
+## Play a round, round 2: trip-builder look, game section with stakes, simpler invites + stats (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 with owner changes (4 pages; push notifications later)
+
+**What the owner asked for:** no "join with a code" option — the code is just on screen to send; adding someone with the
+app sends them an app notification, and accepting brings them into the game; one short stats toggle; the game is its
+own section with more options ($ per point, birdies double, eagles triple, …); the UI looks like the trip builder.
+
+**1. Setup in the trip builder's look** (`SetupSheet` + step pages, same progress bar, cards, Back / Next):
+   **Owner layout (2026-11-21), 4 pages:** 1) **Round** — course (search: library → OpenGolfAPI → add by hand), tees,
+   holes, date, and the small round questions (Track stats, Count toward handicap, rating/slope for a built card) ·
+   2) **Players** · 3) **Game** · 4) **Review** → Start.
+**2. Players + invites:** add friends with the app (search) and guests (name). **No code switch:** every round with
+   friends has a code, shown big on the round screen (and on Players once started) with Copy / Share, like the trip's.
+**3. Invite notification:** an invited friend gets the invite **in the app** — a card at the top of Play ("Cam invited
+   you to play Eagle Pointe · Skins") plus a red badge on the Play tab; **Accept** opens the round, Decline removes it.
+   *A real phone notification (lock screen) needs Apple push set up first — see question B.*
+**4. One stats toggle:** "Track stats" (putts · fairways · greens) — on = the host and every joined player keep their own;
+   off = strokes only. Replaces "Keep stats" + "Let players track their own stats".
+**5. Game section** (its own step), options shown only when they apply to the chosen game:
+   - **Stakes:** $ per point / skin / hole / match (games with points or matches) → standings show each player's $ up/down.
+   - **Birdies double**, **Eagles triple** (points / skins games).
+   - **Carryovers** on/off (Skins). **Net (handicaps)** with allowance % (100 / 90 / 80).
+   - **Nassau:** $ front / back / overall, automatic press when 2 down (on/off).
+   - Teams (team games) as today. Money is shown only — nothing is paid or collected in the app.
+**Data:** game options live in the round's setup (no new tables). The invite badge reads the existing invites list.
+**Not in this round:** lock-screen push (question B), payments.
+
+**Done looks like:** create a round step by step in the trip-builder look; invite a friend (card + badge, Accept opens the
+round), add a guest, share the code; one stats toggle; pick Skins with $5 a skin, birdies double, eagles triple and see
+$ standings; tests for the new game scoring (multipliers, stakes, carryovers, press); type check, lint, full tests;
+`npm run build:app`; checked in the browser.
+
+**Questions for the owner:**
+- A. Which game options matter most? (plan: the list above)
+- B. **Owner: hold off (2026-11-21).** Later project — lock-screen push notifications: an Apple push key (App Store
+  Connect → Users and Access → Keys → Apple Push Notifications service, made by the Account Holder), the Capacitor push
+  plugin in the app, a table of each phone's push token, and the server sending pushes (round invites first, then friend
+  requests, trips, tournaments) respecting Settings → Notifications. Until then invites show in the app (card + badge).
+- C. Tester tomorrow: push tonight's working version first (course search, Eagle Pointe, Play circle) and build this
+  after? (plan: yes — this rebuild is too big to rush tonight)
