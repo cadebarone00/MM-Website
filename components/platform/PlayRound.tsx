@@ -600,7 +600,6 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
       {problem && <p className={styles.error} role="alert">{problem}</p>}
       {save.status !== "saved" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} />}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {gamePlayers.length} in the round, so it isn&apos;t scored right now.</p>}
-      {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
       {/* Saving / saved / a failed save show here; the everyday tip and Leave are in Round settings. */}
       {isHost && save.status !== "idle" && <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }} leave={null} />}
       {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
@@ -642,6 +641,8 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
             }} />
           </div>}
         </>}
+        {/* The code to share lives here, not under the leaderboard (owner 2026-11-22). */}
+        {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
         <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."
           : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
         <button type="button" className={styles.discard} onClick={() => { if (window.confirm(isHost ? "Leave this round on this phone? Scores already sent stay in the round." : "Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>

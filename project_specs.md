@@ -6152,3 +6152,4 @@ last), not pill buttons.
 - **Owner (2026-11-22):** a settings button (gear) top right of the round screen opens **Round settings**: the players
   (remove), Add players · Change game · End round (scorekeeper), the scoring tip, and Leave round on this phone. The main
   screen is the course, the leaderboard and the scoring tab.
+- **Owner (2026-11-22):** the invite code card moves from under the leaderboard into Round settings (gear).
