@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { createOpenGolfProvider } from "./golfGps/providers/openGolf/provider";
+import { GolfProviderError } from "./golfGps/providers/GolfCourseProvider";
+import { createGolfCourseApiProvider } from "./golfGps/providers/golfCourseApi/provider";
 import { getCourseLibrary } from "./golfGps/repository/courseLibrary";
 import type { SavedGolfTrip } from "./golfTripCreate";
 import { loadSavedTripSetup } from "./savedTripSetupServer";
@@ -16,7 +17,7 @@ export type RoundCourseLoad =
   | { status: "not-found" | "unavailable" | "no-scorecard" | "tee-par"; ref: string; name: string; tee: string | null }
   | { status: "ok"; ref: string; name: string; tee: string | null; pars: number[]; rating: number | null; slope: number | null };
 
-/** The round's course + tee from Trip Settings, and its pars through scoringCourse() (course library first, then OpenGolf). */
+/** The round's course + tee from Trip Settings, and its pars through scoringCourse() (course library first, then GolfCourseAPI). */
 export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: number): Promise<RoundCourseLoad> {
   const setup = await loadSavedTripSetup(trip);
   const pick = roundCoursePick(setup.basis, setup.values, roundNumber);
@@ -24,13 +25,15 @@ export async function loadRoundCoursePars(trip: SavedGolfTrip, roundNumber: numb
   const teeName = pick.tees?.tee ?? null;
   try {
     let course = null;
-    try { course = (await getCourseLibrary().findCourseByExternalId("open_golf", pick.ref))?.course ?? null; } catch { /* library not set up: use the provider */ }
-    course ??= (await createOpenGolfProvider().getCourseDetail(pick.ref))?.course ?? null;
+    try { course = (await getCourseLibrary().findCourseByExternalId("golf_course_api", pick.ref))?.course ?? null; } catch { /* library not set up: use the provider */ }
+    course ??= (await createGolfCourseApiProvider().getCourseDetail(pick.ref))?.course ?? null;
     if (!course) return { status: "not-found", ref: pick.ref, name: pick.name, tee: teeName };
     const result: CourseParsResult = coursePars(pick.ref, course, pick.tees);
     return result.ok ? { status: "ok", ref: pick.ref, name: pick.name, tee: result.tee, pars: result.pars, rating: result.rating, slope: result.slope }
       : { status: result.reason, ref: pick.ref, name: pick.name, tee: teeName };
   } catch (error) {
+    // Not a GolfCourseAPI id (e.g. a ref saved in Trip Settings from the old course source): that course can't be found.
+    if (error instanceof GolfProviderError && error.kind === "bad_request") return { status: "not-found", ref: pick.ref, name: pick.name, tee: teeName };
     console.error("Round course pars failed:", error instanceof Error ? error.message : error);
     return { status: "unavailable", ref: pick.ref, name: pick.name, tee: teeName };
   }

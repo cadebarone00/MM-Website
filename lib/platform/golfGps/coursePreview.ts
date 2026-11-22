@@ -5,9 +5,9 @@ import type { GpsCourse } from "./types";
 
 /**
  * What the app's Explore → Courses screen may know about a course: plain display fields, never raw provider or database
- * records. Server-only builders; the pages / API routes pass in the library lookup and the OpenGolf detail fetch.
+ * records. Server-only builders; the pages / API routes pass in the library lookup and the GolfCourseAPI detail fetch.
  *
- * Order: the Maroon course library first (a saved course needs no provider call at all); otherwise the OpenGolf detail
+ * Order: the Maroon course library first (a saved course needs no provider call at all); otherwise the GolfCourseAPI detail
  * for that one course, fetched only after the person picked it. OpenStreetMap is never called here.
  */
 
@@ -57,15 +57,15 @@ function preview(course: GolfCourse, library: CoursePreview["library"]): CourseP
   };
 }
 
-export async function getCoursePreview(openGolfId: string, { findSaved, getDetail, canPrepare = (stored) => !stored || !isGpsCapable(stored.course) }: {
-  findSaved: (openGolfId: string) => Promise<CourseLibraryEntry | null>;
-  getDetail: (openGolfId: string) => Promise<GolfCourseImport | null>;
+export async function getCoursePreview(courseRef: string, { findSaved, getDetail, canPrepare = (stored) => !stored || !isGpsCapable(stored.course) }: {
+  findSaved: (courseRef: string) => Promise<CourseLibraryEntry | null>;
+  getDetail: (courseRef: string) => Promise<GolfCourseImport | null>;
   /** Whether Prepare GPS is worth offering for this (stored or not) course — normally the GPS provisioner's rule. */
   canPrepare?: (stored: CourseLibraryEntry | null) => boolean;
 }): Promise<CoursePreview | null> {
   let saved: CourseLibraryEntry | null = null;
   try {
-    saved = await findSaved(openGolfId);
+    saved = await findSaved(courseRef);
   } catch (error) {
     // Library unavailable (e.g. storage not set up yet): carry on as "not saved" rather than failing the screen.
     console.error("Course library lookup failed:", error instanceof Error ? error.message : error);
@@ -80,7 +80,7 @@ export async function getCoursePreview(openGolfId: string, { findSaved, getDetai
       canPrepareGps: canPrepare(saved),
     });
   }
-  const detail = await getDetail(openGolfId);
+  const detail = await getDetail(courseRef);
   return detail ? preview(detail.course, { saved: false, gpsAvailable: false, mapAvailable: false, canPrepareGps: canPrepare(null) }) : null;
 }
 

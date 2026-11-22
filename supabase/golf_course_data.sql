@@ -1,7 +1,8 @@
 -- supabase/golf_course_data.sql
 -- Course-data library for on-course GPS: The Maroon's own normalized copy of golf courses (lib/platform/golfGps/domain),
--- built from open data — OpenGolfAPI scorecards + OpenStreetMap geometry — plus green targets The Maroon derived from it.
--- Shared reference data: a course is stored once and reused, instead of calling OpenGolf / Overpass on every load.
+-- built from GolfCourseAPI scorecards + OpenStreetMap geometry (open data) — plus green targets The Maroon derived from it.
+-- Shared reference data: a course is stored once and reused, instead of calling GolfCourseAPI / Overpass on every load.
+-- (Was OpenGolfAPI until 2026-11-21; supabase/golf_course_api_provider.sql moves an existing database over.)
 --
 -- Separate from live_courses on purpose: live_courses holds the courses organizers type in for live scoring (Maroon's
 -- own data). Everything here is imported open data under the ODbL (share-alike), so it lives in its own tables where
@@ -23,8 +24,8 @@
 -- which only the server's service-role key may call (lib/platform/golfGps/repository/supabaseCourseStore.ts). In this
 -- step only the dev tools call save_golf_course.
 --
--- Refresh rule: save_golf_course replaces a stored course only while everything in it is imported open data (license
--- 'ODbL-1.0') and nothing is admin-verified / professional. Otherwise it raises golf_course_has_protected_data and
+-- Refresh rule: save_golf_course replaces a stored course only while everything in it is imported data (license
+-- 'ODbL-1.0' or 'GolfCourseAPI-terms') and nothing is admin-verified / professional. Otherwise it raises golf_course_has_protected_data and
 -- changes nothing — merging imports into protected data is a later step.
 --
 -- Prerequisite: none. Safe to run more than once. Undo: see the bottom of this file.
@@ -56,18 +57,18 @@ create table if not exists public.golf_courses (
 create table if not exists public.golf_course_external_ids (
   course_id uuid not null references public.golf_courses(id) on delete cascade,
   position integer not null,
-  provider text not null check (provider in ('maroon', 'open_golf', 'openstreetmap', 'golf_intelligence')),
+  provider text not null check (provider in ('maroon', 'golf_course_api', 'openstreetmap', 'golf_intelligence')),
   external_id text not null check (length(external_id) between 1 and 200),
   primary key (provider, external_id)
 );
 create index if not exists golf_course_external_ids_course_idx on public.golf_course_external_ids (course_id);
 
--- Course-level sources (OpenGolf scorecard, the matched OpenStreetMap course, …) with their credit line.
+-- Course-level sources (GolfCourseAPI scorecard, the matched OpenStreetMap course, …) with their credit line.
 create table if not exists public.golf_course_sources (
   id uuid primary key default gen_random_uuid(),
   course_id uuid not null references public.golf_courses(id) on delete cascade,
   position integer not null,
-  provider text not null check (provider in ('maroon', 'open_golf', 'openstreetmap', 'golf_intelligence')),
+  provider text not null check (provider in ('maroon', 'golf_course_api', 'openstreetmap', 'golf_intelligence')),
   provider_record_id text,
   imported_at timestamptz,
   last_updated_at timestamptz,
@@ -107,7 +108,7 @@ create table if not exists public.golf_holes (
   unique (course_id, number)
 );
 
--- Tees on a hole: scorecard yardage (OpenGolf, tied to a tee set) and/or a mapped tee box (OSM, location only).
+-- Tees on a hole: scorecard yardage (GolfCourseAPI, tied to a tee set) and/or a mapped tee box (OSM, location only).
 create table if not exists public.golf_hole_tees (
   id uuid primary key default gen_random_uuid(),
   hole_id uuid not null references public.golf_holes(id) on delete cascade,
@@ -200,14 +201,14 @@ returns boolean
 language sql stable security definer set search_path = public, pg_temp as $$
   select exists (select 1 from golf_courses where id = p_course and verification->>'status' in ('admin_verified', 'professional_source'))
     or exists (select 1 from golf_holes where course_id = p_course and verification->>'status' in ('admin_verified', 'professional_source'))
-    or exists (select 1 from golf_course_external_ids where course_id = p_course and provider not in ('open_golf', 'openstreetmap'))
+    or exists (select 1 from golf_course_external_ids where course_id = p_course and provider not in ('golf_course_api', 'openstreetmap'))
     or exists (select 1 from golf_holes h, jsonb_array_elements(coalesce(h.sources, '[]'::jsonb) || coalesce(h.external_ids, '[]'::jsonb)) e
-      where h.course_id = p_course and coalesce(e->>'provider', '') not in ('open_golf', 'openstreetmap'))
-    or exists (select 1 from golf_course_sources where course_id = p_course and license <> 'ODbL-1.0')
-    or exists (select 1 from golf_tee_sets where course_id = p_course and license <> 'ODbL-1.0')
-    or exists (select 1 from golf_hole_tees t join golf_holes h on h.id = t.hole_id where h.course_id = p_course and t.license <> 'ODbL-1.0')
-    or exists (select 1 from golf_hole_features f join golf_holes h on h.id = f.hole_id where h.course_id = p_course and f.license <> 'ODbL-1.0')
-    or exists (select 1 from golf_green_targets g join golf_holes h on h.id = g.hole_id where h.course_id = p_course and g.license <> 'ODbL-1.0');
+      where h.course_id = p_course and coalesce(e->>'provider', '') not in ('golf_course_api', 'openstreetmap'))
+    or exists (select 1 from golf_course_sources where course_id = p_course and license not in ('ODbL-1.0', 'GolfCourseAPI-terms'))
+    or exists (select 1 from golf_tee_sets where course_id = p_course and license not in ('ODbL-1.0', 'GolfCourseAPI-terms'))
+    or exists (select 1 from golf_hole_tees t join golf_holes h on h.id = t.hole_id where h.course_id = p_course and t.license not in ('ODbL-1.0', 'GolfCourseAPI-terms'))
+    or exists (select 1 from golf_hole_features f join golf_holes h on h.id = f.hole_id where h.course_id = p_course and f.license not in ('ODbL-1.0', 'GolfCourseAPI-terms'))
+    or exists (select 1 from golf_green_targets g join golf_holes h on h.id = g.hole_id where h.course_id = p_course and g.license not in ('ODbL-1.0', 'GolfCourseAPI-terms'));
 $$;
 
 -- Save a whole normalized course (shape: lib/platform/golfGps/repository/storageRows.ts). Finds an existing course by

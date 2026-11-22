@@ -39,9 +39,9 @@ export function simulatorPages(): SimulatorPage[] {
     pages.push({ id: `invite-${slug}`, path: `/dev/invites/${slug}`, label, group, stage: "Onboarding", fixtures: false, conditions: [] });
   }
   pages.push(
-    { id: "website-desktop", path: "/dev-website", label: "Landing page", group: "Website desktop", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
-    { id: "website-mobile", path: "/dev-website", label: "Landing page", group: "Website mobile", fixtures: false, viewport: "mobile", standalone: true, conditions: [] },
-    ...(["desktop", "mobile"] as const).flatMap(viewport => [0, 1, 3, 12].map(count => ({ id: `website-live-${viewport}-${count}`, path: `/dev-website?view=live&trips=${count}`, label: `The Maroon Live / ${count} ${count === 1 ? "trip" : "trips"}`, group: viewport === "desktop" ? "Website desktop" : "Website mobile", fixtures: false, viewport, standalone: true, conditions: [] }))),
+    // Website: each page once; the Website desktop / Website mobile switch up top picks the size (owner request 2026-11-21).
+    { id: "website-landing", path: "/dev-website", label: "Landing page", group: "Website", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
+    ...[0, 1, 3, 12].map(count => ({ id: `website-live-${count}`, path: `/dev-website?view=live&trips=${count}`, label: `The Maroon Live / ${count} ${count === 1 ? "trip" : "trips"}`, group: "Website", fixtures: false, viewport: "desktop" as const, standalone: true, conditions: [] })),
   );
   const brandStudio = pages.find(page => page.path === "/dev/brand");
   if (brandStudio) Object.assign(brandStudio, { group: "App Launch", label: "Logo studio", conditions: [] });
@@ -465,7 +465,7 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.path === "/dev/course-search") page.label = "Course search (test harness)";
   }
   const features: string[] = [...SIMULATOR_FEATURES];
-  const reviewGroups = ["Website desktop", "Website mobile"];
+  const reviewGroups = ["Website"];
   const groupOrder = [...features, ...reviewGroups, ...Array.from(new Set(pages.map(page => page.group ?? "Other"))).filter(group => !features.includes(group) && !reviewGroups.includes(group))];
   const stageRank = (page: SimulatorPage) => SIMULATOR_STAGES.indexOf(page.stage ?? "Main");
   // Onboarding: the invite last. Golf Trips follows the trip builder's order (pages not in it, coach marks + ready, first).

@@ -41,13 +41,6 @@
 .gpsLayer{position:fixed;inset:0;z-index:1000;background:var(--lm-bg-240001)}
 /* Course lookup refresh: flag tile, distance pill, Near you section, loading placeholders. */
 .flag{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#f3ebdd;color:var(--brand-7a1b2e)}
-.miles{flex:none;margin-left:auto;padding:5px 9px;border-radius:999px;background:var(--lm-bg-1d0b11);color:var(--lm-ink-fffdf8);font:600 12px/1 var(--font-barlow),sans-serif;white-space:nowrap}
-.near{margin-top:20px}
-.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sectionHead h3{display:flex;align-items:center;gap:6px;margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-7a1b2e)}
-.refresh{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border:1px solid var(--lm-ink-e3d8c4);border-radius:999px;background:transparent;color:#5d4f47;font:600 12px var(--font-barlow),sans-serif;cursor:pointer}
-.locate{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;margin-top:12px;border:1px dashed #b99c6b;border-radius:16px;background:#fffdf8;color:var(--color-maroon-950);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
-.locate:hover{border-style:solid}
 .skeleton{height:68px;border-radius:16px;background:linear-gradient(90deg,#efe7da 0%,#f8f2e8 50%,#efe7da 100%);background-size:200% 100%;animation:shimmer 1.2s ease-in-out infinite}
 @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
 @media(prefers-reduced-motion:reduce){.skeleton,.spinner{animation:none}.results button{transition:none}}

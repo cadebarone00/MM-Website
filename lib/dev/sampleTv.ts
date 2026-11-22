@@ -20,11 +20,14 @@ export function sampleTvBoard(playerCount = 24): TvBoardData {
     position: pos[i], name, team: i % 2 ? "Rebels" : "Tigers", total: totals[i], today: totals[i] == null ? null : Math.round(totals[i]! / 2), thru: THRU[i] ? THRU[i] : "8:40",
   }));
   const pairs = Math.floor(n / 2);
-  const statuses: Pick<TvMatchRow, "status" | "leader" | "final">[] = [
-    { status: "3&2", leader: "left", final: true }, { status: "1 UP thru 15", leader: "right", final: false }, { status: "AS thru 12", leader: null, final: false },
-    { status: "2&1", leader: "right", final: true }, { status: "2 UP thru 14", leader: "left", final: false }, { status: "Halved", leader: null, final: true },
+  // Finished, in progress, all square, and two that haven't teed off yet.
+  const states: Pick<TvMatchRow, "middle" | "score" | "leader">[] = [
+    { middle: "F", score: "3&2", leader: "left" }, { middle: "Thru 15", score: "1 UP", leader: "right" }, { middle: "Thru 12", score: "AS", leader: null },
+    { middle: "F", score: "2&1", leader: "right" }, { middle: "Thru 14", score: "2 UP", leader: "left" }, { middle: "F", score: "AS", leader: null },
+    { middle: "Thru 9", score: "3 UP", leader: "left" }, { middle: "Thru 6", score: "1 UP", leader: "right" }, { middle: "Thru 4", score: "AS", leader: null },
+    { middle: "Thru 2", score: "1 UP", leader: "left" }, { middle: "10:20", score: "", leader: null }, { middle: "10:30", score: "", leader: null },
   ];
-  const matches: TvMatchRow[] = Array.from({ length: pairs }, (_, i) => ({ label: `Match ${i + 1}`, left: NAMES[i * 2], right: NAMES[i * 2 + 1], ...statuses[i % statuses.length] }));
+  const matches: TvMatchRow[] = Array.from({ length: pairs }, (_, i) => ({ number: i + 1, left: NAMES[i * 2], right: NAMES[i * 2 + 1], ...states[i % states.length] }));
   return {
     eventName: "The Fall Classic", roundLabel: "Round 2 · Pinehurst No. 2",
     individual,

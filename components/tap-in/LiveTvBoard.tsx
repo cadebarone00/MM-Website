@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { pointsText, toParText, tvBoards, type TvBoardData, type TvShow } from "@/lib/platform/liveTv";
+import { pointsText, toParText, tvBoards, tvSideScore, type TvBoardData, type TvShow } from "@/lib/platform/liveTv";
 import styles from "./LiveTvBoard.module.css";
 
 /** Seconds each row takes to scroll past; a board that fits on screen stays put this long before the next board. */
@@ -13,13 +13,17 @@ const STILL_SECONDS = 20;
  * board and/or the match play board, each scrolling slowly top to bottom and starting over; with both, they take turns.
  * Nothing to tap. Reduced motion: pages through instead of scrolling.
  */
-export function LiveTvBoard({ data, show }: { data: TvBoardData; show: TvShow }) {
+export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoardData; show: TvShow;
+  /** Where it's open: a computer / TV browser ("desktop"), a phone's browser ("mobile") or the app ("app"); phones get a narrow layout. */
+  surface?: "desktop" | "mobile" | "app" }) {
   const boards = tvBoards(data, show);
   const [index, setIndex] = useState(0);
   const board = boards[index % Math.max(boards.length, 1)];
   const count = Math.max(boards.length, 1);
   const next = useCallback(() => setIndex((i) => (i + 1) % count), [count]);
-  return <div className={styles.screen}>
+  const teams = data.match?.teams;
+  return <div className={styles.screen} data-surface={surface} data-board={board}
+    style={teams ? { "--team-left": teams[0].color, "--team-right": teams[1].color } as CSSProperties : undefined}>
     <header className={styles.header}>
       <p className={styles.brand}>The Maroon Live</p>
       <div className={styles.title}><h1>{data.eventName}</h1><p>{data.roundLabel}</p></div>
@@ -29,9 +33,9 @@ export function LiveTvBoard({ data, show }: { data: TvBoardData; show: TvShow })
       : board === "individual" ? <Scroller key={`individual-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={<IndividualHeading />}>
         {data.individual!.map((row, i) => <div key={i} className={styles.row}>
           <span className={styles.pos}>{row.position}</span>
-          <span className={styles.player}>{row.team && data.match && <i className={styles.teamChip} style={{ background: data.match.teams.find((t) => t.name === row.team)?.color } as CSSProperties} aria-hidden />}{row.name}</span>
+          <span className={styles.player}>{row.name}</span>
           <span className={`${styles.num} ${styles.total} ${tone(row.total)}`}>{toParText(row.total)}</span>
-          <span className={`${styles.num} ${tone(row.today)}`}>{toParText(row.today)}</span>
+          <span className={`${styles.num} ${styles.today} ${tone(row.today)}`}>{toParText(row.today)}</span>
           <span className={styles.num}>{row.thru}</span>
         </div>)}
       </Scroller>
@@ -40,25 +44,27 @@ export function LiveTvBoard({ data, show }: { data: TvBoardData; show: TvShow })
           {/* Tigers · 12½ to win · Rebels: the target sits between the two teams. */}
           {data.match!.teams.map((team, i) => <Fragment key={team.name}>
             {i === 1 && <span className={styles.toWin}>{data.match!.toWin != null ? <><b>{pointsText(data.match!.toWin)}</b>to win</> : "vs"}</span>}
-            <div className={styles.team} style={{ "--team": team.color } as CSSProperties}>
+            <div className={`${styles.team} ${i === 1 ? styles.teamRight : ""}`} style={{ "--team": team.color } as CSSProperties}>
               <span className={styles.teamName}>{team.name}</span><span className={styles.teamPoints}>{pointsText(team.points)}</span>
             </div>
           </Fragment>)}
         </div>
         <Scroller key={`match-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={null}>
+          {/* Like the app's Matches list: names on their sides, the score on the leader's half, Match # over Thru / F / tee
+              time in the middle; the leading side glows from its corner. */}
           {data.match!.matches.map((m, i) => {
             const color = (side: "left" | "right") => data.match!.teams[side === "left" ? 0 : 1].color;
-            return <div key={i} className={`${styles.row} ${styles.matchRow}`}>
-              <span className={styles.matchLabel}>{m.label}</span>
-              <span className={`${styles.side} ${m.leader === "left" ? styles.up : ""}`}>{m.left}</span>
-              <span className={styles.status} style={{ background: m.leader ? color(m.leader) : undefined } as CSSProperties} data-even={m.leader ? undefined : ""}>{m.status}</span>
-              <span className={`${styles.side} ${styles.right} ${m.leader === "right" ? styles.up : ""}`}>{m.right}</span>
+            return <div key={i} className={styles.matchRow} data-leader={m.leader ?? undefined}
+              style={m.leader ? { "--team": color(m.leader) } as CSSProperties : undefined}>
+              <span className={`${styles.side} ${m.leader === "left" ? styles.up : ""}`}><b className={styles.sideName}>{m.left}</b><span className={styles.sideScore}>{tvSideScore(m, "left")}</span></span>
+              <span className={styles.middle}><span className={styles.matchNumber}>Match {m.number}</span><span className={styles.matchState}>{m.middle}</span></span>
+              <span className={`${styles.side} ${styles.right} ${m.leader === "right" ? styles.up : ""}`}><b className={styles.sideName}>{m.right}</b><span className={styles.sideScore}>{tvSideScore(m, "right")}</span></span>
             </div>;
           })}
         </Scroller>
       </>}
-    <footer className={styles.footer}>{boards.length > 1 && <span className={styles.dots} aria-hidden>{boards.map((b, i) => <i key={b} data-on={i === index % boards.length ? "" : undefined} />)}</span>}
-      <span>Follow along on The Maroon Live</span></footer>
+    {/* With both boards, small dots show which one is up. */}
+    <footer className={styles.footer}>{boards.length > 1 && <span className={styles.dots} aria-hidden>{boards.map((b, i) => <i key={b} data-on={i === index % boards.length ? "" : undefined} />)}</span>}</footer>
   </div>;
 }
 
@@ -66,7 +72,7 @@ const tone = (value: number | null) => value != null && value < 0 ? styles.under
 
 function IndividualHeading() {
   return <div className={`${styles.row} ${styles.headRow}`}><span className={styles.pos}>Pos</span><span className={styles.player}>Player</span>
-    <span className={styles.num}>Total</span><span className={styles.num}>Today</span><span className={styles.num}>Thru</span></div>;
+    <span className={styles.num}>Total</span><span className={`${styles.num} ${styles.today}`}>Today</span><span className={styles.num}>Thru</span></div>;
 }
 
 /**

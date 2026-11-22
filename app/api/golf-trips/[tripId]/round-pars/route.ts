@@ -7,7 +7,7 @@ import { getTripRoundScoring } from "@/lib/platform/tripScoringServer";
 
 /**
  * H5C Part 1 — Trip Settings → a round → Course Yardage → Round pars (organizer only).
- * GET ?round=N: the round's course + tee from Trip Settings with its pars (course library / OpenGolf), the confirmed
+ * GET ?round=N: the round's course + tee from Trip Settings with its pars (course library / GolfCourseAPI), the confirmed
  * snapshot, and the round's scoring groups with their starting holes.
  * POST { action: "confirm", round, pars, source } — "course" pars are loaded again here and must match exactly (so the
  * label is true); anything typed or edited is "manual". POST { action: "start-hole", round, groupId, startHole }.

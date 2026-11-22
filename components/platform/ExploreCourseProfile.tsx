@@ -19,7 +19,7 @@ const busy = (code?: string) => code === "busy" ? "Course data is busy right now
  * Explore → Courses → a picked course: a preview card (name, place, par, tees, what's available) with View Course, and
  * Open GPS (saved, GPS-ready course) or Prepare GPS (the server builds and saves the course's GPS on request, then GPS
  * opens from the saved copy). Details load once, for this course only
- * (/api/courses/<ref>: the library first, else OpenGolf; never map data). "View Course" opens a simple profile here;
+ * (/api/courses/<ref>: the library first, else GolfCourseAPI; never map data). "View Course" opens a simple profile here;
  * "Open GPS" opens the GPS screen full screen from the saved course.
  */
 export function ExploreCourseProfile({ course, onBack }: { course: CourseResult; onBack: () => void }) {
@@ -117,7 +117,7 @@ export function ExploreCourseProfile({ course, onBack }: { course: CourseResult;
       {actions}
       {gps?.status === "error" && <p className={styles.hint} role="alert">{gps.message}</p>}
     </article>
-    {info?.attribution && <p className={styles.credit}>Course data {info.attribution}</p>}
+    {info?.attribution && <p className={styles.credit}>{info.attribution}</p>}
     {gps?.status === "ready" && createPortal(
       <div className={styles.gpsLayer} role="dialog" aria-modal="true" aria-label={`GPS · ${info?.name ?? course.name}`}>
         <CourseGpsNavigator course={gps.data.gps} holeNumbers={gps.data.holeNumbers} onClose={() => setGps(null)} />
@@ -128,7 +128,7 @@ export function ExploreCourseProfile({ course, onBack }: { course: CourseResult;
 type ScorecardHole = NonNullable<CoursePreview["scorecard"]>[number];
 
 /**
- * The course's scorecard (OpenGolf), nine holes per table like a paper card: Hole, each tee's yards (longest tee first, as
+ * The course's scorecard (GolfCourseAPI), nine holes per table like a paper card: Hole, each tee's yards (longest tee first, as
  * the tees are listed), Par and Hcp, with each nine's total. Swipes sideways if it doesn't fit.
  */
 function Scorecard({ holes, tees }: { holes: ScorecardHole[]; tees: string[] }) {

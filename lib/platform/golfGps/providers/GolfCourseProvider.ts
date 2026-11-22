@@ -1,7 +1,7 @@
 import type { GolfCoordinate, GolfCourse, GolfDataProvider, GolfExternalId } from "../domain";
 
 /**
- * What every golf-course data provider (OpenGolfAPI now; OpenStreetMap, paid providers later) offers The Maroon.
+ * What every golf-course data provider (GolfCourseAPI now; OpenStreetMap, paid providers later) offers The Maroon.
  * Implementations live in ./<provider>/ and return only Maroon types — never the provider's raw JSON. Server-only.
  */
 

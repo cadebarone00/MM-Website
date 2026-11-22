@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import type { GolfCoordinate, GolfCourse, GolfSourceMetadata } from "../domain";
-import { normalizeOpenGolfCourse } from "../providers/openGolf/adapter";
-import { parseCourseDetail } from "../providers/openGolf/client";
+import { normalizeGolfCourseApiCourse } from "../providers/golfCourseApi/adapter";
+import { parseCourse } from "../providers/golfCourseApi/client";
 import { deriveCourseGreenTargets } from "../targets/deriveGreenTargets";
 import { createCourseRepository } from "./courseRepository";
 import { createGolfCourseStore, GolfCourseStoreError, type DatabaseCall } from "./courseStore";
@@ -26,14 +26,17 @@ async function database() {
 const count = async (db: PGlite, table: string) => (await db.query<{ n: number }>(`select count(*)::int as n from ${table}`)).rows[0].n;
 
 // --- Fixtures ---------------------------------------------------------------------------------------------------------
-const OG_ID = "e52240da-a538-46b3-ae9a-b46396b20123";
+const GCA_ID = "7k2m9qb4";
 const NOW = "2026-10-05T17:01:42.090Z";
-const SCORECARD = normalizeOpenGolfCourse(parseCourseDetail({
-  id: OG_ID, course_name: "Tobacco Road Golf Club", city: "Sanford", state: "NC", postal_code: "27332", lat: 35.3960739636, lng: -79.2127389438,
-  timezone: "America/New_York", holes: 2, par: 8, type: "Public", architect: "Mike Strantz",
-  tees: [{ tee_name: "Ripper", gender: "Male", course_rating: 72.5, slope: 145, par: 71, yardage: 6557 }, { tee_name: "Plow", gender: "Female", course_rating: 75.7, slope: 145 }],
-  holes_data: [{ number: 1, par: 5, handicap_index: 3, yardages: { ripper: 558, plow: 521 } }, { number: 2, par: 3, handicap_index: 11, yardages: { ripper: 152 } }],
-})!, NOW).course;
+const SCORECARD = normalizeGolfCourseApiCourse(parseCourse({ course: {
+  id: GCA_ID, club_name: "Tobacco Road Golf Club", course_name: "Tobacco Road Golf Club",
+  location: { address: "442 Tobacco Rd, Sanford, NC 27332, USA", city: "Sanford", state: "NC", country: "United States", latitude: 35.3960739636, longitude: -79.2127389438 },
+  tees: {
+    male: [{ tee_name: "Ripper", course_rating: 72.5, slope_rating: 145, total_yards: 6557, par_total: 71, number_of_holes: 2,
+      holes: [{ par: 5, yardage: 558, handicap: 3 }, { par: 3, yardage: 152, handicap: 11 }] }],
+    female: [{ tee_name: "Plow", course_rating: 75.7, slope_rating: 145, holes: [{ par: 5, yardage: 521, handicap: 3 }] }],
+  },
+} })!, NOW).course;
 
 // A mapped version: OSM-style geometry laid out in meters around the course (made-up shapes, real structure).
 const M = (Math.PI / 180) * 6_371_008.8, ORIGIN = SCORECARD.location!, COS = Math.cos((ORIGIN.lat * Math.PI) / 180);
@@ -91,9 +94,9 @@ test("mapped course: geometry, OSM provenance, external ids and derived targets 
   assert.equal(hole.green?.derivation?.frontBack?.derivedBy, "maroon");
   assert.deepEqual(hole.green?.derivation?.frontBack?.inputs.map((i) => i.providerRecordId), ["way/21", "way/11"]);
   assert.deepEqual(hole.fairways[0].polygon.innerRings?.length, 1);
-  assert.deepEqual(saved.course.externalIds, [{ provider: "open_golf", id: OG_ID }, { provider: "openstreetmap", id: "way/430227508" }]);
+  assert.deepEqual(saved.course.externalIds, [{ provider: "golf_course_api", id: GCA_ID }, { provider: "openstreetmap", id: "way/430227508" }]);
   assert.equal(await store.findIdByExternalId("openstreetmap", "way/430227508"), saved.course.id);
-  assert.equal(await store.findIdByExternalId("open_golf", OG_ID), saved.course.id);
+  assert.equal(await store.findIdByExternalId("golf_course_api", GCA_ID), saved.course.id);
 });
 
 test("provenance in the rows: every row has a provider + license; derived targets are kept apart from raw shapes", async () => {
@@ -108,8 +111,8 @@ test("provenance in the rows: every row has a provider + license; derived target
   assert.equal(targets.front_back_derivation.derivedBy, "maroon");
   const tees = (await db.query<{ provider: string; license: string; location: unknown }>("select t.provider, t.license, t.location from golf_hole_tees t join golf_holes h on h.id = t.hole_id order by h.number, t.position")).rows;
   assert.deepEqual(tees.map((t) => [t.provider, t.license, t.location !== null]), [
-    ["open_golf", "ODbL-1.0", false], ["open_golf", "ODbL-1.0", false], ["openstreetmap", "ODbL-1.0", true], ["openstreetmap", "ODbL-1.0", true],
-    ["open_golf", "ODbL-1.0", false]], "hole 1: two scorecard tees + two OSM tee boxes; hole 2: one scorecard tee");
+    ["golf_course_api", "GolfCourseAPI-terms", false], ["golf_course_api", "GolfCourseAPI-terms", false], ["openstreetmap", "ODbL-1.0", true], ["openstreetmap", "ODbL-1.0", true],
+    ["golf_course_api", "GolfCourseAPI-terms", false]], "hole 1: two scorecard tees + two OSM tee boxes; hole 2: one scorecard tee");
   // The database itself refuses a derived target that doesn't say who derived it.
   await assert.rejects(db.query(`update golf_green_targets set front_back_derivation = '{"derivedBy":"osm"}'`), /check constraint/);
 });
@@ -117,8 +120,8 @@ test("provenance in the rows: every row has a provider + license; derived target
 test("library: a stored course loads without calling any provider", async () => {
   const { store } = await database();
   const stored = await store.save(mapped());
-  const repository = createCourseRepository({ store, importOpenGolf: async () => { throw new Error("providers must not be called"); } });
-  const result = await repository.getOrImportOpenGolfCourse(OG_ID);
+  const repository = createCourseRepository({ store, importer: async () => { throw new Error("providers must not be called"); } });
+  const result = await repository.getOrImportCourse(GCA_ID);
   assert.equal(result?.from, "library");
   assert.equal(result?.entry.course.id, stored.course.id);
   assert.deepEqual(result?.entry.course, stored.course);
@@ -127,18 +130,18 @@ test("library: a stored course loads without calling any provider", async () => 
 test("import flow: not stored yet → imported once, saved, then served from the library", async () => {
   const { store } = await database();
   let calls = 0;
-  const repository = createCourseRepository({ store, importOpenGolf: async () => { calls++; return { course: SCORECARD } as never; } });
-  const first = await repository.getOrImportOpenGolfCourse(OG_ID);
-  const second = await repository.getOrImportOpenGolfCourse(OG_ID);
+  const repository = createCourseRepository({ store, importer: async () => { calls++; return { course: SCORECARD } as never; } });
+  const first = await repository.getOrImportCourse(GCA_ID);
+  const second = await repository.getOrImportCourse(GCA_ID);
   assert.deepEqual([first?.from, second?.from, calls], ["import", "library", 1]);
-  assert.equal(await repository.getOrImportOpenGolfCourse("00000000-0000-0000-0000-000000000000").then(() => "ok", () => "threw"), "ok");
+  assert.equal(await repository.getOrImportCourse("00000000-0000-0000-0000-000000000000").then(() => "ok", () => "threw"), "ok");
 });
 
 test("refresh: rebuilds in place — same course and hole ids, new data, newer refreshedAt", async () => {
   const { store } = await database();
   const before = await store.save(SCORECARD);
   const updated = mapped();
-  const repository = createCourseRepository({ store, importOpenGolf: async () => ({ course: updated }) as never });
+  const repository = createCourseRepository({ store, importer: async () => ({ course: updated }) as never });
   const after = await repository.refreshCourse(before.course.id);
   assert.equal(after.course.id, before.course.id);
   assert.deepEqual(after.course.holes.map((h) => h.id), before.course.holes.map((h) => h.id));
@@ -150,10 +153,10 @@ test("refresh: rebuilds in place — same course and hole ids, new data, newer r
 test("a failing provider never touches the stored course", async () => {
   const { store } = await database();
   const stored = await store.save(mapped());
-  const repository = createCourseRepository({ store, importOpenGolf: async () => { throw new Error("Overpass is too busy right now"); } });
+  const repository = createCourseRepository({ store, importer: async () => { throw new Error("Overpass is too busy right now"); } });
   await assert.rejects(repository.refreshCourse(stored.course.id), /too busy/);
   assert.deepEqual(await store.load(stored.course.id), stored);
-  const gone = createCourseRepository({ store, importOpenGolf: async () => null });
+  const gone = createCourseRepository({ store, importer: async () => null });
   await assert.rejects(gone.refreshCourse(stored.course.id), /stored copy was kept/);
   assert.deepEqual((await store.load(stored.course.id))?.course, stored.course);
 });
@@ -180,9 +183,9 @@ test("data the storage can't hold yet is refused, not dropped", async () => {
 test("stale flag after 180 days, and the tables are closed to the browser roles", async () => {
   const { db, store } = await database();
   const saved = await store.save(SCORECARD);
-  const later = createCourseRepository({ store, importOpenGolf: async () => null, now: () => new Date(Date.now() + 181 * 24 * 60 * 60 * 1000) });
+  const later = createCourseRepository({ store, importer: async () => null, now: () => new Date(Date.now() + 181 * 24 * 60 * 60 * 1000) });
   assert.equal((await later.getCourseById(saved.course.id))?.stale, true);
-  assert.equal((await createCourseRepository({ store, importOpenGolf: async () => null }).getCourseById(saved.course.id))?.stale, false);
+  assert.equal((await createCourseRepository({ store, importer: async () => null }).getCourseById(saved.course.id))?.stale, false);
   for (const role of ["anon", "authenticated"]) {
     await db.exec(`set role ${role}`);
     await assert.rejects(db.query("select * from golf_courses"), /permission denied/);

@@ -9,7 +9,7 @@
  */
 export type GolfDataProvider =
   | "maroon" // entered or corrected inside The Maroon (organizers, admins)
-  | "open_golf" // OpenGolfAPI
+  | "golf_course_api" // GolfCourseAPI (scorecards)
   | "openstreetmap"
   | "golf_intelligence";
 

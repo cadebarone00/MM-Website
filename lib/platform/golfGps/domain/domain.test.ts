@@ -55,7 +55,7 @@ function gpsHole(): GolfHole {
 function course(holes: GolfHole[]): GolfCourse {
   return {
     id: "course-1",
-    externalIds: [{ provider: "openstreetmap", id: "relation/4082113" }, { provider: "open_golf", id: "abc-123" }],
+    externalIds: [{ provider: "openstreetmap", id: "relation/4082113" }, { provider: "golf_course_api", id: "abc-123" }],
     name: "Test Course",
     address: { city: "Rancho Mirage", state: "CA", country: "US" },
     holeCount: 18,
@@ -112,7 +112,7 @@ test("hazard geometry: point-only hazards are valid and get no made-up outline; 
   const hole = toPrototypeGpsHole({
     ...gpsHole(),
     bunkers: [
-      { id: "pt", geometry: { kind: "point", point: pin, source: { provider: "open_golf", providerRecordId: "hz-9" } }, label: "Fairway bunker" },
+      { id: "pt", geometry: { kind: "point", point: pin, source: { provider: "golf_course_api", providerRecordId: "hz-9" } }, label: "Fairway bunker" },
       { id: "both", geometry: { kind: "polygon", polygon: outline, center: statedCenter } },
     ],
     penaltyAreas: [{ id: "lake", kind: "water", geometry: { kind: "point", point: pin } }],

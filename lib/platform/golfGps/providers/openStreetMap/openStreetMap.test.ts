@@ -52,9 +52,9 @@ const hole = (number: number, par: number): GolfHole => ({
 const SCORECARD = { scorecard: true, teeCoordinates: false, greenPoints: false, greenPolygons: false, fairways: false, hazardLocations: false,
   hazardPolygons: false, holeBoundaries: false, centerlines: false, elevation: false, greenSlope: false };
 const COURSE: GolfCourse = {
-  id: "open_golf:abc", externalIds: [{ provider: "open_golf", id: "abc" }], name: "Test Pines Golf Club", address: {},
+  id: "golf_course_api:abc", externalIds: [{ provider: "golf_course_api", id: "abc" }], name: "Test Pines Golf Club", address: {},
   location: ORIGIN, holeCount: 2, holes: [hole(1, 4), hole(2, 3)], teeSets: [{ id: "blue", name: "Blue" }],
-  sources: [{ provider: "open_golf", providerRecordId: "abc" }], coverage: { level: "scorecard", features: SCORECARD, holesWithGps: 0 },
+  sources: [{ provider: "golf_course_api", providerRecordId: "abc" }], coverage: { level: "scorecard", features: SCORECARD, holesWithGps: 0 },
   verification: { status: "imported" },
 };
 const NOW = new Date("2026-10-05T18:00:00Z");

@@ -3,7 +3,7 @@ import { refreshSources, saveToMaroon } from "./libraryActions";
 import styles from "./CourseSearch.module.css";
 
 /**
- * DEV ONLY: the selected OpenGolf course in the Maroon course library — saved or not, and what the saved copy holds,
+ * DEV ONLY: the selected GolfCourseAPI course in the Maroon course library — saved or not, and what the saved copy holds,
  * read straight back from Supabase (no provider calls).
  */
 export function LibraryPanel({ entry, lookupError, notice, form }: {
@@ -21,7 +21,7 @@ export function LibraryPanel({ entry, lookupError, notice, form }: {
     {lookupError && <p className={styles.error}>{lookupError}</p>}
     {!lookupError && !entry && <form action={saveToMaroon}>{hidden}
       <button type="submit" className={styles.action}>Save to Maroon</button>
-      <span className={styles.credit}> Imports OpenGolf + OpenStreetMap + green targets once and stores the result.</span>
+      <span className={styles.credit}> Imports GolfCourseAPI + OpenStreetMap + green targets once and stores the result.</span>
     </form>}
     {entry && <StoredCourse entry={entry} hidden={hidden} />}
   </section>;
@@ -47,7 +47,7 @@ function StoredCourse({ entry, hidden }: { entry: CourseLibraryEntry; hidden: Re
       <form action={refreshSources} style={{ display: "inline" }}>{hidden}<input type="hidden" name="maroonCourse" value={course.id} />
         <button type="submit" className={styles.action}>Refresh Sources</button>
       </form>
-      <span className={styles.credit}>Refresh re-imports OpenGolf + OpenStreetMap and re-derives targets. Only all-imported courses can be refreshed; if a source fails, the stored copy stays as it is.</span>
+      <span className={styles.credit}>Refresh re-imports GolfCourseAPI + OpenStreetMap and re-derives targets. Only all-imported courses can be refreshed; if a source fails, the stored copy stays as it is.</span>
     </div>
   </>;
 }

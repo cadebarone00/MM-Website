@@ -8,8 +8,8 @@ import type { CourseLibraryEntry, CourseRepository } from "./repository/courseRe
  *
  * 1. Maroon course library first: a saved, GPS-ready course is returned as-is (no provider calls).
  * 2. A saved course with no GPS data that was imported within the last GPS_RETRY_AFTER_DAYS is NOT re-imported — its
- *    sources were already checked recently, so repeated taps can't hammer OpenGolf / Overpass.
- * 3. Otherwise: the repository's import (OpenGolf → OpenStreetMap → derived green targets) saves the course — new, or
+ *    sources were already checked recently, so repeated taps can't hammer GolfCourseAPI / Overpass.
+ * 3. Otherwise: the repository's import (GolfCourseAPI → OpenStreetMap → derived green targets) saves the course — new, or
  *    rebuilt in place with the same course / hole ids when the refresh rule allows (protected data is never overwritten).
  *    A provider failure throws before anything is saved, so nothing partial is stored and the stored copy is kept.
  * 4. Reports only: ready (+ Maroon course id) or why not, in plain categories the app turns into short messages.
@@ -35,11 +35,11 @@ export function createGpsProvisioner({ repository, now = () => new Date() }: { r
   const result = (entry: CourseLibraryEntry): GpsProvisionResult =>
     isGpsCapable(entry.course) ? { status: "ready", maroonCourseId: entry.course.id } : { status: "unavailable" };
 
-  async function run(openGolfId: string): Promise<GpsProvisionResult> {
+  async function run(courseRef: string): Promise<GpsProvisionResult> {
     try {
-      const stored = await repository.findCourseByExternalId("open_golf", openGolfId);
+      const stored = await repository.findCourseByExternalId("golf_course_api", courseRef);
       if (stored && (isGpsCapable(stored.course) || recentlyChecked(stored))) return result(stored);
-      const saved = await repository.importOpenGolfCourse(openGolfId);
+      const saved = await repository.importCourse(courseRef);
       return saved ? result(saved) : { status: "not_found" };
     } catch (error) {
       if (error instanceof GolfProviderError) {
@@ -53,11 +53,11 @@ export function createGpsProvisioner({ repository, now = () => new Date() }: { r
   }
 
   return {
-    provision(openGolfId: string): Promise<GpsProvisionResult> {
-      const running = inFlight.get(openGolfId);
+    provision(courseRef: string): Promise<GpsProvisionResult> {
+      const running = inFlight.get(courseRef);
       if (running) return running;
-      const promise = run(openGolfId).finally(() => inFlight.delete(openGolfId));
-      inFlight.set(openGolfId, promise);
+      const promise = run(courseRef).finally(() => inFlight.delete(courseRef));
+      inFlight.set(courseRef, promise);
       return promise;
     },
     /** True when Prepare GPS could do something new for this stored course (or it isn't stored yet). */

@@ -4,7 +4,7 @@ import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrar
 
 /**
  * GPS data for a course saved in the Maroon course library: GET /api/courses/library/<Maroon course id>/gps.
- * Reads the library only — no OpenGolf / OpenStreetMap calls. Normalized Maroon data through the GPS adapter.
+ * Reads the library only — no GolfCourseAPI / OpenStreetMap calls. Normalized Maroon data through the GPS adapter.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

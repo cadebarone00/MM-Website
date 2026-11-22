@@ -2,7 +2,7 @@ import type { GolfCoordinate, GolfCourse, GolfDataProvider, GolfExternalId, Golf
 
 /**
  * A provider that adds map geometry (holes, tees, greens, hazards …) to a course The Maroon already knows, e.g.
- * OpenStreetMap enriching an OpenGolf scorecard. Returns Maroon types only — never raw provider data. Server-only.
+ * OpenStreetMap enriching an GolfCourseAPI scorecard. Returns Maroon types only — never raw provider data. Server-only.
  */
 export interface GolfGeometryProvider {
   provider: GolfDataProvider;

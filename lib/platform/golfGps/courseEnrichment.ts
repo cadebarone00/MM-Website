@@ -1,14 +1,14 @@
 import type { GolfCourse } from "./domain";
 import type { GolfCourseImport, GolfCourseProvider } from "./providers/GolfCourseProvider";
 import type { GolfGeometryEnrichment, GolfGeometryProvider } from "./providers/GolfGeometryProvider";
-import { createOpenGolfProvider } from "./providers/openGolf/provider";
+import { createGolfCourseApiProvider } from "./providers/golfCourseApi/provider";
 import { createOpenStreetMapGeometryProvider } from "./providers/openStreetMap/provider";
 import { deriveCourseGreenTargets, type HoleTargetReport } from "./targets/deriveGreenTargets";
 
 /**
  * The course-data pipeline, in one place, so no page combines providers itself. Server-only.
  *
- *   scorecard course (OpenGolf)  →  + map geometry (OpenStreetMap)  →  + playable green targets  →  Maroon GolfCourse
+ *   scorecard course (GolfCourseAPI)  →  + map geometry (OpenStreetMap)  →  + playable green targets  →  Maroon GolfCourse
  *
  * The result is the provider-independent GolfCourse; the provider details ride along only for dev / reporting.
  */
@@ -28,12 +28,12 @@ export async function enrichGolfCourse(course: GolfCourse, {
   return { course: playable, geometry: { ...geometry, course: playable }, targets: holes };
 }
 
-/** Scorecard + geometry + targets for one OpenGolf course id. Null when OpenGolf has no such course. */
-export async function loadPlayableOpenGolfCourse(openGolfId: string, {
-  courseProvider = createOpenGolfProvider(),
+/** Scorecard + geometry + targets for one GolfCourseAPI course id. Null when GolfCourseAPI has no such course. */
+export async function loadPlayableCourse(courseRef: string, {
+  courseProvider = createGolfCourseApiProvider(),
   ...options
 }: { courseProvider?: GolfCourseProvider; geometryProvider?: GolfGeometryProvider; now?: () => Date } = {}): Promise<(PlayableCourse & { scorecard: GolfCourseImport }) | null> {
-  const scorecard = await courseProvider.getCourseDetail(openGolfId);
+  const scorecard = await courseProvider.getCourseDetail(courseRef);
   if (!scorecard) return null;
   return { ...(await enrichGolfCourse(scorecard.course, options)), scorecard };
 }
