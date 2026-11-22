@@ -163,11 +163,6 @@
 .boardCard{padding:0 0 10px;list-style:none}
 /* Wolf: the other players as a list (one row each), Lone Wolf last. */
 .wolfName{flex:1;min-width:0}
-.manage{margin:12px 0}
-.manage summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 14px;border:1px solid #b99c6b55;border-radius:12px;font:600 15px var(--font-barlow),sans-serif;cursor:pointer;list-style:none}
-.manage summary::after{content:"Manage ›";font-size:13px;color:#c9a86e}
-.manage[open] summary{margin-bottom:10px}
-.manage summary::-webkit-details-marker{display:none}
 
 /* Wolf (owner 2026-11-22): one horizontal row — each player a column split by thin lines, Lone Wolf last; no pills. */
 .wolfRow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent);border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}
@@ -193,3 +188,10 @@
 .scoreMark[data-mark=bogey]{border:1px solid #fff}
 .scoreMark[data-mark=double]{border:1px solid #fff;outline:1px solid #fff;outline-offset:2px}
 .playerCard td{overflow:visible}
+
+/* Round settings (owner 2026-11-22): the gear top right opens a sheet with the players, Manage, the tip and Leave. */
+.settingsButton{margin-left:auto}
+.settingsBody{display:grid;gap:12px;padding:18px 18px calc(18px + env(safe-area-inset-bottom));color:#fbf8f1}
+.settingsTitle{margin:0;font:600 22px/1.2 var(--font-spectral),Georgia,serif}
+.settingsLabel{margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1cec4}
+.settingsBody .roster{margin:0}

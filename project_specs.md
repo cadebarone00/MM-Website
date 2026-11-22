@@ -6149,3 +6149,6 @@ last), not pill buttons.
   (`cardTotals={false}`); double circles / double squares are a thin second ring with a see-through gap (outline), the
   same on the Card tab and the leaderboard scorecard (no thick ring on the dark sheet).
 - **Owner (2026-11-22):** no small Next hole button; the Next hole at the bottom of the scoring tab still sends every score.
+- **Owner (2026-11-22):** a settings button (gear) top right of the round screen opens **Round settings**: the players
+  (remove), Add players · Change game · End round (scorekeeper), the scoring tip, and Leave round on this phone. The main
+  screen is the course, the leaderboard and the scoring tab.

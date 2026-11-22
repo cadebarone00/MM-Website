@@ -4,7 +4,7 @@ import { DatePicker } from "@/components/platform/DatePicker";
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Settings as SettingsIcon, X } from "lucide-react";
 import { CourseSearchBar } from "./TripScheduleCoursePicker";
 import wiz from "./CreateTournament.module.css";
 import { GolfTripScoring } from "./GolfTripScoring";
@@ -494,6 +494,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const [attempt, setAttempt] = useState(0);
   const [card, setCard] = useState(saved.card);
   const [menu, setMenu] = useState<null | "players" | "game">(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pickingGame, setPickingGame] = useState(false);
   /** Changes sent but not confirmed yet ("profile:hole" / "guest:id:hole" → strokes; "pick:hole" → pick; "stats:hole" → stats), so a poll never undoes them. */
   const [pending, setPending] = useState<Record<string, unknown>>({});
@@ -591,54 +592,61 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   }
 
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/" className={styles.back} aria-label="Back to Play (your round is kept)"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Round with friends{isHost ? " · you keep score" : ""}</p></header>
+    <header className={styles.header}><Link href="/" className={styles.back} aria-label="Back to Play (your round is kept)"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Round with friends{isHost ? " · you keep score" : ""}</p>
+      <button type="button" className={`${styles.back} ${styles.settingsButton}`} aria-label="Round settings" aria-haspopup="dialog" onClick={() => setSettingsOpen(true)}><SettingsIcon size={18} aria-hidden="true" /></button></header>
     <section className={styles.panel}>
       <h1 className={styles.title}>{setup.course.name}</h1>
       <p className={styles.place}>{[setup.tee?.name, holesLabel(setup.holes), def?.name, ended ? "Round ended" : null].filter(Boolean).join(" · ")}</p>
       {problem && <p className={styles.error} role="alert">{problem}</p>}
-      {/* The leaderboard first for everyone; the scorekeeper's player list folds into "N players · Manage". */}
       {save.status !== "saved" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} />}
-      {isHost && save.status !== "saved" && <details className={styles.manage}><summary>{active.length + guests.length} players</summary>
-      <ul className={styles.roster} aria-label="Players">
-        {active.map((p) => <li key={p.profileId}><span>{p.profileId === me ? "You" : p.name}{p.profileId === snap.host && <small>Scorekeeper</small>}</span>
-          <b data-status={p.status}>{p.status === "joined" ? "Joined" : "Invited"}</b>
-          {isHost && p.profileId !== me && !ended && <button type="button" className={styles.remove} aria-label={p.status === "invited" ? `Cancel ${p.name}'s invite` : `Remove ${p.name}`}
-            onClick={() => hostAction({ action: "remove", profileId: p.profileId }, p.status === "invited" ? `Cancel ${p.name}'s invite?` : `Remove ${p.name} from the round?`)}><X size={16} aria-hidden="true" /></button>}
-        </li>)}
-        {guests.map((g) => <li key={g.id}><span>{g.name}</span><b data-status="guest">Guest</b>
-          {isHost && !ended && <button type="button" className={styles.remove} aria-label={`Remove ${g.name}`}
-            onClick={() => { if (window.confirm(`Remove ${g.name} from the round?`)) setGuests(guests.filter((x) => x.id !== g.id)); }}><X size={16} aria-hidden="true" /></button>}
-        </li>)}
-      </ul>
-      {!ended && <div className={styles.hostMenu} role="group" aria-label="Host">
-        <button type="button" className={styles.secondary} aria-expanded={menu === "players"} onClick={() => setMenu(menu === "players" ? null : "players")}>Add players</button>
-        <button type="button" className={styles.secondary} aria-expanded={menu === "game"} onClick={() => setMenu(menu === "game" ? null : "game")}>Change game</button>
-        <button type="button" className={styles.secondary} onClick={() => hostAction({ action: "end" }, "End the round for everyone without saving? Submit & Save on your card saves everyone's round.")}>End round</button>
-      </div>}
-      {menu === "players" && !ended && (room
-        ? <div className={styles.form}>
-            <InvitePlayer taken={active.map((p) => p.profileId)} onInvite={(player) => { void hostAction({ action: "invite", profileId: player.profileId }); setMenu(null); }} />
-            <AddGuest onAdd={(name) => { setGuests([...guests, { id: newGuestId(), name, handicap: null }]); setMenu(null); }} />
-          </div>
-        : <p className={styles.note}>A round has up to 5 players, guests included.</p>)}
-      {menu === "game" && !ended && <div className={styles.form}>
-        <GamePicker gameId={setup.game?.id ?? ""} open={pickingGame} setOpen={setPickingGame} onPick={(gameId) => {
-          const next = gameId ? gameDef(gameId) : null;
-          void hostAction({ action: "setup", setup: { ...setup, game: next ? { id: next.id, net: !next.teamFormat && (setup.game?.net ?? false), birdiesDouble: next.points && (setup.game?.birdiesDouble ?? false) } : null } });
-          setMenu(null);
-        }} />
-      </div>}
-      </details>}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {gamePlayers.length} in the round, so it isn&apos;t scored right now.</p>}
       {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
-      {isHost ? <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
-        leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? Scores already sent stay in the round.")) onLeave(); }}>Leave round on this phone</button>} />
-        : <>
-          <p className={styles.note}>{ended ? "Round finished. When the host scored every hole, it's saved to your Profile → Rounds." : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
-          {ended && <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link>}
-          <button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
-        </>}
+      {/* Saving / saved / a failed save show here; the everyday tip and Leave are in Round settings. */}
+      {isHost && save.status !== "idle" && <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }} leave={null} />}
+      {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
+        <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link></>}
     </section>
+    {/* Round settings (owner 2026-11-22): the players and Manage, the tip, and Leave round, behind the gear top right. */}
+    {settingsOpen && <GolfTripActionSheet label="Round settings" slideUp onClose={() => { setSettingsOpen(false); setMenu(null); }}>
+      <div className={styles.settingsBody}>
+        <h2 className={styles.settingsTitle}>Round settings</h2>
+        <p className={styles.settingsLabel}>{active.length + guests.length} players</p>
+        <ul className={styles.roster} aria-label="Players">
+          {active.map((p) => <li key={p.profileId}><span>{p.profileId === me ? "You" : p.name}{p.profileId === snap.host && <small>Scorekeeper</small>}</span>
+            <b data-status={p.status}>{p.status === "joined" ? "Joined" : "Invited"}</b>
+            {isHost && p.profileId !== me && !ended && <button type="button" className={styles.remove} aria-label={p.status === "invited" ? `Cancel ${p.name}'s invite` : `Remove ${p.name}`}
+              onClick={() => hostAction({ action: "remove", profileId: p.profileId }, p.status === "invited" ? `Cancel ${p.name}'s invite?` : `Remove ${p.name} from the round?`)}><X size={16} aria-hidden="true" /></button>}
+          </li>)}
+          {guests.map((g) => <li key={g.id}><span>{g.name}</span><b data-status="guest">Guest</b>
+            {isHost && !ended && <button type="button" className={styles.remove} aria-label={`Remove ${g.name}`}
+              onClick={() => { if (window.confirm(`Remove ${g.name} from the round?`)) setGuests(guests.filter((x) => x.id !== g.id)); }}><X size={16} aria-hidden="true" /></button>}
+          </li>)}
+        </ul>
+        {isHost && !ended && save.status !== "saved" && <>
+          <div className={styles.hostMenu} role="group" aria-label="Host">
+            <button type="button" className={styles.secondary} aria-expanded={menu === "players"} onClick={() => setMenu(menu === "players" ? null : "players")}>Add players</button>
+            <button type="button" className={styles.secondary} aria-expanded={menu === "game"} onClick={() => setMenu(menu === "game" ? null : "game")}>Change game</button>
+            <button type="button" className={styles.secondary} onClick={() => hostAction({ action: "end" }, "End the round for everyone without saving? Submit & Save on your card saves everyone's round.")}>End round</button>
+          </div>
+          {menu === "players" && (room
+            ? <div className={styles.form}>
+                <InvitePlayer taken={active.map((p) => p.profileId)} onInvite={(player) => { void hostAction({ action: "invite", profileId: player.profileId }); setMenu(null); }} />
+                <AddGuest onAdd={(name) => { setGuests([...guests, { id: newGuestId(), name, handicap: null }]); setMenu(null); }} />
+              </div>
+            : <p className={styles.note}>A round has up to 5 players, guests included.</p>)}
+          {menu === "game" && <div className={styles.form}>
+            <GamePicker gameId={setup.game?.id ?? ""} open={pickingGame} setOpen={setPickingGame} onPick={(gameId) => {
+              const next = gameId ? gameDef(gameId) : null;
+              void hostAction({ action: "setup", setup: { ...setup, game: next ? { id: next.id, net: !next.teamFormat && (setup.game?.net ?? false), birdiesDouble: next.points && (setup.game?.birdiesDouble ?? false) } : null } });
+              setMenu(null);
+            }} />
+          </div>}
+        </>}
+        <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."
+          : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
+        <button type="button" className={styles.discard} onClick={() => { if (window.confirm(isHost ? "Leave this round on this phone? Scores already sent stay in the round." : "Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
+      </div>
+    </GolfTripActionSheet>}
     {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}
       onNextHole={finishHole} holeAlert={(h) => setup.game?.id === "wolf" && gameFits && inputs[h]?.wolfPartner === undefined && enteredRows().every((row) => row[h] != null)}
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
