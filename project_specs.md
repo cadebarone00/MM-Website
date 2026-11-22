@@ -6142,5 +6142,6 @@ last), not pill buttons.
 - **Owner (2026-11-22):** scorecards use fixed, equal hole columns so a card looks the same whatever's been scored and the
   nines line up (×2 in the corner); no PTS column on the leaderboard (SKINS stays for Skins); the small Next hole sits
   right under the score boxes.
-- **Owner (2026-11-22):** scorecard score row — par white; birdie red in a circle (eagle: double circle); bogey or worse
-  black in a square (double bogey+: double square), on a cream square so black reads on the dark card.
+- **Owner (2026-11-22):** scorecard score row — all numbers and shapes white: circle = birdie (double circle = eagle),
+  square = bogey (double square = double bogey or worse), par plain.
+  The leaderboard's TOT keeps red for under par (the trip leaderboard's colors).
