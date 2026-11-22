@@ -678,6 +678,10 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
 
 type HoleStats = { putts: number | null; fairway: ShotResult | null; green: ShotResult | null };
 
+/** A score's scorecard mark (owner 2026-11-22): circle = birdie, double circle = eagle or better, square = bogey, double
+ *  square = double bogey or worse; par has none. */
+const scoreMark = (vsPar: number) => vsPar <= -2 ? "eagle" : vsPar === -1 ? "birdie" : vsPar === 0 ? "par" : vsPar === 1 ? "bogey" : "double";
+
 /** One player's scorecard, opened from the leaderboard: front and back nine, each with Par, the score, and — with a game
  *  that has money — what they won or lost on each hole (a P&L row). */
 function PlayerCard({ name, strokes, par, range, pnl, doubled }: { name: string; strokes: (number | null)[]; par: number[]; range: [number, number]; pnl: (number | null)[] | null; doubled: boolean[] }) {
@@ -689,7 +693,7 @@ function PlayerCard({ name, strokes, par, range, pnl, doubled }: { name: string;
       <thead><tr><th scope="row">{i === 0 && range[0] === 0 ? "Out" : "In"}</th>{holes.map((h) => <th key={h} scope="col">{h + 1}{doubled[h] && <sup aria-label="doubled">×2</sup>}</th>)}<th scope="col">Tot</th></tr></thead>
       <tbody>
         <tr className={styles.playerCardPar}><th scope="row">Par</th>{holes.map((h) => <td key={h}>{par[h]}</td>)}<td>{holes.reduce((t, h) => t + par[h], 0)}</td></tr>
-        <tr><th scope="row">Score</th>{holes.map((h) => <td key={h} data-vs={strokes[h] == null ? undefined : Math.sign(strokes[h]! - par[h])}>{strokes[h] ?? ""}</td>)}<td>{sum(holes, strokes) ?? ""}</td></tr>
+        <tr><th scope="row">Score</th>{holes.map((h) => <td key={h}>{strokes[h] != null && <span className={styles.scoreMark} data-mark={scoreMark(strokes[h]! - par[h])}>{strokes[h]}</span>}</td>)}<td>{sum(holes, strokes) ?? ""}</td></tr>
         {pnl && <tr className={styles.playerCardPnl}><th scope="row">$</th>{holes.map((h) => <td key={h} data-sign={pnl[h] == null ? undefined : Math.sign(pnl[h]!)}>{cash(pnl[h])}</td>)}<td data-sign={Math.sign(sum(holes, pnl) ?? 0)}>{cash(sum(holes, pnl))}</td></tr>}
       </tbody>
     </table>)}
