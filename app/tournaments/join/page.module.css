@@ -33,7 +33,7 @@
 }
 
 .pageHeader > main {
-  --tj-bg: var(--lm-bg-1d0b11);
+  --tj-bg: var(--lm-bg-240001);
   position: relative;
   min-height: 86svh;
 }

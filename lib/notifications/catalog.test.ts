@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { CATALOG_LONG_VALUES, CATALOG_SAMPLE_VALUES, NOTIFICATION_CATALOG, NOTIFICATION_ICONS, NOTIFICATION_KINDS, NOTIFICATION_SWITCHES, blanksIn, catalogEntry, fillBlanks, kindsForSwitch } from "./catalog.ts";
+import { CATALOG_LONG_VALUES, CATALOG_SAMPLE_VALUES, NOTIFICATION_CATALOG, NOTIFICATION_ICONS, NOTIFICATION_KINDS, NOTIFICATION_SWITCHES, blanksIn, catalogEntry, fillBlanks, kindsForSwitch, pickWording, type NotificationKind } from "./catalog.ts";
 import { BODY_LIMIT, TITLE_LIMIT, safeAppLink } from "./format.ts";
 import { DEFAULT_PREFERENCES, NOTIFICATION_TYPES, preferenceChangeFromBody } from "../profile/preferences.ts";
 
@@ -47,8 +47,31 @@ test("written types have 3 wordings that fill completely and fit the push limits
   }
 });
 
-test("new wording stays unapproved until the owner signs off", () => {
-  assert.deepEqual(NOTIFICATION_CATALOG.filter((entry) => entry.approved).map((entry) => entry.kind), []);
+test("every type with wording here is approved (owner 2026-11-21); sheet types follow the sheet", () => {
+  for (const entry of NOTIFICATION_CATALOG) assert.equal(entry.approved, entry.wording !== null, entry.kind);
+});
+
+test("pickWording picks one of the type's own versions, never the last one, and uses all 3", () => {
+  for (const entry of NOTIFICATION_CATALOG) {
+    const kind = entry.kind as NotificationKind;
+    if (!entry.wording) { assert.equal(pickWording(kind), null, kind); continue; }
+    for (const last of [undefined, null, 1, 2, 3]) {
+      const seen = new Set<number>();
+      for (let i = 0; i < 300; i++) {
+        const pick = pickWording(kind, last)!;
+        assert.notEqual(pick.version, last, `${kind} repeated V${last}`);
+        assert.deepEqual(pick.wording, entry.wording[pick.version - 1]);
+        seen.add(pick.version);
+      }
+      assert.equal(seen.size, last ? 2 : 3, `${kind} after V${last}: only ${[...seen]}`);
+    }
+  }
+  // Edge of the random range still lands on a real version.
+  assert.equal(pickWording("teeTime", 3, () => 0.999999)!.version, 2);
+  assert.equal(pickWording("teeTime", 1, () => 0)!.version, 2);
+  // Over many sends to one person, never the same twice in a row.
+  let last: number | undefined;
+  for (let i = 0; i < 500; i++) { const { version } = pickWording("chat", last)!; assert.notEqual(version, last); last = version; }
 });
 
 test("fillBlanks fills known blanks and leaves unknown ones visible", () => {

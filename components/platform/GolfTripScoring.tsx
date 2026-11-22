@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { useRecordMyStats } from "@/lib/platform/playerStatsSetting";
 import { createPortal } from "react-dom";
-import { LockKeyhole, LockKeyholeOpen, Minus, Plus } from "lucide-react";
+import { LockKeyhole, Minus, Plus } from "lucide-react";
 import { useScoringView } from "@/lib/platform/scoringViewPreference";
 import type { ScoreEdit, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import { countedStrokes, sheetCardFromScoring, type SheetCard } from "@/lib/platform/liveCards";
@@ -153,20 +153,11 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const opponentName = attesteeName ?? madeUpName;
   // The GPS and Scorecard pills swap the pulled-up sheet to their own view (same sheet, no page change); tapping again returns to scoring.
   const [view, setView] = useState<"scoring" | "gps" | "scorecard">("scoring");
-  const [lockedView, setLockedView] = useState<"gps" | "scorecard" | null>(() => {
-    try { const saved = localStorage.getItem("golfTripScoringLockedView"); return (saved === "gps" && gps) || saved === "scorecard" ? saved : null; } catch { return null; }
-  });
   const setOpen = useCallback((next: boolean | ((value: boolean) => boolean)) => {
     const value = typeof next === "function" ? next(open) : next;
-    if (value && !open) setView(lockedView ?? "scoring");
+    if (value && !open) setView("scoring");
     updateOpen(value);
-  }, [open, lockedView]);
-  function toggleLock(next: "gps" | "scorecard") {
-    const value = lockedView === next ? null : next;
-    setLockedView(value);
-    if (value) setView(value);
-    try { if (value) localStorage.setItem("golfTripScoringLockedView", value); else localStorage.removeItem("golfTripScoringLockedView"); } catch { /* Keep the preference in memory for this mount. */ }
-  }
+  }, [open]);
   const toggleView = (next: "gps" | "scorecard") => setView((value) => value === next ? "scoring" : next);
   const sheetRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -221,7 +212,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   }, [current, open, firstHole]);
 
   // Collapsed, the sheet is pushed down so only its handle shows above the strip the bottom menu covers.
-  const closedOffset = () => (sheetRef.current?.offsetHeight ?? 0) - (handleRef.current?.offsetHeight ?? 0) - (spacerRef.current?.offsetHeight ?? 0);
+  const closedOffset = () => Math.max(0, (sheetRef.current?.offsetHeight ?? 0) - 56 - (spacerRef.current?.offsetHeight ?? 0));
 
   const suppressDragClickUntil = useRef(0);
   // A brief stationary press arms page-wide touch dragging in Slide mode without taking over quick scrolling.
@@ -410,12 +401,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
     {/* GPS pill (left, red) mirrors the Scorecard pill (right); both show while the sheet is pulled up. */}
     {open && ((gps ? ["gps", "scorecard"] : ["scorecard"]) as ("gps" | "scorecard")[]).map((target) => {
       const label = target === "gps" ? "GPS" : "Card";
-      const locked = lockedView === target;
-      const Icon = locked ? LockKeyhole : LockKeyholeOpen;
-      return <div key={target} className={[styles.scorecardButton, target === "gps" ? styles.scorecardButtonLeft + " " + styles.gpsButton : ""].join(" ")} data-active={view === target}>
-        <button type="button" className={styles.pillLabel} aria-pressed={view === target} aria-label={view === target ? "Back to scoring" : "Open " + label} onClick={() => toggleView(target)}>{label}</button>
-        <button type="button" className={styles.pillLock} aria-pressed={locked} aria-label={locked ? "Unlock " + label + " default scoring view" : "Lock " + label + " as default scoring view"} onClick={() => toggleLock(target)}><Icon size={14} aria-hidden="true" /></button>
-      </div>;
+      return <button key={target} type="button" className={[styles.scorecardButton, target === "gps" ? styles.scorecardButtonLeft : ""].join(" ")} aria-pressed={view === target} aria-label={view === target ? "Back to scoring" : "Open " + label} onClick={() => toggleView(target)}>{label}</button>;
     })}
     {open && <button type="button" className={styles.exitButton} onClick={() => setOpen(false)}>EXIT</button>}
     {fullScreen ? <div className={styles.fullTopBar}><button type="button" className={styles.handleLabel} onClick={() => setView("scoring")}>Scoring</button></div> : <button ref={handleRef} type="button" className={styles.handle} aria-expanded={open} aria-controls="trip-scoring-body"
@@ -711,22 +697,23 @@ function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], 
   const [shownEdit, setShownEdit] = useState<number | null>(null);
   const editsFor = (hole: number) => (edits ?? []).filter((e) => e.hole === hole);
   const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
-  const mark = (value: Direction | null) => value ? DIRECTION_MARK[value] : "—";
-  const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "—";
+  const mark = (value: Direction | null) => value ? DIRECTION_MARK[value] : "";
+  const hits = (values: (Direction | null)[], index: number[]) => index.some((i) => values[i] !== null) ? index.filter((i) => values[i] === "center").length : "";
+  const displayTotal = (value: number | "—") => value === "—" ? "" : value;
   const gap = <td className={styles.sectionGap} aria-hidden />;
   // An untouched hole counts as par (as on the scoring screen), shown faded until it's entered. Saved trips: "—".
   const scoreCell = (strokes: number | null, i: number) => strokes === null
-    ? par?.[i] !== undefined && !parIsReference ? <span className={styles.untouchedScore}>{par[i]}</span> : "—"
+    ? par?.[i] !== undefined && !parIsReference ? <span className={styles.untouchedScore}>{par[i]}</span> : ""
     : par?.[i] === undefined ? strokes : <span className={scoreShape(strokes - par[i])}>{strokes}</span>;
   const holeRow = (i: number) => <tr key={i}>
-    <th scope="row" className={styles.section}>{i + 1}{editsFor(i + 1).length > 0 && <button type="button" className={styles.editMark} aria-label={`Hole ${i + 1} edited by organizer`} onClick={() => setShownEdit(shownEdit === i + 1 ? null : i + 1)}>✎</button>}</th><td className={styles.section}>—</td><td className={styles.section}>{par?.[i] ?? "—"}</td>{gap}
-    {stats && <><td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? "—"}</td>{gap}</>}
-    <td className={`${styles.section} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td>{!solo && <td className={styles.section}>{scoreCell(opponentHoles[i], i)}</td>}{groupHoles.map((row, g) => <td key={g} className={styles.section}>{scoreCell(row[i], i)}</td>)}
+    <th scope="row" className={styles.section}>{i + 1}{editsFor(i + 1).length > 0 && <button type="button" className={styles.editMark} aria-label={`Hole ${i + 1} edited by organizer`} onClick={() => setShownEdit(shownEdit === i + 1 ? null : i + 1)}>✎</button>}</th><td className={styles.section}></td><td className={styles.section}>{par?.[i] ?? ""}</td>{gap}
+    {stats && <><td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? ""}</td>{gap}</>}
+    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td>{!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(opponentHoles[i], i)}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(row[i], i)}</td>)}
   </tr>;
   const totalRow = (label: string, index: number[]) => <tr key={label} className={styles.totalRow}>
-    <th scope="row" className={styles.section}>{label}</th><td className={styles.section}>—</td><td className={styles.section}>{sumOf(index.map((i) => par?.[i]))}</td>{gap}
-    {stats && <><td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{sumOf(index.map((i) => putts[i]))}</td>{gap}</>}
-    <td className={`${styles.section} ${styles.myScore}`}>{sumOf(index.map((i) => countedStrokes(holes, par, parIsReference)[i]))}</td>{!solo && <td className={styles.section}>{sumOf(index.map((i) => countedStrokes(opponentHoles, par, parIsReference)[i]))}</td>}{groupHoles.map((row, g) => <td key={g} className={styles.section}>{sumOf(index.map((i) => row[i] ?? par?.[i]))}</td>)}
+    <th scope="row" className={styles.section}>{label}</th><td className={styles.section}></td><td className={styles.section}>{displayTotal(sumOf(index.map((i) => par?.[i])))}</td>{gap}
+    {stats && <><td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{displayTotal(sumOf(index.map((i) => putts[i])))}</td>{gap}</>}
+    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(holes, par, parIsReference)[i])))}</td>{!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(opponentHoles, par, parIsReference)[i])))}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => row[i] ?? par?.[i])))}</td>)}
   </tr>;
   return <section className={styles.scorecardView} aria-label="Scorecard">
     <table className={styles.scorecardTable}>
@@ -734,9 +721,9 @@ function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], 
       <thead><tr>
         <th scope="col" className={styles.section}>Hole</th><th scope="col" className={styles.section}>Yds</th><th scope="col" className={styles.section}>Par</th><th className={styles.sectionGap} aria-hidden />
         {stats && <><th scope="col" className={styles.section}>FWY</th><th scope="col" className={styles.section}>GRN</th><th scope="col" className={styles.section}>PUT</th><th className={styles.sectionGap} aria-hidden /></>}
-        <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={playerName}>{shortName(playerName)}</th>
-        {!solo && <th scope="col" className={`${styles.section} ${styles.nameHead}`} title={opponentName}>{shortName(opponentName)}</th>}
-        {groupNames.map((name, g) => <th key={g} scope="col" className={`${styles.section} ${styles.nameHead}`} title={name}>{shortName(name)}</th>)}
+        <th scope="col" className={styles.nameHead} title={playerName}>{shortName(playerName)}</th>
+        {!solo && <th scope="col" className={styles.nameHead} title={opponentName}>{shortName(opponentName)}</th>}
+        {groupNames.map((name, g) => <th key={g} scope="col" className={styles.nameHead} title={name}>{shortName(name)}</th>)}
       </tr></thead>
       <tbody>
         {holeRange[0] < 9 && <>{range(0, 9).map(holeRow)}{totalRow("Out", range(0, 9))}</>}
@@ -747,9 +734,9 @@ function ScorecardSection({ solo = false, stats = true, holeRange = [0, HOLES], 
     {shownEdit !== null && editsFor(shownEdit).map((e, k) => <p key={k} className={styles.editNote}>Hole {e.hole} edited by organizer{e.kind === "pushThrough" ? " (push-through)" : ""}: {String(e.from ?? "—")} → {String(e.to ?? "—")}. {e.reason}</p>)}
     {/* Under Total: each player's last name and total score, centered in their half; a long name shrinks to fit. */}
     <dl className={styles.scorecardTotals}>
-      <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{myTotal}</dd></div>
-      {!solo && <div data-check={opponentCheck ?? undefined} aria-label={opponentCheck === "wrong" ? `${opponentName}: scores don't match` : undefined}><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{opponentTotal}</dd></div>}
-      {groupNames.map((name, g) => <div key={g}><dt title={name} style={{ "--chars": shortName(name).length } as CSSProperties}>{shortName(name)}</dt><dd>{sumOf(groupHoles[g].map((h, i) => i >= holeRange[0] && i < holeRange[1] ? h ?? par?.[i] : null))}</dd></div>)}
+      <div data-check={myCheck ?? undefined} aria-label={myCheck === "wrong" ? `${playerName}: scores don't match` : undefined}><dt title={playerName} style={{ "--chars": shortName(playerName).length } as CSSProperties}>{shortName(playerName)}</dt><dd>{displayTotal(myTotal)}</dd></div>
+      {!solo && <div data-check={opponentCheck ?? undefined} aria-label={opponentCheck === "wrong" ? `${opponentName}: scores don't match` : undefined}><dt title={opponentName} style={{ "--chars": shortName(opponentName).length } as CSSProperties}>{shortName(opponentName)}</dt><dd>{displayTotal(opponentTotal)}</dd></div>}
+      {groupNames.map((name, g) => <div key={g}><dt title={name} style={{ "--chars": shortName(name).length } as CSSProperties}>{shortName(name)}</dt><dd>{displayTotal(sumOf(groupHoles[g].map((h, i) => i >= holeRange[0] && i < holeRange[1] ? h ?? par?.[i] : null)))}</dd></div>)}
     </dl>
   </section>;
 }

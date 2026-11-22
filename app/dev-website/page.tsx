@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 export default async function WebsiteDevelopmentPage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; trips?: string | string[] }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const { view, trips } = await searchParams;
-  if (view === "live") return <MaroonLiveDirectory count={liveTripMockCount(trips)} />;
+  if (view === "live") return <MaroonLiveDirectory sampleCount={liveTripMockCount(trips)} />;
   if (view === "dashboard") return <WebsitePlayerDashboard />;
   const player = await loadWebsitePlayer();
   return <MarketingWebsite accountActions={<WebsiteAccountActions signedIn={player !== null} />} />;

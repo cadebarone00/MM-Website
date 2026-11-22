@@ -63,6 +63,7 @@ function TypeCard({ entry, open, wording: initialWording, onToggle }: { entry: C
         {sheet && <><dt>Wording</dt><dd>Highlights sheet ({entry.sheetCategories?.join(", ")}): {sheet.rules} rules · {sheet.wordings} wordings. Shown: {sampleSheetSource(kind)}</dd></>}
       </dl>
       {entry.note && <p className={styles.note}>{entry.note}</p>}
+      <p className={styles.note}>{entry.wording ? "Sent at random, never the same version twice in a row to the same person." : "Picked at random from the sheet's wordings for each rule."}</p>
       <div className={styles.versions} role="radiogroup" aria-label="Wording version">
         {versions.map((version, index) => {
           const number = (index + 1) as NotificationWording;

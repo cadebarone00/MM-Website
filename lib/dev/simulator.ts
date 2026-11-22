@@ -1,5 +1,6 @@
 import { normalizeTripScenario } from "./tripScenario";
 import { TOURNEY_PREVIEWS, type TourneyPreview } from "./sampleTourney";
+import { isLivePreview, isLiveSurface, type LivePreview, type LiveSurface } from "./livePreviews";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
@@ -45,7 +46,20 @@ export type SimulatorConditional = { id: string; label: string; source?: Simulat
   section?: string };
 export type SimulatorPage = { id: string; label: string; path: string; navigation?: GolfTripNavigation; fixtures: boolean; group?: string; parentId?: string; section?: string; conditions?: SimulatorConditional[]; viewport?: "desktop" | "mobile"; standalone?: boolean;
   /** Another LOCAL development server that serves this page (e.g. http://localhost:3002). No simulator bridge reaches it. */
-  origin?: string };
+  origin?: string;
+  /** Feature groups (Golf Trips, Tourneys, Leagues, Play) only: which of the three switches it sits under. */
+  stage?: SimulatorStage;
+  /** Set when the page is picked (e.g. Tourneys → Onboarding → Create opens the sample on its create screen). */
+  state?: Partial<SimulatorState> };
+/** The four main features, in bottom-menu order. Each one splits its pages into Main · Active · Onboarding. */
+export const SIMULATOR_FEATURES = ["Golf Trips", "Tourneys", "Leagues", "Play"] as const;
+export const SIMULATOR_STAGES = ["Main", "Active", "Onboarding"] as const;
+export type SimulatorStage = (typeof SIMULATOR_STAGES)[number];
+/** Old group names (bookmarked /dev?group=… links) → the feature group and stage they moved to. */
+export const LEGACY_SIMULATOR_GROUPS: Record<string, [string, SimulatorStage]> = {
+  "Golf Trip Active": ["Golf Trips", "Active"], "Golf Trip Onboarding": ["Golf Trips", "Onboarding"],
+  "Tournament Active": ["Tourneys", "Active"], "Mock people": ["Golf Trips", "Main"], "Invitations": ["Golf Trips", "Onboarding"],
+};
 export const SIMULATOR_STATES = [
   { id: "competition", label: "Trip / tournament status", kind: "select", options: [["source", "From data source"], ["yes", "Competitive trip"], ["no", "Social golf trip"]] },
   { id: "format", label: "Golf format", kind: "format" },
@@ -143,6 +157,10 @@ export type SimulatorState = {
   signUpSimCase?: "new" | "exists" | "under13" | "wrong-code";
   /** Tourneys group (/dev/tourney): which sample tournament screen shows (lib/dev/sampleTourney.ts). Unset = "player". */
   tourneyPreview?: TourneyPreview;
+  /** The Maroon Live group (/dev/live/…): which sample screen shows (lib/dev/livePreviews.ts). Unset = each page's first. */
+  livePreview?: LivePreview;
+  /** The Maroon Live group: the toggle above the simulator (Website desktop / Website mobile / App). Unset = "app". */
+  liveSurface?: LiveSurface;
   /** Mock people group (/dev/people/…): which of the 5 pretend people is "signed in" (lib/dev/mockPeople.ts). Unset = Cade. */
   mockPerson?: MockPersonId;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
@@ -267,6 +285,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.brandStage !== undefined && !["drawing", "finished", "reduced"].includes(String(state.brandStage))) return null;
   if (state.brandDuration !== undefined && (typeof state.brandDuration !== "number" || !Number.isFinite(state.brandDuration) || state.brandDuration < 600 || state.brandDuration > 2400)) return null;
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
+  if (state.livePreview !== undefined && !isLivePreview(state.livePreview)) return null;
+  if (state.liveSurface !== undefined && !isLiveSurface(state.liveSurface)) return null;
   if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;

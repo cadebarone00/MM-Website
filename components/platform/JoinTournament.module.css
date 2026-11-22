@@ -41,7 +41,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 
 /* Selector-only presentation; the shared My Tournaments screen keeps its styles. */
 .tourneys {
-  --tj-bg: var(--lm-bg-1d0b11);
+  --tj-bg: var(--lm-bg-240001);
   --tj-gold: #806331;
   padding: 0 0 calc(48px + 5.75rem + env(safe-area-inset-bottom));
   background: transparent;
@@ -64,7 +64,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
   width: 100%;
   margin: 0 auto;
   padding: 1px max(20px, calc((100% - 680px)/2)) 32px;
-  background: var(--lm-bg-1d0b11);
+  background: var(--lm-bg-240001);
 }
 .lowerContent > .tournamentSection > .descriptor { color: var(--lm-ink-ead8b8); }
 .descriptor {

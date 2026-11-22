@@ -3,7 +3,7 @@ import { SIDE_GAME_REGISTRY } from "@/lib/platform/golfTripGames";
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
-import { SIMULATOR_SOURCES, type SimulatorConditional, type SimulatorPage } from "./simulator";
+import { SIMULATOR_FEATURES, SIMULATOR_SOURCES, SIMULATOR_STAGES, type SimulatorConditional, type SimulatorPage, type SimulatorStage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { AUTH_SCREENS } from "./authScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
@@ -34,6 +34,10 @@ export function simulatorPages(): SimulatorPage[] {
     }
   }
   walk(join(process.cwd(), "app/dev"), "/dev");
+  // Each feature's Onboarding ends with receiving an invite to it.
+  for (const [slug, label, group] of [["trip-accept", "Golf Trip · Receive invite", "Golf Trips"], ["tourney-accept", "Tournament · Receive invite", "Tourneys"], ["league-accept", "League · Receive invite", "Leagues"], ["play-accept", "Play · Receive invite", "Play"]]) {
+    pages.push({ id: `invite-${slug}`, path: `/dev/invites/${slug}`, label, group, stage: "Onboarding", fixtures: false, conditions: [] });
+  }
   pages.push(
     { id: "website-desktop", path: "/dev-website", label: "Landing page", group: "Website desktop", fixtures: false, viewport: "desktop", standalone: true, conditions: [] },
     { id: "website-mobile", path: "/dev-website", label: "Landing page", group: "Website mobile", fixtures: false, viewport: "mobile", standalone: true, conditions: [] },
@@ -238,21 +242,43 @@ export function simulatorPages(): SimulatorPage[] {
   }
   // Tourneys group: a sample tournament joined by code (lib/dev/sampleTourney.ts), no sign-in, nothing saved.
   const tourney = pages.find(page => page.path === "/dev/tourney");
-  if (tourney) Object.assign(tourney, { label: "Tournament (sample)", group: "Tourneys", conditions: [
+  if (tourney) Object.assign(tourney, { label: "Tournament (sample)", group: "Tourneys", stage: "Active", state: { tourneyPreview: "player" }, conditions: [
     { id: "tourney-player", label: "Player · round in progress", state: { tourneyPreview: "player" } },
     { id: "tourney-player-net", label: "Player · Net, round 2 (round 1 done)", state: { tourneyPreview: "player-net" } },
     { id: "tourney-organizer", label: "Organizer (playing) · settings wheel", state: { tourneyPreview: "organizer" } },
     { id: "tourney-organizer-out", label: "Organizer not playing", state: { tourneyPreview: "organizer-out" } },
     { id: "tourney-spectator", label: "Spectator (watch code)", state: { tourneyPreview: "spectator" } },
     { id: "tourney-final", label: "Tournament ended (final)", state: { tourneyPreview: "final" } },
-    { id: "tourney-create", label: "Create a tournament screen", state: { tourneyPreview: "create" } },
-    { id: "tourney-join", label: "Join with code screen", state: { tourneyPreview: "join" } },
   ] });
-  // Mock people group: the main tabs for 5 pretend people (lib/dev/mockPeople.ts), in bottom-menu order.
-  for (const [slug, label] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
+  // Tourneys → Onboarding: the sample's create and join screens, each its own page (owner request 2026-11-21).
+  if (tourney) for (const [view, label] of [["create", "Create a tournament"], ["join", "Join with code"]] as const) {
+    pages.push({ ...tourney, id: `tourney-${view}`, label, stage: "Onboarding", state: { tourneyPreview: view }, conditions: [] });
+  }
+  // The Maroon Live group (project_specs.md, "Feature: The Maroon Live"): every screen on made-up data, in the order a
+  // person meets them: the directory, an event's live page, who can watch (settings), then TV mode (desktop size).
+  const LIVE_PAGES: [string, string, [string, string][]][] = [
+    ["/dev/live/directory", "Directory (/tap-in)", [["dir-events", "Live, Upcoming and Past events"], ["dir-empty", "Nothing public yet"], ["dir-unavailable", "Not set up (database)"]]],
+    ["/dev/live/event", "Event live page (/tap-in/<code>)", [["event-trip", "Golf trip"], ["event-tournament", "Tournament"], ["event-league", "League"], ["event-missing", "Private or deleted (not available)"]]],
+    ["/dev/live/settings", "Who can watch (Trip Settings)", [["watch-organizer-link", "Organizer · Link only"], ["watch-organizer-public", "Organizer · Public"], ["watch-organizer-private", "Organizer · Private"],
+      ["watch-player-share", "Player · can share the link"], ["watch-player-no-share", "Player · sharing turned off"]]],
+  ];
+  for (const [path, label, conditions] of LIVE_PAGES) {
+    const page = pages.find(item => item.path === path);
+    if (!page) continue;
+    Object.assign(page, { label, group: "The Maroon Live", conditions: conditions.map(([id, name]) => ({ id: `live-${id}`, label: name, state: { livePreview: id } })) });
+    pages.push(...pages.splice(pages.indexOf(page), 1));
+  }
+  const tv = pages.find(item => item.path === "/dev/tv");
+  if (tv) pages.splice(pages.indexOf(tv), 1);
+  for (const [show, label] of [["both", "TV mode · both boards take turns"], ["individual", "TV mode · individual"], ["match", "TV mode · match play"]]) {
+    pages.push({ id: `live-tv-${show}`, path: `/dev/tv?show=${show}`, label, group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: [] });
+  }
+  pages.push({ id: "live-tv-few", path: "/dev/tv?show=individual&players=8", label: "TV mode · 8 players (fits, no scroll)", group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: [] });
+  // Mock people: each main tab for 5 pretend people (lib/dev/mockPeople.ts) sits in that feature's Main (Profile in Profile).
+  for (const [slug, group] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
     const page = pages.find(item => item.path === `/dev/people/${slug}`);
     if (!page) continue;
-    Object.assign(page, { label, group: "Mock people", conditions: mockPeople().map(person => ({ id: `mock-person-${person.id}`, label: `Signed in as ${person.label}`, state: { mockPerson: person.id } })) });
+    Object.assign(page, { label: group === "Profile" ? "Profile · mock people" : "Mock people", group, stage: group === "Profile" ? undefined : "Main", conditions: mockPeople().map(person => ({ id: `mock-person-${person.id}`, label: `Signed in as ${person.label}`, state: { mockPerson: person.id } })) });
     pages.push(...pages.splice(pages.indexOf(page), 1));
   }
   // Golf Trips → Import past trip on sample data: real checks, nothing saved (lib/dev/samplePastTrips.ts).
@@ -423,11 +449,30 @@ export function simulatorPages(): SimulatorPage[] {
   }
   if (requests) pages.push(...pages.splice(pages.indexOf(requests), 1));
   const onboardingOrder = ["/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
+  // The 4 feature groups (owner request 2026-11-21): Golf Trips, Tourneys, Leagues, Play, each split into Main (the
+  // bottom-menu page), Active (inside the feature, its samples and tests) and Onboarding (getting into one).
+  const MOVED: Record<string, [string, SimulatorStage]> = { "Golf Trip Active": ["Golf Trips", "Active"], "Golf Trip Onboarding": ["Golf Trips", "Onboarding"], "Tournament Active": ["Tourneys", "Active"] };
+  const BY_PATH: Record<string, [string, SimulatorStage | undefined]> = {
+    "/golf-trips": ["Golf Trips", "Main"], "/tournaments/join": ["Tourneys", "Main"], "/leagues": ["Leagues", "Main"], "/": ["Play", "Main"],
+    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
+  };
+  for (const page of pages) {
+    const moved = BY_PATH[page.path] ?? MOVED[page.group ?? ""];
+    if (moved) [page.group, page.stage] = moved;
+    if (page.path === "/dev/leagues") page.label = "League (sample)";
+    if (page.path === "/dev/round") page.label = "Round (sample)";
+    if (page.path === "/dev/samples") page.label = "One of each way to play";
+    if (page.path === "/dev/course-search") page.label = "Course search (test harness)";
+  }
+  const features: string[] = [...SIMULATOR_FEATURES];
   const reviewGroups = ["Website desktop", "Website mobile"];
-  const groupOrder = [...reviewGroups, ...Array.from(new Set(pages.map(page => page.group))).filter(group => !reviewGroups.includes(group ?? ""))];
-  groupOrder.splice(groupOrder.indexOf("Golf Trip Onboarding"), 1);
-  groupOrder.splice(groupOrder.indexOf("Golf Trip Active") + 1, 0, "Golf Trip Onboarding");
-  return pages.sort((a, b) => a.group !== b.group ? groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group) : a.group === "Golf Trip Onboarding" ? onboardingOrder.indexOf(a.path) - onboardingOrder.indexOf(b.path) : 0);
+  const groupOrder = [...features, ...reviewGroups, ...Array.from(new Set(pages.map(page => page.group ?? "Other"))).filter(group => !features.includes(group) && !reviewGroups.includes(group))];
+  const stageRank = (page: SimulatorPage) => SIMULATOR_STAGES.indexOf(page.stage ?? "Main");
+  // Onboarding: the invite last. Golf Trips follows the trip builder's order (pages not in it, coach marks + ready, first).
+  const onboardingRank = (page: SimulatorPage) => page.id.startsWith("invite-") ? 999 : page.group === "Golf Trips" ? onboardingOrder.indexOf(page.path) : 0;
+  return pages.sort((a, b) => a.group !== b.group ? groupOrder.indexOf(a.group ?? "Other") - groupOrder.indexOf(b.group ?? "Other")
+    : stageRank(a) !== stageRank(b) ? stageRank(a) - stageRank(b)
+    : a.stage === "Onboarding" ? onboardingRank(a) - onboardingRank(b) : 0);
 }
 
 /**

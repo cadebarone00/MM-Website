@@ -21,12 +21,22 @@ export const HANDWRITING_SECTIONS = [
     "length": 93.3464
   },
   {
-    "outline": "M 188 111 C 190 135 200 156 189 161 C 174 171 170 152 184 133 L 192 137 C 185 146 180 156 187 155 C 194 153 187 136 183 114 Z",
-    "guide": "M 185.5 112.5 C 187.5 127 194 151 190 157 C 186 164 178 165 178 157 C 178 149 182 142 188 135",
-    "width": 10,
+    // The small loop is two pieces: down-and-around, then the short climb back out. Kept as one piece, the climb's end
+    // sits beside the downstroke and the pen uncovered it early as a stray spur.
+    "outline": "M 188 111 C 190 135 200 156 189 161 C 181.5 166 176.75 163.75 175.625 157.875 L 183.84375 153.875 C 184.25 154.8125 185.25 155.25 187 155 C 194 153 187 136 183 114 Z",
+    "guide": "M 185.5 112.5 C 187.5 127 194 151 190 157 C 186 164 179 164 179.5 156",
+    "width": 14,
     "start": 0.47,
+    "end": 0.601,
+    "length": 62.1586
+  },
+  {
+    "outline": "M 175.625 157.875 C 174.5 152 177 142.5 184 133 L 192 137 C 186.75 143.75 182.625 151.0625 183.84375 153.875 Z",
+    "guide": "M 179.5 156 C 179 149 182 142 188 135",
+    "width": 14,
+    "start": 0.601,
     "end": 0.65,
-    "length": 87.8331
+    "length": 23.2533
   },
   {
     "outline": "M 184 133 C 208 96 228 32 252 14 C 258 10 265 10 267 15 C 269 19 265 24 261 30 L 247 37 C 227 66 211 111 192 137 Z",

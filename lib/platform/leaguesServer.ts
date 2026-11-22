@@ -2,6 +2,7 @@ import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { League, LeagueCourse, LeagueLookup, LeagueScoring, MyLeague } from "./leagues.ts";
 import type { GameConfig, HoleInput } from "./roundGames.ts";
+import { canShareLiveLink, liveSettingsFrom, type LiveVisibility } from "./liveVisibility.ts";
 
 /**
  * Leagues (supabase/leagues.sql). Profile ids always come from the signed-in session — callers pass `user.id`, never a
@@ -27,6 +28,21 @@ export const createLeague = (organizer: string, name: string, course: LeagueCour
 export const findLeague = (me: string, code: string) => rpc<LeagueLookup | null>("find_league", { p_profile: me, p_code: code });
 export const joinLeague = (me: string, code: string, handicap: number | null) => rpc<string>("join_league", { p_profile: me, p_code: code, p_handicap: handicap });
 export const getLeague = (me: string, id: string) => rpc<League | null>("get_league", { p_profile: me, p_league: id });
+/** supabase/maroon_live_leagues.sql: The Maroon Live, who can watch (organizer only). */
+export const setLeagueLive = (organizer: string, id: string, visibility: LiveVisibility, playersCanShare: boolean) =>
+  rpc<boolean>("set_live_visibility", { p_profile: organizer, p_kind: "league", p_id: id, p_visibility: visibility, p_players_can_share: playersCanShare });
+/**
+ * A member's league plus The Maroon Live: the organizer gets who can watch; the share link goes to whoever may share it
+ * (lib/platform/liveVisibility.ts). Before maroon_live_leagues.sql is run there's no link and it reads as Private.
+ */
+export async function withLeagueLive(league: League, me: string): Promise<League> {
+  const { data, error } = await db().from("leagues").select("watch_code, live_visibility, live_players_can_share").eq("id", league.id).maybeSingle();
+  const row = (error ? null : data) as { watch_code?: string; live_visibility?: string; live_players_can_share?: boolean } | null;
+  const settings = liveSettingsFrom(row?.live_visibility, row?.live_players_can_share, "private");
+  const isOrganizer = league.organizer === me;
+  return { ...league, ...(isOrganizer ? { liveVisibility: settings.visibility, livePlayersCanShare: settings.playersCanShare } : {}),
+    ...(row?.watch_code && canShareLiveLink(settings, isOrganizer) ? { watchCode: row.watch_code } : {}) };
+}
 export const listMyLeagues = (me: string) => rpc<MyLeague[]>("list_my_leagues", { p_profile: me });
 export const setLeagueSettings = (organizer: string, id: string, scoring: LeagueScoring, skins: League["skins"], pairs: League["pairs"]) =>
   rpc<null>("set_league_settings", { p_organizer: organizer, p_league: id, p_scoring: scoring, p_skins: skins, p_pairs: pairs });

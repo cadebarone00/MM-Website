@@ -4,6 +4,8 @@ import { nonIndividualRound } from "@/lib/platform/nonIndividualRound";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import Link from "next/link";
+import { profileHref } from "@/lib/profile/profileEdit";
 import { useSwipe } from "./useSwipe";
 import { resolveGolfFormat } from "@/lib/platform/formats";
 import { rankLeaderboard } from "@/lib/platform/golfLeaderboardOrder";
@@ -326,7 +328,8 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
       <span className={styles.playerTripProfileAvatar}><ProfileAvatar name={name} photoUrl={avatarUrl} /></span>
       {/* Name, then the numbers under it (like the profile page's top). */}
       <div className={styles.playerTripProfileIdentity}>
-        <h2>{name}</h2>
+        {/* The Maroon Live: the name opens their real profile (which follows their own Public / Private setting). */}
+        <h2>{profileHref(username) ? <Link href={profileHref(username)!} prefetch={false} className={styles.playerTripProfileLink} aria-label={"View " + name + "'s profile"}>{name}<ChevronRight size={16} strokeWidth={2.25} aria-hidden /></Link> : name}</h2>
         <dl className={styles.playerTripProfileStats} aria-label="Player numbers">
           {([["Handicap", stats?.handicapIndex], ["Sc. Avg.", stats?.average18], ["Career Low", stats?.best18?.total]] as const).map(([label, value]) =>
             <div key={label}><dt>{label}</dt><dd>{value == null ? "—" : String(value)}</dd></div>)}
