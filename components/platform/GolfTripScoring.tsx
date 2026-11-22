@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, smallNextHole = false }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -101,6 +101,12 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   swipeHoles?: boolean;
   /** The page hides the bottom menu: the closed sheet sits at the very bottom instead of above the menu. */
   noBottomMenu?: boolean;
+  /** Next hole (or Scorecard on the last hole) was tapped on this hole: Play sends every player's score for it. */
+  onNextHole?: (hole: number) => void;
+  /** Holes to mark red in the hole chips (Play: a finished Wolf hole with no partner picked). */
+  holeAlert?: (hole: number) => boolean;
+  /** A small "Next hole" button under the hole's par, besides the one at the bottom. */
+  smallNextHole?: boolean;
 }) {
   const [firstHole, endHole] = holeRange;
   const inPlay = (i: number) => i >= firstHole && i < endHole;
@@ -346,6 +352,8 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   const complete = submittedHoles.every((_, i) => !inPlay(i) || holeFilled(i));
   // The last hole has no next hole: its button opens the Card (where Submit & Save is) once that hole is filled in.
   const lastHole = current === endHole - 1;
+  /** Next hole (Scorecard on the last hole): tells the page this hole is done, then moves on. */
+  const nextHole = () => { onNextHole?.(current); if (lastHole) setView("scorecard"); else setCurrent((value) => Math.min(value + 1, endHole - 1)); };
   // Each player is checked against the other phone: my scores for myself vs what my opponent entered for me, and what I
   // entered for my opponent vs what they entered for themselves. With a dev prefill the other phone's card is the starting
   // card (plus any otherCardDiff); otherwise opponentCardMatches stands in for both. Green = agrees, red = needs fixing.
@@ -460,6 +468,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
           {onParChange && !submitted
             ? <button type="button" className={`${styles.holePar} ${styles.holeParEdit}`} aria-label={`Par ${holePar ?? 4} for hole ${current + 1}. Tap to change`} onClick={() => onParChange(current, (holePar ?? 4) >= 6 ? 3 : (holePar ?? 4) + 1)}>Par {holePar ?? "—"} ✎</button>
             : <span className={styles.holePar}>Par {holePar ?? "—"}</span>}
+          {smallNextHole && !submitted && <button type="button" className={styles.smallNext} onClick={nextHole}>{lastHole ? "Scorecard ›" : "Next hole ›"}</button>}
         </div>
         <dl className={styles.holeStat}><dt>To Par</dt><dd>{toPar !== null && thru ? formatToPar(toPar) : "—"}</dd></dl>
       </div>
@@ -467,7 +476,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       <div ref={chipsRef} className={styles.holes} role="group" aria-label="Holes">
         {holes.map((h, i) => { if (!inPlay(i)) return null; const correctable = Boolean(correctionOpen?.own?.includes(i + 1) || correctionOpen?.attest?.includes(i + 1));
           return <button key={i} type="button" aria-pressed={i === current} aria-label={`Hole ${i + 1}${h !== null ? `, ${h} strokes` : ""}${correctable ? ", can be corrected" : ""}`}
-          data-correctable={correctable || undefined}
+          data-correctable={correctable || undefined} data-alert={holeAlert?.(i) || undefined}
           className={`${styles.holeChip} ${h !== null ? styles.holeChipFilled : ""} ${i === current ? styles.holeChipActive : ""}`} onClick={() => setCurrent(i)}>
           <span className={styles.holeChipNumber}>{i + 1}</span>
         </button>; })}
@@ -521,9 +530,9 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       </>}
       {gameSlot?.(current)}
 
-      {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={() => setView("scorecard")}>
+      {lastHole ? <button type="button" className={styles.nextHoleButton} disabled={!holeFilled(current)} onClick={nextHole}>
         Scorecard
-      </button> : <button type="button" className={styles.nextHoleButton} aria-label="Next hole" onClick={() => setCurrent((value) => Math.min(value + 1, endHole - 1))}>
+      </button> : <button type="button" className={styles.nextHoleButton} aria-label="Next hole" onClick={nextHole}>
         Next hole
       </button>}
       </>}

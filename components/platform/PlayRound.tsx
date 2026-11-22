@@ -571,6 +571,13 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const liveResult = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
   const holeMoney = setup.game && gameFits ? moneyByHole(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
   const doubledHoles = inputs.map((i) => setup.game?.doubles === true && i.doubled === true);
+  /** Next hole: every player's score for the hole goes to the round (and the leaderboard) — what the boxes show, par when untouched. */
+  function finishHole(hole: number) {
+    const mine = read()?.card?.strokes[hole] ?? par[hole];
+    if (strokesOf(me!)[hole] !== mine) { (sentMine.current ??= par.map((p, h) => myRemote[h] ?? p))[hole] = mine; sendStrokes(me!, hole, mine); }
+    for (const p of others) if (strokesOf(p.profileId)[hole] == null) sendStrokes(p.profileId, hole, par[hole]);
+    for (const g of guests) if (guestRow(g.id)[hole] == null) sendGuestStrokes(g.id, hole, par[hole]);
+  }
   const setGuests = (next: RoundGuest[]) => { setSnap({ ...snap, setup: { ...setup, guests: next } }); void hostAction({ action: "setup", setup: { ...setup, guests: next } }); };
 
   async function submit(scored: ScoredCard) {
@@ -632,7 +639,8 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
         </>}
     </section>
-    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu
+    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu smallNextHole
+      onNextHole={finishHole} holeAlert={(h) => setup.game?.id === "wolf" && gameFits && inputs[h]?.wolfPartner === undefined && enteredRows().every((row) => row[h] != null)}
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}
       onCardChange={(next) => {
@@ -732,18 +740,16 @@ export function HolePicks({ game, hole, range, names, input, onChange }: { game:
     return <div className={styles.wolfCard} role="group" aria-label="Wolf partner">
       <p className={styles.wolfTitle}><b>{names[wolf]}</b> {names[wolf] === "You" ? "are" : "is"} the Wolf</p>
       <p className={styles.wolfHint}>{chosen === undefined ? "Pick a partner, or go it alone" : chosen === null ? `${names[wolf]} ${names[wolf] === "You" ? "go" : "goes"} Lone Wolf · points ×2` : `${names[wolf]} + ${names[chosen]} vs the rest`}</p>
-      <ul className={styles.wolfList}>
-        {everyone.filter((i) => i !== wolf).map((i) => <li key={i}><button type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
+      <div className={styles.wolfRow}>
+        {everyone.filter((i) => i !== wolf).map((i) => <button key={i} type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
           <span className={styles.wolfInitial} aria-hidden="true">{names[i].slice(0, 1).toUpperCase()}</span>
           <span className={styles.wolfName}>{names[i]}</span>
-          <span className={styles.wolfMark}>{chosen === i ? "Partner ✓" : "Pick"}</span>
-        </button></li>)}
-        <li><button type="button" className={styles.wolfLoneRow} aria-pressed={chosen === null} onClick={() => set(null)}>
-          <span className={styles.wolfInitial} aria-hidden="true">1</span>
+        </button>)}
+        <button type="button" aria-pressed={chosen === null} onClick={() => set(null)}>
+          <span className={styles.wolfInitial} aria-hidden="true">×2</span>
           <span className={styles.wolfName}>Lone Wolf</span>
-          <span className={styles.wolfMark}>{chosen === null ? "×2 ✓" : "×2"}</span>
-        </button></li>
-      </ul>
+        </button>
+      </div>
     </div>;
   }
   if (kind === "daytona") {
@@ -802,9 +808,9 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   const position = (i: number) => { const first = lines.findIndex((l) => key(l) === key(lines[i])); const tied = lines.filter((l) => key(l) === key(lines[i])).length > 1; return `${tied ? "T" : ""}${first + 1}`; };
   const totText = (line: Line) => !line.played ? "–" : line.toPar === 0 ? "E" : line.toPar > 0 ? `+${line.toPar}` : String(line.toPar);
   const parTone = (line: Line) => !line.played ? undefined : line.toPar < 0 ? "under" : line.toPar === 0 ? "even" : "over";
-  const thru = (line: Line) => line.played === holes.length ? "F" : line.played || "–";
   const gameValue = (value: string) => value.replace(/\s*(skins?|pts)$/, "");
-  const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""} 34px${hasMoney ? " 52px" : ""}`;
+  // No THRU column: everyone in a round plays the same hole (owner 2026-11-22).
+  const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""}${hasMoney ? " 52px" : ""}`;
   const initialsOf = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return <div className={`${trip.match} ${trip.leaderboard} ${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
     <p className={styles.boardHead}><b>Hole {now + 1}</b>{done.length ? ` · thru ${done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
@@ -815,7 +821,6 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
           <span className={trip.columnPlayer}>Player</span>
           <span className={trip.columnLabel}>TOT</span>
           {gameLabel && <span className={trip.columnLabel}>{gameLabel}</span>}
-          <span className={trip.columnLabel}>THRU</span>
           {hasMoney && <span className={trip.columnLabel}>$</span>}
         </div>
       </div>
@@ -828,7 +833,6 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
           </button>
           <span className={trip.number} data-par={parTone(line)}>{totText(line)}</span>
           {gameLabel && <span className={trip.number}>{line.standing ? gameValue(line.standing.value) : "—"}</span>}
-          <span className={trip.number}>{thru(line)}</span>
           {hasMoney && <span className={`${trip.number} ${styles.money}`} data-sign={Math.sign(line.standing?.money ?? 0)}>{line.standing?.money ? money(line.standing.money) : "$0"}</span>}
         </li>
         {open === line.name && <li className={styles.boardCard}><PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={line.pnl} doubled={doubled} /></li>}

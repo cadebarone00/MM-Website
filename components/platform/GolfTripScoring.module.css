@@ -295,3 +295,7 @@
 .sheet .scorecardButton::after{display:none}
 .sheet .scorecardButton[aria-pressed=true]{color:#c49b54}
 .sheet.gpsOverlay .scorecardButton,.sheet.gpsFullScreen .scorecardButton{color:#fbf8f1}
+
+/* Play a round (owner 2026-11-22): a small Next hole under the par, and red hole chips (a Wolf hole with no partner). */
+.smallNext{margin-top:4px;padding:4px 10px;border:1px solid color-mix(in srgb,currentColor 35%,transparent);border-radius:8px;background:transparent;color:inherit;font:700 12px/1 var(--font-barlow),sans-serif;letter-spacing:.02em;cursor:pointer}
+.holeChip[data-alert],:global(html:not([data-mode="light"])) .holeChip[data-alert]{background:#c62828;border-color:#c62828;color:#fff}

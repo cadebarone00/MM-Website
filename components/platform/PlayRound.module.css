@@ -162,15 +162,17 @@
 .boardCompact .boardName{font-size:15px}
 .boardCard{padding:0 0 10px;list-style:none}
 /* Wolf: the other players as a list (one row each), Lone Wolf last. */
-.wolfList{display:grid;margin:0;padding:0;list-style:none;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
-.wolfList button{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 4px;border:0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;font:600 16px var(--font-barlow),sans-serif;text-align:left;cursor:pointer}
-.wolfList button[aria-pressed=true]{background:color-mix(in srgb,#c9a86e 22%,transparent);box-shadow:inset 3px 0 0 #c9a86e}
 .wolfName{flex:1;min-width:0}
-.wolfMark{font-size:13px;font-weight:700;opacity:.6}
-.wolfList button[aria-pressed=true] .wolfMark{opacity:1;color:#c9a86e}
-.wolfLoneRow .wolfInitial{font-size:12px}
 .manage{margin:12px 0}
 .manage summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 14px;border:1px solid #b99c6b55;border-radius:12px;font:600 15px var(--font-barlow),sans-serif;cursor:pointer;list-style:none}
 .manage summary::after{content:"Manage ›";font-size:13px;color:#c9a86e}
 .manage[open] summary{margin-bottom:10px}
 .manage summary::-webkit-details-marker{display:none}
+
+/* Wolf (owner 2026-11-22): one horizontal row — each player a column split by thin lines, Lone Wolf last; no pills. */
+.wolfRow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent);border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+.wolfRow button{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:10px 4px;border:0;border-left:1px solid color-mix(in srgb,currentColor 14%,transparent);background:transparent;color:inherit;font:600 14px var(--font-barlow),sans-serif;cursor:pointer}
+.wolfRow button:first-child{border-left:0}
+.wolfRow button[aria-pressed=true]{background:color-mix(in srgb,#c9a86e 24%,transparent);box-shadow:inset 0 -3px 0 #c9a86e}
+.wolfRow button[aria-pressed=true] .wolfInitial{background:#c9a86e;color:#240001}
+.wolfRow .wolfName{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

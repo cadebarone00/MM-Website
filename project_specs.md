@@ -6135,3 +6135,7 @@ into "N players · Manage". The bottom menu is hidden on /rounds/new so the scor
 (`noBottomMenu`). "Allow doubles" starts on for points games. The Wolf pick is a list (one row per player, Lone Wolf
 last), not pill buttons.
 - **Owner (2026-11-22): no leaderboard inside the scoring tab** — only score entry, the Wolf pick and Double bet; the leaderboard is on the main screen.
+- **Owner (2026-11-22):** Wolf picker is one horizontal row (players as columns split by thin lines, Lone Wolf last; no
+  pills). A small **Next hole ›** under the par (plus the one at the bottom): tapping Next sends every player's score
+  for that hole to the round, so the leaderboard updates (`onNextHole` → `finishHole`). A finished Wolf hole with no
+  partner picked shows **red** in the hole chips (`holeAlert`). No THRU column on the leaderboard (everyone is on the same hole).
