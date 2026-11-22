@@ -215,7 +215,7 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
     if (result.ok && result.id) { onStart({ setup, startedAt: result.id, sharedId: result.id, openedAt: new Date().toISOString() }); return; }
     // Shared rounds not set up in this database yet: a round on my own still works (kept on this phone).
     if (result.code === "not_installed" && !players.length && !guests.length) { onStart({ setup, startedAt: new Date().toISOString() }); return; }
-    setStartError(result.message ?? "Couldn't start the round. Try again.");
+    setStartError(result.code === "signed_out" ? "signed_out" : result.message ?? (result.code === "offline" ? "No connection. Check your internet and try again." : "Couldn't start the round. Try again."));
   }
 
   const at = SETUP_PAGES.indexOf(page);
@@ -320,7 +320,8 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
             game?.autoPress ? "presses" : null, game?.birdiesDouble ? "birdies ×2" : null, game?.eaglesTriple ? "eagles ×3" : null, game?.carryovers === false ? "no carryovers" : null,
             game?.net ? `net ${allowance}%` : null].filter(Boolean).join(" · ") : "Just keeping score"}</dd></div>
         </dl>}
-        {startError && <p className={styles.error} role="alert">{startError}</p>}
+        {startError === "signed_out" ? <p className={styles.error} role="alert">Log in to start a round. <Link href="/login?next=/rounds/new">Log in</Link></p>
+          : startError && <p className={styles.error} role="alert">{startError}</p>}
       </div>
       <div className={wiz.stepButtons}>
         {at === 0 ? <Link href="/" className={wiz.back}>Back</Link> : <button type="button" className={wiz.back} onClick={() => setPage(SETUP_PAGES[at - 1])}>Back</button>}
