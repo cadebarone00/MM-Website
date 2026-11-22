@@ -6006,6 +6006,33 @@ players track their own putts / fairways / greens (the only thing they can edit)
 
 **Done means:** `/dev` shows Golf Trips, Tourneys, Leagues, Play at the top; each opens on Main; Active and Onboarding show the pages in the table; every page that was in the simulator before is still reachable (nothing lost); old `?group=Golf Trip Active` links still open the right place; `tsc`, lint and the simulator tests pass; checked on screen at localhost:3001/dev.
 
+## Dev simulator: one "Website" group with a Desktop / Mobile switch up top (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
+
+**What:** Remove the "Website desktop" and "Website mobile" groups (they hold the same 5 pages at two sizes). Replace them with **one "Website" group** under Other, holding each page once: Landing page, The Maroon Live / 0, 1, 3 and 12 trips.
+- When a Website page is open, the top bar shows a **Website desktop · Website mobile** switch, styled and placed exactly like The Maroon Live's switch (next to Light mode / Dark mode). It changes the screen size; the page reloads at the new size. Default: Website desktop.
+- No "App" option (these are website-only pages).
+- Old `?group=Website desktop` / `?group=Website mobile` links open the Website group at that size.
+
+**Tech:** dev only, no database. `lib/dev/simulatorRoutes.ts` (one set of pages, group "Website"), `components/dev/DevSimulator.tsx` (the switch; reuses The Maroon Live's switch code), `app/dev/page.tsx` unchanged.
+
+**Done means:** only one Website group; the switch flips each of the 5 pages between desktop and mobile size; Maroon Live's switch still works; `tsc`, lint (my files) and simulator tests pass; checked on screen.
+
+## Course data: GolfCourseAPI only, OpenGolfAPI removed (owner request 2026-11-21) — APPROVED 2026-11-21
+
+**What:** The app uses **GolfCourseAPI** (api.golfcourseapi.com, owner's key) as its only course source. **OpenGolfAPI is removed** completely. Goal: lowest cost now, upgrade later.
+- **Search** (`/api/courses/search`) and **opening a course** (`/api/courses/<ref>`, `/api/rounds/course/<ref>`, trip round pars) use GolfCourseAPI: tee names, yardage, course rating, slope, each hole's par / yardage / handicap, men's and women's tees.
+- **GPS map** keeps working the same way: GolfCourseAPI gives the course and its location → **OpenStreetMap** (free) gives fairway / green / bunker / water shapes → green targets. Courses OSM hasn't mapped show the scorecard only, no GPS (same as today).
+- **GPS map photo = free US government photos (USGS The National Map, owner choice C, 2026-11-21)** instead of Google satellite. Sharp enough to see fairways, greens and bunkers for a whole hole; a little blurry when zoomed in very close; US courses only. The map is drawn with **MapLibre** (free, open-source map library, new npm package `maplibre-gl`) using USGS's free image service; credit line "Imagery: USGS The National Map" shown on the map. Same hole view features as today (hole turned tee-to-green, your dot, tap a target, yardages). Applies to the real GPS map (`components/platform/gps/GolfGpsMap.tsx`) and the dev course-search preview map. Easy to switch back to Google or another photo source later.
+- **"Courses near me" is turned off for now** (GolfCourseAPI can't search by location). The "near me" button and `/api/courses/near` are removed; can come back later via Google Places.
+- **Saved data:** production has 0 trip rounds and 0 player rounds pointing at OpenGolf courses (checked 2026-11-21), so nothing to move. The 8 OpenGolf test courses in the course library are cleared by the SQL below.
+- **Course library** saves GolfCourseAPI courses (allowed by GolfCourseAPI's terms: caching from normal app use is OK; no bulk copying, no sharing the data outside the app). Saved courses are read from our database first, so each course costs GolfCourseAPI requests only the first time.
+
+**Cost now:** GolfCourseAPI Free = 35 requests/day, Pro = $9.99/mo for 10,000/day. OpenStreetMap = free. USGS photos = free. Supabase/Vercel unchanged. Google Maps is no longer used by the GPS map.
+
+**Tech / data:** new provider folder `lib/platform/golfGps/providers/golfCourseApi/` (client, reply checking, adapter, provider, tests), same shape as the OpenGolf one, which is deleted (`providers/openGolf/`, its tests, the `courses/near` route, `nearbyCourses.ts`). New provider name `golf_course_api` replaces `open_golf` everywhere (domain type, course library, GPS provisioning, dev course-search page, `/dev/gps`). Key: `GOLF_COURSE_API_KEY` in `.env` (saved 2026-11-21, server-only) + Vercel env vars before deploy; `.env.example` gets the blank line. Sent as `Authorization: Key <key>`. Server cache: search 1 hour, course detail 24 hours. Small SQL file `supabase/golf_course_api_provider.sql` (owner runs it in Supabase): allows `golf_course_api` in the course library, treats it as refreshable like OpenStreetMap, and removes the old OpenGolf test courses.
+
+**Done means:** searching "Pinehurst" in the app shows GolfCourseAPI courses; opening one shows its tees and 18-hole scorecard; a course's GPS map still builds from OpenStreetMap; no code mentions OpenGolf any more; missing key / bad key / timeout / daily limit show the existing "unavailable" / "busy" messages (no crash); unit tests for the new provider (good replies, bad replies, errors) pass; existing course/GPS tests updated and passing; `tsc` and lint pass; checked on screen at localhost.
+
 ## Play works without course search + a course library we fill ourselves (owner request 2026-11-21) — Part A + search order BUILT 2026-11-21 (owner: library first → OpenGolfAPI → add by hand; first course Eagle Pointe)
 
 **Why now:** a tester plays tomorrow. Play's course search (`ExploreCourseSearch` → `/api/courses/search`) only asks

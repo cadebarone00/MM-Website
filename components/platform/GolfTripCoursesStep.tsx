@@ -19,7 +19,7 @@ const fromDraft = (draft: GolfTripDraft, n: number): RoundCourse => {
 
 /**
  * Golf Trip questionnaire, step 4 (Courses). One row per round planned on the Golf step: date, round number and
- * course. Typing drops down the course search (OpenGolfAPI, same as Trip Settings); a picked course's scorecard pars
+ * course. Typing drops down the course search (GolfCourseAPI, same as Trip Settings); a picked course's scorecard pars
  * are set when the trip is created (lib/platform/tripCreateCoursesServer.ts). Optional, so Next is always on.
  */
 export function GolfTripCoursesStep() {

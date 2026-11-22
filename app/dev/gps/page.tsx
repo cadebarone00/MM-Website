@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GolfGpsScreen } from "@/components/platform/gps/GolfGpsScreen";
-import { loadPlayableOpenGolfCourse } from "@/lib/platform/golfGps/courseEnrichment";
+import { loadPlayableCourse } from "@/lib/platform/golfGps/courseEnrichment";
 import { toPrototypeGpsCourse } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
 import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * 404 unless NODE_ENV=development (`npm run dev`). The same screen opens from the Scoring sheet's GPS pill.
  *
  * `?maroonCourse=<Maroon course id>&hole=<n>` loads a course saved in the Maroon course library (Supabase only — no
- * OpenGolf / OpenStreetMap calls). `?course=<OpenGolf id>` is the live-import mode: OpenGolf scorecard + OpenStreetMap
+ * GolfCourseAPI / OpenStreetMap calls). `?course=<GolfCourseAPI id>` is the live-import mode: GolfCourseAPI scorecard + OpenStreetMap
  * geometry + derived green targets, built fresh through the course-enrichment service (nothing saved).
  */
 export default async function GolfGpsPrototypePage({ searchParams }: { searchParams: Promise<{ course?: string; maroonCourse?: string; hole?: string }> }) {
@@ -29,10 +29,10 @@ export default async function GolfGpsPrototypePage({ searchParams }: { searchPar
   }
 
   let message: string | null = null;
-  let loaded: Awaited<ReturnType<typeof loadPlayableOpenGolfCourse>> = null;
+  let loaded: Awaited<ReturnType<typeof loadPlayableCourse>> = null;
   try {
-    loaded = await loadPlayableOpenGolfCourse(courseId);
-    if (!loaded) message = "OpenGolf has no course with that id.";
+    loaded = await loadPlayableCourse(courseId);
+    if (!loaded) message = "GolfCourseAPI has no course with that id.";
   } catch (error) {
     message = error instanceof GolfProviderError ? error.message : "Loading the course failed.";
   }

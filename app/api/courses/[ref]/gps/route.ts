@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
  * "Prepare GPS" from Explore → Courses: POST /api/courses/<ref>/gps. Signed-in players only, because it can build and
- * store the course (OpenGolf → OpenStreetMap → green targets → Maroon course library). Everything runs on the server;
+ * store the course (GolfCourseAPI → OpenStreetMap → green targets → Maroon course library). Everything runs on the server;
  * the reply is only { status, maroonCourseId? } — never provider data or errors.
  */
 export async function POST(_request: Request, { params }: { params: Promise<{ ref: string }> }) {

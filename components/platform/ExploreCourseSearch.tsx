@@ -1,22 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, FlagTriangleRight, LoaderCircle, LocateFixed, MapPin, Search } from "lucide-react";
+import { ChevronRight, FlagTriangleRight, LoaderCircle, Search } from "lucide-react";
 import { ExploreCourseProfile } from "./ExploreCourseProfile";
 import styles from "./ExploreCourseSearch.module.css";
 import { cityState } from "@/lib/data/usStates";
 
-/** One search result as /api/courses/search returns it. `ref` opens the course later; it is never shown. `miles` = from me (near me only). */
-export interface CourseResult { ref: string; name: string; city: string | null; state: string | null; par: number | null; miles?: number }
+/** One search result as /api/courses/search returns it. `ref` opens the course later; it is never shown. */
+export interface CourseResult { ref: string; name: string; city: string | null; state: string | null; par: number | null }
 
 type SearchState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "done"; courses: CourseResult[]; attribution: string }
-  | { status: "error"; message: string };
-
-type NearState =
-  | { status: "off" | "locating" }
   | { status: "done"; courses: CourseResult[]; attribution: string }
   | { status: "error"; message: string };
 
@@ -25,37 +20,15 @@ export const place = (course: Pick<CourseResult, "city" | "state">) => cityState
 
 /**
  * Explore → Courses: search golf courses by name, club or city, and pick one. Searches run on the server
- * (/api/courses/search → our course library, then the OpenGolf provider) a moment after typing stops; older replies are dropped. Picking a
+ * (/api/courses/search → our course library, then the GolfCourseAPI provider) a moment after typing stops; older replies are dropped. Picking a
  * course opens its preview here (ExploreCourseProfile).
  */
 /**
  * `onPick` (Play a round): picking a course hands it back instead of opening its preview. `kicker` / `title` change the
- * heading. Before typing, "Near you" lists the closest courses to the phone's location (asked for only on tap, unless
- * location was already allowed for this site).
+ * heading. "Courses near me" is off for now (owner, 2026-11-21): GolfCourseAPI only offers it on a paid plan.
  */
 export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", title = "Find a course." }: { onPick?: (course: CourseResult) => void; kicker?: string; title?: string } = {}) {
   const [query, setQuery] = useState("");
-  const [near, setNear] = useState<NearState>({ status: "off" });
-
-  function findNearMe() {
-    if (!("geolocation" in navigator)) { setNear({ status: "error", message: "This browser can't share your location. Search by name instead." }); return; }
-    setNear({ status: "locating" });
-    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      try {
-        const response = await fetch(`/api/courses/near?lat=${coords.latitude.toFixed(4)}&lng=${coords.longitude.toFixed(4)}`);
-        const body = await response.json() as { ok: boolean; courses?: CourseResult[]; attribution?: string; code?: string };
-        if (body.ok && body.courses) { setNear({ status: "done", courses: body.courses, attribution: body.attribution ?? "" }); return; }
-        setNear({ status: "error", message: body.code === "outside_us" ? "Nearby courses are US only for now. Search by name instead." : body.code === "busy" ? "Course data is busy right now. Try again in a few minutes." : "Couldn't find nearby courses right now. Search by name instead." });
-      } catch { setNear({ status: "error", message: "Couldn't reach course data. Check your connection." }); }
-    }, (error) => setNear({ status: "error", message: error.code === error.PERMISSION_DENIED ? "Location is off for this site. Turn it on in your browser settings, or search by name." : "Couldn't get your location. Search by name instead." }),
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 10 * 60 * 1000 });
-  }
-  // Location already allowed for this site: show nearby courses straight away (no prompt).
-  useEffect(() => {
-    let cancelled = false;
-    navigator.permissions?.query({ name: "geolocation" }).then((status) => { if (!cancelled && status.state === "granted") findNearMe(); }).catch(() => { /* ask on tap */ });
-    return () => { cancelled = true; };
-  }, []);
   const [result, setResult] = useState<SearchState>({ status: "idle" });
   const [selected, setSelected] = useState<CourseResult | null>(null);
   // Under two letters nothing is searched, whatever the last reply was.
@@ -94,7 +67,7 @@ export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", 
           <strong>{course.name}</strong>
           <small>{[place(course), course.par !== null ? `Par ${course.par}` : null].filter(Boolean).join(" · ") || "Location unavailable"}</small>
         </span>
-        {course.miles !== undefined ? <span className={styles.miles}>{course.miles < 10 ? course.miles.toFixed(1) : Math.round(course.miles)} mi</span> : <ChevronRight size={18} aria-hidden="true" className={styles.chevron} />}
+        <ChevronRight size={18} aria-hidden="true" className={styles.chevron} />
       </button>
     </li>)}
   </ul>;
@@ -110,19 +83,10 @@ export function ExploreCourseSearch({ onPick, kicker = "The Maroon · Courses", 
       {search.status === "loading" && <LoaderCircle size={18} className={styles.spinner} aria-label="Searching" />}
     </label>
 
-    {search.status === "idle" && <div className={styles.near}>
-      <div className={styles.sectionHead}><h3><MapPin size={15} aria-hidden="true" /> Near you</h3>
-        {near.status === "done" && <button type="button" className={styles.refresh} onClick={findNearMe}><LocateFixed size={14} aria-hidden="true" /> Refresh</button>}</div>
-      {near.status === "off" && <button type="button" className={styles.locate} onClick={findNearMe}><LocateFixed size={18} aria-hidden="true" /> Show courses near me</button>}
-      {near.status === "locating" && skeleton}
-      {near.status === "error" && <p className={styles.hint} role="alert">{near.message}</p>}
-      {near.status === "done" && (near.courses.length ? <>{list(near.courses, "Courses near you")}{near.attribution && <p className={styles.credit}>Course data {near.attribution}</p>}</>
-        : <p className={styles.hint}>No courses found nearby. Search by name instead.</p>)}
-    </div>}
     {search.status === "loading" && skeleton}
     {search.status === "error" && <p className={styles.hint} role="alert">{search.message}</p>}
     {search.status === "done" && (search.courses.length === 0
       ? <p className={styles.hint}>No courses found for &ldquo;{query.trim()}&rdquo;. Try the club name or the city.</p>
-      : <>{list(search.courses, "Courses")}{search.attribution && <p className={styles.credit}>Course data {search.attribution}</p>}</>)}
+      : <>{list(search.courses, "Courses")}{search.attribution && <p className={styles.credit}>{search.attribution}</p>}</>)}
   </section>;
 }

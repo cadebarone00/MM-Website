@@ -7,7 +7,8 @@ import type {
  *
  * Every stored row carries a provider and a license so open data (ODbL) and any future proprietary data stay
  * distinguishable:
- * - open_golf / openstreetmap → "ODbL-1.0"
+ * - openstreetmap → "ODbL-1.0"
+ * - golf_course_api (GolfCourseAPI scorecards, used under their terms; refreshable like open data) → "GolfCourseAPI-terms"
  * - golf_intelligence (paid provider) → "proprietary"; maroon (entered by Maroon staff) → "maroon"
  * - no known source → "unknown" (kept, never quietly relabelled as Maroon's)
  * - Maroon-derived green targets → the license of their inputs (all ODbL inputs → "ODbL-1.0", since a value derived
@@ -17,9 +18,11 @@ import type {
  */
 
 export const OPEN_DATA_LICENSE = "ODbL-1.0";
+export const GOLF_COURSE_API_LICENSE = "GolfCourseAPI-terms";
 
 export function licenseFor(provider: GolfDataProvider | undefined): string {
-  if (provider === "open_golf" || provider === "openstreetmap") return OPEN_DATA_LICENSE;
+  if (provider === "openstreetmap") return OPEN_DATA_LICENSE;
+  if (provider === "golf_course_api") return GOLF_COURSE_API_LICENSE;
   if (provider === "golf_intelligence") return "proprietary";
   if (provider === "maroon") return "maroon";
   return "unknown";

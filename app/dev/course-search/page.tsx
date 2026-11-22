@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import type { GolfCourse, GolfHole } from "@/lib/platform/golfGps/domain";
 import { GolfProviderError, type GolfCourseImport, type GolfCourseSearchResponse } from "@/lib/platform/golfGps/providers/GolfCourseProvider";
-import { createOpenGolfProvider } from "@/lib/platform/golfGps/providers/openGolf/provider";
+import { createGolfCourseApiProvider } from "@/lib/platform/golfGps/providers/golfCourseApi/provider";
 import { enrichGolfCourse, type PlayableCourse } from "@/lib/platform/golfGps/courseEnrichment";
 import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
 import type { CourseLibraryEntry } from "@/lib/platform/golfGps/repository/courseRepository";
@@ -15,13 +15,13 @@ export const metadata: Metadata = { title: "Course search (dev) | The Maroon", r
 export const dynamic = "force-dynamic";
 
 /**
- * LOCAL DEV TEST HARNESS for the OpenGolf course provider — not production UI. Searches and course details run on the
+ * LOCAL DEV TEST HARNESS for the GolfCourseAPI course provider — not production UI. Searches and course details run on the
  * server through the provider, so this page only ever sees normalized Maroon types. 404 unless NODE_ENV=development.
  */
 export default async function CourseSearchPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string; id?: string; osm?: string; library?: string; libraryError?: string }> }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const { q = "", state = "", id = "", osm = "", library = "", libraryError = "" } = await searchParams;
-  const provider = createOpenGolfProvider();
+  const provider = createGolfCourseApiProvider();
 
   let search: GolfCourseSearchResponse | null = null, searchError: string | null = null;
   if (q.trim()) {
@@ -31,17 +31,17 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
   if (id) {
     try {
       detail = await provider.getCourseDetail(id);
-      if (!detail) detailError = "OpenGolf has no course with that id.";
+      if (!detail) detailError = "GolfCourseAPI has no course with that id.";
     } catch (error) { detailError = message(error); }
   }
-  // Is this OpenGolf course already in the Maroon course library? (Reads Supabase only — no provider calls.)
+  // Is this GolfCourseAPI course already in the Maroon course library? (Reads Supabase only — no provider calls.)
   let saved: CourseLibraryEntry | null = null, lookupError: string | null = null;
   if (detail) {
-    try { saved = await getCourseLibrary().findCourseByExternalId("open_golf", id); } catch (error) {
+    try { saved = await getCourseLibrary().findCourseByExternalId("golf_course_api", id); } catch (error) {
       lookupError = error instanceof Error ? error.message : "Couldn't read the course library.";
     }
   }
-  const libraryNotice = libraryError || ({ saved: "Saved to the Maroon course library.", "already-saved": "Already in the library — loaded the stored copy (no provider calls).", refreshed: "Refreshed from OpenGolf + OpenStreetMap and saved." } as Record<string, string>)[library] || null;
+  const libraryNotice = libraryError || ({ saved: "Saved to the Maroon course library.", "already-saved": "Already in the library — loaded the stored copy (no provider calls).", refreshed: "Refreshed from GolfCourseAPI + OpenStreetMap and saved." } as Record<string, string>)[library] || null;
   // Only when "Load OSM Geometry" is clicked: Overpass is a shared public service, so it's never queried automatically.
   let playable: PlayableCourse | null = null, osmError: string | null = null;
   if (detail && osm === "1") {
@@ -54,8 +54,8 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
   return <main className={styles.page}>
     <div className={styles.wrap}>
       <header className={styles.header}>
-        <h1>Course search · OpenGolf provider (dev only)</h1>
-        <p>Shows what OpenGolf gives The Maroon after normalizing. <span className={styles.tag}>OpenGolf</span> = came from OpenGolf; <span className={styles.na}>unavailable</span> = The Maroon has no data for it.</p>
+        <h1>Course search · GolfCourseAPI provider (dev only)</h1>
+        <p>Shows what GolfCourseAPI gives The Maroon after normalizing. <span className={styles.tag}>GolfCourseAPI</span> = came from GolfCourseAPI; <span className={styles.na}>unavailable</span> = The Maroon has no data for it.</p>
       </header>
 
       <section className={styles.panel}>
@@ -98,13 +98,13 @@ export default async function CourseSearchPage({ searchParams }: { searchParams:
 
 function message(error: unknown): string {
   if (!(error instanceof GolfProviderError)) return "Something went wrong.";
-  return { bad_request: error.message, timeout: "OpenGolf took too long to answer.", network: "Couldn't reach OpenGolf.",
-    rate_limited: "OpenGolf's daily request limit was reached — try again tomorrow.", http: error.message, malformed: "OpenGolf sent a reply we couldn't read." }[error.kind];
+  return { bad_request: error.message, timeout: "GolfCourseAPI took too long to answer.", network: "Couldn't reach GolfCourseAPI.",
+    rate_limited: "GolfCourseAPI's daily request limit was reached — try again tomorrow.", http: error.message, malformed: "GolfCourseAPI sent a reply we couldn't read." }[error.kind];
 }
 
-/** A value from OpenGolf, or "unavailable" when the normalized course has nothing for it. */
+/** A value from GolfCourseAPI, or "unavailable" when the normalized course has nothing for it. */
 function Value({ value }: { value: ReactNode }) {
-  return value === undefined || value === null || value === "" ? <span className={styles.na}>unavailable</span> : <>{value}<span className={styles.tag}>OpenGolf</span></>;
+  return value === undefined || value === null || value === "" ? <span className={styles.na}>unavailable</span> : <>{value}<span className={styles.tag}>GolfCourseAPI</span></>;
 }
 
 function Fields({ rows }: { rows: [string, ReactNode][] }) {

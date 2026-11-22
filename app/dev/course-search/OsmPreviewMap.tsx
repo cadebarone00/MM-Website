@@ -1,7 +1,9 @@
 "use client";
 
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMaps } from "@/lib/platform/golfGps/loadGoogleMaps";
+import { loadMapLibre } from "@/lib/platform/golfGps/loadMapLibre";
+import { usgsSatelliteStyle } from "@/lib/platform/golfGps/usgsImagery";
 import styles from "./CourseSearch.module.css";
 
 export type PreviewKind = "boundary" | "centerline" | "green" | "tee" | "fairway" | "bunker" | "water" | "penalty" | "unassigned"
@@ -23,47 +25,52 @@ export const PREVIEW_COLORS: Record<PreviewKind, string> = {
   approach: "#ff8a00", front: "#ffffff", center: "#e0002a", back: "#111111",
 };
 
+const TARGETS = new Set<PreviewKind>(["front", "center", "back"]);
+
 /**
- * DEV ONLY: OSM geometry drawn over Google satellite imagery, to check the shapes line up. Google is only the
- * background — no geometry here is ever taken from it. North-up raster map; Google's own logo / credits stay visible.
+ * DEV ONLY: OSM geometry drawn over USGS aerial photos (MapLibre), to check the shapes line up. The photos are only the
+ * background — no geometry here is ever taken from them. North-up map; the USGS credit stays visible.
  */
 export function OsmPreviewMap({ shapes, attribution }: { shapes: PreviewShape[]; attribution: string }) {
   const container = useRef<HTMLDivElement>(null);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const [error, setError] = useState<string | null>(apiKey ? null : "No NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, so the map preview is off.");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!apiKey || !container.current) return;
+    if (!container.current) return;
     let cancelled = false;
-    const drawn: { setMap(map: google.maps.Map | null): void }[] = [];
-    loadGoogleMaps(apiKey).then(({ maps }) => {
+    let map: import("maplibre-gl").Map | null = null;
+    loadMapLibre().then(({ Map, LngLatBounds }) => {
       if (cancelled || !container.current) return;
-      const map = new maps.Map(container.current, { mapTypeId: "satellite", tilt: 0, streetViewControl: false, fullscreenControl: true, mapTypeControl: false });
-      const bounds = new google.maps.LatLngBounds();
-      for (const shape of shapes) {
-        const color = PREVIEW_COLORS[shape.kind];
-        const target = shape.kind === "front" || shape.kind === "center" || shape.kind === "back";
-        if (shape.point) {
-          drawn.push(new maps.Circle({ map, center: shape.point, radius: target ? 1.2 : 3, zIndex: target ? 5 : 1, strokeColor: color, strokeWeight: 2, fillColor: color, fillOpacity: 0.6, clickable: false }));
-          bounds.extend(shape.point);
-        } else if (shape.path) {
-          const common = { map, clickable: false, strokeColor: color, strokeWeight: shape.kind === "boundary" || shape.kind === "approach" ? 3 : 2, zIndex: shape.kind === "approach" ? 4 : 1 };
-          drawn.push(shape.closed
-            ? new maps.Polygon({ ...common, paths: shape.path, fillColor: color, fillOpacity: shape.kind === "boundary" ? 0 : 0.35 })
-            : new maps.Polyline({ ...common, path: shape.path }));
-          shape.path.forEach((p) => bounds.extend(p));
-        }
-      }
-      if (!bounds.isEmpty()) map.fitBounds(bounds, 24);
+      map = new Map({ container: container.current, style: usgsSatelliteStyle("#1d2128"), dragRotate: false, touchPitch: false, maxPitch: 0 });
+      const features: GeoJSON.Feature[] = shapes.flatMap((shape): GeoJSON.Feature[] => {
+        const properties = { color: PREVIEW_COLORS[shape.kind], kind: shape.kind, wide: shape.kind === "boundary" || shape.kind === "approach" ? 1 : 0,
+          fill: shape.kind === "boundary" ? 0 : 0.35, radius: TARGETS.has(shape.kind) ? 4 : 6 };
+        if (shape.point) return [{ type: "Feature", properties, geometry: { type: "Point", coordinates: [shape.point.lng, shape.point.lat] } }];
+        if (!shape.path?.length) return [];
+        const coords = shape.path.map((p) => [p.lng, p.lat]);
+        return [{ type: "Feature", properties, geometry: shape.closed ? { type: "Polygon", coordinates: [[...coords, coords[0]]] } : { type: "LineString", coordinates: coords } }];
+      });
+      map.on("load", () => {
+        if (cancelled || !map) return;
+        map.addSource("shapes", { type: "geojson", data: { type: "FeatureCollection", features } });
+        map.addLayer({ id: "fill", type: "fill", source: "shapes", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": ["get", "color"], "fill-opacity": ["get", "fill"] } });
+        map.addLayer({ id: "line", type: "line", source: "shapes", filter: ["!=", ["geometry-type"], "Point"],
+          paint: { "line-color": ["get", "color"], "line-width": ["case", ["==", ["get", "wide"], 1], 3, 2] } });
+        map.addLayer({ id: "point", type: "circle", source: "shapes", filter: ["==", ["geometry-type"], "Point"],
+          paint: { "circle-color": ["get", "color"], "circle-radius": ["get", "radius"], "circle-opacity": 0.8, "circle-stroke-color": "#000", "circle-stroke-width": 1 } });
+      });
+      const bounds = new LngLatBounds();
+      for (const shape of shapes) for (const p of shape.point ? [shape.point] : shape.path ?? []) bounds.extend([p.lng, p.lat]);
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 24, animate: false });
     }).catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : "The map couldn't load."); });
-    return () => { cancelled = true; drawn.forEach((shape) => shape.setMap(null)); };
-  }, [apiKey, shapes]);
+    return () => { cancelled = true; map?.remove(); };
+  }, [shapes]);
 
   return <div>
     <div className={styles.legend}>
       {(Object.keys(PREVIEW_COLORS) as PreviewKind[]).map((kind) => <span key={kind}><i style={{ background: PREVIEW_COLORS[kind] }} />{kind}</span>)}
     </div>
     {error ? <p className={styles.error}>{error}</p> : <div ref={container} className={styles.map} aria-label="OSM geometry over satellite imagery" />}
-    <p className={styles.credit}>Shapes: {attribution} · Imagery: Google (background only)</p>
+    <p className={styles.credit}>Shapes: {attribution} · Imagery: USGS The National Map (background only)</p>
   </div>;
 }

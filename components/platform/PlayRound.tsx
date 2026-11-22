@@ -142,7 +142,7 @@ const money = (n: number) => `${n < 0 ? "−" : "+"}$${Math.abs(n) % 1 ? Math.ab
 const dollars = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n > 0 && n <= 10000 ? Math.round(n * 100) / 100 : 0; };
 
 /**
- * Round setup, 4 pages like the trip builder: 1) the round — course (our library → OpenGolfAPI → add by hand), tees,
+ * Round setup, 4 pages like the trip builder: 1) the round — course (our library → GolfCourseAPI → add by hand), tees,
  * holes, date, Track stats, Count toward handicap · 2) players (friends with the app, guests) · 3) the game and its
  * options (stakes, birdies double, eagles triple, carryovers, handicaps, Nassau presses) · 4) review → Start. Every
  * round starts in the database, so it always has a code to share (supabase/join_codes.sql).

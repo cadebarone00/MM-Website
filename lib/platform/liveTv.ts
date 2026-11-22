@@ -7,8 +7,18 @@ export type TvShow = "individual" | "match" | "both";
 
 /** One golfer on the individual board. `total` / `today`: strokes to par (null = no score yet). */
 export interface TvPlayerRow { position: string; name: string; team?: string | null; total: number | null; today: number | null; thru: string }
-/** One match on the match play board. `leader`: which side is up (null = all square or not started). */
-export interface TvMatchRow { label: string; left: string; right: string; status: string; leader: "left" | "right" | null; final: boolean }
+/**
+ * One match on the match play board, drawn like the app's Matches list: names on their sides; in the middle the match
+ * number over `middle` ("Thru 12", "F" or the tee time "8:40"). `score`: the match score ("2 UP", "3&2", "AS"; "" before it
+ * starts), shown on the leader's half (on both halves when it's "AS"). `leader`: who's up / won (null = all square).
+ */
+export interface TvMatchRow { number: number; left: string; right: string; middle: string; score: string; leader: "left" | "right" | null }
+
+/** The score each half shows: the leader's score on their half, "AS" on both, nothing before the match starts. */
+export function tvSideScore(row: TvMatchRow, side: "left" | "right"): string {
+  if (!row.score) return "";
+  return row.leader === null ? row.score : row.leader === side ? row.score : "";
+}
 export interface TvTeam { name: string; color: string; points: number }
 export interface TvBoardData {
   eventName: string; roundLabel: string;

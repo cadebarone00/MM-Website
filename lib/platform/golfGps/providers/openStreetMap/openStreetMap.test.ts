@@ -6,6 +6,7 @@ import { createOverpassClient, OSM_ATTRIBUTION, OVERPASS_CACHE_SECONDS, OVERPASS
 import { deriveCourseGreenTargets } from "../../targets/deriveGreenTargets";
 import { parseHoleRef } from "./adapter";
 import { nameSimilarity } from "./matching";
+import { matchNames } from "./provider";
 import { createOpenStreetMapGeometryProvider } from "./provider";
 
 // A made-up two-hole course laid out in meters around ORIGIN (not real geometry — only for checking the logic).
@@ -52,9 +53,9 @@ const hole = (number: number, par: number): GolfHole => ({
 const SCORECARD = { scorecard: true, teeCoordinates: false, greenPoints: false, greenPolygons: false, fairways: false, hazardLocations: false,
   hazardPolygons: false, holeBoundaries: false, centerlines: false, elevation: false, greenSlope: false };
 const COURSE: GolfCourse = {
-  id: "open_golf:abc", externalIds: [{ provider: "open_golf", id: "abc" }], name: "Test Pines Golf Club", address: {},
+  id: "golf_course_api:abc", externalIds: [{ provider: "golf_course_api", id: "abc" }], name: "Test Pines Golf Club", address: {},
   location: ORIGIN, holeCount: 2, holes: [hole(1, 4), hole(2, 3)], teeSets: [{ id: "blue", name: "Blue" }],
-  sources: [{ provider: "open_golf", providerRecordId: "abc" }], coverage: { level: "scorecard", features: SCORECARD, holesWithGps: 0 },
+  sources: [{ provider: "golf_course_api", providerRecordId: "abc" }], coverage: { level: "scorecard", features: SCORECARD, holesWithGps: 0 },
   verification: { status: "imported" },
 };
 const NOW = new Date("2026-10-05T18:00:00Z");
@@ -216,4 +217,15 @@ test("errors: busy (429 / 504), Overpass runtime remarks, non-JSON and network f
   assert.throws(() => parseOverpassReply({ nope: [] }), (e) => kind(e) === "malformed");
   assert.deepEqual(parseOverpassReply({ elements: [{ type: "way", id: 1, tags: { golf: "green" }, geometry: [{ lat: 1, lon: 2 }, null] }, { type: "blob", id: 2 }] }),
     [{ type: "way", id: 1, tags: { golf: "green" }, geometry: null }], "clipped geometry → null, unknown element dropped");
+});
+
+test("multi-course club: the bare club name isn't matched (it would tie with the resort outline); a club name that adds words is", async () => {
+  assert.deepEqual(matchNames({ name: "Pinehurst Cc – No. 2", facilityName: "Pinehurst Cc" }), ["Pinehurst Cc – No. 2"]);
+  assert.deepEqual(matchNames({ name: "South", facilityName: "Torrey Pines" }), ["South", "Torrey Pines"]);
+  assert.deepEqual(matchNames({ name: "Test Pines Golf Club" }), ["Test Pines Golf Club"]);
+  const course = { ...COURSE, name: "Test Pines Golf Club – No. 2", facilityName: "Test Pines Golf Club" };
+  const resort = way(300, { leisure: "golf_course", name: "Test Pines Golf Club" }, box(400, 250, 900, 600));
+  const numbered = { ...COURSE_OUTLINE, tags: { ...COURSE_OUTLINE.tags, name: "Test Pines No. 2" } };
+  const result = await fakeOverpass([{ elements: [numbered, resort] }, { elements: [] }]).provider.enrichCourse(course);
+  assert.equal(result.match?.candidate.name, "Test Pines No. 2", "the numbered course wins instead of a tie");
 });

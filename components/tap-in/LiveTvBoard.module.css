@@ -1,9 +1,12 @@
-/* The Maroon Live TV mode: one full screen, sized from the screen itself so it reads across a room. */
-.screen{--ink:#2a0a12;--cream:#fbf8f1;--cream2:#f3ead8;--gold:#dcc495;--under:#b3261e;
-  position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:1.6vh;padding:3vh 3vw 2vh;overflow:hidden;
+/* The Maroon Live TV mode: one full screen, sized from the screen itself so it reads across a room. No boxes: names and
+   scores sit right on the maroon, and team colors glow in from the sides of the screen (the app's team glow). */
+.screen{--cream:#fbf8f1;--gold:#dcc495;--under:#ff7a6b;--edge:3vw;
+  position:fixed;inset:0;display:grid;grid-template-rows:auto auto 1fr auto;gap:1.6vh;padding:3vh 0 2vh;overflow:hidden;
   background:radial-gradient(ellipse at 50% -10%,rgba(201,168,110,.16),transparent 55%),#240001;color:var(--cream);font-family:var(--font-barlow),Arial,sans-serif}
+/* A team color, lifted a little so even dark colors (navy) still glow on the maroon. */
+.screen{--glow-left:color-mix(in srgb,var(--team-left,#dcc495) 75%,white);--glow-right:color-mix(in srgb,var(--team-right,#dcc495) 75%,white)}
 
-.header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:2vw}
+.header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:2vw;padding:0 var(--edge)}
 .brand{margin:0;color:var(--gold);font:600 1.5vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.28em;text-transform:uppercase}
 .title{text-align:center}
 .title h1{margin:0;font:600 5.4vh/1.05 var(--font-spectral),Georgia,serif;letter-spacing:-.01em}
@@ -12,43 +15,94 @@
 .liveDot{width:1.1vh;height:1.1vh;border-radius:50%;background:#e04a3f;box-shadow:0 0 0 .4vh rgba(224,74,63,.25);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.35}}
 
-/* The board: a cream panel with a maroon heading row, like a course scoreboard. */
-.board{display:grid;grid-template-rows:auto 1fr;min-height:0;border-radius:1.4vh;background:var(--cream);color:var(--ink);overflow:hidden;box-shadow:0 2vh 5vh rgba(0,0,0,.35)}
-.viewport{position:relative;min-height:0;overflow:hidden}
+/* The board: no panel, no row colors or glows; the rows start 20px under the team names / headings and fade in and out as they scroll. */
+.board{grid-row:3;display:grid;grid-template-rows:auto 1fr;min-height:0}
+.viewport{position:relative;min-height:0;overflow:hidden;margin-top:20px;
+  mask-image:linear-gradient(transparent,#000 5%,#000 92%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 5%,#000 92%,transparent)}
 .scrolling{animation:scroll linear infinite}
 @keyframes scroll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 
-.row{display:grid;grid-template-columns:9vh 1fr 13vh 13vh 11vh;align-items:center;gap:1.5vw;min-height:6.4vh;padding:0 2.2vw;border-bottom:1px solid rgba(42,10,18,.1)}
-.row:nth-child(even){background:var(--cream2)}
-.headRow{min-height:4.6vh;background:#3b0d18 !important;color:var(--gold);border:0}
+.row{display:grid;grid-template-columns:9vh 1fr 13vh 13vh 11vh;align-items:center;gap:1.5vw;min-height:6.4vh;padding:0 calc(var(--edge) + 1vw);border-bottom:1px solid rgba(220,196,149,.07)}
+.headRow{min-height:4.2vh;border-bottom:1px solid rgba(220,196,149,.28)}
 .headRow span{font:600 1.5vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
-.pos{font:700 2.8vh/1 var(--font-barlow),Arial,sans-serif;color:#6b161a}
-.player{display:flex;align-items:center;gap:1.2vh;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 3.4vh/1.1 var(--font-spectral),Georgia,serif}
-.teamChip{flex:none;width:1.2vh;height:3vh;border-radius:.4vh}
+.pos{font:700 2.8vh/1 var(--font-barlow),Arial,sans-serif;color:var(--gold)}
+.player{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 3.4vh/1.1 var(--font-spectral),Georgia,serif}
 .num{text-align:center;font:600 3vh/1 var(--font-barlow),Arial,sans-serif;font-variant-numeric:tabular-nums}
 .headRow .num{font-size:1.5vh}
 .total{font-weight:800;font-size:3.4vh}
 .under{color:var(--under)}
 
-/* Match play: the two teams' points, then each match. */
-.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.6vw}
-.team{position:relative;display:flex;align-items:center;justify-content:space-between;padding:1.6vh 2.4vw;border-radius:1.4vh;background:var(--team);color:#fff}
-.teamName{font:600 3.6vh/1 var(--font-spectral),Georgia,serif}
-.teamPoints{font:800 6.4vh/1 var(--font-barlow),Arial,sans-serif;font-variant-numeric:tabular-nums}
+/* Match play: no team boxes. Each team's name and points sit on its own side, its color glowing from that edge. */
+.teams{grid-row:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.6vw;padding:0 calc(var(--edge) + 1vw)}
+.team{display:flex;align-items:center;justify-content:space-between;gap:2vw}
+.teamRight{flex-direction:row-reverse}
+.teamName{font:600 4vh/1 var(--font-spectral),Georgia,serif}
+.teamPoints{font:800 6.8vh/1 var(--font-barlow),Arial,sans-serif;font-variant-numeric:tabular-nums}
 .toWin{display:grid;justify-items:center;gap:.6vh;color:var(--gold);font:600 1.5vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
 .toWin b{color:var(--cream);font:800 4.4vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:0}
-.matchRow{grid-template-columns:14vh 1fr 26vh 1fr}
-.matchLabel{font:600 1.6vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6b161a}
-.side{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 3vh/1.1 var(--font-spectral),Georgia,serif;opacity:.7}
-.side.right{text-align:right}
-.side.up{font-weight:700;opacity:1}
-.status{justify-self:center;min-width:20vh;padding:1vh 1.6vh;border-radius:999px;background:#7a6a5d;color:#fff;text-align:center;font:700 2.2vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.04em}
-.status[data-even]{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px rgba(42,10,18,.35)}
+.screen[data-board="match"]{background:radial-gradient(ellipse 30% 55% at 0 18%,color-mix(in srgb,var(--glow-left) 34%,transparent),transparent 75%),
+  radial-gradient(ellipse 30% 55% at 100% 18%,color-mix(in srgb,var(--glow-right) 34%,transparent),transparent 75%),
+  radial-gradient(ellipse at 50% -10%,rgba(201,168,110,.14),transparent 55%),#240001}
 
-.empty{align-self:center;margin:0;text-align:center;color:var(--gold);font:500 3vh/1.4 var(--font-spectral),Georgia,serif}
-.footer{display:flex;align-items:center;justify-content:center;gap:2vw;color:rgba(251,248,241,.6);font:600 1.4vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase}
+
+.empty{grid-row:3;align-self:center;margin:0;text-align:center;color:var(--gold);font:500 3vh/1.4 var(--font-spectral),Georgia,serif}
+.footer{grid-row:4;display:flex;align-items:center;justify-content:center;gap:2vw;color:rgba(251,248,241,.55);font:600 1.4vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase}
 .dots{display:flex;gap:.8vh}
 .dots i{width:1vh;height:1vh;border-radius:50%;background:rgba(220,196,149,.35)}
 .dots i[data-on]{background:var(--gold)}
 
 @media (prefers-reduced-motion: reduce){.scrolling,.liveDot{animation:none}}
+
+/* On a phone (website on mobile, or the app): the same look, narrow. Today and match labels drop. */
+.screen:is([data-surface="mobile"],[data-surface="app"]){--edge:14px;gap:12px;padding:16px 0 10px}
+.screen[data-surface="app"]{padding-top:max(16px,env(safe-area-inset-top))}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .header{grid-template-columns:1fr auto;grid-template-areas:"brand clock" "title title";row-gap:10px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .brand{grid-area:brand;font-size:10px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .clock{grid-area:clock;font-size:10px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .title{grid-area:title}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .title h1{font-size:28px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .title p{font-size:10px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .row{grid-template-columns:36px 1fr 52px 44px;gap:8px;min-height:46px;padding:0 var(--edge)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .today{display:none}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .headRow{min-height:30px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .headRow span,.screen:is([data-surface="mobile"],[data-surface="app"]) .headRow .num{font-size:10px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .pos{font-size:15px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .player{font-size:18px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .num{font-size:16px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .total{font-size:18px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .teams{gap:8px;padding:0 var(--edge)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .team{flex-direction:column;align-items:flex-start;gap:4px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .teamRight{align-items:flex-end}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .teamName{font-size:17px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .teamPoints{font-size:32px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .toWin{font-size:9px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .toWin b{font-size:20px}
+.screen:is([data-surface="mobile"],[data-surface="app"])[data-board="match"]{background:radial-gradient(ellipse 55% 30% at 0 22%,color-mix(in srgb,var(--glow-left) 34%,transparent),transparent 75%),
+  radial-gradient(ellipse 55% 30% at 100% 22%,color-mix(in srgb,var(--glow-right) 34%,transparent),transparent 75%),#240001}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .empty{font-size:18px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .footer{font-size:9px}
+
+/* Match play rows, like the app's Matches list. Each half: the name on its outer side, the match score toward the middle.
+   The leading side glows from its corner, out of that side of the screen (the app's team glow). */
+.matchRow{display:grid;grid-template-columns:1fr 22vh 1fr;align-items:center;gap:2vw;min-height:8vh;padding:0 calc(var(--edge) + 1vw);border-bottom:1px solid rgba(220,196,149,.07)}
+.matchRow[data-leader]{--glow:color-mix(in srgb,var(--team) 75%,white)}
+.matchRow[data-leader="left"]{background:radial-gradient(ellipse 35% 140% at 0 0,color-mix(in srgb,var(--glow) 40%,transparent),transparent 72%)}
+.matchRow[data-leader="right"]{background:radial-gradient(ellipse 35% 140% at 100% 0,color-mix(in srgb,var(--glow) 40%,transparent),transparent 72%)}
+.side{display:flex;align-items:center;justify-content:space-between;gap:2vw;min-width:0}
+.side.right{flex-direction:row-reverse}
+.sideName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 3.2vh/1.1 var(--font-spectral),Georgia,serif;opacity:.6}
+.sideScore{flex:none;font:700 3.2vh/1 var(--font-spectral),Georgia,serif;color:var(--cream)}
+.side.up .sideName{font-weight:700;opacity:1}
+.middle{display:grid;justify-items:center;gap:.7vh}
+.matchNumber{font:600 1.5vh/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.matchState{font:700 2.8vh/1 var(--font-barlow),Arial,sans-serif;font-variant-numeric:tabular-nums;color:var(--cream)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .matchRow{grid-template-columns:1fr 64px 1fr;gap:8px;min-height:58px;padding:0 var(--edge)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .matchRow[data-leader="left"]{background:radial-gradient(ellipse 60% 140% at 0 0,color-mix(in srgb,var(--glow) 40%,transparent),transparent 72%)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .matchRow[data-leader="right"]{background:radial-gradient(ellipse 60% 140% at 100% 0,color-mix(in srgb,var(--glow) 40%,transparent),transparent 72%)}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .side{flex-direction:column;align-items:flex-start;gap:3px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .side.right{align-items:flex-end}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .sideName{font-size:15px;max-width:100%}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .sideScore{order:-1;font-size:14px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .middle{gap:4px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .matchNumber{font-size:9px}
+.screen:is([data-surface="mobile"],[data-surface="app"]) .matchState{font-size:15px}

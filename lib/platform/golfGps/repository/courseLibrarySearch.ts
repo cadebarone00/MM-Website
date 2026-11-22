@@ -8,7 +8,7 @@ type Row = { id: string; name: string; address: { city?: string; state?: string 
 
 /**
  * Courses in The Maroon's library (supabase/golf_course_data.sql) whose name has what was typed, as search results.
- * A course imported from OpenGolf keeps its OpenGolf ref; one we entered gets a "maroon:" ref. Throws if the library
+ * A course imported from GolfCourseAPI keeps its GolfCourseAPI ref; one we entered gets a "maroon:" ref. Throws if the library
  * isn't set up (callers carry on without it).
  */
 export async function searchCourseLibrary(text: string, limit: number): Promise<CourseHit[]> {
@@ -19,16 +19,16 @@ export async function searchCourseLibrary(text: string, limit: number): Promise<
   const { data, error } = await query.order("name").limit(limit);
   if (error) throw new Error(`Course library search failed: ${error.message}`);
   return ((data ?? []) as Row[]).map((row) => {
-    const openGolf = row.golf_course_external_ids?.find((e) => e.provider === "open_golf")?.external_id;
+    const golfCourseApi = row.golf_course_external_ids?.find((e) => e.provider === "golf_course_api")?.external_id;
     const pars = row.golf_holes ?? [];
-    return { ref: openGolf ?? libraryRef(row.id), name: row.name, city: row.address?.city ?? null, state: row.address?.state ?? null,
+    return { ref: golfCourseApi ?? libraryRef(row.id), name: row.name, city: row.address?.city ?? null, state: row.address?.state ?? null,
       par: pars.length === 18 ? pars.reduce((sum, hole) => sum + hole.par, 0) : null };
   });
 }
 
-/** The library course for a search ref ("maroon:<id>" or an OpenGolf id), or null when the library doesn't have it. */
+/** The library course for a search ref ("maroon:<id>" or an GolfCourseAPI id), or null when the library doesn't have it. */
 export async function findLibraryCourse(ref: string) {
   const library = getCourseLibrary();
   const id = libraryIdFromRef(ref);
-  return id ? library.getCourseById(id) : library.findCourseByExternalId("open_golf", ref);
+  return id ? library.getCourseById(id) : library.findCourseByExternalId("golf_course_api", ref);
 }

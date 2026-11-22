@@ -732,21 +732,23 @@ function ScorecardSection({ solo = false, stats = true, showTotals = true, holeR
     : par?.[i] === undefined ? strokes : <span className={scoreShape(strokes - par[i])}>{strokes}</span>;
   const holeRow = (i: number) => <tr key={i}>
     <th scope="row" className={styles.section}>{i + 1}{editsFor(i + 1).length > 0 && <button type="button" className={styles.editMark} aria-label={`Hole ${i + 1} edited by organizer`} onClick={() => setShownEdit(shownEdit === i + 1 ? null : i + 1)}>✎</button>}</th><td className={styles.section}></td><td className={styles.section}>{par?.[i] ?? ""}</td>{gap}
-    {stats && <><td className={styles.section}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.section}>{mark(greens[i])}</td><td className={styles.section}>{putts[i] ?? ""}</td>{gap}</>}
-    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore}`}>{scoreCell(holes[i], i)}</td>{!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(opponentHoles[i], i)}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(row[i], i)}</td>)}
+    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore} ${stats ? styles.scoreWithStats : ""}`}>{scoreCell(holes[i], i)}</td>
+    {stats && <><td className={styles.statsColumn}>{par?.[i] === 3 ? "" : mark(fairways[i])}</td><td className={styles.statsColumn}>{mark(greens[i])}</td><td className={styles.statsColumn}>{putts[i] ?? ""}</td>{gap}</>}
+    {!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(opponentHoles[i], i)}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{scoreCell(row[i], i)}</td>)}
   </tr>;
   const totalRow = (label: string, index: number[]) => <tr key={label} className={styles.totalRow}>
     <th scope="row" className={styles.section}>{label}</th><td className={styles.section}></td><td className={styles.section}>{displayTotal(sumOf(index.map((i) => par?.[i])))}</td>{gap}
-    {stats && <><td className={styles.section}>{hits(fairways, index)}</td><td className={styles.section}>{hits(greens, index)}</td><td className={styles.section}>{displayTotal(sumOf(index.map((i) => putts[i])))}</td>{gap}</>}
-    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(holes, par, parIsReference)[i])))}</td>{!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(opponentHoles, par, parIsReference)[i])))}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => row[i] ?? par?.[i])))}</td>)}
+    <td className={`${styles.section} ${styles.playerColumn} ${styles.myScore} ${stats ? styles.scoreWithStats : ""}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(holes, par, parIsReference)[i])))}</td>
+    {stats && <><td className={styles.statsColumn}>{hits(fairways, index)}</td><td className={styles.statsColumn}>{hits(greens, index)}</td><td className={styles.statsColumn}>{displayTotal(sumOf(index.map((i) => putts[i])))}</td>{gap}</>}
+    {!solo && <td className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => countedStrokes(opponentHoles, par, parIsReference)[i])))}</td>}{groupHoles.map((row, g) => <td key={g} className={`${styles.section} ${styles.playerColumn}`}>{displayTotal(sumOf(index.map((i) => row[i] ?? par?.[i])))}</td>)}
   </tr>;
-  return <section className={styles.scorecardView} aria-label="Scorecard">
+  return <section className={`${styles.scorecardView} ${solo && groupNames.length === 0 ? styles.soloCard : ""}`} aria-label="Scorecard">
     <table className={styles.scorecardTable}>
-      <colgroup>{(solo ? ["10%", "10%", "9%", "3%", ...(stats ? ["10%", "10%", "9%", "3%"] : []), ...Array.from({ length: 1 + groupNames.length }, () => `${(stats ? 36 : 68) / (1 + groupNames.length)}%`)] : ["10%", "10%", "9%", "3%", ...(stats ? ["10%", "10%", "9%", "3%", "18%", "18%"] : ["34%", "34%"])]).map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+      <colgroup>{["10%", "10%", "9%", "3%", `${(stats ? 36 : 68) / (solo ? 1 + groupNames.length : 2)}%`, ...(stats ? ["10%", "10%", "9%", "3%"] : []), ...Array.from({ length: solo ? groupNames.length : 1 }, () => `${(stats ? 36 : 68) / (solo ? 1 + groupNames.length : 2)}%`)].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
       <thead><tr>
         <th scope="col" className={styles.section}>Hole</th><th scope="col" className={styles.section}>Yds</th><th scope="col" className={styles.section}>Par</th><th className={styles.sectionGap} aria-hidden />
-        {stats && <><th scope="col" className={styles.section}>FWY</th><th scope="col" className={styles.section}>GRN</th><th scope="col" className={styles.section}>PUT</th><th className={styles.sectionGap} aria-hidden /></>}
         <th scope="col" className={styles.nameHead} title={playerName}>{shortName(playerName)}</th>
+        {stats && <><th scope="col" className={styles.statsHead}>FWY</th><th scope="col" className={styles.statsHead}>GIR</th><th scope="col" className={styles.statsHead}>PUTTS</th><th className={styles.sectionGap} aria-hidden /></>}
         {!solo && <th scope="col" className={styles.nameHead} title={opponentName}>{shortName(opponentName)}</th>}
         {groupNames.map((name, g) => <th key={g} scope="col" className={styles.nameHead} title={name}>{shortName(name)}</th>)}
       </tr></thead>

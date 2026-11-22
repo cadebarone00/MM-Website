@@ -23,22 +23,34 @@ const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
 /** Same-origin pages load by path; a page served by another local dev server (page.origin) loads from there. */
 const frameUrl = (page: SimulatorPage) => `${page.origin ?? ""}${page.path}`;
+/** A page's address plus simulator parameters, joined with "?" or "&" (some pages already carry a query, e.g. /dev/tv?show=match). */
+const withParams = (url: string, params: string) => `${url}${url.includes("?") ? "&" : "?"}${params}`;
 
 /** The dev group with the Website desktop / Website mobile / App toggle (lib/dev/simulatorRoutes.ts). */
 const LIVE_GROUP = "The Maroon Live";
+/** "&surface=..." for The Maroon Live's standalone pages (TV mode reads it from its address); nothing for other pages. */
+const liveParam = (page: SimulatorPage, surface: LiveSurface | undefined) => page.group === LIVE_GROUP && page.standalone ? `&surface=${surface ?? "app"}` : "";
+/** The Website group: its pages show at the size the Website desktop / Website mobile switch up top is set to. */
+const WEBSITE_GROUP = "Website";
+const WEBSITE_SIZES = [["desktop", "Website desktop"], ["mobile", "Website mobile"]] as const;
+type WebsiteSize = (typeof WEBSITE_SIZES)[number][0];
 
 const FEATURES: readonly string[] = SIMULATOR_FEATURES;
 
 export function DevSimulator({ pages: registryPages, unmapped, initialGroup, initialStage }: { pages: SimulatorPage[]; unmapped: Record<string, unknown>; initialGroup?: string; initialStage?: string }) {
   const [settingsRounds, setSettingsRounds] = useState<{ id: string; number: number }[]>([]);
   const pages = useMemo(() => [...registryPages, ...settingsRounds.map(round => ({ ...registryPages.find(page => page.id === "settings-competition-rounds")!, id: `settings-round-${round.id}`, label: `Round ${round.number}`, parentId: "settings-competition-rounds", navigation: { tab: "Home" as const, settingsView: `round-${round.id}` } }))], [registryPages, settingsRounds]);
-  // ?group=…&stage=… (an old group name like "Golf Trip Active" opens the feature + stage it moved to).
-  const [startGroup, startStage] = initialGroup && LEGACY_SIMULATOR_GROUPS[initialGroup] ? LEGACY_SIMULATOR_GROUPS[initialGroup] : [initialGroup, SIMULATOR_STAGES.find(item => item === initialStage)];
+  // ?group=…&stage=… (an old group name like "Golf Trip Active" opens the feature + stage it moved to; the old
+  // "Website desktop" / "Website mobile" groups open the Website group at that size).
+  const legacyWebsite = initialGroup === "Website desktop" || initialGroup === "Website mobile";
+  const [startGroup, startStage] = legacyWebsite ? [WEBSITE_GROUP, undefined] : initialGroup && LEGACY_SIMULATOR_GROUPS[initialGroup] ? LEGACY_SIMULATOR_GROUPS[initialGroup] : [initialGroup, SIMULATOR_STAGES.find(item => item === initialStage)];
+  const [websiteSize, setWebsiteSize] = useState<WebsiteSize>(initialGroup === "Website mobile" ? "mobile" : "desktop");
   const initialPage = (startGroup && FEATURES.includes(startGroup) ? pages.find(page => page.group === startGroup && (page.stage ?? "Main") === (startStage ?? "Main") && !page.parentId) : undefined)
     ?? pages.find(page => page.group === startGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
   // Feature groups: the Main · Active · Onboarding switch. Picked by hand only when that stage has no pages yet; otherwise it follows the page.
   const [stageChoice, setStageChoice] = useState<SimulatorStage | null>(startGroup && FEATURES.includes(startGroup) && startStage && initialPage.stage !== startStage ? startStage : null);
-  const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialPage.viewport === "desktop" ? "desktop" : initialPage.viewport === "mobile" ? "iphone16" : initialDevice.id))!;
+  const initialViewport = initialPage.group === WEBSITE_GROUP ? websiteSize : initialPage.viewport;
+  const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialViewport === "desktop" ? "desktop" : initialViewport === "mobile" ? "iphone16" : initialDevice.id))!;
   const [pageId, setPageId] = useState(initialPage.id);
   const [frameSrc, setFrameSrc] = useState(`${frameUrl(initialPage)}?simulator=1`);
   const [currentPath, setCurrentPath] = useState(initialPage.path);
@@ -91,7 +103,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     return () => { live = false; };
   }, [selectedPage.origin, originCheck]);
   const desktopPreview = size.width >= 1024;
-  const websitePreview = selectedPage.group === "Website desktop" || selectedPage.group === "Website mobile";
+  const websitePreview = selectedPage.group === WEBSITE_GROUP;
   const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
@@ -226,7 +238,8 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     setStageChoice(null);
     if (next.state) setState(current => ({ ...current, ...next.state }));
     // The Maroon Live: its screens open at the size the Website desktop / Website mobile / App toggle is set to.
-    if (next.group === LIVE_GROUP && !next.standalone) chooseLiveSurface(state.liveSurface ?? "app", false);
+    if (next.group === LIVE_GROUP) chooseLiveSurface(state.liveSurface ?? "app", false, null);
+    else if (next.group === WEBSITE_GROUP) { chooseDevice(websiteSize === "desktop" ? "desktop" : "iphone16"); setInsets({ top: 0, bottom: 0 }); }
     else if (next.viewport || selectedPage.standalone) {
       chooseDevice(next.viewport === "desktop" ? "desktop" : next.viewport === "mobile" ? "iphone16" : initialDevice.id);
       if (next.standalone) setInsets({ top: 0, bottom: 0 });
@@ -242,7 +255,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       setReady(false);
       setGps(null);
       setCurrentPath(next.path);
-      setFrameSrc(`${frameUrl(next)}?simulator=1&command=${++command.current}`);
+      setFrameSrc(withParams(frameUrl(next), `simulator=1${liveParam(next, state.liveSurface)}&command=${++command.current}`));
       return;
     }
     let path = currentPath;
@@ -266,10 +279,20 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     }
   }
   /** The Maroon Live toggle: the screen size, and (sent to the page) which version of the screen to draw. */
-  function chooseLiveSurface(surface: LiveSurface, remember = true) {
+  // `reload`: a standalone page (TV mode) has no simulator bridge, so it's reloaded with the choice in its address.
+  function chooseLiveSurface(surface: LiveSurface, remember = true, reload: SimulatorPage | null = selectedPage) {
     if (remember) setState(current => ({ ...current, liveSurface: surface }));
     chooseDevice(surface === "desktop" ? "desktop" : surface === "mobile" ? "iphone16" : initialDevice.id);
     if (surface !== "app") setInsets({ top: 0, bottom: 0 });
+    if (reload?.standalone && reload.group === LIVE_GROUP) setFrameSrc(withParams(frameUrl(reload), `simulator=1${liveParam(reload, surface)}&command=${++command.current}`));
+  }
+  /** The Website switch: the screen size, then the page loads again at that size. */
+  function chooseWebsiteSize(size: WebsiteSize) {
+    setWebsiteSize(size);
+    chooseDevice(size === "desktop" ? "desktop" : "iphone16");
+    setInsets({ top: 0, bottom: 0 });
+    setReady(false);
+    setFrameSrc(`${frameUrl(selectedPage)}${selectedPage.path.includes("?") ? "&" : "?"}simulator=1&command=${++command.current}`);
   }
   function chooseSource(next:SimulatorSource){
     if(next===source)return;
@@ -293,8 +316,10 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
   return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
-      {selectedPage.group === LIVE_GROUP && !selectedPage.standalone && <div className={styles.appearanceToggle} role="group" aria-label="Where it's viewed">
+      {selectedPage.group === LIVE_GROUP && <div className={styles.appearanceToggle} role="group" aria-label="Where it's viewed">
         {LIVE_SURFACES.map(([id, label]) => <button key={id} type="button" aria-pressed={(state.liveSurface ?? "app") === id} onClick={() => chooseLiveSurface(id)}>{label}</button>)}</div>}
+      {websitePreview && <div className={styles.appearanceToggle} role="group" aria-label="Website size">
+        {WEBSITE_SIZES.map(([id, label]) => <button key={id} type="button" aria-pressed={websiteSize === id} onClick={() => chooseWebsiteSize(id)}>{label}</button>)}</div>}
       <div className={styles.appearanceToggle} role="group" aria-label="App appearance">{(["light", "dark"] as const).map(mode => <button key={mode} type="button" aria-pressed={appearance === mode} onClick={() => setSimulatorAppearance(mode)}>{mode === "light" ? "Light mode" : "Dark mode"}</button>)}</div>
       <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>

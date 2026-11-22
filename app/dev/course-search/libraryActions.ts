@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCourseLibrary } from "@/lib/platform/golfGps/repository/courseLibrary";
 
 /**
- * DEV ONLY server actions for /dev/course-search: save an OpenGolf course into the Maroon course library, or refresh a
+ * DEV ONLY server actions for /dev/course-search: save an GolfCourseAPI course into the Maroon course library, or refresh a
  * stored one from its sources. Run on the server (service-role key never reaches the browser); refuse outside
  * development. Each sends the page back to the same course with the outcome in the URL.
  */
@@ -22,11 +22,11 @@ const reason = (error: unknown) => (error instanceof Error ? error.message : "So
 
 export async function saveToMaroon(form: FormData) {
   if (process.env.NODE_ENV !== "development") throw new Error("Dev only");
-  const openGolfId = String(form.get("id") ?? "");
+  const courseRef = String(form.get("id") ?? "");
   let target: string;
   try {
-    const result = await getCourseLibrary().getOrImportOpenGolfCourse(openGolfId);
-    target = back(form, result ? { library: result.from === "import" ? "saved" : "already-saved" } : { libraryError: "OpenGolf has no course with that id." });
+    const result = await getCourseLibrary().getOrImportCourse(courseRef);
+    target = back(form, result ? { library: result.from === "import" ? "saved" : "already-saved" } : { libraryError: "GolfCourseAPI has no course with that id." });
   } catch (error) {
     target = back(form, { libraryError: reason(error) });
   }

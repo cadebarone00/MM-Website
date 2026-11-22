@@ -7,7 +7,7 @@ import { startHolesOf, type TripRoundPars } from "../../platform/tripRoundPars.t
  *
  * Audit (2026-10-20): saved Golf Trip rounds store only course_name — no course link and no pars; the saved-trip
  * scoring screen gets an empty par list and shows 4 on every hole. Real pars exist elsewhere but aren't linked to trip
- * rounds: the course library (golf_holes / tee sets, OpenGolf), the Maroon live courses (live_courses.tee_sets), and
+ * rounds: the course library (golf_holes / tee sets, GolfCourseAPI), the Maroon live courses (live_courses.tee_sets), and
  * player rounds (pars copied at save). golf_trip_momentum.sql proposed organizer-entered momentum_pars (never run).
  *
  * Proposal: one snapshot per trip round, taken from the round's course + tee when the course library has it, otherwise

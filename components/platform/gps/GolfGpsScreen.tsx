@@ -71,7 +71,7 @@ export function GolfGpsScreen({ holeNumber, course = MISSION_HILLS_PETE_DYE, cla
   const notice = mapped ? gpsNotice(status, fix, center) : `No map for Hole ${holeNumber} yet — showing Hole ${hole.number}.`;
 
   return <div ref={screenRef} className={`${styles.screen} ${className}`}>
-    <GolfGpsMap apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} hole={hole} player={fix} target={target} onTap={setTarget} recenterToken={recenterToken} focusPlayerToken={focusPlayerToken} insets={insets} />
+    <GolfGpsMap hole={hole} player={fix} target={target} onTap={setTarget} recenterToken={recenterToken} focusPlayerToken={focusPlayerToken} insets={insets} />
     <GolfGpsHud ref={topRef} hole={hole} front={yards(hole.green.front)} center={yards(hole.green.center)} back={yards(hole.green.back)}
       hazards={hudHazards(hole.hazards, fix && !far ? fix : null)}
       target={target ? yards(target) : null} notice={notice} />

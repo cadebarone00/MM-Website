@@ -64,10 +64,28 @@
 .scorecardView .scorecardTable tbody tr:last-child > :nth-child(-n+3)::before{border-bottom:1px solid rgba(201,168,110,.7)}
 .scorecardView .scorecardTable tbody tr:last-child > :first-child::before{border-bottom-left-radius:14px}
 .scorecardView .scorecardTable tbody tr:last-child > :nth-child(3)::before{border-bottom-right-radius:14px}
+/* The player's fairways, greens in regulation and putts share a matching bubble. */
+.scorecardView .scorecardTable .statsHead{border:0;background:transparent;padding-bottom:10px}
+.scorecardView .scorecardTable .statsColumn{position:relative;isolation:isolate;background:transparent;border:0}
+.scorecardTable .statsColumn::before{content:"";position:absolute;z-index:-1;inset:0 -1.5px;background:rgba(201,168,110,.08)}
+.scorecardTable .statsColumn:nth-child(6)::before{left:0;border-left:1px solid rgba(201,168,110,.7)}
+.scorecardTable .statsColumn:nth-child(8)::before{right:0;border-right:1px solid rgba(201,168,110,.7)}
+.scorecardTable tbody tr:first-child .statsColumn::before{border-top:1px solid rgba(201,168,110,.7)}
+.scorecardTable tbody tr:first-child .statsColumn:nth-child(6)::before{border-top-left-radius:14px}
+.scorecardTable tbody tr:first-child .statsColumn:nth-child(8)::before{border-top-right-radius:14px}
+.scorecardTable tbody tr:last-child .statsColumn::before{border-bottom:1px solid rgba(201,168,110,.7)}
+.scorecardTable tbody tr:last-child .statsColumn:nth-child(6)::before{border-bottom-left-radius:14px}
+.scorecardTable tbody tr:last-child .statsColumn:nth-child(8)::before{border-bottom-right-radius:14px}
 .scorecardView .scorecardTable .playerColumn{position:relative;isolation:isolate;background:transparent;border:0}
 .scorecardTable .playerColumn::before{content:"";position:absolute;z-index:-1;inset:0 auto 0 50%;width:min(50px,calc(100% - 8px));box-sizing:border-box;transform:translateX(-50%);border-left:1px solid rgba(201,168,110,.7);border-right:1px solid rgba(201,168,110,.7);background:rgba(201,168,110,.08)}
 .scorecardTable tbody tr:first-child .playerColumn::before{border-top:1px solid rgba(201,168,110,.7);border-radius:14px 14px 0 0}
 .scorecardTable tbody tr:last-child .playerColumn::before{border-bottom:1px solid rgba(201,168,110,.7);border-radius:0 0 14px 14px}
+/* The user's score shares one continuous outline with their stats. */
+.scorecardTable .scoreWithStats::before{inset:0 -1.5px 0 0;width:auto;transform:none;border-right:0}
+.scorecardTable .statsColumn:nth-child(6)::before{left:-1.5px;border-left:0}
+.scorecardTable tbody tr:first-child .scoreWithStats::before{border-radius:14px 0 0 0}
+.scorecardTable tbody tr:last-child .scoreWithStats::before{border-radius:0 0 0 14px}
+.scorecardTable tbody tr:first-child .statsColumn:nth-child(6)::before,.scorecardTable tbody tr:last-child .statsColumn:nth-child(6)::before{border-radius:0}
 .scorecardView{display:flex;flex-direction:column;gap:14px;padding-top:8px}
 .gpsNote{margin:0;color:color-mix(in srgb,var(--color-maroon-850) 65%,transparent);font-size:13px;text-align:center}
 .scorecardButton:focus-visible{outline:2px solid var(--color-gold-500,#c49b54);outline-offset:2px}
@@ -216,6 +234,8 @@
 .sheet{background:linear-gradient(180deg,color-mix(in srgb,var(--color-maroon-600) calc((calc(.25 * (1 - var(--sheet-open)))) * 100%),transparent) 0,color-mix(in srgb,var(--color-maroon-600) 0%,transparent) 40px),linear-gradient(180deg,#f8f3ea 0%,#f2ebdf 100%)}
 .sheet.fastClose{transition-duration:.1s} /* tap to tuck away: 100 ms */
 .scorecardView .scorecardTable{width:calc(100% + 16px);margin:0 -8px} /* sections run to the sheet edges */
+.soloCard .scorecardTable{width:min(100%,300px);margin:0 auto}
+.soloCard .scorecardTotals{grid-template-columns:1fr}
 /* Under the scorecard's Total: "Weisser 72   Patel 75". */
 .scorecardTotals{display:grid;grid-template-columns:1fr 1fr;margin:4px 0 0;font-family:var(--font-spectral),Georgia,serif;color:var(--color-maroon-900,var(--color-maroon-850))}
 .scorecardTotals div{display:flex;align-items:baseline;justify-content:center;gap:8px;min-width:0;container-type:inline-size}

@@ -2,7 +2,7 @@ import type { GolfDataCoverage } from "./coverage";
 import type { GolfCoordinate, GolfCoordinate3D, GolfPolygon, GolfPolyline } from "./geometry";
 import type { GolfExternalId, GolfSourceMetadata, GolfVerification } from "./provenance";
 /**
- * The Maroon's own golf-course format. Provider adapters turn OpenGolfAPI / OpenStreetMap / etc. responses INTO these
+ * The Maroon's own golf-course format. Provider adapters turn GolfCourseAPI / OpenStreetMap / etc. responses INTO these
  * types; UI components read only these types. Every "if known" field is optional and left out when no source has it —
  * never filled with a made-up value.
  *

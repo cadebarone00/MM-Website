@@ -3,10 +3,21 @@ import type { GolfGeometryCounts, GolfGeometryEnrichment, GolfGeometryProvider }
 import { enrichWithOsm } from "./adapter";
 import { courseCandidatesQuery, courseFeaturesQuery, createOverpassClient, OSM_ATTRIBUTION, type OverpassClient } from "./client";
 import { boundingBox } from "./geometry";
-import { chooseCourse, evaluateCandidates } from "./matching";
+import { chooseCourse, evaluateCandidates, nameTokens } from "./matching";
 
 /** Extra room around the matched course's outline when fetching its features (tees and bunkers often sit on the edge). */
 const FEATURE_BOX_PADDING_METERS = 60;
+/**
+ * Names to match OSM courses against. The club name only counts when it adds words the course name doesn't have: at a
+ * multi-course club ("Pinehurst Cc – No. 2", club "Pinehurst Cc") the bare club name would match the whole resort's
+ * outline as well as the right course, and the tie leaves nothing attached.
+ */
+export function matchNames(course: Pick<GolfCourse, "name" | "facilityName">): string[] {
+  const own = new Set(nameTokens(course.name));
+  const club = course.facilityName;
+  return club && nameTokens(club).some((word) => !own.has(word)) ? [course.name, club] : [course.name];
+}
+
 const NO_COUNTS: GolfGeometryCounts = { courseBoundary: false, holeCenterlines: 0, greens: 0, tees: 0, fairways: 0, bunkers: 0, penaltyAreas: 0, unassigned: 0 };
 
 /**
@@ -22,7 +33,7 @@ export function createOpenStreetMapGeometryProvider({ client = createOverpassCli
       if (!location) return { ...unchanged, status: "no_location", notes: ["The course has no latitude / longitude, so OpenStreetMap wasn't searched."] };
 
       const notes: string[] = [];
-      const names = [course.name, course.facilityName].filter((name): name is string => Boolean(name));
+      const names = matchNames(course);
       const evaluated = evaluateCandidates(location, names, await client.run(courseCandidatesQuery(location)), notes);
       const candidates = evaluated.map((e) => e.candidate);
       const choice = chooseCourse(evaluated);

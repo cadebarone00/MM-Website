@@ -6,8 +6,8 @@ import type { PlayableCourse } from "./courseEnrichment";
 import type { GolfCoordinate, GolfCourse } from "./domain";
 import { createGpsProvisioner } from "./gpsProvisioning";
 import { GolfProviderError } from "./providers/GolfCourseProvider";
-import { normalizeOpenGolfCourse } from "./providers/openGolf/adapter";
-import { parseCourseDetail } from "./providers/openGolf/client";
+import { normalizeGolfCourseApiCourse } from "./providers/golfCourseApi/adapter";
+import { parseCourse } from "./providers/golfCourseApi/client";
 import { createCourseRepository } from "./repository/courseRepository";
 import { createGolfCourseStore, type DatabaseCall } from "./repository/courseStore";
 import { deriveCourseGreenTargets } from "./targets/deriveGreenTargets";
@@ -25,16 +25,17 @@ async function setup(importer: (id: string) => Promise<PlayableCourse | null>, n
   };
   const calls: string[] = [];
   const store = createGolfCourseStore(call);
-  const repository = createCourseRepository({ store, now, importOpenGolf: async (id) => { calls.push(id); return importer(id); } });
+  const repository = createCourseRepository({ store, now, importer: async (id) => { calls.push(id); return importer(id); } });
   return { db, store, repository, calls, provisioner: createGpsProvisioner({ repository, now }) };
 }
 
-const OG = "e52240da-a538-46b3-ae9a-b46396b20123";
+const OG = "7k2m9qb4";
 const NOW = "2026-10-05T17:00:00.000Z";
-const SCORECARD = normalizeOpenGolfCourse(parseCourseDetail({
-  id: OG, course_name: "Tobacco Road Golf Club", city: "Sanford", state: "NC", lat: 35.396, lng: -79.2127, holes: 2,
-  holes_data: [{ number: 1, par: 5, yardages: {} }, { number: 2, par: 3, yardages: {} }],
-})!, NOW).course;
+const SCORECARD = normalizeGolfCourseApiCourse(parseCourse({ course: {
+  id: OG, club_name: "Tobacco Road Golf Club", course_name: "Tobacco Road Golf Club",
+  location: { city: "Sanford", state: "NC", latitude: 35.396, longitude: -79.2127 },
+  tees: { male: [{ tee_name: "Ripper", holes: [{ par: 5 }, { par: 3 }] }] },
+} })!, NOW).course;
 const M = (Math.PI / 180) * 6_371_008.8;
 const at = (e: number, n: number): GolfCoordinate => ({ lat: 35.396 + n / M, lng: -79.2127 + e / (M * Math.cos((35.396 * Math.PI) / 180)) });
 const osm = (id: string) => ({ provider: "openstreetmap" as const, providerRecordId: id, importedAt: NOW, attribution: "© OpenStreetMap contributors" });
@@ -50,7 +51,7 @@ test("not stored → built once and saved; the next request comes from the libra
   const { provisioner, calls, repository } = await setup(async () => playable(MAPPED));
   const first = await provisioner.provision(OG);
   assert.equal(first.status, "ready");
-  const stored = await repository.findCourseByExternalId("open_golf", OG);
+  const stored = await repository.findCourseByExternalId("golf_course_api", OG);
   assert.equal(first.status === "ready" && first.maroonCourseId, stored?.course.id, "returns the saved Maroon id");
   assert.equal(await provisioner.provision(OG).then((r) => r.status), "ready");
   assert.deepEqual(calls, [OG], "providers ran exactly once");
@@ -72,7 +73,7 @@ test("no playable GPS data: saved honestly as unavailable, and not re-imported o
   assert.deepEqual(await fresh.provisioner.provision(OG), { status: "unavailable" });
   assert.deepEqual(await fresh.provisioner.provision(OG), { status: "unavailable" });
   assert.equal(fresh.calls.length, 1, "second tap used the recent check");
-  const stored = await fresh.repository.findCourseByExternalId("open_golf", OG);
+  const stored = await fresh.repository.findCourseByExternalId("golf_course_api", OG);
   assert.ok(stored && stored.course.holes.every((h) => !h.green), "no geometry invented");
   assert.equal(fresh.provisioner.canPrepare(stored), false);
   const later = createGpsProvisioner({ repository: fresh.repository, now: days(8) });
