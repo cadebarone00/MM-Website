@@ -6148,3 +6148,4 @@ last), not pill buttons.
 - **Owner (2026-11-22):** Play's Card tab (in the scoring tab) drops the names + totals list under the table
   (`cardTotals={false}`); double circles / double squares are a thin second ring with a see-through gap (outline), the
   same on the Card tab and the leaderboard scorecard (no thick ring on the dark sheet).
+- **Owner (2026-11-22):** no small Next hole button; the Next hole at the bottom of the scoring tab still sends every score.

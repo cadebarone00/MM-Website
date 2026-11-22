@@ -639,7 +639,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <button type="button" className={styles.discard} onClick={() => { if (window.confirm("Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
         </>}
     </section>
-    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu smallNextHole cardTotals={false}
+    {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}
       onNextHole={finishHole} holeAlert={(h) => setup.game?.id === "wolf" && gameFits && inputs[h]?.wolfPartner === undefined && enteredRows().every((row) => row[h] != null)}
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}

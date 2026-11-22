@@ -31,7 +31,7 @@ const HOLD_SLOP = 10;
  * submitting locks the card until the page reloads. Submit & Save calls `onSubmit` with the card (the dev preview saves it
  * as the player's round); `submittedCard` reopens a saved round locked.
  */
-export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, smallNextHole = false, cardTotals = true }: {
+export function GolfTripScoring({ par, parIsReference = false, initialHoles, playerName = "You", opponentCardMatches = false, courseName, prefill, onSubmit, submittedCard, attesteeName, edits, onCardChange, attestedStrokes, onAttestChange, savedCard, attesteeStrokes, scoresVerified = true, syncStatus, conflicts, onResolveConflict, resetCard, corrections, onRequestCorrection, onDecideCorrection, correctionOpen, solo = false, holeRange = [0, HOLES], stats = true, gps = true, startOpen = false, group, gameSlot, remoteHoles, onParChange, scoringViewOverride, swipeHoles = false, noBottomMenu = false, onNextHole, holeAlert, cardTotals = true }: {
   par?: number[]; initialHoles?: (number | null)[]; playerName?: string; opponentCardMatches?: boolean; courseName?: string;
   /** Saved Golf Trips (owner decision 2026-10-21): par is reference information only. Shown on the hole and card, but an
    *  untouched hole stays empty everywhere (score box, totals, Submit, attestation); only entered strokes count. */
@@ -105,8 +105,6 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
   onNextHole?: (hole: number) => void;
   /** Holes to mark red in the hole chips (Play: a finished Wolf hole with no partner picked). */
   holeAlert?: (hole: number) => boolean;
-  /** A small "Next hole" button under the hole's par, besides the one at the bottom. */
-  smallNextHole?: boolean;
   /** The Card's name + total list under the table (Play hides it: the leaderboard has the totals). */
   cardTotals?: boolean;
 }) {
@@ -503,7 +501,6 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
           {!solo && <ScoreCard label={`${opponentName.trim().split(/\s+/)[0]} Score`} strokes={holesCompetitor[current]} holePar={shownPar} step={stepCompetitor} disabled={!attestEditable} compact />}
           {group?.names.map((name, g) => <ScoreCard key={g} label={name.trim().split(/\s+/)[0]} strokes={group.strokes[g][current]} holePar={shownPar} step={(delta) => stepGroup(g, delta)} disabled={submitted || group.editable?.[g] === false} compact />)}
         </div>
-        {smallNextHole && !submitted && <button type="button" className={styles.smallNext} onClick={nextHole}>{lastHole ? "Scorecard ›" : "Next hole ›"}</button>}
       </div>
 
       {playerStats && <>
