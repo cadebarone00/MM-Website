@@ -28,10 +28,10 @@ type Action =
   | { action: "pick"; hole: number; pick: HoleInput }
   | { action: "invite" | "remove"; profileId: string }
   | { action: "setup"; setup: PersonalRoundSetup }
-  | { action: "end" | "join" | "decline" };
+  | { action: "end" | "join" | "decline" | "delete" };
 
 /** POST one change: strokes (host) / a guest's strokes (host) / my own stats, a game pick, join / decline an invite, or
- *  (host) invite / remove / change setup / end. The database checks who may do what. */
+ *  (host) invite / remove / change setup / end / delete the round for everyone. The database checks who may do what. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await signedIn();
   if (!user) return NextResponse.json({ ok: false, code: "signed_out" }, { status: 401 });
@@ -57,6 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     case "remove": result = await rounds.removeFromSharedRound(user.id, id, body.profileId); break;
     case "setup": if (body.setup?.course?.par) result = await rounds.updateSharedRound(user.id, id, body.setup, false); break;
     case "end": result = await rounds.updateSharedRound(user.id, id, null, true); break;
+    case "delete": result = await rounds.deleteSharedRound(user.id, id); break;
     case "join": case "decline": result = await rounds.answerRoundInvite(user.id, id, body.action === "join"); break;
   }
   if (!result) return NextResponse.json({ ok: false, code: "bad_request" }, { status: 400 });

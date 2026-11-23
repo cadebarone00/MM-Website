@@ -223,3 +223,7 @@
 .wizToggle input:disabled{opacity:.45;cursor:not-allowed}
 .wizToggle input:focus-visible{outline:2px solid #c9a86e;outline-offset:2px}
 .wolfRow .wolfNameWrap{white-space:normal;line-height:1.1;text-align:center}
+
+/* Delete round (owner 2026-11-22): the only way out of a round — the scorekeeper wipes it for everyone. */
+.deleteRound{min-height:48px;border:1px solid #e0a3a3;border-radius:12px;background:rgba(198,40,40,.18);color:#ffd9d9;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.deleteRound:disabled{opacity:.6;cursor:default}

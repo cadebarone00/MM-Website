@@ -6219,3 +6219,8 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - B. Greenie rule: just tap whoever won it (plan — the group decides), or only offer it to someone who hit the green
   in one and made par or better?
 - C. Can a hole have both a greenie and closest to the pin (par 3s), or does picking greenies replace closest to the pin there? (plan: both allowed)
+- **Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.** In Round settings the
+  scorekeeper has one red **Delete round** button (confirm first): the round is deleted for every player and from the
+  database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
+  don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
+  Back to Play. After deleting, the scorekeeper goes to the Play home screen.

@@ -4,6 +4,7 @@ import { DatePicker } from "@/components/platform/DatePicker";
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Settings as SettingsIcon, X } from "lucide-react";
 import { CourseSearchBar } from "./TripScheduleCoursePicker";
 import wiz from "./CreateTournament.module.css";
@@ -98,7 +99,7 @@ export function PlayRound({ openRound }: { openRound?: string }) {
     </section>
   </main>;
   const leave = () => { write(null); setRound(null); };
-  if (round?.sharedId) return <SharedPlayStep saved={round} onLeave={leave} />;
+  if (round?.sharedId) return <SharedPlayStep saved={round} />;
   if (round) return <PlayStep saved={round} onDiscard={leave} />;
   return <SetupStep onStart={open} />;
 }
@@ -528,8 +529,11 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
  * score for everyone (players who joined and guests); joined players watch the live card and standings, and — when the
  * host turned player stats on — enter only their own putts / fairway / green. The host's Submit & Save saves everyone's.
  */
-function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void }) {
+function SharedPlayStep({ saved }: { saved: Saved }) {
   const id = saved.sharedId!;
+  const router = useRouter();
+  /** The round is gone (deleted): forget it on this phone and go to the Play home screen. */
+  const exitToPlay = () => { write(null); router.replace("/"); };
   const [snap, setSnap] = useState<SharedRound | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -539,6 +543,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   const [card, setCard] = useState(saved.card);
   const [menu, setMenu] = useState<null | "players" | "game">(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pickingGame, setPickingGame] = useState(false);
   /** Changes sent but not confirmed yet ("profile:hole" / "guest:id:hole" → strokes; "pick:hole" → pick; "stats:hole" → stats), so a poll never undoes them. */
   const [pending, setPending] = useState<Record<string, unknown>>({});
@@ -550,7 +555,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
     const load = () => fetch(sharedUrl(id), { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; round?: SharedRound; me?: string; code?: string; inviteCode?: string | null }>).then((body) => {
       if (stop) return;
       if (body.ok && body.round && body.me) { setSnap(body.round); setMe(body.me); setInviteCode(body.inviteCode ?? null); setProblem(null); return; }
-      setProblem(body.code === "not_in_round" ? "You're no longer in this round." : "Can't reach the round right now. Scores already sent are safe.");
+      setProblem(body.code === "not_in_round" ? "deleted" : "Can't reach the round right now. Scores already sent are safe.");
     }).catch(() => { if (!stop) setProblem("No connection. Changes send again when you're back."); });
     load();
     const timer = window.setInterval(load, POLL_MS);
@@ -583,6 +588,15 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
   }
   const sendStrokes = (player: string, hole: number, strokes: number | null) => void send(`${player}:${hole}`, strokes, { action: "strokes", player, hole: hole + 1, strokes });
   const sendGuestStrokes = (guest: string, hole: number, strokes: number | null) => void send(`guest:${guest}:${hole}`, strokes, { action: "guestStrokes", guest, hole: hole + 1, strokes });
+  /** Delete round (owner 2026-11-22): the scorekeeper deletes it for every player and from the database. */
+  async function deleteRound() {
+    if (!window.confirm("Delete this round for everyone? All scores are wiped and nothing is saved. This can't be undone.")) return;
+    setDeleting(true);
+    const result = await post(sharedUrl(id), { action: "delete" });
+    setDeleting(false);
+    if (result.ok) { exitToPlay(); return; }
+    setProblem(result.message ?? "Couldn't delete the round. Try again.");
+  }
   async function hostAction(body: object, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return;
     const result = await post(sharedUrl(id), body);
@@ -591,7 +605,8 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
 
   if (!snap || !me) return <main className={styles.page}>
     <header className={styles.header}><Link href="/" className={styles.back} aria-label="Back to Play"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>Round with friends</p></header>
-    <section className={styles.panel}>{problem ? <><p className={styles.error} role="alert">{problem}</p><button type="button" className={styles.discard} onClick={onLeave}>Leave this round on this phone</button></> : <p className={styles.note}>Loading the round…</p>}</section>
+    <section className={styles.panel}>{problem ? <><p className={styles.error} role="alert">{problem === "deleted" ? "This round was deleted by the scorekeeper, or you're no longer in it." : problem}</p>
+      <button type="button" className={styles.primary} onClick={exitToPlay}>Back to Play</button></> : <p className={styles.note}>Loading the round…</p>}</section>
   </main>;
 
   const active = snap.players.filter((p) => p.status === "invited" || p.status === "joined").sort((a, b) => a.position - b.position);
@@ -658,8 +673,10 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
     <section className={styles.panel}>
       <h1 className={styles.title}>{setup.course.name}</h1>
       <p className={styles.place}>{[setup.tee?.name, holesLabel(setup.holes), def?.name, ended ? "Round ended" : null].filter(Boolean).join(" · ")}</p>
-      {problem && <p className={styles.error} role="alert">{problem}</p>}
-      {save.status !== "saved" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} extraMoney={sideMoney?.total ?? null} />}
+      {problem === "deleted" ? <><p className={styles.error} role="alert">This round was deleted by the scorekeeper, or you&apos;re no longer in it.</p>
+        <button type="button" className={styles.primary} onClick={exitToPlay}>Back to Play</button></>
+        : problem && <p className={styles.error} role="alert">{problem}</p>}
+      {save.status !== "saved" && problem !== "deleted" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} extraMoney={sideMoney?.total ?? null} />}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {gamePlayers.length} in the round, so it isn&apos;t scored right now.</p>}
       {/* Saving / saved / a failed save show here; the everyday tip and Leave are in Round settings. */}
       {isHost && save.status !== "idle" && <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }} leave={null} />}
@@ -686,7 +703,6 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <div className={styles.hostMenu} role="group" aria-label="Host">
             <button type="button" className={styles.secondary} aria-expanded={menu === "players"} onClick={() => setMenu(menu === "players" ? null : "players")}>Add players</button>
             <button type="button" className={styles.secondary} aria-expanded={menu === "game"} onClick={() => setMenu(menu === "game" ? null : "game")}>Change game</button>
-            <button type="button" className={styles.secondary} onClick={() => hostAction({ action: "end" }, "End the round for everyone without saving? Submit & Save on your card saves everyone's round.")}>End round</button>
           </div>
           {menu === "players" && (room
             ? <div className={styles.form}>
@@ -718,7 +734,7 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
         {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
         <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."
           : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
-        <button type="button" className={styles.discard} onClick={() => { if (window.confirm(isHost ? "Leave this round on this phone? Scores already sent stay in the round." : "Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
+        {isHost && <button type="button" className={styles.deleteRound} disabled={deleting} onClick={() => void deleteRound()}>{deleting ? "Deleting…" : "Delete round"}</button>}
       </div>
     </GolfTripActionSheet>}
     {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}

@@ -48,6 +48,15 @@ export const setGuestStrokes = (me: string, round: string, guest: string, hole: 
   rpc<null>("set_shared_round_guest_strokes", { p_profile: me, p_round: round, p_guest: guest, p_hole: hole, p_strokes: strokes });
 export const setSharedStats = (me: string, round: string, hole: number, stats: { putts: number | null; fairway: ShotResult | null; green: ShotResult | null }) =>
   rpc<null>("set_shared_round_stats", { p_profile: me, p_round: round, p_hole: hole, p_putts: stats.putts, p_fairway: stats.fairway, p_green: stats.green });
+/**
+ * The host deletes the round for everyone (owner request 2026-11-22): the round and, through its foreign keys, its
+ * players, scores, game picks, guest scores and invite code are wiped from the database. Refused for anyone but the host.
+ */
+export async function deleteSharedRound(host: string, round: string): Promise<Result<null>> {
+  const { data, error } = await db().from("shared_rounds").delete().eq("id", round).eq("host", host).select("id");
+  if (error) { console.error("Deleting a shared round failed:", error.message); return { ok: false, code: "failed" }; }
+  return data?.length ? { ok: true, value: null } : { ok: false, code: "refused", message: "Only the scorekeeper can delete this round." };
+}
 /** Whether shared_round_scorekeeper.sql has been run (guests and player stats need it). */
 export const scorekeeperReady = async () => (await rpc<boolean>("shared_round_guests_ready", {})).ok;
 export const setSharedPick = (me: string, round: string, hole: number, pick: HoleInput) => rpc<null>("set_shared_round_pick", { p_profile: me, p_round: round, p_hole: hole, p_pick: pick });
