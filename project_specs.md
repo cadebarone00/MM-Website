@@ -6230,3 +6230,6 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - **Owner (2026-11-22): simulator sample "Round complete (sample)"** (Play → Active, `/dev/round-complete`): the pop-up on
   a made-up finished round (4 players, Skins $5, greenies $2), nothing saved. The pop-up is `RoundCompleteSheet`, shared
   with the real round.
+- **Owner (2026-11-22): Round complete is a hole-by-hole card, few words.** The course name, then everyone's scores hole by
+  hole (front nine + Out, back nine + In), ending with each player's **Tot** and **$** (best money first); buttons
+  **Save & exit** and **Back**.

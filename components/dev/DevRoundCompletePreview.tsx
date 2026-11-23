@@ -45,7 +45,7 @@ export function DevRoundCompletePreview() {
       {note && <p className={styles.note} role="status">{note}</p>}
       {!open && <button type="button" className={styles.primary} onClick={() => { setOpen(true); setNote(null); }}>Show Round complete again</button>}
     </section>
-    {open && <RoundCompleteSheet title="Eagle Pointe Golf Club · Skins"
+    {open && <RoundCompleteSheet title="Eagle Pointe Golf Club"
       board={{ range: [0, 18], par: PAR, result, rows: NAMES.map((name, p) => ({ name, strokes: STROKES[p] })), holeMoney, extraMoney: side.total }}
       saving={false} error={null}
       onSave={() => { setOpen(false); setNote("Sample round: Save & exit would save everyone's rounds and go back to Play. Nothing was saved."); }}

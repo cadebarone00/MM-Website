@@ -697,7 +697,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
       {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
         <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link></>}
     </section>
-    {summaryOpen && isHost && <RoundCompleteSheet title={[setup.course.name, def?.name].filter(Boolean).join(" · ")}
+    {summaryOpen && isHost && <RoundCompleteSheet title={setup.course.name}
       board={{ range, par, result: liveResult, rows: boardRows(), holeMoney, doubled: doubledHoles, extraMoney: sideMoney?.total ?? null }}
       saving={save.status === "saving"} error={save.status === "error" ? save.message : null} onSave={() => void saveAndExit()} onClose={() => setSummaryOpen(false)} />}
     {/* Round settings (owner 2026-11-22): the players and Manage, the tip, and Leave round, behind the gear top right. */}
@@ -848,18 +848,41 @@ function MyStats({ range, par, holes, pending, onChange }: { range: [number, num
   </div>;
 }
 
-/** Round complete (owner 2026-11-22): the final leaderboard with money, Save & exit round and Keep editing. Also the
- *  simulator's sample (/dev/round-complete). */
+/** Round complete (owner 2026-11-22): a hole-by-hole card for everyone — front and back nine — ending with each player's
+ *  total score and money; Save & exit round. Few words. Also the simulator's sample (/dev/round-complete). */
 export function RoundCompleteSheet({ title, board, saving, error, onSave, onClose }: { title: string; board: Parameters<typeof Leaderboard>[0];
   saving: boolean; error: string | null; onSave: () => void; onClose: () => void }) {
+  const { rows, par, range, result, extraMoney } = board;
+  const game = new Map((result?.standings ?? []).map((st) => [st.label, st]));
+  const perPlayer = rows.every((row) => game.has(row.name));
+  const hasMoney = (perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined)) || Boolean(extraMoney);
+  const lines = rows.map((row, i) => ({ ...row, total: row.strokes.slice(range[0], range[1]).reduce<number>((t, v) => t + (v ?? 0), 0),
+    cash: (perPlayer ? game.get(row.name)?.money ?? 0 : 0) + (extraMoney?.[i] ?? 0) }))
+    .sort((a, b) => (hasMoney ? b.cash - a.cash : 0) || a.total - b.total);
+  const nines = [[0, 9], [9, 18]].filter(([a, b]) => a < range[1] && b > range[0]).map(([a, b]) => Array.from({ length: Math.min(b, range[1]) - Math.max(a, range[0]) }, (_, i) => Math.max(a, range[0]) + i));
+  const parTotal = par.slice(range[0], range[1]).reduce((t, p) => t + p, 0);
   return <GolfTripActionSheet label="Round complete" slideUp onClose={onClose}>
     <div className={styles.settingsBody}>
-      <h2 className={styles.settingsTitle}>Round complete</h2>
-      <p className={styles.settingsLabel}>{title}</p>
-      <Leaderboard {...board} />
+      <h2 className={styles.settingsTitle}>{title}</h2>
+      <div className={styles.finalCard}>{nines.map((holes, n) => {
+        const last = n === nines.length - 1;
+        return <table key={n}>
+          <thead><tr><th scope="col" />{holes.map((h) => <th key={h} scope="col">{h + 1}</th>)}<th scope="col">{holes[0] < 9 ? "Out" : "In"}</th>
+            {last && <th scope="col">Tot</th>}{last && hasMoney && <th scope="col">$</th>}</tr>
+            <tr className={styles.finalPar}><th scope="row">Par</th>{holes.map((h) => <td key={h}>{par[h]}</td>)}<td>{holes.reduce((t, h) => t + par[h], 0)}</td>
+              {last && <td>{parTotal}</td>}{last && hasMoney && <td />}</tr></thead>
+          <tbody>{lines.map((line) => <tr key={line.name}>
+            <th scope="row">{line.name}</th>
+            {holes.map((h) => <td key={h}>{line.strokes[h] != null && <span className={styles.scoreMark} data-mark={scoreMark(line.strokes[h]! - par[h])}>{line.strokes[h]}</span>}</td>)}
+            <td>{holes.reduce((t, h) => t + (line.strokes[h] ?? 0), 0) || ""}</td>
+            {last && <td className={styles.finalTotal}>{line.total || ""}</td>}
+            {last && hasMoney && <td className={styles.finalMoney} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</td>}
+          </tr>)}</tbody>
+        </table>;
+      })}</div>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit round"}</button>
-      <button type="button" className={styles.discard} onClick={onClose}>Keep editing</button>
+      <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit"}</button>
+      <button type="button" className={styles.discard} onClick={onClose}>Back</button>
     </div>
   </GolfTripActionSheet>;
 }
