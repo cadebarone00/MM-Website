@@ -454,13 +454,14 @@ export function simulatorPages(): SimulatorPage[] {
   const MOVED: Record<string, [string, SimulatorStage]> = { "Golf Trip Active": ["Golf Trips", "Active"], "Golf Trip Onboarding": ["Golf Trips", "Onboarding"], "Tournament Active": ["Tourneys", "Active"] };
   const BY_PATH: Record<string, [string, SimulatorStage | undefined]> = {
     "/golf-trips": ["Golf Trips", "Main"], "/tournaments/join": ["Tourneys", "Main"], "/leagues": ["Leagues", "Main"], "/": ["Play", "Main"],
-    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
+    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/round-complete": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
   };
   for (const page of pages) {
     const moved = BY_PATH[page.path] ?? MOVED[page.group ?? ""];
     if (moved) [page.group, page.stage] = moved;
     if (page.path === "/dev/leagues") page.label = "League (sample)";
     if (page.path === "/dev/round") page.label = "Round (sample)";
+    if (page.path === "/dev/round-complete") page.label = "Round complete (sample)";
     if (page.path === "/dev/samples") page.label = "One of each way to play";
     if (page.path === "/dev/course-search") page.label = "Course search (test harness)";
   }

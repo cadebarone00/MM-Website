@@ -697,16 +697,9 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
       {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
         <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link></>}
     </section>
-    {summaryOpen && isHost && <GolfTripActionSheet label="Round complete" slideUp onClose={() => setSummaryOpen(false)}>
-      <div className={styles.settingsBody}>
-        <h2 className={styles.settingsTitle}>Round complete</h2>
-        <p className={styles.settingsLabel}>{[setup.course.name, def?.name].filter(Boolean).join(" · ")}</p>
-        <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} extraMoney={sideMoney?.total ?? null} />
-        {save.status === "error" && <p className={styles.error} role="alert">{save.message}</p>}
-        <button type="button" className={wiz.continue} disabled={save.status === "saving"} onClick={() => void saveAndExit()}>{save.status === "saving" ? "Saving…" : "Save & exit round"}</button>
-        <button type="button" className={styles.discard} onClick={() => setSummaryOpen(false)}>Keep editing</button>
-      </div>
-    </GolfTripActionSheet>}
+    {summaryOpen && isHost && <RoundCompleteSheet title={[setup.course.name, def?.name].filter(Boolean).join(" · ")}
+      board={{ range, par, result: liveResult, rows: boardRows(), holeMoney, doubled: doubledHoles, extraMoney: sideMoney?.total ?? null }}
+      saving={save.status === "saving"} error={save.status === "error" ? save.message : null} onSave={() => void saveAndExit()} onClose={() => setSummaryOpen(false)} />}
     {/* Round settings (owner 2026-11-22): the players and Manage, the tip, and Leave round, behind the gear top right. */}
     {settingsOpen && <GolfTripActionSheet label="Round settings" slideUp onClose={() => { setSettingsOpen(false); setMenu(null); }}>
       <div className={styles.settingsBody}>
@@ -853,6 +846,22 @@ function MyStats({ range, par, holes, pending, onChange }: { range: [number, num
     {par[hole] > 3 && choose("Fairway", stats.fairway, [["left", "Left"], ["center", "Hit"], ["right", "Right"]], "fairway")}
     {choose("Green", stats.green, [["center", "Hit"], ["up", "Long"], ["down", "Short"], ["left", "Left"], ["right", "Right"]], "green")}
   </div>;
+}
+
+/** Round complete (owner 2026-11-22): the final leaderboard with money, Save & exit round and Keep editing. Also the
+ *  simulator's sample (/dev/round-complete). */
+export function RoundCompleteSheet({ title, board, saving, error, onSave, onClose }: { title: string; board: Parameters<typeof Leaderboard>[0];
+  saving: boolean; error: string | null; onSave: () => void; onClose: () => void }) {
+  return <GolfTripActionSheet label="Round complete" slideUp onClose={onClose}>
+    <div className={styles.settingsBody}>
+      <h2 className={styles.settingsTitle}>Round complete</h2>
+      <p className={styles.settingsLabel}>{title}</p>
+      <Leaderboard {...board} />
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit round"}</button>
+      <button type="button" className={styles.discard} onClick={onClose}>Keep editing</button>
+    </div>
+  </GolfTripActionSheet>;
 }
 
 /** A side game's winner on this hole (owner 2026-11-22): the group's names in a row, like the Wolf pick; Greenies add

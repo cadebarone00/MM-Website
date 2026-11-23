@@ -6227,3 +6227,6 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - **Owner (2026-11-22): Round complete pop-up.** After the scorekeeper's Next on the last hole, a pop-up shows the final
   leaderboard (scores, to par, game count, money; "Final") with **Save & exit round** (saves the scorekeeper's card and
   every joined player's round, then Play home) and Keep editing.
+- **Owner (2026-11-22): simulator sample "Round complete (sample)"** (Play → Active, `/dev/round-complete`): the pop-up on
+  a made-up finished round (4 players, Skins $5, greenies $2), nothing saved. The pop-up is `RoundCompleteSheet`, shared
+  with the real round.
