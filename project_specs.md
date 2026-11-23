@@ -5750,6 +5750,15 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 **Done =** a signed-out browser can open a Public event from search and a Link only event from its link, and see live golf update. Private and changed-to-Private events say "This event isn't available." Nothing private appears in any reply (checked by tests). The share-link toggle hides or shows Share for players. TV mode scrolls and updates on its own. Typecheck, lint and tests pass, and it's checked on screen.
 
+**TV mode: team formats + groups (owner request 2026-11-23) — PROPOSED, awaiting approval**
+- **All text in Spectral** on the TV board (done 2026-11-22).
+- **Matches closer together:** match rows use only the middle 50% of the screen width (names and scores pulled in toward the middle). The team names and points above them line up with the same 50%.
+- **Simulator Conditionals for our comp structure.** Each TV page gets a "Teams" section: **2 Teams / Pairs / 3-Ball / 4-Ball** (same names as the team draft). The existing pages already cover **Individual / Match / Both**. Sample data changes to fit: 2 Teams = Tigers vs Rebels; Pairs / 3-Ball / 4-Ball = several teams of 2 / 3 / 4 players.
+- **Individual board, group divider lines:** a "Group size" Conditional (**2 / 3 / 4**). Before a round the board lists players by group (shared tee time) with a thin line between groups. During and after the round it's sorted by score, so no lines.
+- **Open question:** how the match board looks for Pairs / 3-Ball / 4-Ball (more than 2 teams), see below.
+- Dev / sample data only. The real `/tap-in/<code>/tv` board doesn't change in this step. No SQL.
+- **Done =** each Conditional shows the right sample on the TV page in the simulator. Typecheck and tests pass, and it's checked on screen.
+
 ## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
 
 **Why:** the owner wants every version used, so people don't get the exact same words every time for the same thing.
@@ -6327,7 +6336,7 @@ back; Website landing page at Mobile website and Desktop. The top switches are g
 30/30 (new: view options + Maroon Live version per view). The custom width box now goes up to 2000 px for TV.
 
 
-## Feature: Simulators group + Scoring Simulator (owner request 2026-11-22) — DESIGN, AWAITING APPROVAL (nothing built)
+## Feature: Simulators group + Scoring Simulator (owner request 2026-11-22) — APPROVED; base + Play BUILT 2026-11-23 (uncommitted)
 
 Full design: `docs/superpowers/specs/2026-11-22-simulators-scoring-design.md`.
 - **What / who:** a new **Simulators** group in `/dev`. Its first simulator is **Scoring**: pretend phones side by side, each
@@ -6342,6 +6351,14 @@ Full design: `docs/superpowers/specs/2026-11-22-simulators-scoring-design.md`.
 - **Third-party:** none (emails and pushes are logged, not sent).
 - **Done =** see the design doc's "Done =". Every scenario plays start to finish on the real screens, with the checks
   green (card linked, saved, locked, on the profile once, handicap) and no unsupported calls.
+
+**Progress (2026-11-23, plain English):**
+- `npm run sim` starts the pretend database (port 3007), a second copy of the app (3006, build folder `.next-sim`) and the front door (3005). It prints "Simulator ready" once the app answers, refuses to start if a port is busy, and can never reach a real Supabase (hard guard).
+- To use it: run normal `npm run dev` (3001), open localhost:3001/dev, then Simulators, then Scoring. Scenarios built: Play: solo; Play: with friends (Cam host, Cade joined, Jake invited and starts on Home to accept, guest Uncle Rob, Skins); Play: tee with no rating.
+- Each phone is an iframe on `<person>.localhost:3005`; the front door signs each one in by itself (browser cookie rules for framed pages block normal cookies). Each phone has an address bar and Back. There is Reset (about 1 second), Refresh all phones, Checks (linked, saved, ended/locked, on the profile once, handicap per player, guest, deleted) and a What happened log (red = failed or unsupported).
+- `npm run test:sim` plays every Play scenario through the real routes automatically (play-solo, play-friends, play-unrated, play-solo delete). All green, no app bugs found.
+- Not built yet: Trip, Tourney and League scenarios (next plans), the Sign-up and Onboarding simulators, and the "Fill rest of holes" helper.
+- Files: `scripts/sim/`, `lib/dev/sim/`, `scripts/fake-supabase.mjs` (+ `.d.mts`), `app/dev/simulators/scoring/`, `components/dev/simulators/`, `scripts/test-sim-play.ts`. `tsconfig.json` got two `.next-sim` include lines so `next dev` stops editing it.
 
 ## Standard search look: every search list looks like Friends search (owner request 2026-11-22) — APPROVED + BUILT 2026-11-22 (uncommitted)
 

@@ -9,6 +9,8 @@
     "build:career-archive": "tsx scripts/build-career-archive.ts",
     "widget:handoff": "tsx scripts/widget-handoff.ts",
     "dev": "next dev -p 3001",
+    "sim": "tsx scripts/sim/start.ts",
+    "test:sim": "tsx scripts/test-sim-play.ts",
     "dev:app": "MAROON_APP_BUILD=1 NEXT_PUBLIC_MAROON_API_BASE=http://localhost:3001 next dev -p 3002",
     "build:app": "MAROON_APP_BUILD=1 next build && cap sync ios && next typegen",
     "build": "next build",

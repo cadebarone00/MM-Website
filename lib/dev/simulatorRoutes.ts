@@ -469,6 +469,7 @@ export function simulatorPages(): SimulatorPage[] {
   const BY_PATH: Record<string, [string, SimulatorStage | undefined]> = {
     "/golf-trips": ["Golf Trips", "Main"], "/tournaments/join": ["Tourneys", "Main"], "/leagues": ["Leagues", "Main"], "/": ["Play", "Main"],
     "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/round?view=cancel": ["Play", "Active"], "/dev/round?view=player": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
+    "/dev/simulators/scoring": ["Simulators", undefined],
   };
   for (const page of pages) {
     const moved = BY_PATH[page.path] ?? MOVED[page.group ?? ""];
@@ -477,9 +478,11 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.path === "/dev/round") page.label = "Round (sample)";
     if (page.path === "/dev/samples") page.label = "One of each way to play";
     if (page.path === "/dev/course-search") page.label = "Course search (test harness)";
+    // Simulators > Scoring: the control page for the pretend phones (npm run sim); a plain desktop page.
+    if (page.path === "/dev/simulators/scoring") Object.assign(page, { label: "Scoring", standalone: true, viewport: "desktop" as const, fixtures: false, conditions: [] });
   }
   const features: string[] = [...SIMULATOR_FEATURES];
-  const reviewGroups = ["Website"];
+  const reviewGroups = ["Simulators", "Website"];
   const groupOrder = [...features, ...reviewGroups, ...Array.from(new Set(pages.map(page => page.group ?? "Other"))).filter(group => !features.includes(group) && !reviewGroups.includes(group))];
   const stageRank = (page: SimulatorPage) => SIMULATOR_STAGES.indexOf(page.stage ?? "Main");
   // Onboarding: the invite last. Golf Trips follows the trip builder's order (pages not in it, coach marks + ready, first).

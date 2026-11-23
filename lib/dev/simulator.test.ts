@@ -353,3 +353,16 @@ test("Device section views: each view's options and The Maroon Live version", ()
   for (const [view] of SIMULATOR_VIEWS) for (const id of simulatorViewDevices(view)) assert.ok(SIMULATOR_DEVICES.some(device => device.id === id), id);
   assert.deepEqual(SIMULATOR_VIEWS.map(([view]) => liveSurfaceForView(view)), ["app", "mobile", "desktop", "desktop", "app", "app"]);
 });
+
+test("the Simulators group comes right after the four features and lists Scoring", async () => {
+  // "server-only" only exists inside Next; give plain node an empty stand-in so the registry can be loaded here.
+  const Module = (await import("node:module")).default as unknown as { _resolveFilename: (request: string, ...rest: unknown[]) => string; _cache: Record<string, unknown> };
+  const original = Module._resolveFilename;
+  Module._resolveFilename = (request, ...rest) => request === "server-only" ? "server-only-stub" : original(request, ...rest);
+  Module._cache["server-only-stub"] = { id: "server-only-stub", filename: "server-only-stub", loaded: true, exports: {} };
+  const { simulatorPages } = await import("./simulatorRoutes");
+  const pages = simulatorPages();
+  const groups = Array.from(new Set(pages.map(page => page.group)));
+  assert.equal(groups.indexOf("Simulators"), 4);
+  assert(pages.some(page => page.group === "Simulators" && page.label === "Scoring" && page.path === "/dev/simulators/scoring" && page.standalone && page.viewport === "desktop"));
+});

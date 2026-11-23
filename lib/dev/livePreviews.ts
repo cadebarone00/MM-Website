@@ -19,3 +19,11 @@ export const isLiveSurface = (value: unknown): value is LiveSurface => LIVE_SURF
 export const TV_KINDS = [["trip", "Golf trip"], ["tournament", "Tournament"], ["league", "League"]] as const;
 export type TvKind = (typeof TV_KINDS)[number][0];
 export const isTvKind = (value: unknown): value is TvKind => TV_KINDS.some(([id]) => id === value);
+
+/** TV mode in the simulator: the team structure (same names as the team draft) and how many players tee off together. */
+export const TV_TEAMS = [["two", "2 Teams"], ["pairs", "Pairs"], ["3ball", "3-Ball"], ["4ball", "4-Ball"]] as const;
+export type TvTeams = (typeof TV_TEAMS)[number][0];
+export const isTvTeams = (value: unknown): value is TvTeams => TV_TEAMS.some(([id]) => id === value);
+export const TV_GROUPS = [["2", "Groups of 2"], ["3", "Groups of 3"], ["4", "Groups of 4"]] as const;
+export type TvGroup = (typeof TV_GROUPS)[number][0];
+export const isTvGroup = (value: unknown): value is TvGroup => TV_GROUPS.some(([id]) => id === value);

@@ -1,6 +1,6 @@
 /* Golf Trip Home: all dark maroon, no top nav. Trip name up top, the 4-tab selector under it, then the cards.
    The negative bottom margin runs the maroon under the bottom menu on phones (same as the questionnaire). */
-.page{display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);
+.page{position:relative;display:flex;flex-direction:column;min-height:100svh;margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);
   padding:48px max(var(--page-gutter),calc((100% - 560px)/2)) calc(24px + 5.75rem + env(safe-area-inset-bottom))}
 /* Room at the bottom for the Scoring sheet's handle, which sits just above the bottom menu (desktop: at the bottom). */
 .pageWithScoring{padding-bottom:calc(24px + 64px + 5.75rem + env(safe-area-inset-bottom))}
@@ -12,14 +12,12 @@
   background:transparent;color:var(--lm-ink-fbf8f1);cursor:pointer;transition:background .15s ease}
 .iconButton:hover{background:color-mix(in srgb,var(--lm-ink-ffffff) 8%,transparent)}
 .iconButton:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px}
-/* "← Golf Trips": desktop only (1024px+, where the bottom tabs are hidden), so phones keep using the Golf Trips tab. */
-.desktopBack{display:none}
-@media (min-width:1024px){
-  .desktopBack{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:-32px 0 16px;color:color-mix(in srgb,var(--lm-ink-dcc495) 85%,transparent);text-decoration:none;
-    font:600 14px/1 var(--font-barlow),sans-serif;letter-spacing:.02em}
-  .desktopBack:hover{color:var(--lm-ink-fbf8f1)}
-  .desktopBack:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:4px;border-radius:4px}
-}
+/* "←" back to Golf Trips: every screen size, top-left in the trip title row. Absolute, so nothing else moves.
+   The 44px tap box is pulled left 11px so the arrow itself lines up with the 16px page edge. */
+.desktopBack{position:absolute;top:48px;left:calc(max(var(--page-gutter),(100% - 560px)/2) - 11px);z-index:2;display:grid;place-items:center;width:44px;height:44px;
+  color:color-mix(in srgb,var(--lm-ink-dcc495) 85%,transparent);text-decoration:none}
+.desktopBack:hover{color:var(--lm-ink-fbf8f1)}
+.desktopBack:focus-visible{outline:2px solid var(--lm-ink-dcc495);outline-offset:2px;border-radius:50%}
 .title{grid-column:1;grid-row:1;min-width:0;min-height:28px;margin:0;padding:0;text-align:left;font:500 26.6px/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.02em;color:var(--lm-ink-ffffff);overflow-wrap:anywhere}
 /* The selector: just the words. The chosen one lights up (cream with a soft glow) and gets a gold line under it. */
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;margin-top:8px}

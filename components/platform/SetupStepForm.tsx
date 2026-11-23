@@ -32,7 +32,9 @@ export function SetupStepForm({ step, nextHref, backHref, complete = true, skip,
   useEffect(() => {
     const saved = readGolfTripDraft();
     // Landed here without the required answers (new tab, deep link): go back to the first one that's missing.
-    const missing = step ? firstMissingStep(saved) : null;
+    // Not inside the /dev simulator (local dev only), so every step can be opened on its own there.
+    const inSimulator = process.env.NODE_ENV === "development" && window.parent !== window;
+    const missing = step && !inSimulator ? firstMissingStep(saved) : null;
     if (step && missing && TRIP_BUILDER_STEPS.indexOf(missing) < TRIP_BUILDER_STEPS.indexOf(step)) { router.replace(stepPath(missing)); return; }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the draft lives in this tab's sessionStorage, readable only after the server render
     setDraft(saved);

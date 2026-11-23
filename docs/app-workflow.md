@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-23 - Scoring Simulator for Play (development tool; implemented locally; deployment not verified).** A developer-only simulator now lets Play rounds be exercised with several pretend people at once: `npm run sim` starts an in-memory pretend database, a second app copy and a sign-in front door, and `/dev` Simulators > Scoring shows one phone per person with checks and an event log. Scenarios cover solo, friends (host, joined player, invited player, guest, Skins) and a tee with no rating; `npm run test:sim` replays them through the real routes. It never connects to a real Supabase and adds no production routes or data. Trip, Tourney and League scenarios are not yet built.
+
 **2026-11-22 - Reconcile Play round changes (implemented locally; deployment not verified).** The merged round screen combines the settings invite code and Wolf/Sixes order controls with side-game picks, and retains the live-round cancel/delete and player leave flow. Section 22 and the Mermaid annotation are updated; the delete/leave database functions require `supabase/shared_round_delete.sql`. Side-game money rules and launch compliance remain subject to review.
 
 **2026-11-22 - Profile header starting line (presentation implemented locally; deployment not verified).** Profile, Edit profile, Search and friends could count top clearance twice or add extra offsets, while Settings added its own margin. Their top controls now use the shared phone starting line once: the device safe-area inset plus 8px. Section 22 and the Mermaid annotation are updated; navigation and data are unchanged. Other individually styled screens still require an audit and real-device verification.

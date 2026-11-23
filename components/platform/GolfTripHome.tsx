@@ -84,7 +84,7 @@ const subscribeNever = () => () => {};
  * cards show the questionnaire answers kept in this tab, or an empty state. Nothing is saved yet.
  * `preview` replaces those answers with fixed ones (the /dev/tournament design preview).
  * `settingsHref` is where the settings wheel goes (this trip's settings page).
- * `backHref` adds a small "← Golf Trips" link on desktop, where the bottom tabs (and their Golf Trips tab) are hidden.
+ * `backHref` adds a ← arrow (top-left, every screen size) back to Golf Trips.
  * `previewMatch` fills the Golf tab's Overview leaderboard with made-up data (/dev/tournament only); without it they are "Coming soon".
  * `weather` (saved trips only, still loading on the server) adds a Weather card after Travel that shows a loading line
  * until it settles, so the rest of the page never waits for it; without it there is no Weather card.
@@ -226,7 +226,7 @@ export function GolfTripHome({ preview, settingsHref, backHref, previewMatch, we
   const yourHoles = previewMatch?.leaderboard.find((row) => row.golfer.name === you)?.holes;
 
   return <main className={`${styles.page} ${roundLive ? styles.pageWithScoring : ""} ${tab === "Golf" && preview && previewMatch ? styles.pageGolfPreview : ""}`}>
-    {backHref && <Link href={backHref} className={styles.desktopBack}><ArrowLeft size={16} strokeWidth={2} aria-hidden />Golf Trips</Link>}
+    {backHref && <Link href={backHref} className={styles.desktopBack} aria-label="Back to Golf Trips"><ArrowLeft size={22} strokeWidth={2} aria-hidden /></Link>}
     <header className={styles.header}>
       {!spectator && <GolfTripHeader name={draft.tripName || "Your Golf Trip"} settingsHref={settingsHref} scope={competitionKey ?? "default"} spectator={false} onChat={() => setChatOpen(true)} />}
       {!spectator && <div className={`${styles.tabs} ${styles.tripTabs}`} role="tablist" aria-label="Trip sections">

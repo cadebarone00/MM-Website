@@ -29,14 +29,17 @@ export const MIGRATIONS = [
 const IDENT = /^[a-z_][a-z0-9_]*$/;
 const PG_STATUS = { "42501": 403, "23505": 409, "23503": 409, "PGRST116": 406 };
 
-export async function startFakeSupabase({ port, root = "supabase" }) {
-  const db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create role service_role;
-    create schema auth; create table auth.users(id uuid primary key, email text, encrypted_password text);
-    create function auth.uid() returns uuid language sql as $$select null::uuid$$;
-    create schema storage; create table storage.buckets(id text primary key, name text, public boolean);
-    create publication supabase_realtime;`);
-  for (const file of MIGRATIONS) await db.exec(readFileSync(`${root}/${file}`, "utf8"));
+export async function startFakeSupabase({ port, root = "supabase", migrations = MIGRATIONS, loadDataDir, onCall } = {}) {
+  // A restored data directory already holds the roles, schemas and every migration.
+  const db = loadDataDir ? new PGlite({ loadDataDir }) : new PGlite();
+  if (!loadDataDir) {
+    await db.exec(`create role anon; create role authenticated; create role service_role;
+      create schema auth; create table auth.users(id uuid primary key, email text, encrypted_password text);
+      create function auth.uid() returns uuid language sql as $$select null::uuid$$;
+      create schema storage; create table storage.buckets(id text primary key, name text, public boolean);
+      create publication supabase_realtime;`);
+    for (const file of migrations) await db.exec(readFileSync(`${root}/${file}`, "utf8"));
+  }
 
   const tokens = new Map(); // access token -> user
   const unsupported = [];
@@ -53,7 +56,17 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
     return { id, token, email };
   }
 
+  /** Rebuilds the token map from auth.users (tokens are always test-token-<id>), e.g. after loading a dump. */
+  async function restoreTokens() {
+    tokens.clear();
+    for (const { id, email } of (await db.query("select id, email from auth.users")).rows) {
+      tokens.set(`test-token-${id}`, { id, email, aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() });
+    }
+  }
+
   const send = (res, status, body, headers = {}) => {
+    res.fakeStatus = status;
+    res.fakeError = status >= 400 && body && typeof body === "object" ? (body.message ?? body.msg ?? String(status)) : undefined;
     res.writeHead(status, { "Content-Type": "application/json", ...headers });
     res.end(body === undefined ? "" : JSON.stringify(body));
   };
@@ -92,12 +105,12 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
 
   async function handleTable(req, res, table, url) {
     if (req.method !== "GET" && req.method !== "HEAD") {
-      unsupported.push(`${req.method} ${table}`);
+      unsupported.push(`${req.method} ${table}`); res.fakeUnsupported = `${req.method} ${table}`;
       return send(res, 501, { code: "PGRST501", message: `fake-supabase: ${req.method} on tables isn't supported` });
     }
     const select = url.searchParams.get("select") ?? "*";
     if (/[()!:]/.test(select)) {
-      unsupported.push(`embedded select on ${table}: ${select}`);
+      unsupported.push(`embedded select on ${table}: ${select}`); res.fakeUnsupported = `embedded select on ${table}: ${select}`;
       return send(res, 400, { code: "PGRST100", message: "fake-supabase: embedded selects aren't supported" });
     }
     const columns = select === "*" ? "*" : select.split(",").map((c) => c.trim()).filter(Boolean).map((c) => { if (!IDENT.test(c)) throw new Error(`bad column ${c}`); return `"${c}"`; }).join(", ");
@@ -139,10 +152,20 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
     const args = body ? JSON.parse(body) : {};
     const names = Object.keys(args);
     for (const name of names) if (!IDENT.test(name)) return send(res, 400, { code: "PGRST100", message: `bad arg ${name}` });
-    const exists = (await db.query("select 1 from pg_proc where proname = $1 and pronamespace = 'public'::regnamespace", [fn])).rows.length;
-    if (!exists) return send(res, 404, { code: "PGRST202", message: `Could not find the function public.${fn}` });
-    // Pass objects/arrays as JSON text; Postgres casts to the parameter's type.
-    const values = names.map((name) => (args[name] !== null && typeof args[name] === "object" ? JSON.stringify(args[name]) : args[name]));
+    const sigs = (await db.query(
+      "select proargnames, array(select format_type(t, null) from unnest(proargtypes::oid[]) with ordinality u(t, i) order by i) as types from pg_proc where proname = $1 and pronamespace = 'public'::regnamespace", [fn])).rows;
+    if (!sigs.length) return send(res, 404, { code: "PGRST202", message: `Could not find the function public.${fn}` });
+    // Pick the overload that has every named argument, to learn each parameter's type.
+    const sig = sigs.find((row) => names.every((name) => (row.proargnames ?? []).includes(name))) ?? sigs[0];
+    const typeOf = (name) => sig.types[(sig.proargnames ?? []).indexOf(name)] ?? "";
+    // Array parameters (uuid[], text[]...) need a Postgres array literal {a,b}; jsonb/json and plain objects take JSON text.
+    const arrayLiteral = (items) => "{" + items.map((item) => (item === null ? "NULL" : '"' + String(item).replace(/[\\"]/g, "\\$&") + '"')).join(",") + "}";
+    const values = names.map((name) => {
+      const value = args[name];
+      if (value === null || typeof value !== "object") return value;
+      if (Array.isArray(value) && typeOf(name).endsWith("[]")) return arrayLiteral(value);
+      return JSON.stringify(value);
+    });
     const call = `select public."${fn}"(${names.map((name, i) => `"${name}" => $${i + 1}`).join(", ")}) as result`;
     try {
       const result = await db.query(call, values);
@@ -156,17 +179,26 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
     let body = "";
     req.on("data", (chunk) => (body += chunk));
     req.on("end", async () => {
+      let kind = "unsupported";
+      let name = `${req.method} ${req.url}`;
+      res.on("finish", () => {
+        if (!onCall) return;
+        if (res.fakeUnsupported) { kind = "unsupported"; name = res.fakeUnsupported; }
+        const ok = kind !== "unsupported" && (res.fakeStatus ?? 200) < 400;
+        try { onCall({ at: new Date().toISOString(), kind, name, ok, ...(ok ? {} : { error: res.fakeError ?? `HTTP ${res.fakeStatus}` }) }); } catch { /* a bad listener must not break the fake */ }
+      });
       try {
-        const url = new URL(req.url, `http://localhost:${port}`);
+        const url = new URL(req.url, `http://localhost:${server.address().port}`);
         if (url.pathname === "/auth/v1/user") {
+          kind = "auth"; name = "GET /auth/v1/user";
           const token = (req.headers.authorization ?? "").replace(/^Bearer /, "");
           const user = tokens.get(token);
           return user ? send(res, 200, user) : send(res, 401, { code: 401, msg: "invalid token" });
         }
         const rpc = url.pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/);
-        if (rpc) return await handleRpc(req, res, rpc[1], body);
+        if (rpc) { kind = "rpc"; name = rpc[1]; return await handleRpc(req, res, rpc[1], body); }
         const table = url.pathname.match(/^\/rest\/v1\/([a-z_][a-z0-9_]*)$/);
-        if (table) return await handleTable(req, res, table[1], url);
+        if (table) { kind = "table"; name = table[1]; return await handleTable(req, res, table[1], url); }
         unsupported.push(`${req.method} ${url.pathname}`);
         return send(res, 404, { code: "PGRST404", message: `fake-supabase: ${url.pathname} isn't supported` });
       } catch (error) {
@@ -176,10 +208,13 @@ export async function startFakeSupabase({ port, root = "supabase" }) {
   });
   // No host: listen on IPv4 and IPv6, since "localhost" may resolve to either.
   await new Promise((resolve) => server.listen(port, resolve));
+  const actualPort = server.address().port; // differs from `port` when 0 was passed
 
   return {
     db,
-    url: `http://localhost:${port}`,
+    url: `http://localhost:${actualPort}`,
+    dump: () => db.dumpDataDir(),
+    restoreTokens,
     addUser,
     unsupported,
     /** Cookie that makes the app treat the browser as this user. */

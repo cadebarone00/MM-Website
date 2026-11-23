@@ -1,5 +1,5 @@
 import type { TvBoardData, TvMatchRow, TvPhase, TvPlayerRow } from "@/lib/platform/liveTv";
-import type { TvKind } from "./livePreviews";
+import type { TvGroup, TvKind, TvTeams } from "./livePreviews";
 
 /**
  * Made-up players for the TV mode design page (/dev/tv). Nothing here is real. `phase` picks the stage (before it
@@ -24,10 +24,22 @@ function positions(totals: (number | null)[]): string[] {
   return totals.map((t) => t == null ? "–" : (totals.filter((x) => x === t).length > 1 ? "T" : "") + String(totals.indexOf(t) + 1));
 }
 
-/** A tee time every 10 minutes from 8:00, two players (one match) a group. */
+/** A tee time every 10 minutes from 8:00, one per group. */
 const teeTime = (group: number) => { const minutes = 8 * 60 + group * 10; return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`; };
 
-export function sampleTvBoard(playerCount = 24, phase: TvPhase = "live", kind: TvKind = "trip"): TvBoardData {
+/** Pairs / 3-Ball / 4-Ball: how many players are on each team. */
+const TEAM_SIZE: Record<Exclude<TvTeams, "two">, number> = { pairs: 2, "3ball": 3, "4ball": 4 };
+/** One color per team for Pairs / 3-Ball / 4-Ball (a team's color glows when it leads its match). */
+const TEAM_COLORS = ["#8a1c24", "#1f3a5f", "#2f6b3a", "#b8860b", "#5b3a8a", "#1f6f78", "#a0522d", "#4a4a4a", "#8a1c6b", "#2b4a8a", "#6b8a1c", "#7a5c3a"];
+const lastName = (name: string) => name.split(" ").slice(-1)[0];
+
+/**
+ * `teams`: 2 Teams (Tigers vs Rebels, one player a side) or Pairs / 3-Ball / 4-Ball (many teams of 2 / 3 / 4, named after
+ * their first player, the captain; a match is one team against another, and the board has no team header).
+ * `group`: players per tee time; before a round the individual board lists them by group with a line between groups.
+ */
+export function sampleTvBoard(playerCount = 24, phase: TvPhase = "live", kind: TvKind = "trip", teams: TvTeams = "two", group: TvGroup = "2"): TvBoardData {
+  const perGroup = Number(group);
   const n = Math.max(2, Math.min(playerCount, NAMES.length));
   const names = NAMES.slice(0, n);
   // Before: no scores, everyone with their tee time. Between and Final: every round finished (no one still out).
@@ -36,9 +48,14 @@ export function sampleTvBoard(playerCount = 24, phase: TvPhase = "live", kind: T
   const individual: TvPlayerRow[] = names.map((name, i) => ({
     position: phase === "before" ? "" : pos[i], name, team: i % 2 ? "Rebels" : "Tigers", total: totals[i],
     today: totals[i] == null ? null : Math.round(totals[i]! / 2),
-    thru: phase === "before" ? teeTime(Math.floor(i / 2)) : phase === "live" ? (THRU[i] || teeTime(10)) : "F",
+    thru: phase === "before" ? teeTime(Math.floor(i / perGroup)) : phase === "live" ? (THRU[i] || teeTime(10)) : "F",
+    // Listed by group only before the round (after that the board is sorted by score).
+    groupStart: phase === "before" && i > 0 && i % perGroup === 0 ? true : undefined,
   }));
-  const pairs = Math.floor(n / 2);
+  // 2 Teams: one player a side. Pairs / 3-Ball / 4-Ball: whole teams a side (leftover players sit out of matches).
+  const size = teams === "two" ? 1 : TEAM_SIZE[teams];
+  const squads = Array.from({ length: Math.floor(n / size) }, (_, t) => names.slice(t * size, t * size + size));
+  const pairs = Math.floor(squads.length / 2);
   // During: finished, in progress, all square, and two that haven't teed off yet.
   const live: Pick<TvMatchRow, "middle" | "score" | "leader">[] = [
     { middle: "F", score: "3&2", leader: "left" }, { middle: "Thru 15", score: "1 UP", leader: "right" }, { middle: "Thru 12", score: "AS", leader: null },
@@ -51,12 +68,17 @@ export function sampleTvBoard(playerCount = 24, phase: TvPhase = "live", kind: T
     { middle: "F", score: "3&2", leader: "left" }, { middle: "F", score: "1 UP", leader: "right" }, { middle: "F", score: "AS", leader: null },
     { middle: "F", score: "2&1", leader: "right" }, { middle: "F", score: "4&3", leader: "left" }, { middle: "F", score: "2 UP", leader: "left" },
   ];
-  const matches: TvMatchRow[] = Array.from({ length: pairs }, (_, i) => ({ number: i + 1, left: names[i * 2], right: names[i * 2 + 1],
-    ...(phase === "before" ? { middle: teeTime(i), score: "", leader: null } : phase === "live" ? live[i % live.length] : done[i % done.length]) }));
+  const side = (t: number) => teams === "two" ? { name: squads[t][0] } : { name: `Team ${lastName(squads[t][0])}`, color: TEAM_COLORS[t % TEAM_COLORS.length], players: squads[t].map(lastName).join(" · ") };
+  const matches: TvMatchRow[] = Array.from({ length: pairs }, (_, i) => {
+    const [l, r] = [side(i * 2), side(i * 2 + 1)];
+    return { number: i + 1, left: l.name, right: r.name,
+      ...(teams === "two" ? {} : { leftColor: l.color, rightColor: r.color, leftPlayers: l.players, rightPlayers: r.players }),
+      ...(phase === "before" ? { middle: teeTime(i), score: "", leader: null } : phase === "live" ? live[i % live.length] : done[i % done.length]) };
+  });
   const points: Record<TvPhase, [number, number]> = { before: [0, 0], live: [6.5, 4.5], between: [8, 4], final: [13.5, 10.5] };
   return {
     ...EVENTS[kind], roundLabel: ROUND_LABEL[phase], phase,
     individual,
-    match: { teams: [{ name: "Tigers", color: "#8a1c24", points: points[phase][0] }, { name: "Rebels", color: "#1f3a5f", points: points[phase][1] }], toWin: 12.5, matches },
+    match: { teams: [{ name: "Tigers", color: "#8a1c24", points: points[phase][0] }, { name: "Rebels", color: "#1f3a5f", points: points[phase][1] }], toWin: 12.5, matches, ...(teams === "two" ? {} : { teamHeader: false }) },
   };
 }
