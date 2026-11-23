@@ -6238,3 +6238,15 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - **Owner (2026-11-22): Round complete = swipe between players**, each a normal scorecard (front / back nine with Par,
   Score and $ per hole), name + total + to par + money on top, dots underneath; best money first. Everyone in a round
   shows by first name — the scorekeeper too, instead of "You".
+
+## Fix: an unfinished account never reaches the app (owner report 2026-11-22)
+
+**What happened:** a new tester got into the app with sign-up not finished; trying to create a trip led to an old
+"set up your profile" screen and a loop. **Rule (owner): the sign-up steps are the only place a profile is made — that
+should never happen.**
+**Fix (iPhone app):** whenever a signed-in account changes screen, the app asks the server where it is
+(GET /api/account/onboarding); if sign-up isn't finished (password, name + username, birthday, terms / settings) it goes
+straight to that step (`unfinishedRedirect`, lib/account/onboardingRoutes.ts) — before any tab, Create a trip or Play.
+Once the server says Active, it stops checking (starts again if someone else signs in). The Profile tab's old setup form
+is gone in the app: no profile → back to sign-up. The website isn't changed (its onboarding pages sit behind the
+MAROON_V2_ONBOARDING switch).

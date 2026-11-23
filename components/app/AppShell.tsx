@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SiteChrome } from "@/components/nav/SiteChrome";
 import { nextTournament, pastTournaments, latestCompleted, isPastLeaderboardSwitchover } from "@/lib/data";
 import { installAppFetch } from "@/lib/app/appFetch";
 import { appSupabase } from "@/lib/app/appAuth";
 import { appPath } from "@/lib/app/appPaths";
+import { unfinishedRedirect } from "@/lib/account/onboardingRoutes";
+import type { OnboardingStep } from "@/lib/account/onboardingApi";
 import { shareOrigin } from "@/lib/app/shareOrigin";
 import { AppComingSoon, keptOutOfApp } from "./AppComingSoon";
 import { clearAppData, preloadAppData } from "./appDataCache";
@@ -49,6 +51,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = (usePathname() || "/").replace(/(.)\/+$/, "$1");
   const search = useSearchParams().toString();
   const [session, setSession] = useState<"checking" | "in" | "out">("checking");
+  /** The server said this account finished signing up (no more checks until someone else signs in). */
+  const finished = useRef(false);
 
   useEffect(() => {
     const auth = appSupabase().auth;
@@ -57,12 +61,26 @@ export function AppShell({ children }: { children: ReactNode }) {
     const { data } = auth.onAuthStateChange((_event, next) => {
       // Signed out or someone else signed in: forget the screens the last person loaded (appDataCache.ts).
       const nextUser = next?.user.id ?? null;
-      if (nextUser !== user) clearAppData();
+      if (nextUser !== user) { clearAppData(); finished.current = false; }
       user = nextUser;
       setSession(next ? "in" : "out");
     });
     return () => data.subscription.unsubscribe();
   }, []);
+
+  // An unfinished account (signed in, sign-up not done) never reaches the app (owner request 2026-11-22): on every screen
+  // change it's sent back to the sign-up step it stopped at. Once the server says it's finished, this stops checking.
+  useEffect(() => {
+    if (session !== "in" || finished.current) return;
+    let alive = true;
+    void fetch("/api/account/onboarding", { cache: "no-store" }).then((r) => r.json() as Promise<{ ok?: boolean; state?: string; next?: OnboardingStep | null }>).then((body) => {
+      if (!alive || !body.ok) return;
+      if (body.state === "active") { finished.current = true; return; }
+      const to = unfinishedRedirect(body.next, pathname);
+      if (to) router.replace(`${to}/`);
+    }).catch(() => { /* offline: try again on the next screen */ });
+    return () => { alive = false; };
+  }, [session, pathname, router]);
 
   // Once signed in, after the open screen has had its turn: load the main tabs quietly so the first tap on each is instant.
   useEffect(() => {

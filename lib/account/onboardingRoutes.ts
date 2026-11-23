@@ -55,6 +55,21 @@ export function onboardingRedirect(screen: OnboardingScreen, step: OnboardingSte
   return allowed ? null : stepPath(step);
 }
 
+/** Steps of sign-up an account can be stuck on while signed in (owner request 2026-11-22: an unfinished account never
+ *  reaches the app — not even Create a trip — it goes back to the step it stopped at). */
+const UNFINISHED: OnboardingStep[] = ["password", "name_username", "birthday", "terms", "settings"];
+/** Screens that are part of signing up / account status, where an unfinished account may already be. */
+const isSignUpPath = (path: string) => path === "/start" || path.startsWith("/start/") || path === "/onboarding" || path.startsWith("/onboarding/")
+  || path === STATUS || path === "/login" || path.startsWith("/login/") || path === "/signup" || path === "/new-user" || path.startsWith("/dev");
+
+/** Where an unfinished signed-in account must go instead of `pathname`, or null when it can stay (finished, or already
+ *  in sign-up). `next` is GET /api/account/onboarding's step. */
+export function unfinishedRedirect(next: OnboardingStep | null | undefined, pathname: string): string | null {
+  const path = pathname.replace(/(.)\/+$/, "$1");
+  if (!next || !UNFINISHED.includes(next) || isSignUpPath(path)) return null;
+  return stepPath(next);
+}
+
 /** Progress bar on the email sign-up screens, in the order they really come. The password comes AFTER the code (owner
  *  decision 2026-11-20, replacing decision D1); Birthday after Name (owner decision 2026-11-02). */
 const PROGRESS = ["sign-up", "verify", "password", "name", "birthday", "photo", "settings", "created"] as const;
