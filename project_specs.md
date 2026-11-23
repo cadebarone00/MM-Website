@@ -6224,3 +6224,6 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
   database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
   Back to Play. After deleting, the scorekeeper goes to the Play home screen.
+- **Owner (2026-11-22): Round complete pop-up.** After the scorekeeper's Next on the last hole, a pop-up shows the final
+  leaderboard (scores, to par, game count, money; "Final") with **Save & exit round** (saves the scorekeeper's card and
+  every joined player's round, then Play home) and Keep editing.

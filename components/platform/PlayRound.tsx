@@ -544,6 +544,8 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const [menu, setMenu] = useState<null | "players" | "game">(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /** Round complete (owner 2026-11-22): after the last hole's Next, a summary with Save & exit round. */
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [pickingGame, setPickingGame] = useState(false);
   /** Changes sent but not confirmed yet ("profile:hole" / "guest:id:hole" → strokes; "pick:hole" → pick; "stats:hole" → stats), so a poll never undoes them. */
   const [pending, setPending] = useState<Record<string, unknown>>({});
@@ -654,6 +656,18 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
     if (strokesOf(me!)[hole] !== mine) { (sentMine.current ??= par.map((p, h) => myRemote[h] ?? p))[hole] = mine; sendStrokes(me!, hole, mine); }
     for (const p of others) if (strokesOf(p.profileId)[hole] == null) sendStrokes(p.profileId, hole, par[hole]);
     for (const g of guests) if (guestRow(g.id)[hole] == null) sendGuestStrokes(g.id, hole, par[hole]);
+    if (hole === range[1] - 1) setSummaryOpen(true);
+  }
+  /** Save & exit round: the scorekeeper's card (as entered, par where untouched) saves everyone's rounds, then Play home. */
+  async function saveAndExit() {
+    const card = read()?.card;
+    const scored: ScoredCard = {
+      strokes: par.map((p, h) => card?.strokes[h] ?? myRemote[h] ?? p),
+      putts: par.map((_, h) => card?.putts[h] ?? null), fairways: par.map((_, h) => card?.fairways[h] ?? null), greens: par.map((_, h) => card?.greens[h] ?? null),
+      ...(card?.penalties?.length ? { penalties: card.penalties } : {}),
+    };
+    const result = await submit(scored);
+    if (result.ok) { setSummaryOpen(false); router.replace("/"); }
   }
   const setGuests = (next: RoundGuest[]) => { setSnap({ ...snap, setup: { ...setup, guests: next } }); void hostAction({ action: "setup", setup: { ...setup, guests: next } }); };
 
@@ -683,6 +697,16 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
       {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
         <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link></>}
     </section>
+    {summaryOpen && isHost && <GolfTripActionSheet label="Round complete" slideUp onClose={() => setSummaryOpen(false)}>
+      <div className={styles.settingsBody}>
+        <h2 className={styles.settingsTitle}>Round complete</h2>
+        <p className={styles.settingsLabel}>{[setup.course.name, def?.name].filter(Boolean).join(" · ")}</p>
+        <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} extraMoney={sideMoney?.total ?? null} />
+        {save.status === "error" && <p className={styles.error} role="alert">{save.message}</p>}
+        <button type="button" className={wiz.continue} disabled={save.status === "saving"} onClick={() => void saveAndExit()}>{save.status === "saving" ? "Saving…" : "Save & exit round"}</button>
+        <button type="button" className={styles.discard} onClick={() => setSummaryOpen(false)}>Keep editing</button>
+      </div>
+    </GolfTripActionSheet>}
     {/* Round settings (owner 2026-11-22): the players and Manage, the tip, and Leave round, behind the gear top right. */}
     {settingsOpen && <GolfTripActionSheet label="Round settings" slideUp onClose={() => { setSettingsOpen(false); setMenu(null); }}>
       <div className={styles.settingsBody}>
@@ -942,7 +966,7 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""}${hasMoney ? " 52px" : ""}`;
   const initialsOf = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return <div className={`${trip.match} ${trip.leaderboard} ${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
-    <p className={styles.boardHead}><b>Hole {now + 1}</b>{done.length ? ` · thru ${done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
+    <p className={styles.boardHead}>{done.length === holes.length ? <b>Final</b> : <><b>Hole {now + 1}</b>{done.length ? ` · thru ${done.at(-1)! + 1}` : ""}</>}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
     <div>
       <div className={trip.leaderboardListHeading}>
         <div className={`${trip.single} ${trip.columns}`} style={{ gridTemplateColumns: columns }} aria-hidden>
