@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
 import { SIMULATOR_FEATURES, SIMULATOR_SOURCES, SIMULATOR_STAGES, type SimulatorConditional, type SimulatorPage, type SimulatorStage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
-import { TV_KINDS } from "./livePreviews";
+import { TV_GROUPS, TV_KINDS, TV_TEAMS } from "./livePreviews";
 import { TV_PHASES, type TvPhase } from "@/lib/platform/liveTv";
 
 /** TV mode Conditionals, "When" section: the four stages of an event. */
@@ -280,6 +280,9 @@ export function simulatorPages(): SimulatorPage[] {
   const tvConditions = (): SimulatorConditional[] => [
     ...TV_PHASES.map(phase => ({ id: `tv-phase-${phase}`, label: TV_PHASE_LABEL[phase], section: "When", state: { tvPhase: phase } })),
     ...TV_KINDS.map(([kind, label]) => ({ id: `tv-kind-${kind}`, label, section: "Event", state: { tvKind: kind } })),
+    // Our comp structure (owner 2026-11-23): the team type, and players per tee time (lines between groups before a round).
+    ...TV_TEAMS.map(([teams, label]) => ({ id: `tv-teams-${teams}`, label, section: "Teams", state: { tvTeams: teams } })),
+    ...TV_GROUPS.map(([group, label]) => ({ id: `tv-group-${group}`, label, section: "Group size", state: { tvGroup: group } })),
   ];
   for (const [show, label] of [["both", "TV mode · both boards take turns"], ["individual", "TV mode · individual"], ["match", "TV mode · match play"]]) {
     pages.push({ id: `live-tv-${show}`, path: `/dev/tv?show=${show}`, label, group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: tvConditions() });
@@ -448,10 +451,6 @@ export function simulatorPages(): SimulatorPage[] {
     { id: "profile-real-data", label: "My real rounds", state: { sampleStats: false } },
     { id: "profile-sample-data", label: "Sample stats data (25 made-up rounds + a sample golfer to compare)", state: { sampleStats: true } },
   ] });
-  // The player-rounds store (moved from /dev/profile): History link requests, removing rounds, Public / Private.
-  const requests = pages.find(page => page.path === "/dev/profile/requests");
-  // Not a real app screen (an older dev tool), so it lives in its own group instead of the Profile list.
-  if (requests) Object.assign(requests, { label: "Round link requests (old dev tool)", group: "Dev tools", conditions: signedInAs() });
   // Profile group order: my profile, Edit profile, Settings, Search, Public, Private, then the live account.
   const profileOrder = ["/dev/profile", "/dev/profile/edit", "/dev/profile/settings", "/dev/profile/search", "/dev/profile/public", "/dev/profile/private"]
     .map((path) => pages.find((page) => page.path === path)).filter((page): page is SimulatorPage => Boolean(page));
@@ -461,14 +460,13 @@ export function simulatorPages(): SimulatorPage[] {
     for (const page of profileList) pages.splice(pages.indexOf(page), 1);
     pages.splice(profileAt, 0, ...profileList);
   }
-  if (requests) pages.push(...pages.splice(pages.indexOf(requests), 1));
   const onboardingOrder = ["/golf-trips/new/learn", "/golf-trips/new/tour", "/golf-trips/new", ...Object.keys(stepLabels).map(step => "/golf-trips/new/" + step), "/dev/trip-builder/join"];
   // The 4 feature groups (owner request 2026-11-21): Golf Trips, Tourneys, Leagues, Play, each split into Main (the
   // bottom-menu page), Active (inside the feature, its samples and tests) and Onboarding (getting into one).
   const MOVED: Record<string, [string, SimulatorStage]> = { "Golf Trip Active": ["Golf Trips", "Active"], "Golf Trip Onboarding": ["Golf Trips", "Onboarding"], "Tournament Active": ["Tourneys", "Active"] };
   const BY_PATH: Record<string, [string, SimulatorStage | undefined]> = {
     "/golf-trips": ["Golf Trips", "Main"], "/tournaments/join": ["Tourneys", "Main"], "/leagues": ["Leagues", "Main"], "/": ["Play", "Main"],
-    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/round?view=cancel": ["Play", "Active"], "/dev/round?view=player": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
+    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/round?view=cancel": ["Play", "Active"], "/dev/round?view=player": ["Play", "Active"],
     "/dev/simulators/scoring": ["Simulators", undefined],
   };
   for (const page of pages) {
@@ -476,8 +474,6 @@ export function simulatorPages(): SimulatorPage[] {
     if (moved) [page.group, page.stage] = moved;
     if (page.path === "/dev/leagues") page.label = "League (sample)";
     if (page.path === "/dev/round") page.label = "Round (sample)";
-    if (page.path === "/dev/samples") page.label = "One of each way to play";
-    if (page.path === "/dev/course-search") page.label = "Course search (test harness)";
     // Simulators > Scoring: the control page for the pretend phones (npm run sim); a plain desktop page.
     if (page.path === "/dev/simulators/scoring") Object.assign(page, { label: "Scoring", standalone: true, viewport: "desktop" as const, fixtures: false, conditions: [] });
   }

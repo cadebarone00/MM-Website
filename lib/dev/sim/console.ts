@@ -14,3 +14,15 @@ export function consoleState(status: { ok: boolean } | "error"): "running" | "no
   return status !== "error" && status.ok ? "running" : "not-running";
 }
 
+
+/**
+ * One poll that is only applied if nothing changed while it was out: the generation is read when the poll STARTS, so a poll
+ * that began after a scenario pick / Reset is accepted and one that began before it is dropped. Returns true when applied.
+ */
+export async function guardedPoll<T>(generation: { current: number }, alive: () => boolean, load: () => Promise<T>, apply: (value: T) => void): Promise<boolean> {
+  const started = generation.current;
+  const value = await load();
+  if (!alive() || started !== generation.current) return false;
+  apply(value);
+  return true;
+}

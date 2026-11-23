@@ -5750,7 +5750,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 **Done =** a signed-out browser can open a Public event from search and a Link only event from its link, and see live golf update. Private and changed-to-Private events say "This event isn't available." Nothing private appears in any reply (checked by tests). The share-link toggle hides or shows Share for players. TV mode scrolls and updates on its own. Typecheck, lint and tests pass, and it's checked on screen.
 
-**TV mode: team formats + groups (owner request 2026-11-23) — PROPOSED, awaiting approval**
+**TV mode: team formats + groups (owner request 2026-11-23) — APPROVED + BUILT 2026-11-23 (uncommitted). Owner picked B: Pairs / 3-Ball / 4-Ball show just the matches (no team header); each side = "Team <captain>" with its players' last names under it, in that team's color.**
 - **All text in Spectral** on the TV board (done 2026-11-22).
 - **Matches closer together:** match rows use only the middle 50% of the screen width (names and scores pulled in toward the middle). The team names and points above them line up with the same 50%.
 - **Simulator Conditionals for our comp structure.** Each TV page gets a "Teams" section: **2 Teams / Pairs / 3-Ball / 4-Ball** (same names as the team draft). The existing pages already cover **Individual / Match / Both**. Sample data changes to fit: 2 Teams = Tigers vs Rebels; Pairs / 3-Ball / 4-Ball = several teams of 2 / 3 / 4 players.
@@ -5758,6 +5758,15 @@ On Android, people can resize the widget, so it picks the closest of the same th
 - **Open question:** how the match board looks for Pairs / 3-Ball / 4-Ball (more than 2 teams), see below.
 - Dev / sample data only. The real `/tap-in/<code>/tv` board doesn't change in this step. No SQL.
 - **Done =** each Conditional shows the right sample on the TV page in the simulator. Typecheck and tests pass, and it's checked on screen.
+
+**Desktop = TV (owner request 2026-11-23, picked A) — APPROVED + BUILT 2026-11-23 (uncommitted). `components/tap-in/LiveEventPage.tsx` picks the board (wider than 700px) or WatchPage (phones); league names aren't clickable (leagues have no trip profile).**
+- **Two pages:** the **Directory** (`/tap-in`) and an event's **Leaderboard** (`/tap-in/<code>`).
+- **Wide screens (computer, TV browser, Xbox, laptop on HDMI, a cast Chrome tab):** the event page shows the **exact TV board**: same look, scrolling, Upcoming / Live / Up next / Final, refreshing on its own. Individual and match boards take turns (or the organizer's pick from the TV mode link).
+- **Mouse extras (A):** a TV just ignores these. Click a name → their trip profile (same as today). Hovering over the board pauses the scroll so a name can be clicked. "The Maroon Live" (top left) links back to the Directory.
+- **Phones (website and app): no change.** They keep today's live page (Leaderboard, Matches, Stats, scorecards), since phones are for tapping around.
+- `/tap-in/<code>/tv` keeps working as it is, and the organizer's "Open TV mode" link stays.
+- Trips, tournaments and leagues all get it. No SQL, no new services.
+- **Done =** on a computer, a Public / Link only event opens as the TV board, names open trip profiles, hover pauses, the brand goes back to the Directory. Phones are unchanged. Private events still say "This event isn't available." Simulator Conditionals show it in Desktop and TV view. Typecheck and tests pass, and it's checked on screen.
 
 ## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
 
@@ -6464,3 +6473,14 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
   database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
   Back to Play. After deleting, the scorekeeper goes to the Play home screen.
+
+## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — DESIGN, AWAITING APPROVAL (nothing built)
+
+Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Changes the Scoring Simulator's page; keeps its engine (`npm run sim`, fake Supabase, front door, Reset, checks, log).
+
+- **What / who:** the owner (dev only) builds a pretend Play round (Phase 1: 1–4 players, named, host, sample course, Skins/none, guest) and later a Trip (Phase 2: 4–8 players, trip name/location, matches/individual, organizer), presses Create, and the real phones **play themselves** step by step (taps and typing on the real screens) while the instructions show on the left. He can take over any phone any time.
+- **Layout:** left = setup → steps (Next / Play all / Pause / speed / fast-forward) → Checks + log; right = phones only, scaled to fit with no scrolling (1 big, 2 side by side, 4 = 2×2, 8 = 4×2); name and role under each phone.
+- **Tech:** the front door adds a small driver script to phone pages (simulator only) that the left panel controls by postMessage; steps are generated from the setup; scores from a seeded random generator; sample courses seeded into the fake course library.
+- **No faked results:** a step that can't find its button stops in red. No sim UI inside phone screens.
+- **Data:** in-memory only (fake Supabase); nothing in Supabase prod.
+- **Done (Phase 1):** a 4-ball created in the form plays start → invites → accepts → 18 holes → submit on the real screens with all checks green; take-over works; resize keeps all phones visible; tests (layout math, step generation, driver actions, custom seed, one Playwright end-to-end run) + full suite + type check pass; checked in Chrome.

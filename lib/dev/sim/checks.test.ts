@@ -47,7 +47,7 @@ test("a fresh round: linked passes, everything else waits", async () => {
     const seeded = await scenarioById("play-friends")!.seed(fake);
     const r = await runAll("play-friends", fake.db, seeded);
     assert.equal(r.linked.status, "pass");
-    for (const id of ["saved", "ended", "profile-once", "handicap", "guest", "deleted"]) assert.equal(r[id].status, "waiting", `${id}: ${r[id].detail}`);
+    for (const id of ["saved", "ended", "profile-once", "card-matches", "handicap", "guest", "deleted"]) assert.equal(r[id].status, "waiting", `${id}: ${r[id].detail}`);
   } finally { await fake.close(); }
 });
 
@@ -60,13 +60,14 @@ test("scores entered, host submits for everyone: all pass", async () => {
     await fake.db.query("select set_shared_round_guest_strokes($1, $2, 'g0', 1, 5)", [cam.id, seeded.refs.round]);
     const mid = await runAll("play-friends", fake.db, seeded);
     assert.equal(mid.saved.status, "pass");
-    assert.match(mid.saved.detail, /^37 holes saved \(/);
+    assert.match(mid.saved.detail, /^37 holes saved \(.*Uncle Rob/);
+    assert.doesNotMatch(mid.saved.detail, /g0/);
     assert.equal(mid.ended.status, "waiting");
     assert.equal(mid["profile-once"].status, "waiting");
     await savePlayerRounds(fake.db, seeded, ["cam", "cade"], { name: "Blue", rating: 70.4, slope: 124 });
     await fake.db.query("select update_shared_round($1, $2, null, true)", [cam.id, seeded.refs.round]);
     const r = await runAll("play-friends", fake.db, seeded);
-    for (const id of ["linked", "saved", "ended", "profile-once", "handicap", "guest"]) assert.equal(r[id].status, "pass", `${id}: ${r[id].detail}`);
+    for (const id of ["linked", "saved", "ended", "profile-once", "card-matches", "handicap", "guest"]) assert.equal(r[id].status, "pass", `${id}: ${r[id].detail}`);
     assert.match(r.handicap.detail, /^Cam: Counts · differential .*; Cade: Counts · differential /);
     assert.equal(r.deleted.status, "waiting");
     // The lock attempt left no trace.
@@ -124,5 +125,25 @@ test("unrated tee: handicap passes only when not counted", async () => {
     // The same saved round judged by a scenario that expects "counts" fails.
     const solo = scenarioById("play-solo")!.checks.find((c) => c.id === "handicap")!;
     assert.equal((await solo.run(fake.db, seeded)).status, "fail");
+  } finally { await fake.close(); }
+});
+
+test("card-matches: fails naming the first mismatch when the saved card differs from the round", async () => {
+  const fake = await fresh();
+  try {
+    const seeded = await scenarioById("play-solo")!.seed(fake);
+    await enterScores(fake.db, seeded, ["cam"]);
+    const check = scenarioById("play-solo")!.checks.find((c) => c.id === "card-matches")!;
+    assert.equal((await check.run(fake.db, seeded)).status, "waiting");
+    await savePlayerRounds(fake.db, seeded, ["cam"], { name: "Blue", rating: 70.4, slope: 124 });
+    const ok = await check.run(fake.db, seeded);
+    assert.equal(ok.status, "pass", ok.detail);
+    // The host's saved card now disagrees with the shared holes on hole 3.
+    await fake.db.query(
+      `update player_rounds set holes = (select jsonb_agg(case when (h->>'number')::int = 3 then jsonb_set(h, '{strokes}', '9') else h end) from jsonb_array_elements(holes) h) where profile_id = $1`,
+      [person(seeded, "cam").id]);
+    const bad = await check.run(fake.db, seeded);
+    assert.equal(bad.status, "fail");
+    assert.equal(bad.detail, `Cam, hole 3: saved 9, round ${PAR[2] + 1}`);
   } finally { await fake.close(); }
 });

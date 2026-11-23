@@ -38,7 +38,7 @@ function Preview() {
   const [inputs, setInputs] = useState<HoleInput[]>([]);
   const result = scoreGame(GAME, PLAYERS, COURSE, [0, 18], strokes, inputs);
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/dev/samples" className={styles.back} aria-label="Back to samples"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>{player ? "Round with friends" : "Round with friends · you’re the host"}</p></header>
+    <header className={styles.header}><Link href="/dev" className={styles.back} aria-label="Back to the simulator"><ArrowLeft size={18} aria-hidden="true" /></Link><p className={styles.kicker}>{player ? "Round with friends" : "Round with friends · you’re the host"}</p></header>
     <section className={styles.panel}>
       <h1 className={styles.title}>Stevens Park Golf Course</h1>
       <p className={styles.place}>Blue · 18 holes · Skins (net)</p>

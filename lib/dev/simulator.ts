@@ -1,6 +1,6 @@
 import { normalizeTripScenario } from "./tripScenario";
 import { TOURNEY_PREVIEWS, type TourneyPreview } from "./sampleTourney";
-import { isLivePreview, isLiveSurface, isTvKind, type LivePreview, type LiveSurface, type TvKind } from "./livePreviews";
+import { isLivePreview, isLiveSurface, isTvGroup, isTvKind, isTvTeams, type LivePreview, type LiveSurface, type TvGroup, type TvKind, type TvTeams } from "./livePreviews";
 import { isTvPhase, type TvPhase } from "@/lib/platform/liveTv";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
@@ -189,6 +189,9 @@ export type SimulatorState = {
   /** The Maroon Live → TV mode: the stage (before / during / between rounds / completed) and the event kind. Unset = live, trip. */
   tvPhase?: TvPhase;
   tvKind?: TvKind;
+  /** TV mode: the team structure (2 Teams / Pairs / 3-Ball / 4-Ball) and players per tee time. Unset = 2 Teams, groups of 2. */
+  tvTeams?: TvTeams;
+  tvGroup?: TvGroup;
   /** Mock people group (/dev/people/…): which of the 5 pretend people is "signed in" (lib/dev/mockPeople.ts). Unset = Cade. */
   mockPerson?: MockPersonId;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
@@ -317,6 +320,8 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.liveSurface !== undefined && !isLiveSurface(state.liveSurface)) return null;
   if (state.tvPhase !== undefined && !isTvPhase(state.tvPhase)) return null;
   if (state.tvKind !== undefined && !isTvKind(state.tvKind)) return null;
+  if (state.tvTeams !== undefined && !isTvTeams(state.tvTeams)) return null;
+  if (state.tvGroup !== undefined && !isTvGroup(state.tvGroup)) return null;
   if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;

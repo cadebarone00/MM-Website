@@ -152,11 +152,23 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
     const args = body ? JSON.parse(body) : {};
     const names = Object.keys(args);
     for (const name of names) if (!IDENT.test(name)) return send(res, 400, { code: "PGRST100", message: `bad arg ${name}` });
+    // PostgREST query params (filters/select/order/limit) on an RPC need set-returning handling this fake doesn't do.
+    const rpcParams = [...new URL(req.url, "http://x").searchParams.keys()];
+    if (rpcParams.length) {
+      const what = `rpc ${fn} with query params (${rpcParams.join(", ")})`;
+      unsupported.push(what); res.fakeUnsupported = what;
+      return send(res, 400, { code: "PGRST100", message: `fake-supabase: ${what} isn't supported` });
+    }
     const sigs = (await db.query(
-      "select proargnames, array(select format_type(t, null) from unnest(proargtypes::oid[]) with ordinality u(t, i) order by i) as types from pg_proc where proname = $1 and pronamespace = 'public'::regnamespace", [fn])).rows;
+      "select proretset, proargnames, array(select format_type(t, null) from unnest(proargtypes::oid[]) with ordinality u(t, i) order by i) as types from pg_proc where proname = $1 and pronamespace = 'public'::regnamespace", [fn])).rows;
     if (!sigs.length) return send(res, 404, { code: "PGRST202", message: `Could not find the function public.${fn}` });
     // Pick the overload that has every named argument, to learn each parameter's type.
     const sig = sigs.find((row) => names.every((name) => (row.proargnames ?? []).includes(name))) ?? sigs[0];
+    if (sig.proretset) {
+      const what = `set-returning rpc ${fn}`;
+      unsupported.push(what); res.fakeUnsupported = what;
+      return send(res, 400, { code: "PGRST100", message: `fake-supabase: ${what} isn't supported` });
+    }
     const typeOf = (name) => sig.types[(sig.proargnames ?? []).indexOf(name)] ?? "";
     // Array parameters (uuid[], text[]...) need a Postgres array literal {a,b}; jsonb/json and plain objects take JSON text.
     const arrayLiteral = (items) => "{" + items.map((item) => (item === null ? "NULL" : '"' + String(item).replace(/[\\"]/g, "\\$&") + '"')).join(",") + "}";
@@ -185,7 +197,9 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
         if (!onCall) return;
         if (res.fakeUnsupported) { kind = "unsupported"; name = res.fakeUnsupported; }
         const ok = kind !== "unsupported" && (res.fakeStatus ?? 200) < 400;
-        try { onCall({ at: new Date().toISOString(), kind, name, ok, ...(ok ? {} : { error: res.fakeError ?? `HTTP ${res.fakeStatus}` }) }); } catch { /* a bad listener must not break the fake */ }
+        const token = (req.headers.authorization ?? "").replace(/^Bearer /, "");
+        const user = tokens.get(token)?.id;
+        try { onCall({ at: new Date().toISOString(), kind, name, ok, ...(user ? { user } : {}), ...(ok ? {} : { error: res.fakeError ?? `HTTP ${res.fakeStatus}` }) }); } catch { /* a bad listener must not break the fake */ }
       });
       try {
         const url = new URL(req.url, `http://localhost:${server.address().port}`);

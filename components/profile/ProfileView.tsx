@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChartNoAxesColumn, ChevronLeft, Lock, Pencil, Search, Settings } from "lucide-react";
 import { ProfileAvatar } from "./ProfileAvatar";
@@ -48,6 +48,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
   const friendsOfHref = (links.friendsOf ?? "/profile/{username}/friends").replace("{username}", encodeURIComponent(real.identity.username));
   const compareName = real.isOwner ? compare : null;
   const [tab, setTab] = useState<Tab>(real.isOwner && compareName ? "stats" : "overview");
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("tab") === "stats") setTab("stats"); }, []);
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
   const profile = sample ? withSampleRounds(real) : real;

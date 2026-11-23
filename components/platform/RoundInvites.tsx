@@ -9,7 +9,7 @@ import styles from "./MobileHome.module.css";
  * Play page: invites to rounds with friends ("Cam invited you to play Pebble Beach · Wolf"). Join opens the round on
  * this phone; Decline drops it. Shows nothing when there are none (or when signed out / not set up yet).
  */
-export function RoundInvites() {
+export function RoundInvites({ showEmpty = false }: { showEmpty?: boolean }) {
   const router = useRouter();
   const [invites, setInvites] = useState<RoundInvite[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function RoundInvites() {
     if (join) { router.push(`/rounds/new?round=${roundId}`); return; }
     setInvites((all) => all.filter((i) => i.roundId !== roundId));
   }
-  if (!invites.length && !error) return null;
+  if (!invites.length && !error) return showEmpty ? <p className={styles.boardEmpty}>No round invites yet.</p> : null;
   return <div className={styles.invites} aria-label="Round invites">
     {invites.map((invite) => <article key={invite.roundId} className={styles.invite}>
       <p><b>{invite.hostName}</b> invited you to play <b>{invite.setup.course.name}</b>{invite.setup.game ? ` · ${gameDef(invite.setup.game.id).name}` : ""}</p>

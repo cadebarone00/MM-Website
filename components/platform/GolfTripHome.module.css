@@ -120,7 +120,7 @@
 .sheetActionText{font:600 16px/1.3 var(--font-barlow),sans-serif;letter-spacing:-.01em;color:#111}
 /* GolfTripActionSheet slideUp (Itinerary / My travel; owner request 2026-11-02): the date / time picker look. A maroon sheet,
    80% of the screen tall, full width with rounded top corners, sliding up from the bottom over a dimmed page; serif title, cream text, gold icons. */
-.slideOverlay{display:flex;align-items:flex-end;justify-content:center;z-index:900;background:color-mix(in srgb,var(--lm-bg-050406) 55%,transparent);animation:sheetFade .2s ease-out both}
+.slideOverlay{display:flex;align-items:flex-end;justify-content:center;z-index:900;background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:sheetFade .2s ease-out both}
 .slideSheet{width:100%;max-width:520px;height:80dvh;max-height:none;overflow-y:auto;box-sizing:border-box;padding:22px 20px calc(18px + env(safe-area-inset-bottom));border:0;border-radius:28px 28px 0 0;
   background:var(--lm-bg-240001,#240001);color:var(--lm-ink-fbf8f1);box-shadow:0 -16px 40px rgba(0,0,0,.35);animation:sheetUp .28s cubic-bezier(.2,.8,.2,1) both}
 .slideSheet .sheetClose{top:18px;right:14px;color:var(--lm-ink-fbf8f1)}

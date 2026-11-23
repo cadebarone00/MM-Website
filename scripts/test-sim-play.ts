@@ -179,12 +179,12 @@ async function runDelete() {
 
 async function main() {
   await ensureSim();
-  await runPlay("play-solo", ["linked", "saved", "ended", "profile-once", "handicap"]);
-  await runPlay("play-friends", ["linked", "saved", "ended", "profile-once", "handicap", "guest"], async (round) => {
+  await runPlay("play-solo", ["linked", "saved", "ended", "profile-once", "card-matches", "handicap"]);
+  await runPlay("play-friends", ["linked", "saved", "ended", "profile-once", "card-matches", "handicap", "guest"], async (round) => {
     const res = await as("jake", "POST", `/api/rounds/shared/${round}`, { action: "join" });
     assert.equal(res.status, 200, `Jake join → ${res.status} ${JSON.stringify(res.body)}`);
   });
-  await runPlay("play-unrated", ["linked", "saved", "ended", "profile-once", "handicap"]);
+  await runPlay("play-unrated", ["linked", "saved", "ended", "profile-once", "card-matches", "handicap"]);
   await runDelete();
 }
 

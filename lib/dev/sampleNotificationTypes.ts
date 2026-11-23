@@ -51,5 +51,7 @@ export function sampleNotesForType(kind: NotificationKind, wording: Notification
   return order.filter(index => versions[index]).map((index, step) => ({
     ...(entry.personal ? { groupId: "", groupName: "" } : SAMPLE_TRIP), id: `${kind}-v${index + 1}`, kind, title: versions[index].title, body: versions[index].body,
     link: fillBlanks(entry.link, CATALOG_SAMPLE_VALUES), createdAt: minutesAgo([0, 14, 75][step]), read: step === 2,
+    // A wording that names the sample golfer is about them: their avatar shows on the right.
+    person: `${versions[index].title} ${versions[index].body}`.includes(CATALOG_SAMPLE_VALUES.Player) ? { name: CATALOG_SAMPLE_VALUES.Player } : null,
   }));
 }

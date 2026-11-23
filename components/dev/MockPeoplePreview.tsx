@@ -6,6 +6,7 @@ import { PlatformHome } from "@/components/platform/PlatformHome";
 import { GolfTripsView } from "@/components/platform/GolfTripsView";
 import { JoinTournamentPage } from "@/components/platform/JoinTournamentPage";
 import { LeaguesHome } from "@/components/platform/Leagues";
+import { roundStats } from "@/lib/profile/roundStats";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { mockPerson, mockPersonFriends, mockPersonHistory, mockPersonProfile, type MockPerson } from "@/lib/dev/mockPeople";
 import { sampleProfileReadModel } from "@/lib/dev/sampleProfile";
@@ -23,8 +24,8 @@ function useMockPerson(): MockPerson {
 
 export function MockPlay() {
   const person = useMockPerson();
-  const profile = sampleProfileReadModel(person.profilePreview, mockPersonProfile(person), new Date().toLocaleDateString("en-CA"));
-  return <PlatformHome key={person.id} signedIn preview={{ displayName: person.name, username: person.username, handicapIndex: profile.modernStats?.handicapIndex }} />;
+  const profile = sampleProfileReadModel(person.profilePreview, mockPersonProfile(person), new Date().toLocaleDateString("en-CA"), null, mockPersonHistory(person));
+  return <PlatformHome key={person.id} signedIn preview={{ displayName: person.name, username: person.username, handicapIndex: profile.modernStats?.handicapIndex, average18: profile.modernStats?.average18, adjustedAverage18: profile.rounds.status === "ok" ? roundStats(profile.rounds.value)?.adjustedAverage18 : null, profileHref: "/dev/people/profile" }} />;
 }
 
 export function MockGolfTrips() {

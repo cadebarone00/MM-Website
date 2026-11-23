@@ -14,3 +14,19 @@ test("consoleState: a failed status means the simulator is not running", () => {
 });
 
 test("phoneHost is the phone's own host on the simulator port", () => assert.equal(phoneHost("jake"), "http://jake.localhost:3005"));
+
+import { guardedPoll } from "./console";
+
+test("guardedPoll: a poll started after a generation bump is applied, one started before is dropped", async () => {
+  const generation = { current: 0 };
+  const seen: string[] = [];
+  let release!: (v: string) => void;
+  const slow = new Promise<string>((r) => { release = r; });
+  const before = guardedPoll(generation, () => true, () => slow, (v) => seen.push(v));
+  generation.current += 1; // a scenario was picked while the first poll was out
+  release("old");
+  assert.equal(await before, false);
+  assert.equal(await guardedPoll(generation, () => true, async () => "new", (v) => seen.push(v)), true);
+  assert.equal(await guardedPoll(generation, () => false, async () => "dead", (v) => seen.push(v)), false);
+  assert.deepEqual(seen, ["new"]);
+});

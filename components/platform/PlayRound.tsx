@@ -76,7 +76,7 @@ const withPar = (setup: PersonalRoundSetup, hole: number, value: number): Person
  * Save to Profile → Rounds. The round lives in the database; the host keeps score and joined players watch it live.
  * `openRound` (?round=<id>) opens a shared round, e.g. after Join on the Play page.
  */
-export function PlayRound({ openRound }: { openRound?: string }) {
+export function PlayRound({ openRound, resume = false }: { openRound?: string; resume?: boolean }) {
   // A round in progress on this phone (undefined while rendering on the server); starting / discarding overrides it.
   const stored = useSyncExternalStore(subscribeNever, storedText, () => undefined);
   const [override, setRound] = useState<Saved | null | undefined>(undefined);
@@ -87,7 +87,7 @@ export function PlayRound({ openRound }: { openRound?: string }) {
   // Joining from an invite (or another phone): load that shared round onto this phone.
   if (openRound && round?.sharedId !== openRound) return <OpenShared id={openRound} header={header} onOpen={open} />;
   // An unfinished round from earlier: ask before going back into it.
-  if (round && override === undefined && !openRound) return <main className={styles.page}>
+  if (round && override === undefined && !openRound && !resume) return <main className={styles.page}>
     {header}
     <section className={styles.panel}>
       <h1 className={styles.title}>Unfinished round</h1>
@@ -194,6 +194,15 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
         : setError(body.code === "no_scorecard" ? "This course doesn't have a scorecard on file yet." : "Couldn't load this course's scorecard right now."))
       .catch(() => setError("Couldn't reach the course. Check your connection."));
   }
+
+  useEffect(() => {
+    let selected: PickedRoundCourse | null = null;
+    try { const raw = sessionStorage.getItem("maroonPlayCourse"); sessionStorage.removeItem("maroonPlayCourse"); if (raw) selected = JSON.parse(raw) as PickedRoundCourse; } catch { /* search remains available */ }
+    // The one-time browser selection must be loaded after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (selected && typeof selected.ref === "string" && typeof selected.name === "string" && typeof selected.place === "string") pick(selected);
+  // Read the one-time selection only when setup opens.
+  }, []);
 
   // A built scorecard has no tees on file: an optional rating / slope from the course's own card lets the round count.
   const ratingValue = Number.parseFloat(rating), slopeValue = Number.parseInt(slope, 10);

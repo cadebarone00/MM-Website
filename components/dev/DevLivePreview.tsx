@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useSimulator } from "./SimulatorBridge";
 import { MaroonLiveDirectory } from "@/components/tap-in/MaroonLiveDirectory";
-import { WatchPage } from "@/components/platform/WatchPage";
+import { LiveEventPage } from "@/components/tap-in/LiveEventPage";
 import { TripLiveSettings } from "@/components/platform/TripLiveSettings";
 import { sampleLiveEvents, sampleLiveLeague, sampleLiveSavedTrip, sampleLiveTournament, sampleLiveTrip } from "@/lib/dev/sampleLive";
 import type { LivePreview, LiveSurface } from "@/lib/dev/livePreviews";
@@ -31,7 +31,9 @@ export function DevLiveEvent() {
   const preview = usePreview("event-trip");
   const sample = useMemo(() => preview === "event-tournament" ? sampleLiveTournament() : preview === "event-league" ? sampleLiveLeague()
     : preview === "event-missing" ? "missing" as const : sampleLiveTrip(), [preview]);
-  return <WatchPage key={preview} code="W4K9PZ" sample={sample} />;
+  // Desktop = TV (2026-11-23): the simulator's Desktop / TV view shows the TV board; phones keep the live page.
+  const surface = useSurface();
+  return <LiveEventPage key={`${preview}-${surface}`} code="W4K9PZ" sample={sample} wide={surface === "desktop"} />;
 }
 
 /** Trip Settings → Members → The Maroon Live: the organizer's picker, or what a player sees. */

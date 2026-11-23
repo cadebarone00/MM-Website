@@ -3,7 +3,7 @@ import type { PGlite } from "@electric-sql/pglite";
 export const MIGRATIONS: string[];
 
 export type FakeUser = { id: string; token: string; email: string };
-export type FakeCall = { at: string; kind: "rpc" | "table" | "auth" | "unsupported"; name: string; ok: boolean; error?: string };
+export type FakeCall = { at: string; kind: "rpc" | "table" | "auth" | "unsupported"; name: string; ok: boolean; error?: string; user?: string };
 
 export type FakeSupabase = {
   db: PGlite;

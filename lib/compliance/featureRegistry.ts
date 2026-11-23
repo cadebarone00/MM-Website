@@ -74,6 +74,11 @@ interface FeatureSeed {
 
 const seeds: FeatureSeed[] = [
   {
+    id: "play-active-board", name: "Play active round board", scopeRevision: 1,
+    scope: "Play course search slide-up hands selection to existing round setup; the board resumes one current shared round or local unfinished round and displays existing round invitations. Existing authorization, storage and scoring remain; trip, tournament and league rounds are not aggregated. No new provider, payments or public sharing. Privacy, local storage, retention, course rights, provider rules and professional review remain review_required. Review: docs/play-active-board-review.md.",
+    attentionCategories: ["privacy", "personal-data", "user-accounts", "security", "retention", "account-deletion", "ugc", "third-party-golf-content", "intellectual-property", "organizer-responsibility", "minors", "platform-rules", "legal-review"],
+  },
+  {
     id: "maroon-live-directory-mock", name: "Public Maroon Live directory mock", scopeRevision: 2,
     scope: "Remove login/profile lookup from /tap-in and show fictional trip-name/location list only. Golf Trips adds an app entry at /golf-trips/live using the same fixtures with app navigation; existing golf-trip access classification applies. Development website previews cover 0/1/3/12 entries on desktop/mobile. Explicit public access classification covers directory/code pages; existing authenticated TV/display API stays guarded. No saved-trip discovery, real destination publication, new vendor, persistence, analytics, payments, media or fake watch links. Real public listing consent/visibility/minimization, retention, security, UGC/provider/minors and professional release review remain review_required before connecting saved trips. Review: docs/maroon-live-directory-review.md.",
     attentionCategories: ["privacy", "personal-data", "security", "ugc", "organizer-responsibility", "retention", "account-deletion", "intellectual-property", "minors", "platform-rules", "legal-review"],

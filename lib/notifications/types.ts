@@ -19,6 +19,9 @@ export type AppNotification = {
   /** ISO time. */
   createdAt: string;
   read: boolean;
+  /** The one golfer it's about (a birdie streak, a join request, a submitted card), if any: their avatar shows on the
+   *  right of the phone notification, the bell row and the top banner. No person (tee time, round final) = no avatar. */
+  person?: { name: string; photoUrl?: string | null } | null;
 };
 
 /** What the Live Activity shows during a live round. The Swift widget decodes `liveActivityContent()` of this. */

@@ -42,7 +42,9 @@ async function savedHoles(db: SimDb, round: string): Promise<{ n: number; names:
     `select coalesce(p.display_name, p.username) as name, count(*) as n from shared_round_holes h join profiles p on p.id = h.profile_id
      where h.round_id = $1 and h.strokes is not null group by 1 order by 1`, [round]);
   const guests = await db.query<{ name: string; n: string | number }>(
-    `select g.guest_id as name, count(*) as n from shared_round_guest_holes g where g.round_id = $1 and g.strokes is not null group by 1 order by 1`, [round]);
+    `select coalesce((select x->>'name' from shared_rounds r, jsonb_array_elements(coalesce(r.setup->'guests', '[]'::jsonb)) x
+                      where r.id = g.round_id and x->>'id' = g.guest_id limit 1), g.guest_id) as name, count(*) as n
+     from shared_round_guest_holes g where g.round_id = $1 and g.strokes is not null group by g.round_id, g.guest_id order by 1`, [round]);
   const rows = [...people.rows, ...guests.rows];
   return { n: rows.reduce((sum, r) => sum + Number(r.n), 0), names: rows.map((r) => r.name) };
 }
@@ -113,6 +115,30 @@ const profileOnce: SimCheck = {
   },
 };
 
+/** Each saved profile card's per-hole strokes must equal what the shared round holds for that player (pure comparison of stored values). */
+const cardMatches: SimCheck = {
+  id: "card-matches", label: "Profile card matches the round",
+  async run(db, seeded) {
+    const round = roundOf(seeded);
+    const row = await roundRow(db, round);
+    if (!row) return waiting("Round is gone");
+    const lines: string[] = [];
+    for (const p of await playersOf(db, round, row.host)) {
+      const card = (await db.query<{ holes: { number: number; strokes: number }[] }>(
+        "select holes from player_rounds where profile_id = $1 and source = 'personal' and source_key like '%' || $2 || '%' limit 1", [p.id, round])).rows[0];
+      if (!card) continue;
+      const shared = (await db.query<{ hole: number; strokes: number | null }>("select hole, strokes from shared_round_holes where round_id = $1 and profile_id = $2", [round, p.id])).rows;
+      const saved = new Map((card.holes ?? []).map((h) => [Number(h.number), h.strokes ?? null]));
+      const live = new Map(shared.map((h) => [Number(h.hole), h.strokes ?? null]));
+      const holes = [...new Set([...saved.keys(), ...live.keys()])].sort((a, b) => a - b);
+      const bad = holes.find((h) => (saved.get(h) ?? null) !== (live.get(h) ?? null));
+      if (bad !== undefined) return fail(`${p.name}, hole ${bad}: saved ${saved.get(bad) ?? "none"}, round ${live.get(bad) ?? "none"}`);
+      lines.push(`${p.name} ${holes.length} holes`);
+    }
+    return lines.length === 0 ? waiting("No saved cards yet") : pass(lines.join(", "));
+  },
+};
+
 const handicapCheck = (expectCounted: boolean): SimCheck => ({
   id: "handicap", label: "Handicap",
   async run(db, seeded) {
@@ -159,5 +185,5 @@ const deleted: SimCheck = {
 
 /** The checks a Play scenario shows; the unrated one expects the round not to count toward handicap. */
 export function playChecks(opts: { expectCounted: boolean; withGuest?: boolean }): SimCheck[] {
-  return [linked, saved, ended, profileOnce, handicapCheck(opts.expectCounted), ...(opts.withGuest ? [guest] : []), deleted];
+  return [linked, saved, ended, profileOnce, cardMatches, handicapCheck(opts.expectCounted), ...(opts.withGuest ? [guest] : []), deleted];
 }

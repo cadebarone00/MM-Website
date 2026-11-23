@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import type { ChildProcess } from "node:child_process";
 import { startFakeSupabase } from "../fake-supabase.mjs";
 import { SIM_MIGRATIONS } from "../../lib/dev/sim/migrations";
@@ -36,8 +37,24 @@ async function main() {
   };
   delete env.MAROON_ACCOUNT_ENFORCEMENT;
 
+  // Next fills any key that is undefined from .env, so every key that reaches a real outside service is set to "" here.
+  // Names only: R2 (files), Google Places/Maps, email, web push, Instagram, the Python API, the live feed, OpenAI, YouTube.
+  const BLANK_PREFIXES = ["R2_", "WEB_PUSH_", "NEXT_PUBLIC_WEB_PUSH_", "INSTAGRAM_", "PYTHON_API_", "OPENAI_", "GOOGLE_OAUTH_"];
+  const BLANK_NAMES = ["GOOGLE_PLACES_API_KEY", "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "RESEND_API_KEY", "LIVE_FEED_URL", "MAROON_V2_ONBOARDING",
+    "SCOREKEEPER_SERVER_SECRET", "CRON_SECRET", "NEXT_PUBLIC_YOUTUBE_LIVE_VIDEO_ID"];
+  const realCourses = process.env.SIM_REAL_COURSE_API === "1";
+  if (!realCourses) BLANK_NAMES.push("GOLF_COURSE_API_KEY");
+  const envFileKeys: string[] = [];
+  for (const file of [".env", ".env.local", ".env.development", ".env.example"]) {
+    try { for (const line of readFileSync(file, "utf8").split(/\r?\n/)) { const m = /^\s*#?\s*([A-Z][A-Z0-9_]*)=/.exec(line); if (m) envFileKeys.push(m[1]); } } catch { /* file not there */ }
+  }
+  for (const key of new Set([...envFileKeys, ...Object.keys(process.env), ...BLANK_NAMES])) {
+    if (BLANK_NAMES.includes(key) || BLANK_PREFIXES.some((p) => key.startsWith(p))) env[key] = "";
+  }
+  console.log(realCourses ? "Course search is ON (real GolfCourseAPI key, SIM_REAL_COURSE_API=1)." : "Course search is OFF (set SIM_REAL_COURSE_API=1 to use the real key).");
+
   // Hard guard: the sim app may only ever be pointed at the local fake.
-  if (!new RegExp(`^http://(127\.0\.0\.1|localhost):${FAKE_PORT}/?$`).test(String(env.SUPABASE_URL))) {
+  if (!new RegExp(String.raw`^http://(127\.0\.0\.1|localhost):${FAKE_PORT}/?$`).test(String(env.SUPABASE_URL))) {
     console.error(`Refusing to start: SUPABASE_URL (${env.SUPABASE_URL}) is not the local fake on port ${FAKE_PORT}.`);
     await door.close().catch(() => undefined);
     await holder.current.close().catch(() => undefined);

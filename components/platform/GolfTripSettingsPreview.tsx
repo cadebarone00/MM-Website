@@ -154,7 +154,7 @@ export function GolfTripSettingsPreview({ tripName, backHref = "/dev/tournament"
   // Organizer → Skins: the trip's skins game (any trip, separate from Individual / Team Competition).
   const [skinsOpen, setSkinsOpen] = useState(false);
   const [pastTrips, setPastTrips] = usePersistedState<PastTrip[]>(persist, "pastTrips", () => tripHistory ?? samplePastTrips(players));
-  // History → Link to account (dev): requests go to the shared player-rounds store; the player answers on /dev/profile/requests.
+  // History → Link to account (dev): requests go to the shared player-rounds store.
   const devRounds = useDevPlayerRounds();
   const historyLinking: HistoryLinking = {
     accounts: DEV_ACCOUNTS.map(({ id, name }) => ({ id, name })),

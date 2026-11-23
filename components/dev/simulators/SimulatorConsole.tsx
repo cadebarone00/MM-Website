@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SIM_ORIGIN, consoleState, phoneHost, phoneUrl } from "@/lib/dev/sim/console";
+import { SIM_ORIGIN, consoleState, guardedPoll, phoneHost, phoneUrl } from "@/lib/dev/sim/console";
 import styles from "./SimulatorConsole.module.css";
 
 type Scenario = { id: string; label: string; feature: string };
@@ -41,8 +41,11 @@ export function SimulatorConsole({ scenarios }: { scenarios: Scenario[] }) {
   }, []);
   useEffect(() => { void refreshStatus(); }, [refreshStatus]);
 
+  // Picking a scenario / Reset reloads through phoneUrl (signs in, clears the phone). Reload and Refresh keep the phone's
+  // storage and open the page it is on: the front door adds the sign-in cookie itself.
   const reloadAll = () => setReloads((r) => ({ ...r, all: (r.all ?? 0) + 1 }));
   const reloadOne = (person: string) => setReloads((r) => ({ ...r, [person]: (r[person] ?? 0) + 1 }));
+  const pageOf = (p: Phone) => phoneHost(p.person) + (pages?.[p.person]?.path ?? p.startPath);
 
   async function act(path: string, body?: unknown) {
     setBusy(true);
@@ -61,8 +64,6 @@ export function SimulatorConsole({ scenarios }: { scenarios: Scenario[] }) {
   useEffect(() => {
     if (!running) return;
     let alive = true;
-    const gen = generation.current;
-    const fresh = () => alive && gen === generation.current;
     let misses = 0, checking = false, logging = false;
     const miss = async () => {
       if (++misses < 3) return;
@@ -73,28 +74,31 @@ export function SimulatorConsole({ scenarios }: { scenarios: Scenario[] }) {
     const pollChecks = async () => {
       if (checking) return;
       checking = true;
-      const [c, s] = await Promise.all([door<Check[]>("/__sim/checks"), door<Status>("/__sim/status")]);
+      let failed = false;
+      const applied = await guardedPoll(generation, () => alive,
+        () => Promise.all([door<Check[]>("/__sim/checks"), door<Status>("/__sim/status")]),
+        ([c, s]) => { if (!c || !s) { failed = true; return; } misses = 0; setChecks(c); setPages(s.pages ?? {}); });
       checking = false;
-      if (!fresh()) return;
-      if (!c || !s) { await miss(); return; }
-      misses = 0; setChecks(c); setPages(s.pages ?? {});
+      if (applied && failed) await miss();
     };
     const pollLog = async () => {
       if (logging) return;
       logging = true;
-      const rows = await door<LogEntry[]>(`/__sim/log?since=${lastN.current}`);
-      logging = false;
-      if (!fresh()) return;
-      if (!rows) { await miss(); return; }
-      if (rows.length === 0) return;
-      const top = Math.max(...rows.map((r) => r.n));
-      if (top < lastN.current) { lastN.current = 0; setLog([]); return; } // the simulator restarted
-      lastN.current = top;
-      setLog((old) => {
-        const seen = new Set(old.map((o) => o.n));
-        const added = rows.filter((r) => !seen.has(r.n)).reverse();
-        return added.length ? [...added, ...old].slice(0, 500) : old;
+      let failed = false;
+      const applied = await guardedPoll(generation, () => alive, () => door<LogEntry[]>(`/__sim/log?since=${lastN.current}`), (rows) => {
+        if (!rows) { failed = true; return; }
+        if (rows.length === 0) return;
+        const top = Math.max(...rows.map((r) => r.n));
+        if (top < lastN.current) { lastN.current = 0; setLog([]); return; } // the simulator restarted
+        lastN.current = top;
+        setLog((old) => {
+          const seen = new Set(old.map((o) => o.n));
+          const added = rows.filter((r) => !seen.has(r.n)).reverse();
+          return added.length ? [...added, ...old].slice(0, 500) : old;
+        });
       });
+      logging = false;
+      if (applied && failed) await miss();
     };
     void pollChecks(); void pollLog();
     const a = setInterval(pollChecks, 2000), b = setInterval(pollLog, 1000);
@@ -137,7 +141,7 @@ export function SimulatorConsole({ scenarios }: { scenarios: Scenario[] }) {
           })}
         </select>
         <button type="button" className={styles.btn} disabled={busy || !current} onClick={() => void act("/__sim/reset")}>Reset</button>
-        <button type="button" className={styles.btn} disabled={!current} onClick={reloadAll}>Refresh all phones</button>
+        <button type="button" className={styles.btn} disabled={!current} onClick={() => { if (status && status !== "error") setBackTo(Object.fromEntries(status.phones.map((p) => [p.person, pageOf(p)]))); reloadAll(); }}>Refresh all phones</button>
       </div>
 
       {phones.length === 0 ? <p className={styles.empty}>Pick a scenario to put the phones on a round.</p> : (
@@ -148,7 +152,7 @@ export function SimulatorConsole({ scenarios }: { scenarios: Scenario[] }) {
                 <div className={styles.phoneName}><strong>{names[p.person] ?? p.person}</strong><span>{p.label}</span></div>
                 <span className={styles.phoneBtns}>
                   <button type="button" className={styles.btn} disabled={(pages?.[p.person]?.history.length ?? 0) < 2} onClick={() => void goBack(p.person)}>Back</button>
-                  <button type="button" className={styles.btn} onClick={() => { setBackTo((b) => { const { [p.person]: _gone, ...rest } = b; return rest; }); reloadOne(p.person); }}>Reload</button>
+                  <button type="button" className={styles.btn} onClick={() => { setBackTo((b) => ({ ...b, [p.person]: pageOf(p) })); reloadOne(p.person); }}>Reload</button>
                 </span>
               </div>
               <div className={styles.address} title="The page this phone is on">{pages?.[p.person]?.path ?? p.startPath}</div>

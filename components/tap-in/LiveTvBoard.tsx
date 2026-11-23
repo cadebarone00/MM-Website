@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import Link from "next/link";
 import { pointsText, toParText, tvBoards, tvSideScore, TV_PHASE_WORD, type TvBoardData, type TvShow } from "@/lib/platform/liveTv";
 import styles from "./LiveTvBoard.module.css";
 
@@ -13,36 +14,41 @@ const STILL_SECONDS = 20;
  * board and/or the match play board, each scrolling slowly top to bottom and starting over; with both, they take turns.
  * Nothing to tap. Reduced motion: pages through instead of scrolling.
  */
-export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoardData; show: TvShow;
+export function LiveTvBoard({ data, show, surface = "desktop", player, homeHref }: { data: TvBoardData; show: TvShow;
   /** Where it's open: a computer / TV browser ("desktop"), a phone's browser ("mobile") or the app ("app"); phones get a narrow layout. */
-  surface?: "desktop" | "mobile" | "app" }) {
+  surface?: "desktop" | "mobile" | "app";
+  /** Desktop = TV (owner 2026-11-23), the mouse extras a TV ignores: names with a trip profile can be clicked (and the
+   *  scroll pauses under the mouse), and "The Maroon Live" goes back to the directory. */
+  player?: { has: (name: string) => boolean; open: (name: string) => void }; homeHref?: string }) {
   const boards = tvBoards(data, show);
   const [index, setIndex] = useState(0);
   const board = boards[index % Math.max(boards.length, 1)];
   const count = Math.max(boards.length, 1);
   const next = useCallback(() => setIndex((i) => (i + 1) % count), [count]);
-  const teams = data.match?.teams;
-  return <div className={styles.screen} data-surface={surface} data-board={board}
+  // Pairs / 3-Ball / 4-Ball: no team header and no team glow from the screen's sides, just the matches.
+  const teamHeader = data.match?.teamHeader !== false;
+  const teams = teamHeader ? data.match?.teams : undefined;
+  return <div className={styles.screen} data-surface={surface} data-board={board} data-header={teamHeader ? undefined : "none"} data-interactive={player || homeHref ? "" : undefined}
     style={teams ? { "--team-left": teams[0].color, "--team-right": teams[1].color } as CSSProperties : undefined}>
     <header className={styles.header}>
       {/* Owner 2026-11-22: brand with the time under it (left), name with the location / course under it (middle),
           the stage with the round under it (right): Upcoming / Live (red) / Up next / Final. */}
-      <div className={styles.brand}><p>The Maroon Live</p><Clock /></div>
+      <div className={styles.brand}><p>{homeHref ? <Link href={homeHref} prefetch={false} className={styles.homeLink}>The Maroon Live</Link> : "The Maroon Live"}</p><Clock /></div>
       <div className={styles.title}><h1>{data.eventName}</h1>{data.place && <p>{data.place}</p>}</div>
       <div className={styles.status}><p className={styles.live} data-phase={data.phase}>{TV_PHASE_WORD[data.phase]}</p>{data.roundLabel && <p className={styles.round}>{data.roundLabel}</p>}</div>
     </header>
     {!board ? <p className={styles.empty}>Scores will show here once the round starts.</p>
       : board === "individual" ? <Scroller key={`individual-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={<IndividualHeading today={data.phase === "between" || data.phase === "final" ? "Last rd" : "Today"} />}>
-        {data.individual!.map((row, i) => <div key={i} className={styles.row}>
+        {data.individual!.map((row, i) => <div key={i} className={`${styles.row} ${row.groupStart ? styles.groupStart : ""}`}>
           <span className={styles.pos}>{row.position}</span>
-          <span className={styles.player}>{row.name}</span>
+          <span className={styles.player}><Name name={row.name} player={player} /></span>
           <span className={`${styles.num} ${styles.total} ${tone(row.total)}`}>{toParText(row.total)}</span>
           <span className={`${styles.num} ${styles.today} ${tone(row.today)}`}>{toParText(row.today)}</span>
           <span className={styles.num}>{row.thru}</span>
         </div>)}
       </Scroller>
       : <>
-        <div className={styles.teams}>
+        {teamHeader && <div className={styles.teams}>
           {/* Tigers · 12½ to win · Rebels: the target sits between the two teams. */}
           {data.match!.teams.map((team, i) => <Fragment key={team.name}>
             {i === 1 && <span className={styles.toWin}>{data.phase === "final" ? <b>Final</b> : data.match!.toWin != null ? <><b>{pointsText(data.match!.toWin)}</b>to win</> : "vs"}</span>}
@@ -50,17 +56,17 @@ export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoard
               <span className={styles.teamName}>{team.name}</span><span className={styles.teamPoints}>{pointsText(team.points)}</span>
             </div>
           </Fragment>)}
-        </div>
+        </div>}
         <Scroller key={`match-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={null}>
           {/* Like the app's Matches list: names on their sides, the score on the leader's half, Match # over Thru / F / tee
               time in the middle; the leading side glows from its corner. */}
           {data.match!.matches.map((m, i) => {
-            const color = (side: "left" | "right") => data.match!.teams[side === "left" ? 0 : 1].color;
+            const color = (side: "left" | "right") => (side === "left" ? m.leftColor : m.rightColor) ?? data.match!.teams[side === "left" ? 0 : 1].color;
             return <div key={i} className={styles.matchRow} data-leader={m.leader ?? undefined}
               style={m.leader ? { "--team": color(m.leader) } as CSSProperties : undefined}>
-              <span className={`${styles.side} ${m.leader === "left" ? styles.up : ""}`}><b className={styles.sideName}>{m.left}</b><span className={styles.sideScore}>{tvSideScore(m, "left")}</span></span>
+              <span className={`${styles.side} ${m.leader === "left" ? styles.up : ""}`}><SideName name={m.left} players={m.leftPlayers} player={player} /><span className={styles.sideScore}>{tvSideScore(m, "left")}</span></span>
               <span className={styles.middle}><span className={styles.matchNumber}>Match {m.number}</span><span className={styles.matchState}>{m.middle}</span></span>
-              <span className={`${styles.side} ${styles.right} ${m.leader === "right" ? styles.up : ""}`}><b className={styles.sideName}>{m.right}</b><span className={styles.sideScore}>{tvSideScore(m, "right")}</span></span>
+              <span className={`${styles.side} ${styles.right} ${m.leader === "right" ? styles.up : ""}`}><SideName name={m.right} players={m.rightPlayers} player={player} /><span className={styles.sideScore}>{tvSideScore(m, "right")}</span></span>
             </div>;
           })}
         </Scroller>
@@ -68,6 +74,17 @@ export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoard
     {/* With both boards, small dots show which one is up. */}
     <footer className={styles.footer}>{boards.length > 1 && <span className={styles.dots} aria-hidden>{boards.map((b, i) => <i key={b} data-on={i === index % boards.length ? "" : undefined} />)}</span>}</footer>
   </div>;
+}
+
+/** A match side: the name (a player, or a team), with the team's players under it for Pairs / 3-Ball / 4-Ball. */
+function SideName({ name, players, player }: { name: string; players?: string; player?: Player }) {
+  return <span className={styles.sideWho}><b className={styles.sideName}><Name name={name} player={player} /></b>{players && <span className={styles.sidePlayers}>{players}</span>}</span>;
+}
+
+type Player = { has: (name: string) => boolean; open: (name: string) => void };
+/** A golfer's name: a button that opens their trip profile when there is one (computers only), else plain text. */
+function Name({ name, player }: { name: string; player?: Player }) {
+  return player?.has(name) ? <button type="button" className={styles.nameButton} onClick={() => player.open(name)} aria-haspopup="dialog" aria-label={`${name} public trip profile`}>{name}</button> : <>{name}</>;
 }
 
 const tone = (value: number | null) => value != null && value < 0 ? styles.under : "";

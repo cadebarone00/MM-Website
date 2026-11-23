@@ -24,8 +24,9 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
   controlOrigin?: string;
 }): Promise<{ close(): Promise<void>; log: SimLog; port: number }> {
   const log = new SimLog();
+  // The fake reports the auth user id of each call; map it to this scenario's person key.
   const onCall = (c: FakeCall) =>
-    log.add({ person: null, kind: c.kind, text: c.error ? `${c.name}: ${c.error}` : c.name, ok: c.kind === "unsupported" ? false : c.ok });
+    log.add({ person: (c.user && seeded?.people.find((p) => p.id === c.user)?.key) || null, kind: c.kind, text: c.error ? `${c.name}: ${c.error}` : c.name, ok: c.kind === "unsupported" ? false : c.ok });
 
   const base = await fake.current.dump();
   let scenario: SimScenario | null = null;
@@ -186,23 +187,25 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
     await busy; // never forward while the database is being swapped
     // Phones sit in iframes on another site, so browsers will not send them a cookie. Sign the phone in here instead: put
     // its person's session in every request. A host that is not in the current scenario is forwarded as it came.
-    const cookie = await serialize(async () => {
-      const user = person ? seeded?.people.find((p) => p.key === person) : undefined;
-      return user ? fake.current.sessionCookie(user) : null;
-    });
+    const user = person ? seeded?.people.find((p) => p.key === person) : undefined;
+    const cookie = user ? fake.current.sessionCookie(user) : null;
     const outgoing = { ...req.headers };
     if (cookie) {
       const others = (req.headers.cookie ?? "").split(";").map((c) => c.trim()).filter((c) => c && !c.startsWith(`${cookie.name}=`));
       outgoing.cookie = [...others, `${cookie.name}=${cookie.value}`].join("; ");
     }
-    const isPage = person && req.method === "GET" && ["document", "iframe"].includes(String(req.headers["sec-fetch-dest"] ?? "")) && !url.pathname.startsWith("/_next");
+    // A page is a document/iframe load, or a Next app-router navigation (GET with `rsc: 1`, not a prefetch); the _rsc param is dropped.
+    const isNav = ["document", "iframe"].includes(String(req.headers["sec-fetch-dest"] ?? ""));
+    const isRsc = req.headers.rsc === "1" && !req.headers["next-router-prefetch"];
+    const isPage = person && req.method === "GET" && (isNav || isRsc) && !url.pathname.startsWith("/_next");
+    const pageKey = (() => { const q = new URLSearchParams(url.search); q.delete("_rsc"); const s = q.toString(); return url.pathname + (s ? `?${s}` : ""); })();
     const up = http.request(
       {
         host: "localhost", port: appPort, method: req.method, path: req.url,
         headers: { ...outgoing, host: `localhost:${appPort}`, "x-forwarded-host": origHost, "x-forwarded-proto": "http" },
       },
       (r) => {
-        if (isPage && (r.statusCode ?? 0) < 300) recordPage(person!, url.pathname + url.search);
+        if (isPage && (r.statusCode ?? 0) < 300) recordPage(person!, pageKey);
         if (isApi) {
           const code = r.statusCode ?? 0;
           log.add({ person, kind: "api", text: `${req.method} ${url.pathname} → ${code}`, ok: code < 400 });

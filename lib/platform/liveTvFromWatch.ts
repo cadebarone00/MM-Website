@@ -111,19 +111,15 @@ export function tvFromPreview(p: GolfMatchPreview, event: { name: string; place:
 
 /** A tournament: today's round, else the latest round with scores, else round 1. */
 export function tvFromTournament(t: CodeTournament, today: string): TvBoardData {
-  const withScores = t.rounds.filter((r) => t.holes.some((h) => h.round === r.number));
-  const shown = t.rounds.find((r) => r.date === today)?.number ?? withScores.at(-1)?.number ?? t.rounds[0]?.number ?? 1;
-  const preview = tournamentPreview(t, shown);
+  const preview = tournamentShownPreview(t, today);
   return tvFromPreview(preview, { name: t.name, place: preview.course || null, rounds: t.rounds.map((r) => ({ number: r.number, date: r.date })), ended: t.status === "ended" }, today);
 }
 
 /** A trip: the same leaderboard and matches the live page shows (WatchPage's SpectatorTrip). */
 export function tvFromTrip(trip: SpectatorTrip, today: string): TvBoardData {
-  const { savedTrip, scoring, setup } = trip;
-  const values = setup.values;
-  const preview: GolfMatchPreview = { ...savedTripPresentation(savedTrip, scoring, today),
-    roundScoring: roundScoringFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), values.compFormats as Record<string, RoundCompSettings> | undefined,
-      values.compRounds as Record<string, boolean> | undefined, Number(values.playerTotal) || savedTrip.members.length) };
+  const { savedTrip } = trip;
+  const values = trip.setup.values;
+  const preview = tripPreview(trip, today);
   return tvFromPreview(preview, {
     name: savedTrip.trip.name, place: trip.place || preview.course || null,
     rounds: savedTrip.rounds.map((r) => ({ number: r.roundNumber, date: r.playDate })), ended: savedTrip.trip.status === "completed",
@@ -143,4 +139,30 @@ export function tvFromLeague(league: League, today: string): TvBoardData {
   const day = dayLabel(league.date, today);
   return { eventName: league.name, place: league.course.name || null, phase, individual: individual.length ? individual : null, match: null,
     roundLabel: phase === "live" ? "Today" : day };
+}
+
+/** A tournament's round on the board: today's round, else the latest round with scores, else round 1. */
+function tournamentShownPreview(t: CodeTournament, today: string): GolfMatchPreview {
+  const withScores = t.rounds.filter((r) => t.holes.some((h) => h.round === r.number));
+  const shown = t.rounds.find((r) => r.date === today)?.number ?? withScores.at(-1)?.number ?? t.rounds[0]?.number ?? 1;
+  return tournamentPreview(t, shown);
+}
+
+/** A trip's leaderboard and matches, built the same way as the live page (WatchPage's SpectatorTrip). */
+function tripPreview(trip: SpectatorTrip, today: string): GolfMatchPreview {
+  const { savedTrip, scoring, setup } = trip;
+  const values = setup.values;
+  return { ...savedTripPresentation(savedTrip, scoring, today),
+    roundScoring: roundScoringFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), values.compFormats as Record<string, RoundCompSettings> | undefined,
+      values.compRounds as Record<string, boolean> | undefined, Number(values.playerTotal) || savedTrip.members.length) };
+}
+
+/**
+ * Desktop = TV (owner 2026-11-23): the leaderboard behind the board, so clicking a name can open that golfer's trip
+ * profile. Trips and tournaments only; a league has no trip profile (null).
+ */
+export function previewFromWatch(view: WatchView, today: string): GolfMatchPreview | null {
+  if (view.kind === "trip") return tripPreview(view.trip, today);
+  if (view.kind === "tournament") return tournamentShownPreview(view.tournament, today);
+  return null;
 }

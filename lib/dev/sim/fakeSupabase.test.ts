@@ -60,3 +60,23 @@ test("array arguments become Postgres arrays for uuid[] and stay JSON for jsonb"
     assert.equal(err.code, "22023", JSON.stringify(err));
   } finally { await fake.close(); }
 });
+
+test("rpc with PostgREST query params, or a set-returning function, is reported unsupported; calls carry the user", async () => {
+  const calls: any[] = [];
+  const fake = await startFakeSupabase({ port: 0, migrations: SIM_MIGRATIONS, onCall: (c: any) => calls.push(c) });
+  try {
+    const host = await fake.addUser({ name: "cam" });
+    const headers = { authorization: `Bearer ${host.token}` };
+    const filtered = await fetch(`${fake.url}/rest/v1/rpc/create_shared_round?select=id&order=id`, { method: "POST", headers, body: JSON.stringify({ p_host: host.id, p_setup: {}, p_invites: null }) });
+    assert.equal(filtered.status, 400);
+    assert.match((await filtered.json()).message, /query params/);
+    await (await fetch(`${fake.url}/rest/v1/rpc/legacy_round_candidates`, { method: "POST", headers, body: "{}" })).text();
+    const un = calls.filter((c) => c.kind === "unsupported");
+    assert.equal(un.length, 2, JSON.stringify(calls));
+    assert.ok(un.every((c) => c.ok === false && c.user === host.id));
+    // A plain rpc still works and reports its user.
+    const ok = await fetch(`${fake.url}/rest/v1/rpc/create_shared_round`, { method: "POST", headers, body: JSON.stringify({ p_host: host.id, p_setup: {}, p_invites: null }) });
+    assert.equal(ok.status, 200, await ok.text());
+    assert.equal(calls.find((c) => c.kind === "rpc")?.user, host.id);
+  } finally { await fake.close(); }
+});

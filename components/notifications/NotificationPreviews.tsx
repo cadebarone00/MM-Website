@@ -1,9 +1,11 @@
 "use client";
 
 import { AlertTriangle, Bell, CalendarClock, Camera, Check, ClipboardCheck, Flame, Flashlight, Link2, ListOrdered, LockKeyhole, Mail, Megaphone, MessageCircle, Plane, Timer, Trophy, UserPlus, Users, X, type LucideIcon } from "lucide-react";
-import { createElement, useLayoutEffect, useRef, type ReactNode } from "react";
+import { createElement, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { appleSystem, androidSystem } from "@/lib/fonts/notifications";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { SheetClose } from "@/components/ui/SheetClose";
 import { androidLiveUpdate, formatPoints, formatToPar, liveLeaderboard, liveTeamText, matchMark, opponentLabel, newestFirst, pillStatus, resultTone, thruLabel, timeAgo, unreadCount, type PillStatus } from "@/lib/notifications/format";
 import type { AppNotification, LiveRoundActivity } from "@/lib/notifications/types";
 import { catalogEntry, type NotificationIcon, type NotificationKind } from "@/lib/notifications/catalog";
@@ -20,6 +22,16 @@ const CLOCK = previewClock();
 const fromLine = (note: AppNotification) => note.groupName ? `The Maroon · ${note.groupName}` : "The Maroon";
 /** The bell row's small line: trip · when, or just when. */
 const metaLine = (note: AppNotification, now: Date) => [note.groupName, timeAgo(note.createdAt, now)].filter(Boolean).join(" · ");
+/**
+ * The golfer the notification is about (Cam's birdie streak), on the right side, opposite the app icon (owner
+ * 2026-11-23). The app's one avatar: photo once they add one, else gold-ring initials. Nothing when it's about no one.
+ * On the phone this is the notification's picture (iPhone: an image attachment; Android: the "large icon"), both of which
+ * the phone draws on the right.
+ */
+function PersonAvatar({ note, size, className = "" }: { note: AppNotification; size: number; className?: string }) {
+  if (!note.person) return null;
+  return <ProfileAvatar name={note.person.name} photoUrl={note.person.photoUrl} size={size} className={`${styles.personAvatar} ${className}`} title={note.person.name} />;
+}
 
 // What the phone draws itself uses the phone's font, never ours: Inter stands in for Apple's SF Pro (iPhone notifications,
 // lock screen clock), Roboto for Android's system font (status bar, chip, notifications). Our Barlow / Spectral appear
@@ -120,14 +132,20 @@ export function IosStatusBar() {
   return <div className={styles.iosStatus} aria-hidden><span>{CLOCK.time}</span><span className={styles.iosIcons}><i /><i /><b /></span></div>;
 }
 
-/** iPhone notification card: app icon, title, body, time. Signed in or out, it shows the real update. */
+/**
+ * iPhone notification card: app icon, title, body, time. Signed in or out, it shows the real update. Apple keeps the time
+ * top-right; when it's about a person, their avatar sits just left of the time, the same size as the app icon, so the
+ * card stays its normal height (owner 2026-11-23).
+ */
 function PhoneNotification({ note }: { note: AppNotification }) {
+  const time = <time>{timeAgo(note.createdAt, SAMPLE_NOW)}</time>;
   return <article className={styles.phoneNote}>
     <img className={styles.phoneNoteIcon} src={APP_ICON} alt="" />
     <div className={styles.phoneNoteText}>
-      <p className={styles.phoneNoteTitle}><b>{note.title}</b><time>{timeAgo(note.createdAt, SAMPLE_NOW)}</time></p>
+      <p className={styles.phoneNoteTitle}><b>{note.title}</b>{!note.person && time}</p>
       <p className={styles.phoneNoteBody}>{note.body}</p>
     </div>
+    {note.person && <><PersonAvatar note={note} size={38} className={styles.phoneNoteAvatar} /><span className={styles.phoneNoteTime}>{time}</span></>}
   </article>;
 }
 
@@ -343,10 +361,17 @@ function AndroidNotificationScreen({ note, wall }: { note: AppNotification | nul
     <div className={styles.androidLockClock}><span>{CLOCK.time}</span><small>{CLOCK.short}</small></div>
     {note && <article className={styles.androidNote} aria-label="Notification">
       <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>{fromLine(note)} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
-      <p className={styles.androidNoteTitle}>{note.title}</p>
-      <p className={styles.androidNoteText}>{note.body}</p>
+      <AndroidNoteBody note={note} />
     </article>}
   </main>;
+}
+
+/** An ordinary Android notification's title + text, with the person's avatar on the right (Android's "large icon"). */
+function AndroidNoteBody({ note }: { note: AppNotification }) {
+  return <div className={styles.androidNoteRow}>
+    <div className={styles.androidNoteWords}><p className={styles.androidNoteTitle}>{note.title}</p><p className={styles.androidNoteText}>{note.body}</p></div>
+    <PersonAvatar note={note} size={36} />
+  </div>;
 }
 
 /* ---------- In-app ---------- */
@@ -356,25 +381,53 @@ const ICONS: Record<NotificationIcon, LucideIcon> = {
   flame: Flame, calendarClock: CalendarClock, clipboardCheck: ClipboardCheck, alertTriangle: AlertTriangle, trophy: Trophy, userPlus: UserPlus,
   check: Check, x: X, mail: Mail, link: Link2, plane: Plane, megaphone: Megaphone, users: Users, listOrdered: ListOrdered, timer: Timer, messageCircle: MessageCircle,
 };
-/** A type's icon (master list). Drawn with createElement: the icon is picked from a fixed table, not made during render. */
+/** A type's icon (master list): the All types page only — the bell and banner don't show type icons. Drawn with createElement: the icon is picked from a fixed table, not made during render. */
 export function KindIcon({ kind, size = 18 }: { kind: NotificationKind; size?: number }) {
   return createElement(ICONS[catalogEntry(kind).icon], { size, "aria-hidden": true });
 }
 
-/** A plain app screen behind the in-app previews: the trip's maroon top bar with the bell. */
+/**
+ * A plain app screen behind the in-app previews: the trip's maroon top bar with the bell. With a list, the bell's sheet is
+ * up: grab line on top to slide it back down, the shared close X, blurred app behind (owner 2026-11-23). Closed, tap the
+ * bell to bring it back.
+ */
 function AppScreen({ children, banner, notes = SAMPLE_NOTIFICATIONS }: { children?: ReactNode; banner?: ReactNode; notes?: AppNotification[] }) {
   const unread = unreadCount(notes);
+  const [open, setOpen] = useState(true);
+  const sheetOpen = Boolean(children) && open;
   return <main className={`${styles.phone} ${styles.appScreen}`} aria-label="App preview">
     <header className={styles.appBar}>
       <span>Desert Classic</span>
-      <span className={styles.bell}><Bell size={24} strokeWidth={1.75} aria-hidden />{!children && !banner && unread > 0 && <b aria-label={`${unread} unread`}>{unread}</b>}</span>
+      <button type="button" className={styles.bell} aria-label="Notifications" onClick={() => setOpen(true)}><Bell size={24} strokeWidth={1.75} aria-hidden />{!sheetOpen && !banner && unread > 0 && <b aria-label={`${unread} unread`}>{unread}</b>}</button>
     </header>
     {banner}
-    {children ? <><div className={styles.sheetShade} aria-hidden /><div className={styles.sheet}>{children}</div></> : <div className={styles.appPlaceholder} aria-hidden><i /><i /><i /></div>}
+    {sheetOpen ? <><div className={styles.sheetShade} aria-hidden onClick={() => setOpen(false)} /><BellSheet onClose={() => setOpen(false)}>{children}</BellSheet></> : <div className={styles.appPlaceholder} aria-hidden><i /><i /><i /></div>}
   </main>;
 }
 
-/** The bell's list: newest first, unread marked, tap opens the link. */
+/** Drag farther than this (px) on the grab line and let go: the sheet slides away. Less: it springs back up. */
+const SWIPE_CLOSE = 90;
+
+/** The bell's slide-up sheet (85% tall): grab line to slide it down, the X to close. */
+function BellSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const [drag, setDrag] = useState<number | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const start = useRef(0);
+  // Slides the rest of the way down, then closes.
+  const close = () => { setLeaving(true); setDrag(null); window.setTimeout(onClose, 250); };
+  const down = (event: ReactPointerEvent<HTMLDivElement>) => { start.current = event.clientY; setDrag(0); try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* pointer already gone */ } };
+  const move = (event: ReactPointerEvent<HTMLDivElement>) => { if (drag !== null) setDrag(Math.max(0, event.clientY - start.current)); };
+  const up = () => { if (drag !== null && drag > SWIPE_CLOSE) close(); else setDrag(null); };
+  const transform = leaving ? "translateY(100%)" : drag ? `translateY(${drag}px)` : undefined;
+  return <div className={`${styles.sheet} ${drag !== null ? styles.sheetDragging : ""}`} style={transform ? { transform } : undefined}>
+    <div className={styles.sheetGrab} role="presentation" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDrag(null)}><span /></div>
+    <SheetClose className={styles.sheetX} label="Close notifications" onClick={close} />
+    {children}
+  </div>;
+}
+
+/** The bell's list: newest first, unread marked, tap opens the link. No type icons (owner 2026-11-23): just the words,
+ *  and the person's avatar on the right when it's about someone. */
 export function NotificationList({ notes, now }: { notes: AppNotification[]; now: Date }) {
   const sorted = newestFirst(notes);
   const unread = unreadCount(notes);
@@ -384,19 +437,20 @@ export function NotificationList({ notes, now }: { notes: AppNotification[]; now
       ? <p className={styles.listEmpty}>No notifications yet. Scores, tee times and requests for your groups will show up here.</p>
       : <ul>{sorted.map(note => {
         return <li key={note.id} className={note.read ? undefined : styles.unread}>
-          <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
-          <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, now)}</p></div>
+          <div className={styles.listText}><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, now)}</p></div>
+          <PersonAvatar note={note} size={38} />
           {!note.read && <i className={styles.dot} aria-label="Unread" />}
         </li>;
       })}</ul>}
   </section>;
 }
 
-/** Slides down over the app while it's open; tap opens the link. One fixed size: title one line, message two lines. */
+/** Slides down over the app while it's open; tap opens the link. One fixed size: title one line, message two lines, the
+ *  person's avatar (if any) on the right. */
 export function TopBanner({ note }: { note: AppNotification }) {
   return <div className={styles.topBanner} role="status">
-    <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
     <div className={styles.topBannerText}><p className={styles.listTitle}>{note.title}</p><p className={styles.topBannerBody}>{note.body}</p></div>
+    <PersonAvatar note={note} size={38} />
   </div>;
 }
 
@@ -411,15 +465,14 @@ export function NotificationSurfaces({ note, surfaces }: { note: AppNotification
       <figure className={`${styles.surface} ${styles.androidScreen} ${styles.wallpaper}`}><figcaption>Android</figcaption>
         <article className={`${styles.androidNote} ${styles.androidNoteInline}`} aria-label="Notification">
           <header><span className={styles.androidNoteIcon}><SmallIcon /></span><span>{fromLine(note)} · {timeAgo(note.createdAt, SAMPLE_NOW)}</span></header>
-          <p className={styles.androidNoteTitle}>{note.title}</p>
-          <p className={styles.androidNoteText}>{note.body}</p>
+          <AndroidNoteBody note={note} />
         </article>
       </figure>
     </>}
     {surfaces.includes("bell") && <figure className={`${styles.surface} ${styles.surfaceApp} ${styles.list}`}><figcaption>Bell list</figcaption>
       <ul><li className={styles.unread}>
-        <span className={styles.listIcon}><KindIcon kind={note.kind} /></span>
-        <div><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, SAMPLE_NOW)}</p></div>
+        <div className={styles.listText}><p className={styles.listTitle}>{note.title}</p><p className={styles.listBody}>{note.body}</p><p className={styles.listMeta}>{metaLine(note, SAMPLE_NOW)}</p></div>
+        <PersonAvatar note={note} size={38} />
         <i className={styles.dot} aria-label="Unread" />
       </li></ul>
     </figure>}

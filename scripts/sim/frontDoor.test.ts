@@ -158,3 +158,20 @@ test("each phone's page history is recorded, capped, and Back pops it", async ()
     assert.deepEqual((await pages()), {});
   } finally { await s.close(); }
 });
+
+test("app-router navigations (rsc: 1, no prefetch) are recorded without _rsc; prefetches and plain fetches are not", async () => {
+  const s = await setup();
+  try {
+    await s.call("localhost:3005", "/__sim/scenario", "POST", JSON.stringify({ id: "play-solo" }));
+    const get = (path: string, extra: Record<string, string>) => new Promise<void>((resolve) => {
+      http.get({ host: "127.0.0.1", port: s.door.port, path, headers: { host: "cam.localhost:3005", "sec-fetch-dest": "empty", ...extra } }, (res) => { res.resume(); res.on("end", () => resolve()); });
+    });
+    await get("/play?x=1&_rsc=abc", { rsc: "1" });
+    await get("/play?x=1&_rsc=def", { rsc: "1" }); // same page again: deduped
+    await get("/prefetched?_rsc=g", { rsc: "1", "next-router-prefetch": "1" });
+    await get("/data", {});
+    await get("/rounds?_rsc=h", { rsc: "1" });
+    const pages = JSON.parse((await s.call("localhost:3005", "/__sim/status")).body).pages;
+    assert.deepEqual(pages.cam, { path: "/rounds", history: ["/play?x=1", "/rounds"] });
+  } finally { await s.close(); }
+});

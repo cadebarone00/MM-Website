@@ -1,8 +1,8 @@
 /**
- * DEV ONLY: made-up notifications for the simulator's Notifications group. Highlight wording comes from the approved
- * momentum copy (lib/platform/momentumCopy.ts); the other lines are preview wording, not approved for real sending yet.
+ * DEV ONLY: made-up notifications for the simulator's Notifications group. Highlight wording is the Highlights sheet's
+ * (HL-001, HL-019 — emoji included, like real sends); the other lines are preview wording, not approved for real sending yet.
+ * `person` = the golfer a notification is about: their avatar shows on the right (owner 2026-11-23).
  */
-import { momentumHeadline, momentumSubheading } from "@/lib/platform/momentumCopy";
 import { teamColor } from "@/lib/platform/teamColors";
 import { courseDisplayName } from "@/lib/platform/courseShortName";
 import type { AppNotification, LeaderboardRow, LiveRoundActivity } from "@/lib/notifications/types";
@@ -68,11 +68,11 @@ export const SAMPLE_TRIP = { groupId: "sample-desert-classic", groupName: "Deser
 const link = `/golf-trips/00000000-0000-4000-8000-000000000001#momentum`;
 
 export const SAMPLE_NOTIFICATIONS: AppNotification[] = [
-  { ...SAMPLE_TRIP, id: "s1", kind: "highlight", title: momentumHeadline("birdie_3"), body: momentumSubheading("birdie_3", "Jake Parker"), link, createdAt: minutesAgo(0), read: false },
-  { ...SAMPLE_TRIP, id: "s2", kind: "highlight", title: momentumHeadline("early_match_win"), body: momentumSubheading("early_match_win", "Mike Chen", "3&2"), link, createdAt: minutesAgo(6), read: false },
-  { ...SAMPLE_TRIP, id: "s3", kind: "opponentSubmitted", title: "Jake submitted Round 2", body: "Check his card against yours before you submit.", link, createdAt: minutesAgo(18), read: false },
+  { ...SAMPLE_TRIP, id: "s1", kind: "highlight", title: "Cam’s heating up! 🔥", body: "3 birdies in a row.", person: { name: "Cam Latto" }, link, createdAt: minutesAgo(0), read: false },
+  { ...SAMPLE_TRIP, id: "s2", kind: "highlight", title: "Match secured! 🏆", body: "Mike wins 3 & 2 over Collin.", person: { name: "Mike Chen" }, link, createdAt: minutesAgo(6), read: false },
+  { ...SAMPLE_TRIP, id: "s3", kind: "opponentSubmitted", title: "Jake submitted Round 2", body: "Check his card against yours before you submit.", person: { name: "Jake Parker" }, link, createdAt: minutesAgo(18), read: false },
   { ...SAMPLE_TRIP, id: "s4", kind: "teeTime", title: "Tee time in 30 minutes", body: "Round 2 · PGA West Stadium · 2:10 PM", link, createdAt: minutesAgo(95), read: true },
-  { ...SAMPLE_TRIP, id: "s5", kind: "joinRequest", title: "Alex Rivera wants to join", body: "Desert Classic · tap to accept or decline", link, createdAt: minutesAgo(60 * 26), read: true },
+  { ...SAMPLE_TRIP, id: "s5", kind: "joinRequest", title: "Alex Rivera wants to join", body: "Desert Classic · tap to accept or decline", person: { name: "Alex Rivera" }, link, createdAt: minutesAgo(60 * 26), read: true },
 ];
 
 export const SAMPLE_LIVE_ROUND: LiveRoundActivity = {
