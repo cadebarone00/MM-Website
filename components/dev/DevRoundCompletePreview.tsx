@@ -13,7 +13,7 @@ import styles from "@/components/platform/PlayRound.module.css";
  * round — 4 players, Skins at $5 a skin, greenies at $2. Nothing is saved: Save & exit only says so.
  */
 const PAR = [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4];
-const NAMES = ["You", "Cade", "Jake", "Uncle"];
+const NAMES = ["Cam", "Cade", "Jake", "Uncle"];
 // Each player's strokes over par, hole by hole (a believable card: a few birdies, some bogeys, the odd double).
 const OVER = [
   [0, 1, 0, -1, 0, 1, 0, 0, 1, 0, -1, 0, 1, 0, 0, 1, 0, 0],
@@ -25,7 +25,7 @@ const STROKES = OVER.map((row) => row.map((over, h) => PAR[h] + over));
 const GAME: GameConfig = { id: "skins", net: false, birdiesDouble: false, stake: 5 };
 const COURSE = { par: PAR, rating: 70.2, slope: 126 };
 const SIDE = { greenies: { value: 2 } };
-// Greenies on the par 3s (holes 3, 7, 12, 16): Cade, carried, Jake, You.
+// Greenies on the par 3s (holes 3, 7, 12, 16): Cade, carried, Jake, Cam.
 const INPUTS: HoleInput[] = PAR.map(() => ({}));
 INPUTS[2] = { greenie: 1 }; INPUTS[6] = { greenie: null }; INPUTS[11] = { greenie: 2 }; INPUTS[15] = { greenie: 0 };
 

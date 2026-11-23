@@ -620,7 +620,8 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   // First open on this phone with scores already in the round: start from them.
   const startCard = card ?? (myRemote.some((s) => s != null) ? { strokes: myRemote.map((s, h) => s ?? par[h]), putts: par.map(() => null), fairways: par.map(() => null), greens: par.map(() => null), penalties: [], attestStrokes: [] } : undefined);
   const { initialHoles, prefill } = restore(startCard, par);
-  const nameOf = (p: Player) => p.profileId === me ? "You" : firstName(p.name);
+  // Everyone by first name, the scorekeeper too (owner 2026-11-22), so every phone shows the same names.
+  const nameOf = (p: Player) => firstName(p.name);
   const handicapFor = (p: Player) => p.profileId === snap.host ? setup.myHandicap ?? null : setup.players?.find((x) => x.profileId === p.profileId)?.handicap ?? null;
   // Everyone in the game, in order: players (host first) then guests.
   // Everyone in the game, in the playing order: the host's chosen / shuffled order (Round settings), else players then guests.
@@ -848,37 +849,41 @@ function MyStats({ range, par, holes, pending, onChange }: { range: [number, num
   </div>;
 }
 
-/** Round complete (owner 2026-11-22): everyone's card like the scoring tab's Card — holes down the side, a column per
- *  player (best money first) — ending with each player's total score and money; Save & exit. Few words. Also the
- *  simulator's sample (/dev/round-complete). */
+/** Round complete (owner 2026-11-22): swipe through each player's normal scorecard (front / back nine with Par, Score
+ *  and the $ per hole), their total and money on top, best money first; Save & exit. Few words. Also the simulator's
+ *  sample (/dev/round-complete). */
 export function RoundCompleteSheet({ title, board, saving, error, onSave, onClose }: { title: string; board: Parameters<typeof Leaderboard>[0];
   saving: boolean; error: string | null; onSave: () => void; onClose: () => void }) {
-  const { rows, par, range, result, extraMoney } = board;
+  const { rows, par, range, result, extraMoney, holeMoney, doubled = [] } = board;
+  const [at, setAt] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
   const game = new Map((result?.standings ?? []).map((st) => [st.label, st]));
   const perPlayer = rows.every((row) => game.has(row.name));
   const hasMoney = (perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined)) || Boolean(extraMoney);
-  const lines = rows.map((row, i) => ({ ...row, total: row.strokes.slice(range[0], range[1]).reduce<number>((t, v) => t + (v ?? 0), 0),
-    cash: (perPlayer ? game.get(row.name)?.money ?? 0 : 0) + (extraMoney?.[i] ?? 0) }))
-    .sort((a, b) => (hasMoney ? b.cash - a.cash : 0) || a.total - b.total);
-  const nines = [[0, 9], [9, 18]].filter(([a, b]) => a < range[1] && b > range[0]).map(([a, b]) => Array.from({ length: Math.min(b, range[1]) - Math.max(a, range[0]) }, (_, i) => Math.max(a, range[0]) + i));
-  const parTotal = par.slice(range[0], range[1]).reduce((t, p) => t + p, 0);
+  const holes = Array.from({ length: range[1] - range[0] }, (_, i) => range[0] + i);
+  const lines = rows.map((row, i) => {
+    const played = holes.filter((h) => row.strokes[h] != null);
+    return { ...row, total: played.reduce((t, h) => t + row.strokes[h]!, 0), toPar: played.reduce((t, h) => t + row.strokes[h]! - par[h], 0),
+      cash: (perPlayer ? game.get(row.name)?.money ?? 0 : 0) + (extraMoney?.[i] ?? 0), pnl: holeMoney?.[i] ?? null };
+  }).sort((a, b) => (hasMoney ? b.cash - a.cash : 0) || a.total - b.total);
+  const go = (i: number) => { const el = track.current; if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); };
   return <GolfTripActionSheet label="Round complete" slideUp onClose={onClose}>
     <div className={styles.settingsBody}>
       <h2 className={styles.settingsTitle}>{title}</h2>
-      {/* Like the scoring tab's Card: holes down the side, one column per player; Out / In, then Tot and $ at the bottom. */}
-      <table className={styles.finalCard}>
-        <thead><tr><th scope="col">Hole</th><th scope="col">Par</th>{lines.map((line) => <th key={line.name} scope="col">{line.name}</th>)}</tr></thead>
-        <tbody>{nines.map((holes, n) => <Fragment key={n}>
-          {holes.map((h) => <tr key={h}><th scope="row">{h + 1}</th><td className={styles.finalPar}>{par[h]}</td>
-            {lines.map((line) => <td key={line.name}>{line.strokes[h] != null && <span className={styles.scoreMark} data-mark={scoreMark(line.strokes[h]! - par[h])}>{line.strokes[h]}</span>}</td>)}</tr>)}
-          <tr className={styles.finalSub}><th scope="row">{holes[0] < 9 ? "Out" : "In"}</th><td>{holes.reduce((t, h) => t + par[h], 0)}</td>
-            {lines.map((line) => <td key={line.name}>{holes.reduce((t, h) => t + (line.strokes[h] ?? 0), 0) || ""}</td>)}</tr>
-        </Fragment>)}</tbody>
-        <tfoot>
-          <tr className={styles.finalTotal}><th scope="row">Tot</th><td>{parTotal}</td>{lines.map((line) => <td key={line.name}>{line.total || ""}</td>)}</tr>
-          {hasMoney && <tr className={styles.finalMoneyRow}><th scope="row">$</th><td />{lines.map((line) => <td key={line.name} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</td>)}</tr>}
-        </tfoot>
-      </table>
+      {/* One normal scorecard per player; swipe sideways (best money first). */}
+      <div ref={track} className={styles.finalTrack} onScroll={(event) => { const el = event.currentTarget; setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }}>
+        {lines.map((line) => <section key={line.name} className={styles.finalSlide} aria-label={`${line.name}'s scorecard`}>
+          <div className={styles.finalHead}>
+            <b>{line.name}</b>
+            <span>{line.total || "–"} <small>{line.toPar === 0 ? "E" : line.toPar > 0 ? `+${line.toPar}` : line.toPar}</small></span>
+            {hasMoney && <span className={styles.money} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</span>}
+          </div>
+          <PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={hasMoney ? line.pnl : null} doubled={doubled} />
+        </section>)}
+      </div>
+      {lines.length > 1 && <div className={styles.finalDots} role="tablist" aria-label="Players">
+        {lines.map((line, i) => <button key={line.name} type="button" role="tab" aria-selected={at === i} aria-label={line.name} onClick={() => go(i)} />)}
+      </div>}
       {error && <p className={styles.error} role="alert">{error}</p>}
       <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit"}</button>
       <button type="button" className={styles.discard} onClick={onClose}>Back</button>

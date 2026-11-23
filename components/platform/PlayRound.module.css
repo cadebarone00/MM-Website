@@ -228,19 +228,15 @@
 .deleteRound{min-height:48px;border:1px solid #e0a3a3;border-radius:12px;background:rgba(198,40,40,.18);color:#ffd9d9;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
 .deleteRound:disabled{opacity:.6;cursor:default}
 
-/* Round complete card (owner 2026-11-22): holes down the side, one column per player (like the Card tab); Out / In rows,
-   then Tot and $ at the bottom. Fixed columns so it always lines up. */
-.finalCard{width:100%;table-layout:fixed;border-collapse:collapse;font:500 14px/1 var(--font-barlow),sans-serif;color:#fbf8f1}
-.finalCard th,.finalCard td{padding:4px 0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid #b99c6b26}
-.finalCard tr>:first-child{width:42px}
-.finalCard tr>:nth-child(2){width:36px}
-.finalCard thead th{padding:6px 0;border-top:0;font-weight:700;font-size:13px}
-.finalCard tbody th{font-weight:600;opacity:.7}
-.finalPar{opacity:.55}
-.finalCard .scoreMark{width:22px;height:22px;font-size:13px}
-.finalCard td{overflow:visible}
-.finalSub th,.finalSub td{font-weight:700;border-top:1px solid #b99c6b66}
-.finalTotal th,.finalTotal td{padding:8px 0;font-weight:800;font-size:16px;border-top:2px solid #b99c6b99}
-.finalMoneyRow td,.finalMoneyRow th{padding:6px 0;font-weight:800;font-size:14px;border-top:0}
-.finalMoneyRow td[data-sign="1"]{color:var(--lm-ink-b9e0b0,#2e7d32)}
-.finalMoneyRow td[data-sign="-1"]{color:var(--lm-ink-e0a3a3,#b23b3b)}
+/* Round complete (owner 2026-11-22): swipe between players' scorecards — one full-width slide each, snapping. */
+.finalTrack{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.finalTrack::-webkit-scrollbar{display:none}
+.finalSlide{flex:0 0 100%;scroll-snap-align:start;min-width:0}
+.finalHead{display:flex;align-items:baseline;gap:12px;padding:4px 2px 8px;border-bottom:1px solid #b99c6b55}
+.finalHead b{flex:1;min-width:0;font:600 22px/1.1 var(--font-spectral),Georgia,serif}
+.finalHead span{font:800 18px var(--font-barlow),sans-serif}
+.finalHead small{font-size:13px;font-weight:600;opacity:.7}
+.finalSlide .playerCard{margin-top:8px}
+.finalDots{display:flex;justify-content:center;gap:8px}
+.finalDots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:rgba(251,248,241,.3);cursor:pointer}
+.finalDots button[aria-selected=true]{width:20px;border-radius:999px;background:#c9a86e}

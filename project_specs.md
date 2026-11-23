@@ -6235,3 +6235,6 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
   **Save & exit** and **Back**.
 - **Owner (2026-11-22): Round complete layout = like the Card tab** — holes down the side (1–18 with Par), one column per
   player (best money first), Out / In rows, then **Tot** and **$** at the bottom.
+- **Owner (2026-11-22): Round complete = swipe between players**, each a normal scorecard (front / back nine with Par,
+  Score and $ per hole), name + total + to par + money on top, dots underneath; best money first. Everyone in a round
+  shows by first name — the scorekeeper too, instead of "You".
