@@ -6,6 +6,12 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-22 - Profile header starting line (presentation implemented locally; deployment not verified).** Profile, Edit profile, Search and friends could count top clearance twice or add extra offsets, while Settings added its own margin. Their top controls now use the shared phone starting line once: the device safe-area inset plus 8px. Section 22 and the Mermaid annotation are updated; navigation and data are unchanged. Other individually styled screens still require an audit and real-device verification.
+
+**2026-11-22 - Pull-to-refresh gesture handling (implemented locally; deployment not verified).** A sideways drag could trigger the refresh prompt and a cancelled touch could refresh the screen. Pull-to-refresh now cancels when horizontal movement dominates, a second touch is added, or the touch is cancelled; a qualifying downward pull still refreshes on release. Section 22 and the Mermaid annotation are updated; data sources and workflow paths are unchanged. Real-device verification remains outstanding.
+
+**2026-11-22 - Profile and Settings headers (presentation implemented locally; deployment not verified).** Profile could expose a second, generic title bar when pulled down, and Settings also had a generic bar above its own navigation. The shared shell now omits that bar on profile and Settings screens that provide their own header, including public profiles. Section 22 and the Mermaid annotation are updated; navigation paths are unchanged. TestFlight device verification remains outstanding.
+
 **2026-11-21 - Combined score and stats bubble (presentation only; implemented locally; deployment not verified).** The Card previously outlined the user's score and statistics separately. When statistics are shown, the score and FWY/GIR/Putts now share one bubble. A solo card with no other golfers centers its remaining columns and total; other golfers remain visible when present. Section 22 is affected; scoring, statistics and workflow paths are unchanged.
 
 **2026-11-21 - Scorecard score and stats order (presentation only; implemented locally; deployment not verified).** The shared Card previously placed the player's statistics before all player scores. The player's score now follows Hole/Yards/Par; when stats are enabled, FWY, GIR and Putts follow in one outlined bubble before the other player's score. Section 22 is affected; scoring and statistics calculations and workflow paths are unchanged.
@@ -804,6 +810,9 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  %% Profile, Settings, Edit profile, Search and friends align controls to one shared safe-area starting line.
+  %% Pull-to-refresh cancels on sideways, multitouch or cancelled gestures.
+  %% Profile and Settings use their own headers; shared chrome does not add a second title bar.
   DraftPublished --> SelectionMatches[Go To Matches: Golf on selected round]
   DraftPublished --> SelectionQueue[Home: next pending selection or last Matches Selected]
   SelectionQueue --> DraftStaged
@@ -1370,6 +1379,12 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+Profile and its edit, search and friends screens own their top clearance; the shell does not add it a second time. Settings uses the shell clearance. On phone-width layouts their controls start at the safe-area inset plus 8px. Other headers have not all been reconciled to this rule.
+
+App pull-to-refresh responds to a downward single-touch gesture at the top of a refreshable screen; sideways, multitouch and cancelled gestures do not refresh it.
+
+Profile (including public profiles) and Settings provide their own top controls; SiteChrome does not add its generic header to those screens. Other screens retain their existing shell or page-specific header.
 
 **Personal Golf overview header (2026-11-13):** The expanded member overview shows the viewer avatar (initials fallback), name and existing formatted username at left, with TOT, POS and Pts Ern in a rounded box at right, with a 168px minimum width for extra spacing. POS omits the field-size denominator and tied-position prefix for the numeric display. Points remain conditional on team competition; calculations and missing-value rules are unchanged. Spectators do not get a personal header. A centered full round date follows beneath the divider, using weekday, full month, ordinal day and year. Each round shows tee time @ a readable club/layout name, with its format and matchup beneath. Pairs use Format w/ teammate vs opponent & opponent; singles use Format vs opponent. Missing tee times show TBD @ course name. Course overview labels have no 24-character short-name cap and do not change saved course names or other short-label surfaces.
 

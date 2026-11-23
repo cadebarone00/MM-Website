@@ -5708,7 +5708,7 @@ On Android, people can resize the widget, so it picks the closest of the same th
 
 ---
 
-## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT + committed (350d3c4b); Step 2 BUILT 2026-11-21, uncommitted (real /tap-in directory via /api/live + `supabase/maroon_live_directory.sql`, usernames kept for watchers so the trip profile name opens /profile/<username>, one top bar on every live page); Step 3 BUILT 2026-11-21, uncommitted (leagues: watch code, Who can watch in League Settings, share link under the Leaderboard, read-only league live page with Leaderboard / Skins / Pairs, Public leagues in the directory — `supabase/maroon_live_leagues.sql`); Dev simulator group "The Maroon Live" BUILT 2026-11-21 (owner request: every screen on sample data — Directory, Event live page, Who can watch, 4 TV mode pages; Conditionals per state; /dev/live/*). Step 4 DESIGN BUILT 2026-11-21 at /dev/tv (sample players; `components/tap-in/LiveTvBoard.tsx`, awaiting owner approval of the look before it is connected to real events at /tap-in/<code>/tv); NONE of `maroon_live_visibility.sql`, `maroon_live_directory.sql`, `maroon_live_leagues.sql` run in prod (run in that order); leagues have the columns only (their settings come with Step 3)
+## Feature: The Maroon Live: a Masters-style live site for every trip, tournament and league (owner request 2026-11-21) — APPROVED 2026-11-21 (existing trips start Link only: owner approved without answering, so the recommended option). Step 1 BUILT + committed (350d3c4b); Step 2 BUILT 2026-11-21, uncommitted (real /tap-in directory via /api/live + `supabase/maroon_live_directory.sql`, usernames kept for watchers so the trip profile name opens /profile/<username>, one top bar on every live page); Step 3 BUILT 2026-11-21, uncommitted (leagues: watch code, Who can watch in League Settings, share link under the Leaderboard, read-only league live page with Leaderboard / Skins / Pairs, Public leagues in the directory — `supabase/maroon_live_leagues.sql`); Dev simulator group "The Maroon Live" BUILT 2026-11-21 (owner request: every screen on sample data — Directory, Event live page, Who can watch, 4 TV mode pages; Conditionals per state; /dev/live/*). Step 4 BUILT 2026-11-22, uncommitted (look approved; real TV mode at /tap-in/<code>/tv?show=both|individual|match, `lib/platform/liveTvFromWatch.ts` turns the watcher data into the board, refreshes every 15 s; stages Upcoming / Live / Up next / Final; organizer "TV mode" pick + Open TV mode in trip, tournament and league Who can watch; a trip's location shows only when the trip is Public, else its course. Known gap: real trips show names and Thru only, no to-par totals or match board, same as the trip live page today); NONE of `maroon_live_visibility.sql`, `maroon_live_directory.sql`, `maroon_live_leagues.sql` run in prod (run in that order); leagues have the columns only (their settings come with Step 3)
 
 **What it does / who uses it.** Every golf trip, tournament and league gets its own live site, built from one shared template, on the website and in the app. Anyone allowed in can follow the golf live: leaderboard, match play, scorecards, and each player's trip profile. Like the Masters app: you see Rory's scores, not his flight plans. Organizers can also put a scrolling leaderboard on a TV.
 
@@ -6017,7 +6017,7 @@ players track their own putts / fairways / greens (the only thing they can edit)
 
 **Done means:** only one Website group; the switch flips each of the 5 pages between desktop and mobile size; Maroon Live's switch still works; `tsc`, lint (my files) and simulator tests pass; checked on screen.
 
-## Course data: GolfCourseAPI only, OpenGolfAPI removed (owner request 2026-11-21) — APPROVED 2026-11-21
+## Course data: GolfCourseAPI only, OpenGolfAPI removed (owner request 2026-11-21) — BUILT 2026-11-22 (uncommitted)
 
 **What:** The app uses **GolfCourseAPI** (api.golfcourseapi.com, owner's key) as its only course source. **OpenGolfAPI is removed** completely. Goal: lowest cost now, upgrade later.
 - **Search** (`/api/courses/search`) and **opening a course** (`/api/courses/<ref>`, `/api/rounds/course/<ref>`, trip round pars) use GolfCourseAPI: tee names, yardage, course rating, slope, each hole's par / yardage / handicap, men's and women's tees.
@@ -6179,3 +6179,226 @@ last), not pill buttons.
 - **Owner (2026-11-22):** a settings button (gear) top right of the round screen opens **Round settings**: the players
   (remove), Add players · Change game · End round (scorekeeper), the scoring tip, and Leave round on this phone. The main
   screen is the course, the leaderboard and the scoring tab.
+
+**Build notes (2026-11-22):** built as specced, plus two fixes found while testing on screen: (1) OpenStreetMap matching no longer uses a bare club name that the course name already contains (`matchNames` in `providers/openStreetMap/provider.ts`) — at Pinehurst it tied with the resort outline and no GPS was attached; (2) MapLibre's background worker is served from `public/vendor/maplibre/` (`lib/platform/golfGps/loadMapLibre.ts`; a test keeps it in step with the installed version). `lib/platform/golfGps/loadGoogleMaps.ts` deleted (GPS maps no longer use Google). **Not done yet (owner steps):** run `supabase/golf_course_api_provider.sql` in Supabase (until then "Prepare GPS" / saving a course to the library fails in prod), and add `GOLF_COURSE_API_KEY` to Vercel env vars before deploying. Pre-existing unrelated test failure: accessPolicy COVERAGE wants rules for `PUT /api/account/links` and `PUT /api/account/preferences` (from commit e7a0411a).
+
+
+## Cancel / leave a round: who can stop a scorecard (owner request 2026-11-22) — SPEC, AWAITING APPROVAL (nothing built)
+
+**What it does / who uses it.** One clear way to stop a round on every scoring screen. The owner's rule:
+**Play is player-led**: the golfer who started the round decides. **Trips, Tourneys and Leagues are organizer-led**: a
+player who's been given a round (date, time, course, pairing) can't back out of it. They can leave the screen any time and
+everything they entered is still there when they come back. Only the organizer can cancel or replace a player's round
+(a no-show, for example).
+
+**Today (checked 2026-11-22):**
+- Play: back arrow keeps the round; "Discard round" (solo, phone only); host "End round" (ends for everyone, nothing
+  saved to profiles, but the round's scores stay in the database); "Leave round on this phone". Spread across screens,
+  different names.
+- Trips: scores save hole by hole; no cancel. Organizer can remove a member from the trip and decide corrections.
+- Tourneys: no player cancel. Organizer can change the tee sheet (pairings) and end the whole tourney.
+- Leagues: no player cancel. Organizer can change groups and end the whole league.
+- Nobody can mark one player's round as a no-show or put a replacement player in.
+
+**1. Play (player-led).** Round settings (the gear) gets one **Cancel round** button for the golfer who started the round
+(the host). It opens two choices:
+- **Save & exit**: leaves the screen; the round stays open on Play's home ("Finish your round") with every score kept.
+- **Delete round**: asks "Delete this round? Every score in it is erased for everyone in it. This can't be undone." Then
+  the round and all its scores are erased from the database for everyone (invited players and guests included), and the
+  phone's copy is cleared. Nothing is saved to any profile.
+- Invited players (not the host) only get **Leave round**: they drop out and their scores stay in the host's round.
+- This replaces today's separate Discard round / End round buttons, so there's one place with one set of names.
+
+**2. Trips, Tourneys, Leagues (organizer-led).**
+- **Players:** no Cancel or Delete. The back arrow and leaving the trip/tourney/league screen keep everything (it's already
+  saved hole by hole). Coming back opens the same card where they left off.
+- **Organizer, per player per round:** a new **Manage player's round** choice (in each feature's organizer settings,
+  next to that round's players):
+  - **Mark no-show**: that player's round for that day is cancelled. Their scores for it are erased, they drop off that
+    round's leaderboard, the card can't be scored, and nothing goes to their profile. Asks to confirm first.
+  - **Replace player**: pick another member (or, in tourneys/leagues, another player in the event) to take that
+    pairing/tee time/slot. The old player's scores for that round are erased; the new player starts a blank card.
+  - **Undo no-show**: only before the round is over; the player gets a blank card back.
+- Every no-show / replace is logged (who, when, which round) and shows in the event's activity, so players can see what
+  happened.
+
+**3. After a card is submitted:** no Cancel, no Delete, no no-show. A submitted card is changed only through the existing
+corrections (trips) or by removing the round from your profile.
+
+**Data (Supabase):**
+- Play: a delete function for a shared round (host only) that removes the round and its scores.
+- Trips / Tourneys / Leagues: one new SQL file (`supabase/round_no_shows.sql`): a small no-show / replacement record per
+  event + round + player, organizer-only functions to mark / undo / replace, and leaderboards that skip no-show players.
+  Must be run in Supabase before it works live.
+
+**Out of scope:** players asking the organizer to be excused (a request button). Refunds or game money changes for a
+no-show. Changing anything about how submitted rounds count toward the handicap.
+
+**Done =**
+- Play: Save & exit keeps the round; Delete erases it for everyone, with a warning; invited players can only leave.
+- Trips/Tourneys/Leagues: a player has no way to cancel, and their scores are always there when they come back.
+- The organizer can mark a no-show, undo it, or replace a player for one round; leaderboards update; it's logged.
+- Players can't call the organizer-only functions (tested against Postgres).
+- Each new screen state is added as Conditionals in the /dev simulator (Play / Golf Trips / Tourneys / Leagues → Active).
+- The full test suite, typecheck and build pass.
+
+**Progress (2026-11-22): Part 1 (Play) BUILT, uncommitted. To run in Supabase: `supabase/shared_round_delete.sql`.**
+- Database: `delete_shared_round` (host only, live rounds only; the round and every score, guest score, pick and invite go
+  with it) and `leave_shared_round` (a player who isn't the host drops out; scores already in the round stay). Tested
+  against Postgres (`lib/platform/sharedRoundDeleteDatabase.test.ts`, 3 tests).
+- Server: `/api/rounds/shared/<id>` takes `delete` and `leave`.
+- Screen (`components/platform/PlayRound.tsx`): one `CancelRound` (Save & exit / Delete round / Keep playing) for the host
+  in Round settings and on a solo round; it replaces End round and Discard round. Players get Leave round (drop out);
+  until the SQL is run, Leave falls back to leaving on this phone.
+- Simulator: Play → Active → "Round · Cancel round (host)" (`/dev/round?view=cancel`) and "Round · Leave round (player)".
+- Not built yet: Part 2 (Trips / Tourneys / Leagues: organizer no-show / replace / undo, `supabase/round_no_shows.sql`).
+
+---
+
+### Simulator: Apple Watch + CarPlay devices (owner request 2026-11-22)
+
+**What it does.** Adds new choices to the /dev simulator's **Device → Preset** list, so any screen can be previewed on an
+Apple Watch or a car screen. Dev only; nothing in the real app changes.
+
+**New presets.**
+- **Apple Watch (46mm)** — 208 × 248 screen, rounded watch corners, no notch, no keyboard.
+- **CarPlay · Full screen** — a wide car screen (800 × 480). A pretend CarPlay side bar (clock + app icons, 80 px) is
+  drawn on the left; our app fills the rest (720 × 480).
+- **CarPlay · Dashboard · top card** and **· bottom card** — the split view where CarPlay shows a few apps at once.
+  Same car screen with the side bar and a pretend map filling the big left area. The right column is two stacked cards;
+  our app is one of them (300 × 237) and a pretend Now Playing card is the other. (Changed 2026-11-22 on owner's note:
+  an app never gets the whole right column.)
+
+**Rules.** The side bar and the map are drawings only (not tappable app parts). The width/height boxes show our app's
+area. The phone keyboard and the camera cut-out don't show on these devices. The smallest allowed custom size drops to
+160 × 160 so the watch fits.
+
+**Files.** `lib/dev/simulator.ts` (the device list), `components/dev/DevSimulator.tsx` + `DevSimulator.module.css`
+(the watch / car frames).
+
+**Out of scope.** Making any screen actually look good on a watch or car (that's separate work per screen), real
+Apple Watch or CarPlay apps.
+
+**Done =** each new preset shows in the list; picking it shows the right frame and size with a page loaded inside;
+switching back to an iPhone still works; typecheck + lint pass; checked in the browser.
+
+**Progress (2026-11-22): BUILT, uncommitted.** All presets checked in the browser (watch, CarPlay full screen,
+CarPlay Dashboard top + bottom card) with the Golf Trip Home loaded inside, and switching back to iPhone 17 Pro works. On a narrow
+browser window the wide car screen runs off to the right; scroll sideways to see all of it (same as the desktop preset).
+Typecheck clean; `lib/dev/simulator.test.ts` 29/29 pass.
+
+### Simulator: one Device section for every view (owner request 2026-11-22)
+
+**What it does.** The left **Device** section becomes the one place to pick how a screen is viewed. The size switches at
+the top of the simulator ("Website desktop / Website mobile" on Website pages, "Website desktop / Website mobile / App"
+on The Maroon Live pages) go away; Light mode / Dark mode stays at the top.
+
+**The Device section.**
+1. **View** — App · Mobile website · Desktop · TV · CarPlay · Apple Watch.
+2. A second choice shows only when the view has options:
+   - **App** and **Mobile website** → the phone list (iPhone 16 … 17 Pro Max, Google Pixel 9 / 9 Pro).
+   - **CarPlay** → Full screen · Dashboard top card · Dashboard bottom card.
+   - Desktop, TV and Apple Watch have no second choice.
+3. Width / height, display scale, keyboard and safe-area testing stay as they are below it.
+
+**How each view behaves.**
+- **App:** the phone with its status bar / home-bar space, camera cut-out and keyboard (today's normal phone preview).
+- **Mobile website:** the same phone size as a web browser, so no app status-bar space (what "Website mobile" does today).
+- **Desktop:** 1440 × 900 (what "Website desktop" does today).
+- **TV:** new 1920 × 1080 TV frame. The Maroon Live's TV mode pages open in it.
+- **CarPlay / Apple Watch:** the frames built earlier today.
+- On The Maroon Live pages, App / Mobile website / Desktop also tell the page which version to draw, the same as the old
+  top switch.
+- **Your pick stays when you change pages.** A page that only exists in one view (e.g. TV mode boards) switches to it.
+
+**Files.** `components/dev/DevSimulator.tsx` + `.module.css`, `lib/dev/simulator.ts` (views + TV preset),
+`lib/dev/simulator.test.ts`.
+
+**Out of scope.** Redesigning any screen for TV / car / watch.
+
+**Done =** every view and option above opens with a page loaded; Website and The Maroon Live pages still switch between
+their versions using the Device section; the top switches are gone; typecheck + simulator tests pass; checked in the
+browser.
+
+**Progress (2026-11-22): BUILT, uncommitted.** Checked in the browser: App, Mobile website, Desktop, TV, CarPlay (Full
+screen / Dashboard top / bottom card) and Apple Watch on Golf Trip Home; The Maroon Live directory switches between its
+App / Mobile website / Desktop versions from the View; a TV mode board switches to TV and leaving it puts the earlier view
+back; Website landing page at Mobile website and Desktop. The top switches are gone. Typecheck clean; simulator tests
+30/30 (new: view options + Maroon Live version per view). The custom width box now goes up to 2000 px for TV.
+
+
+## Feature: Simulators group + Scoring Simulator (owner request 2026-11-22) — DESIGN, AWAITING APPROVAL (nothing built)
+
+Full design: `docs/superpowers/specs/2026-11-22-simulators-scoring-design.md`.
+- **What / who:** a new **Simulators** group in `/dev`. Its first simulator is **Scoring**: pretend phones side by side, each
+  running the real app signed in as a different pretend person, so the owner can rehearse a whole round (Play, Trip,
+  Tourney, League) before anyone uses scoring for real. Later simulators (Sign-up, Trip / Tourney / League onboarding) go
+  in the same group on the same base.
+- **Tech:** `npm run sim` starts a second local copy of the app (`next dev`, own build folder `.next-sim`) wired to
+  `scripts/fake-supabase.mjs` (every real SQL file in an in-memory Postgres) and a small front door that signs each phone
+  in (`<person>.localhost:3005`), resets, logs and runs checks. No Docker, no real database, nothing in production.
+- **Pages:** `/dev` → Simulators → Scoring (dev only).
+- **Data:** in memory only (PGlite), seeded per scenario through the real database functions, and reset from a snapshot.
+- **Third-party:** none (emails and pushes are logged, not sent).
+- **Done =** see the design doc's "Done =". Every scenario plays start to finish on the real screens, with the checks
+  green (card linked, saved, locked, on the profile once, handicap) and no unsupported calls.
+
+## Standard search look: every search list looks like Friends search (owner request 2026-11-22) — APPROVED + BUILT 2026-11-22 (uncommitted)
+
+**What:** One search look for the whole app, copied from the Friends / user search page (`components/profile/ProfileSearch.tsx`). Course search is first. Every other search moves over later, one at a time, only when the owner asks.
+
+**The standard (taken from Friends search as it is today):**
+- **Full screen, solid maroon.** Our font (Spectral) throughout.
+- **Top bar stays put while the list scrolls:**
+  - Back arrow
+  - A rounded grey-tint search box with a magnifier icon
+  - "Cancel" on the right, shown only while something is typed
+- **Tabs (optional):** an underlined row under the bar. The picked tab is underlined in gold.
+- **Rows:**
+  - 48px picture on the left (a person's gold-ring avatar; for things that aren't people, a 48px round icon in the same spot)
+  - A bold top line and a grey second line
+  - An optional button on the right
+  - No cards or borders; plain rows on maroon, each at least 64px tall
+- **Before typing:** a "Recent" list (things you opened before, on this phone only, with "Clear all" and an × on each). If there's nothing recent, one grey hint line instead.
+- **While typing:** search starts at 2 letters. The screen shows "Searching…", then the results, or "No results for '…'".
+- **Errors:** a red bar at the top.
+- **Shared code:** the bar, the tabs, the row and the messages become one shared piece (`components/search/`). Friends search switches to that shared piece with no visible change.
+
+**Course search under the new look:**
+- **Explore → Courses:** the inline cream search box becomes a tap target. Tapping it pulls up the full-screen maroon search page.
+- **Each course row:**
+  - A 48px round flag icon
+  - Bold course name
+  - Grey "City, ST · Par 72"
+  - A chevron on the right
+- **Recent courses:** shows courses you opened before (up to 8, on this phone).
+- **Credit line:** "GolfCourseAPI" stays in small grey text under the results (the API's terms ask for it).
+- **Tapping a course:** opens its preview, the same as today. Back returns to the search with your words still typed.
+- **Play a round → pick a course:** uses the same full-screen search. Tapping a course picks it, the same as today.
+- **The Create-a-trip course picker** (`TripScheduleCoursePicker`) is left alone for now. It's a drop-down inside a form, so it moves over later only if the owner says so.
+
+**Not in this task:** the other searches (Live directory, tournament search, trip chat, Play-a-round invite, Compare rings, Find golfers) move over later, one per request.
+
+**Data / services:** no change. Same `/api/courses/search`, same GolfCourseAPI, no new database tables. Recent courses are kept in this phone's browser storage only.
+
+**Done looks like:**
+1. Course search looks like Friends search on a phone: maroon, the same bar, the same rows, Recent.
+2. Friends search looks exactly as it does today.
+3. Search, open, back, Recent, clear, no results and the error message all work.
+4. Play a round still picks a course.
+5. The tests pass, and it's checked in the browser at phone width.
+
+**Build notes (2026-11-22):**
+- **Shared pieces:**
+  - `components/search/Search.module.css` holds the standard styles.
+  - `components/search/SearchBar.tsx` is the bar.
+  - `components/search/recents.ts` handles Recent (it saves the moment you tap, because the screen closes in that same tap).
+- **Friends search:** `ProfileSearch.module.css` now `composes` the shared classes, with no visible change. Its own buttons and badges stay in that file.
+- **Course search:**
+  - New `components/platform/CourseSearchScreen.tsx`.
+  - Explore → Courses (`ExploreCourseSearch.tsx`) opens it on top of the page.
+  - The Tournament / League "Add a round" (`AddRound` in `CodeTournamentCreate.tsx`) uses it as the whole page.
+  - `CourseResult` and `place` moved there; they're re-exported from `ExploreCourseSearch`.
+- **Par:** results show "Par 72" only when the search reply has it. GolfCourseAPI's search doesn't, so its rows show the city only.
+- **Checked** at 390px: bar, 64px rows, Recent save / remove / Clear, no results, Back keeps the words, Back closes and scrolling works again, no sideways scroll, no console errors. Friends search looks the same. `/leagues/new` opens the new search.
+

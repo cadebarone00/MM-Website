@@ -149,7 +149,7 @@
    referenced directly via var() for gradients/scrims/motion) */
 :root {
   /* Space between the boxes and the left/right edge of the phone, app wide. */
-  --page-gutter: 8px;
+  --page-gutter: 16px;
   /* Text that sits right on the background (not inside a box) stays further in. Shift = how much further than the boxes. */
   --page-text-inset: 16px;
   --page-text-shift: calc(var(--page-text-inset) - var(--page-gutter));
@@ -342,6 +342,9 @@ h1, h2 {
   /* Containers with a header delegate clearance to that colored header. */
   .app-camera-content > :first-child:has(> header:first-child) { padding-top: 0; }
   .app-camera-content > :first-child > header:first-child { padding-top: var(--app-top-clearance); }
+  /* These screens place their own controls at the shared line; do not add it again to their outer container. */
+  .app-camera-content > .app-own-top-clearance,
+  .app-camera-content > :first-child:has(.app-own-top-clearance) { padding-top: 0; }
   .fixed.inset-0 { padding-top: var(--app-top-clearance); }
 }
 

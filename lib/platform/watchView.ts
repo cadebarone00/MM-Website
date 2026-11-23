@@ -11,7 +11,14 @@ import type { TripRoundScoring } from "./tripScoring.ts";
  * emails, invite details, the destination, coordinates and travel plans are dropped.
  */
 
-export interface SpectatorTrip { savedTrip: SavedGolfTrip; scoring: TripRoundScoring | null; setup: TripSetupSnapshot; draft: GolfTripDraft }
+export interface SpectatorTrip { savedTrip: SavedGolfTrip; scoring: TripRoundScoring | null; setup: TripSetupSnapshot; draft: GolfTripDraft;
+  /** The trip's location text for TV mode, only when the trip is Public (the directory already shows it then); otherwise none. */
+  place?: string | null }
+
+/** A trip's location for watchers: its destination text when the trip is Public, else nothing (never coordinates). */
+export function tripLivePlace(trip: Pick<SavedGolfTrip["trip"], "destination" | "live_visibility">): string | null {
+  return trip.live_visibility === "public" ? trip.destination.trim() || null : null;
+}
 export type WatchView = { kind: "tournament"; tournament: CodeTournament } | { kind: "trip"; trip: SpectatorTrip } | { kind: "league"; league: League };
 
 /** Replaces every real id in `value` with its stand-in (anywhere it appears: keys, values, nested). */

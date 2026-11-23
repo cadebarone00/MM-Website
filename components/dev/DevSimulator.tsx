@@ -1,9 +1,8 @@
 "use client";
 
-import { LIVE_SURFACES, type LiveSurface } from "@/lib/dev/livePreviews";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, MonitorSmartphone, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
-import { LEGACY_SIMULATOR_GROUPS, SIMULATOR_FEATURES, SIMULATOR_STAGES, type SimulatorStage, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, syncSimulatorNavigation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
+import { LEGACY_SIMULATOR_GROUPS, SIMULATOR_FEATURES, SIMULATOR_STAGES, type SimulatorStage, DEFAULT_SIMULATOR_STATE, parseGpsState, parseSimulatorLocation, syncSimulatorNavigation, simulatorPageForLocation, SIMULATOR_CHANNEL, SIMULATOR_DEVICES, SIMULATOR_VIEWS, simulatorViewDevices, liveSurfaceForView, type SimulatorView, type SimulatorConfig, type SimulatorGpsCommand, type SimulatorGpsState, type SimulatorPage, type SimulatorSource, type SimulatorState } from "@/lib/dev/simulator";
 import { applySimulatorSafeAreas } from "./simulatorSafeAreas";
 import { resetJustCreated } from "@/lib/dev/justCreatedStore";
 import { devTripScope, initializeTripScenario, resetDevSetup } from "@/lib/dev/tripSetupStore";
@@ -26,14 +25,18 @@ const frameUrl = (page: SimulatorPage) => `${page.origin ?? ""}${page.path}`;
 /** A page's address plus simulator parameters, joined with "?" or "&" (some pages already carry a query, e.g. /dev/tv?show=match). */
 const withParams = (url: string, params: string) => `${url}${url.includes("?") ? "&" : "?"}${params}`;
 
-/** The dev group with the Website desktop / Website mobile / App toggle (lib/dev/simulatorRoutes.ts). */
+/** The dev group whose screens draw an App / Mobile website / Desktop version, picked by the Device section's View. */
 const LIVE_GROUP = "The Maroon Live";
-/** "&surface=..." for The Maroon Live's standalone pages (TV mode reads it from its address); nothing for other pages. */
-const liveParam = (page: SimulatorPage, surface: LiveSurface | undefined) => page.group === LIVE_GROUP && page.standalone ? `&surface=${surface ?? "app"}` : "";
-/** The Website group: its pages show at the size the Website desktop / Website mobile switch up top is set to. */
+/** "&surface=..." for The Maroon Live's standalone pages (TV mode reads it from its address), plus TV mode's stage and
+ *  event kind Conditionals ("&phase=…&kind=…"); nothing for other pages. */
+const liveParam = (page: SimulatorPage, view: SimulatorView, state: SimulatorState) => page.group === LIVE_GROUP && page.standalone
+  ? `&surface=${liveSurfaceForView(view)}${isTvPage(page) ? `&phase=${state.tvPhase ?? "live"}&kind=${state.tvKind ?? "trip"}` : ""}` : "";
+/** The Website group: web pages only, so never the app's status-bar space. */
 const WEBSITE_GROUP = "Website";
-const WEBSITE_SIZES = [["desktop", "Website desktop"], ["mobile", "Website mobile"]] as const;
-type WebsiteSize = (typeof WEBSITE_SIZES)[number][0];
+/** TV mode boards only exist as a TV screen: opening one switches the View to TV. */
+const isTvPage = (page: SimulatorPage) => page.path.startsWith("/dev/tv");
+/** The preset a view opens on: the last phone / CarPlay screen picked, else the view's only preset. */
+const viewDevice = (view: SimulatorView, phone: string, car: string) => view === "app" || view === "mobileweb" ? phone : view === "carplay" ? car : simulatorViewDevices(view)[0];
 
 const FEATURES: readonly string[] = SIMULATOR_FEATURES;
 
@@ -44,20 +47,26 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
   // "Website desktop" / "Website mobile" groups open the Website group at that size).
   const legacyWebsite = initialGroup === "Website desktop" || initialGroup === "Website mobile";
   const [startGroup, startStage] = legacyWebsite ? [WEBSITE_GROUP, undefined] : initialGroup && LEGACY_SIMULATOR_GROUPS[initialGroup] ? LEGACY_SIMULATOR_GROUPS[initialGroup] : [initialGroup, SIMULATOR_STAGES.find(item => item === initialStage)];
-  const [websiteSize, setWebsiteSize] = useState<WebsiteSize>(initialGroup === "Website mobile" ? "mobile" : "desktop");
   const initialPage = (startGroup && FEATURES.includes(startGroup) ? pages.find(page => page.group === startGroup && (page.stage ?? "Main") === (startStage ?? "Main") && !page.parentId) : undefined)
     ?? pages.find(page => page.group === startGroup) ?? pages.find(page => page.path === "/dev/tournament") ?? pages[0];
   // Feature groups: the Main · Active · Onboarding switch. Picked by hand only when that stage has no pages yet; otherwise it follows the page.
   const [stageChoice, setStageChoice] = useState<SimulatorStage | null>(startGroup && FEATURES.includes(startGroup) && startStage && initialPage.stage !== startStage ? startStage : null);
-  const initialViewport = initialPage.group === WEBSITE_GROUP ? websiteSize : initialPage.viewport;
-  const initialPreset = SIMULATOR_DEVICES.find(item => item.id === (initialViewport === "desktop" ? "desktop" : initialViewport === "mobile" ? "iphone16" : initialDevice.id))!;
+  // The Device section's View (App · Mobile website · Desktop · TV · CarPlay · Apple Watch). It stays when the page changes.
+  const initialView: SimulatorView = isTvPage(initialPage) ? "tv" : initialPage.group === WEBSITE_GROUP ? (initialGroup === "Website mobile" ? "mobileweb" : "desktop") : "app";
+  const [view, setView] = useState<SimulatorView>(initialView);
+  const lastPhone = useRef<string>(initialDevice.id);
+  const lastCar = useRef<string>("carplay");
+  // The view picked before a TV mode board switched to TV; it comes back when leaving TV mode.
+  const viewBeforeTv = useRef<SimulatorView | null>(null);
+  const initialPreset = SIMULATOR_DEVICES.find(item => item.id === viewDevice(initialView, initialDevice.id, "carplay"))!;
   const [pageId, setPageId] = useState(initialPage.id);
-  const [frameSrc, setFrameSrc] = useState(`${frameUrl(initialPage)}?simulator=1`);
+  const [frameSrc, setFrameSrc] = useState(withParams(frameUrl(initialPage), `simulator=1${liveParam(initialPage, initialView, { ...DEFAULT_SIMULATOR_STATE, ...initialPage.state })}`));
   const [currentPath, setCurrentPath] = useState(initialPage.path);
   const [device, setDevice] = useState<string>(initialPreset.id);
   const [size, setSize] = useState({ width: initialPreset.width as number, height: initialPreset.height as number });
   const [sizeText, setSizeText] = useState({ width: String(initialPreset.width), height: String(initialPreset.height) });
-  const [insets, setInsets] = useState({ top: initialPage.standalone ? 0 : initialPreset.top as number, bottom: initialPage.standalone ? 0 : initialPreset.bottom as number });
+  const appInsets = initialView === "app" && !initialPage.standalone && initialPage.group !== WEBSITE_GROUP;
+  const [insets, setInsets] = useState({ top: appInsets ? initialPreset.top as number : 0, bottom: appInsets ? initialPreset.bottom as number : 0 });
   const [showSafeAreas, setShowSafeAreas] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [zoom, setZoom] = useState("fit");
@@ -88,8 +97,19 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
   const command = useRef(0);
   const bridgeReady = useRef(false);
   // The phone keyboard (2026-11-20): iOS for the iPhone presets, Android for the Pixel ones; the side panel can hide it.
-  const keyboard: "ios" | "android" | "off" = !showKeyboard ? "off" : device.startsWith("pixel") ? "android" : "ios";
-  const config = useMemo<SimulatorConfig>(() => ({ source, state: { ...state, keyboard }, navigation }), [source, state, navigation, keyboard]);
+  // Only the phone views (App, Mobile website) have the on-screen phone keyboard.
+  const watch = device === "applewatch";
+  const dash = device === "carplaydashtop" || device === "carplaydashbottom";
+  const car = device === "carplay" || dash;
+  const keyboard: "ios" | "android" | "off" = !showKeyboard || (view !== "app" && view !== "mobileweb") ? "off" : device.startsWith("pixel") ? "android" : "ios";
+  // CarPlay: the pretend side bar (80 px), plus the Dashboard's pretend map (414 px + 6 px gap), sit beside our app.
+  // Dashboard: our app is one half of the right column; a pretend Now Playing card (+ 6 px gap) is the other half.
+  const carExtra = device === "carplay" ? 80 : dash ? 500 : 0;
+  const frameWidth = size.width + carExtra + 16;
+  const frameHeight = (dash ? size.height * 2 + 6 : size.height) + 16;
+  const screenRadius = watch ? 42 : car ? 8 : undefined;
+  // The Maroon Live screens draw the version that matches the View.
+  const config = useMemo<SimulatorConfig>(() => ({ source, state: { ...state, keyboard, liveSurface: liveSurfaceForView(view) }, navigation }), [source, state, navigation, keyboard, view]);
   const selectedPage = pages.find(page => page.id === pageId) ?? { ...initialPage, label: `Current route · ${currentPath}` };
   // A page from another local dev server: if that server isn't running, the phone says how to start it (not an error page).
   const [downOrigin, setDownOrigin] = useState<string | null>(null);
@@ -104,6 +124,8 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
   }, [selectedPage.origin, originCheck]);
   const desktopPreview = size.width >= 1024;
   const websitePreview = selectedPage.group === WEBSITE_GROUP;
+  // The second Device choice: phones (App / Mobile website) or CarPlay screens; one-preset views have none.
+  const viewOptions = simulatorViewDevices(view);
   const isBrandIntro = currentPath === "/dev/brand/intro";
   const supportsFixtures = currentPath.startsWith("/dev/tournament");
   const scenarioVisible = supportsFixtures && (source === "mock" || source === "busy");
@@ -143,7 +165,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
   }, [pageId, selectedPage.parentId, branchColumns.length]);
   const preset = SIMULATOR_DEVICES.find(item => item.id === device)!;
   // Fit may enlarge the visual frame. The iframe itself keeps its CSS viewport.
-  const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 184) / (size.width + 16), available.height / (size.height + 16))) : Number(zoom);
+  const scale = zoom === "fit" ? Math.max(0.01, Math.min(Math.max(1, available.width - 184) / frameWidth, available.height / frameHeight)) : Number(zoom);
 
   const sendConfig = useCallback(() => {
     iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "config", config, routes: pages.map(page => page.path) }, window.location.origin);
@@ -237,13 +259,13 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     window.history.replaceState(null, "", url);
     setStageChoice(null);
     if (next.state) setState(current => ({ ...current, ...next.state }));
-    // The Maroon Live: its screens open at the size the Website desktop / Website mobile / App toggle is set to.
-    if (next.group === LIVE_GROUP) chooseLiveSurface(state.liveSurface ?? "app", false, null);
-    else if (next.group === WEBSITE_GROUP) { chooseDevice(websiteSize === "desktop" ? "desktop" : "iphone16"); setInsets({ top: 0, bottom: 0 }); }
-    else if (next.viewport || selectedPage.standalone) {
-      chooseDevice(next.viewport === "desktop" ? "desktop" : next.viewport === "mobile" ? "iphone16" : initialDevice.id);
-      if (next.standalone) setInsets({ top: 0, bottom: 0 });
-    }
+    // The View stays; a TV mode board switches to TV, and leaving TV mode puts back the view picked before it.
+    let nextView = view;
+    if (isTvPage(next) && view !== "tv") { viewBeforeTv.current = view; nextView = "tv"; }
+    else if (!isTvPage(next) && view === "tv" && viewBeforeTv.current) { nextView = viewBeforeTv.current; viewBeforeTv.current = null; }
+    // Re-fit the screen when the view changes, or entering / leaving pages with no app status bar (Website, standalone).
+    const plain = (page: SimulatorPage) => page.group === WEBSITE_GROUP || !!page.standalone;
+    if (nextView !== view || plain(next) || plain(selectedPage)) applyView(nextView, nextView === view ? device : viewDevice(nextView, lastPhone.current, lastCar.current), next, false);
     setPageId(id);
     const requested = next.navigation ? { ...next.navigation, command: ++command.current } : undefined;
     setNavigation(requested);
@@ -255,7 +277,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       setReady(false);
       setGps(null);
       setCurrentPath(next.path);
-      setFrameSrc(withParams(frameUrl(next), `simulator=1${liveParam(next, state.liveSurface)}&command=${++command.current}`));
+      setFrameSrc(withParams(frameUrl(next), `simulator=1${liveParam(next, nextView, state)}&command=${++command.current}`));
       return;
     }
     let path = currentPath;
@@ -278,21 +300,19 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       setInsets({ top: next.top, bottom: next.bottom });
     }
   }
-  /** The Maroon Live toggle: the screen size, and (sent to the page) which version of the screen to draw. */
-  // `reload`: a standalone page (TV mode) has no simulator bridge, so it's reloaded with the choice in its address.
-  function chooseLiveSurface(surface: LiveSurface, remember = true, reload: SimulatorPage | null = selectedPage) {
-    if (remember) setState(current => ({ ...current, liveSurface: surface }));
-    chooseDevice(surface === "desktop" ? "desktop" : surface === "mobile" ? "iphone16" : initialDevice.id);
-    if (surface !== "app") setInsets({ top: 0, bottom: 0 });
-    if (reload?.standalone && reload.group === LIVE_GROUP) setFrameSrc(withParams(frameUrl(reload), `simulator=1${liveParam(reload, surface)}&command=${++command.current}`));
-  }
-  /** The Website switch: the screen size, then the page loads again at that size. */
-  function chooseWebsiteSize(size: WebsiteSize) {
-    setWebsiteSize(size);
-    chooseDevice(size === "desktop" ? "desktop" : "iphone16");
-    setInsets({ top: 0, bottom: 0 });
-    setReady(false);
-    setFrameSrc(`${frameUrl(selectedPage)}${selectedPage.path.includes("?") ? "&" : "?"}simulator=1&command=${++command.current}`);
+  /** The Device section: a View (and its phone / CarPlay screen). Only App keeps the phone's status-bar space, and never
+   *  on Website or standalone pages. `reload`: Website and standalone pages (TV mode) have no simulator bridge, so they
+   *  load again at the new size / version. */
+  function applyView(nextView: SimulatorView, id: string, page: SimulatorPage = selectedPage, reload = true) {
+    setView(nextView);
+    chooseDevice(id);
+    if (nextView === "app" || nextView === "mobileweb") { if (id !== "custom") lastPhone.current = id; }
+    if (nextView === "carplay") lastCar.current = id;
+    if (nextView !== "app" || page.group === WEBSITE_GROUP || page.standalone) setInsets({ top: 0, bottom: 0 });
+    if (reload && (page.group === WEBSITE_GROUP || page.standalone)) {
+      setReady(false);
+      setFrameSrc(withParams(frameUrl(page), `simulator=1${liveParam(page, nextView, state)}&command=${++command.current}`));
+    }
   }
   function chooseSource(next:SimulatorSource){
     if(next===source)return;
@@ -303,8 +323,8 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     setState(current => ({ ...current, [id]: id === "playerCount" ? value === "" ? null : bounded(value, 1, 64, 8) : value }));
   }
   function editSize(edge: "width" | "height", value: string, commit = false) {
-    const min = edge === "width" ? 240 : 320;
-    const max = edge === "width" ? 1600 : 1800;
+    const min = 160;
+    const max = edge === "width" ? 2000 : 1800;
     const parsed = Number(value);
     if (!commit || bounded(value, min, max, size[edge]) !== size[edge]) setDevice("custom");
     setSizeText(current => ({ ...current, [edge]: commit ? String(bounded(value, min, max, size[edge])) : value }));
@@ -313,15 +333,11 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
     }
   }
 
-  return <main className={styles.shell} style={{ "--phone-aspect": (size.width + 16) / (size.height + 16), "--phone-display-width": zoom === "fit" ? "0px" : `${(size.width + 16) * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
+  return <main className={styles.shell} style={{ "--phone-aspect": frameWidth / frameHeight, "--phone-display-width": zoom === "fit" ? "0px" : `${frameWidth * Number(zoom)}px`, ...(desktopPreview ? { "--preview-min-width": "720px" } : {}) } as CSSProperties}>
     <header className={styles.header}>
       <div className={styles.brand}><MonitorSmartphone size={22} /><div><h1>App simulator</h1><p>The Maroon · Development workspace</p></div></div>
-      {selectedPage.group === LIVE_GROUP && <div className={styles.appearanceToggle} role="group" aria-label="Where it's viewed">
-        {LIVE_SURFACES.map(([id, label]) => <button key={id} type="button" aria-pressed={(state.liveSurface ?? "app") === id} onClick={() => chooseLiveSurface(id)}>{label}</button>)}</div>}
-      {websitePreview && <div className={styles.appearanceToggle} role="group" aria-label="Website size">
-        {WEBSITE_SIZES.map(([id, label]) => <button key={id} type="button" aria-pressed={websiteSize === id} onClick={() => chooseWebsiteSize(id)}>{label}</button>)}</div>}
       <div className={styles.appearanceToggle} role="group" aria-label="App appearance">{(["light", "dark"] as const).map(mode => <button key={mode} type="button" aria-pressed={appearance === mode} onClick={() => setSimulatorAppearance(mode)}>{mode === "light" ? "Light mode" : "Dark mode"}</button>)}</div>
-      <div className={styles.headerStatus}><span className={styles.headerDevice}>{preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
+      <div className={styles.headerStatus}><span className={styles.headerDevice}>{view === "app" || view === "mobileweb" ? `${SIMULATOR_VIEWS.find(([id]) => id === view)![1]} · ${preset.label}` : preset.label}</span><span className={styles.devBadge}><span /> LOCAL DEV</span></div>
     </header>
     <div className={styles.workspace} style={{ gridTemplateColumns: `var(--groups-width) var(--pages-width) ${branchColumns.map(() => "var(--pages-width)").join(" ")} var(--conditions-width) ${scenarioVisible ? "var(--conditions-width) " : ""}${mockDraftPreset || mockMatchPreset ? "320px " : ""}minmax(var(--preview-min-width),1fr) 230px` }}>
       <aside className={styles.controls} aria-label="Development controls">
@@ -329,9 +345,13 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
         <form className={styles.cards} action="/dev" method="get">{groups.map((group, index) => <Fragment key={group}>{index > 0 && !FEATURES.includes(group) && FEATURES.includes(groups[index - 1]) && <h3 className={styles.conditionSection}>Other</h3>}<button className={styles.card} type="submit" name="group" value={group} key={group} aria-pressed={selectedGroup === group} onClick={event => { event.preventDefault(); choosePage((pages.find(page => page.group === group && (page.stage ?? "Main") === "Main" && !page.parentId) ?? pages.find(page => (page.group ?? "Other") === group))!.id); }}>{group}</button></Fragment>)}</form>
         <section className={styles.controlSection} aria-labelledby="device-heading">
           <h2 id="device-heading">Device</h2>
-          <label>Preset<select aria-label="Device preset" value={device} onChange={event => chooseDevice(event.target.value)}>{SIMULATOR_DEVICES.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+          <label>View<select aria-label="Device view" value={view} onChange={event => { const next = event.target.value as SimulatorView; applyView(next, viewDevice(next, lastPhone.current, lastCar.current)); }}>{SIMULATOR_VIEWS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+          {/* Phones for App / Mobile website; Full screen / Dashboard top / bottom card for CarPlay. */}
+          {viewOptions.length > 1 && <label>{view === "carplay" ? "Screen" : "Phone"}<select aria-label={view === "carplay" ? "CarPlay screen" : "Phone"} value={device} onChange={event => applyView(view, event.target.value)}>
+            {device === "custom" && <option value="custom">Custom size</option>}
+            {viewOptions.map(id => <option key={id} value={id}>{SIMULATOR_DEVICES.find(item => item.id === id)!.label.replace(/^CarPlay · /, "")}</option>)}</select></label>}
           <div className={styles.pair}>
-            {(["width", "height"] as const).map(edge => <label key={edge}>{edge === "width" ? "Width" : "Height"}<div className={styles.unitInput}><input type="number" aria-label={`Viewport ${edge}`} min={edge === "width" ? 240 : 320} max={edge === "width" ? 1600 : 1800} value={sizeText[edge]} onChange={event => editSize(edge, event.target.value)} onBlur={event => editSize(edge, event.target.value, true)} /><span>px</span></div></label>)}
+            {(["width", "height"] as const).map(edge => <label key={edge}>{edge === "width" ? "Width" : "Height"}<div className={styles.unitInput}><input type="number" aria-label={`Viewport ${edge}`} min={160} max={edge === "width" ? 2000 : 1800} value={sizeText[edge]} onChange={event => editSize(edge, event.target.value)} onBlur={event => editSize(edge, event.target.value, true)} /><span>px</span></div></label>)}
           </div>
           <label>Display scale<select aria-label="Display scale" value={zoom} onChange={event => setZoom(event.target.value)}><option value="fit">Fit to workspace</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option></select></label>
           <label className={styles.checkbox}><input type="checkbox" checked={showKeyboard} onChange={event => setShowKeyboard(event.target.checked)} />Show phone keyboard when typing</label>
@@ -355,7 +375,9 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       </aside>)}
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
-        <div className={styles.cards}>{conditions?.length ? conditions.map((condition, index) => <Fragment key={condition.id}>{condition.section && condition.section !== conditions[index - 1]?.section && <h3 className={styles.conditionSection}>{condition.section}</h3>}{condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : key === "draftSim" ? "off" : state.draftSim && state.draftSim !== "off" ? DRAFT_SIM_DEFAULTS[key as keyof typeof DRAFT_SIM_DEFAULTS] : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state })); }}>{condition.label}</button>
+        <div className={styles.cards}>{conditions?.length ? conditions.map((condition, index) => <Fragment key={condition.id}>{condition.section && condition.section !== conditions[index - 1]?.section && <h3 className={styles.conditionSection}>{condition.section}</h3>}{condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : key === "tvPhase" ? "live" : key === "tvKind" ? "trip" : key === "draftSim" ? "off" : state.draftSim && state.draftSim !== "off" ? DRAFT_SIM_DEFAULTS[key as keyof typeof DRAFT_SIM_DEFAULTS] : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state }));
+            // TV mode has no simulator bridge: load it again with the picked stage / event kind in its address.
+            if (condition.state && isTvPage(selectedPage)) { setReady(false); setFrameSrc(withParams(frameUrl(selectedPage), `simulator=1${liveParam(selectedPage, view, { ...state, ...condition.state })}&command=${++command.current}`)); } }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}
           {condition.source === "empty" && <button type="button" className={styles.resetJustCreated} onClick={() => { resetJustCreated(); chooseSource("empty"); }}><RotateCcw size={13} /> Reset Just created</button>}
           {/* The Maroon Masters: wipe everything set up on it and start the official trip over (the app frame reloads fresh). */}
@@ -388,11 +410,15 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       <div className={styles.previewColumn}>
         <div className={styles.stage} ref={stage}>
           <HapticsVisualizer>
-          <div className={styles.deviceSpace} style={{ width: (size.width + 16) * scale, height: (size.height + 16) * scale }}>
-            <div className={`${styles.device} ${desktopPreview ? styles.desktopDevice : ""}`} style={{ width: size.width + 16, height: size.height + 16, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
-              <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height, ...(desktopPreview ? { borderRadius: 4 } : {}) }}>
+          <div className={styles.deviceSpace} style={{ width: frameWidth * scale, height: frameHeight * scale }}>
+            <div className={`${styles.device} ${desktopPreview ? styles.desktopDevice : ""} ${watch ? styles.watchDevice : ""} ${car ? styles.carDevice : ""} ${device === "tv" ? styles.tvDevice : ""}`} style={{ width: frameWidth, height: frameHeight, transform: `scale(${scale})`, "--safe-top": `${insets.top}px`, "--safe-bottom": `${insets.bottom}px` } as CSSProperties}>
+              {/* CarPlay: a pretend side bar (and, in Dashboard, a pretend map) beside our app. Drawings only. */}
+              {car && <div className={styles.carDock} aria-hidden><span className={styles.carClock}>9:41</span><span className={styles.carIcon} style={{ background: "#34c759" }} /><span className={styles.carIcon} style={{ background: "#0a84ff" }} /><span className={styles.carIcon} style={{ background: "#7b1e2e" }} /><span className={styles.carHome} /></div>}
+              {dash && <div className={styles.carMap} aria-hidden><span className={styles.carArrow} /></div>}
+              <div className={dash ? `${styles.carColumn} ${device === "carplaydashbottom" ? styles.carColumnBottom : ""}` : styles.passThrough}>
+              <div ref={setScreen} className={styles.screen} style={{ width: size.width, height: size.height, ...(desktopPreview ? { borderRadius: 4 } : {}), ...(screenRadius ? { borderRadius: screenRadius } : {}) }}>
               <iframe ref={iframe} title={selectedPage.standalone ? `${selectedPage.group} preview` : "Mobile application preview"} src={frameSrc} width={size.width} height={size.height}
-                style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none" }}
+                style={{ width: size.width, height: size.height, minWidth: size.width, minHeight: size.height, maxWidth: "none", maxHeight: "none", ...(screenRadius ? { borderRadius: screenRadius } : {}) }}
                 className={`${styles.frame} ${desktopPreview ? styles.desktopFrame : ""}`} onLoad={() => { setReady(true); observeAppearance(); sendConfig(); }} />
               {selectedPage.origin && downOrigin === selectedPage.origin && <div role="status" style={{ position: "absolute", inset: 0, display: "grid", placeContent: "center", gap: 12, padding: 24, background: "#240001", color: "#fbf8f1", textAlign: "center", fontFamily: "var(--font-barlow), sans-serif" }}>
                 <strong style={{ font: "400 26px/1.2 var(--font-spectral), Georgia, serif" }}>The auth test server isn&apos;t running</strong>
@@ -400,8 +426,10 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
                 <button type="button" style={{ justifySelf: "center", padding: "10px 18px", borderRadius: 8, border: 0, background: "#c9a86e", color: "#240001", fontWeight: 600 }} onClick={() => { setOriginCheck(count => count + 1); setFrameSrc(`${frameUrl(selectedPage)}?simulator=1&command=${++command.current}`); }}>Check again</button>
               </div>}
               {/* The phone's front camera, drawn over the screen like the real hardware (taps pass through). */}
-              {!websitePreview && device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
-              {!websitePreview && device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
+              {view === "app" && !websitePreview && device.startsWith("iphone") && <span className={`${styles.camera} ${styles.dynamicIsland}`} aria-hidden />}
+              {view === "app" && !websitePreview && device.startsWith("pixel") && <span className={`${styles.camera} ${styles.punchHole}`} aria-hidden />}
+              </div>
+              {dash && <div className={styles.carNowPlaying} aria-hidden><span className={styles.carAlbum} /><span><i /><i /></span></div>}
               </div>
               {showSafeAreas && <div className={styles.safeGuides} aria-hidden><span /><span /></div>}
             </div>

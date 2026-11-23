@@ -5,6 +5,11 @@ import { join } from "node:path";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS } from "@/lib/platform/golfTripNavigation";
 import { SIMULATOR_FEATURES, SIMULATOR_SOURCES, SIMULATOR_STAGES, type SimulatorConditional, type SimulatorPage, type SimulatorStage } from "./simulator";
 import { DEV_ACCOUNTS } from "./devAccounts";
+import { TV_KINDS } from "./livePreviews";
+import { TV_PHASES, type TvPhase } from "@/lib/platform/liveTv";
+
+/** TV mode Conditionals, "When" section: the four stages of an event. */
+const TV_PHASE_LABEL: Record<TvPhase, string> = { before: "Before it starts", live: "During a round", between: "Between rounds", final: "Completed" };
 import { AUTH_SCREENS } from "./authScreens";
 import { onboardingEnabled } from "@/lib/account/onboardingFlag";
 import { GOLF_MATCH_PREVIEWS } from "@/lib/platform/golfTripPreviewFixture";
@@ -270,10 +275,19 @@ export function simulatorPages(): SimulatorPage[] {
   }
   const tv = pages.find(item => item.path === "/dev/tv");
   if (tv) pages.splice(pages.indexOf(tv), 1);
+  // Each TV page: the stage (before the trip / league / tourney, during a round, between rounds, completed) and which
+  // kind of event it is (owner 2026-11-22). The simulator passes them to the page's address (phase=, kind=).
+  const tvConditions = (): SimulatorConditional[] => [
+    ...TV_PHASES.map(phase => ({ id: `tv-phase-${phase}`, label: TV_PHASE_LABEL[phase], section: "When", state: { tvPhase: phase } })),
+    ...TV_KINDS.map(([kind, label]) => ({ id: `tv-kind-${kind}`, label, section: "Event", state: { tvKind: kind } })),
+  ];
   for (const [show, label] of [["both", "TV mode · both boards take turns"], ["individual", "TV mode · individual"], ["match", "TV mode · match play"]]) {
-    pages.push({ id: `live-tv-${show}`, path: `/dev/tv?show=${show}`, label, group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: [] });
+    pages.push({ id: `live-tv-${show}`, path: `/dev/tv?show=${show}`, label, group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: tvConditions() });
   }
-  pages.push({ id: "live-tv-few", path: "/dev/tv?show=individual&players=8", label: "TV mode · 8 players (fits, no scroll)", group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: [] });
+  pages.push({ id: "live-tv-few", path: "/dev/tv?show=individual&players=8", label: "TV mode · 8 players (fits, no scroll)", group: "The Maroon Live", fixtures: false, viewport: "desktop", standalone: true, conditions: tvConditions() });
+  // Play → Cancel round (2026-11-22): the host's Save & exit / Delete round, and a player's Leave round, on the sample round.
+  pages.push({ id: "play-round-cancel", path: "/dev/round?view=cancel", label: "Round · Cancel round (host)", fixtures: false, conditions: [] });
+  pages.push({ id: "play-round-player", path: "/dev/round?view=player", label: "Round · Leave round (player)", fixtures: false, conditions: [] });
   // Mock people: each main tab for 5 pretend people (lib/dev/mockPeople.ts) sits in that feature's Main (Profile in Profile).
   for (const [slug, group] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
     const page = pages.find(item => item.path === `/dev/people/${slug}`);
@@ -454,7 +468,7 @@ export function simulatorPages(): SimulatorPage[] {
   const MOVED: Record<string, [string, SimulatorStage]> = { "Golf Trip Active": ["Golf Trips", "Active"], "Golf Trip Onboarding": ["Golf Trips", "Onboarding"], "Tournament Active": ["Tourneys", "Active"] };
   const BY_PATH: Record<string, [string, SimulatorStage | undefined]> = {
     "/golf-trips": ["Golf Trips", "Main"], "/tournaments/join": ["Tourneys", "Main"], "/leagues": ["Leagues", "Main"], "/": ["Play", "Main"],
-    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
+    "/dev/leagues": ["Leagues", "Active"], "/dev/round": ["Play", "Active"], "/dev/round?view=cancel": ["Play", "Active"], "/dev/round?view=player": ["Play", "Active"], "/dev/samples": ["Dev tools", undefined], "/dev/course-search": ["Dev tools", undefined],
   };
   for (const page of pages) {
     const moved = BY_PATH[page.path] ?? MOVED[page.group ?? ""];

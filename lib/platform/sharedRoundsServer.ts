@@ -54,6 +54,11 @@ export const setSharedPick = (me: string, round: string, hole: number, pick: Hol
 export const updateSharedRound = (host: string, round: string, setup: PersonalRoundSetup | null, end: boolean) =>
   rpc<null>("update_shared_round", { p_host: host, p_round: round, p_setup: setup, p_end: end });
 
+/** Cancel round → Delete round (host, live rounds only): the round and every score in it, for everyone (shared_round_delete.sql). */
+export const deleteSharedRound = (host: string, round: string) => rpc<null>("delete_shared_round", { p_host: host, p_round: round });
+/** Leave round (a player, not the host): they drop out; the scores already in the round stay (shared_round_delete.sql). */
+export const leaveSharedRound = (me: string, round: string) => rpc<null>("leave_shared_round", { p_profile: me, p_round: round });
+
 /** Invite search: other accounts whose name or username matches (never me), just id + names. */
 export async function searchAccounts(meId: string, query: string): Promise<{ id: string; name: string; username: string }[]> {
   const text = query.trim().replace(/[%_,()]/g, "");

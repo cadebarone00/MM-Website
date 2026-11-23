@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { pointsText, toParText, tvBoards, type TvBoardData } from "./liveTv.ts";
 
 const data = (individual: boolean, match: boolean): TvBoardData => ({
-  eventName: "Fall Classic", roundLabel: "Round 1",
+  eventName: "Fall Classic", roundLabel: "Round 1", place: null, phase: "live",
   individual: individual ? [{ position: "1", name: "Cam", total: -2, today: -2, thru: "F" }] : null,
   match: match ? { teams: [{ name: "A", color: "#000", points: 1 }, { name: "B", color: "#fff", points: 0 }], toWin: null, matches: [] } : null,
 });
@@ -30,4 +30,11 @@ test("a match's score shows on the leader's half, AS on both halves, nothing bef
   assert.deepEqual([tvSideScore(row, "left"), tvSideScore(row, "right")], ["2 UP", ""]);
   assert.deepEqual([tvSideScore({ ...row, score: "AS", leader: null }, "left"), tvSideScore({ ...row, score: "AS", leader: null }, "right")], ["AS", "AS"]);
   assert.deepEqual([tvSideScore({ ...row, middle: "10:20", score: "", leader: null }, "left"), tvSideScore({ ...row, middle: "10:20", score: "", leader: null }, "right")], ["", ""]);
+});
+
+test("each stage has its word for the top right", async () => {
+  const { TV_PHASES, TV_PHASE_WORD, isTvPhase } = await import("./liveTv.ts");
+  assert.deepEqual(TV_PHASES.map((p) => TV_PHASE_WORD[p]), ["Upcoming", "Live", "Up next", "Final"]);
+  assert.equal(isTvPhase("between"), true);
+  assert.equal(isTvPhase("halftime"), false);
 });

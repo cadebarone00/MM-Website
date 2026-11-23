@@ -8,6 +8,8 @@ import { tapInPath } from "./tapIn.ts";
 export interface LiveEvent {
   kind: "trip" | "tournament" | "league"; name: string; href: string; firstDate: string | null; lastDate: string | null; ended: boolean;
   course: string | null; playerCount: number;
+  /** A trip's location (its destination, e.g. "Pinehurst, NC"); null for tournaments and leagues. */
+  place: string | null;
 }
 export type LiveSection = "Live" | "Upcoming" | "Past";
 export const LIVE_SECTIONS: readonly LiveSection[] = ["Live", "Upcoming", "Past"];
@@ -21,7 +23,8 @@ export function liveEventsFrom(rows: unknown): LiveEvent[] {
     const href = typeof r.code === "string" ? tapInPath(r.code) : null;
     if ((r.kind !== "trip" && r.kind !== "tournament" && r.kind !== "league") || typeof r.name !== "string" || !href) return [];
     return [{ kind: r.kind, name: r.name, href, firstDate: date(r.firstDate), lastDate: date(r.lastDate), ended: r.ended === true,
-      course: typeof r.course === "string" && r.course.trim() ? r.course.trim() : null, playerCount: Number(r.playerCount) || 0 }];
+      course: typeof r.course === "string" && r.course.trim() ? r.course.trim() : null, playerCount: Number(r.playerCount) || 0,
+      place: r.kind === "trip" && typeof r.place === "string" && r.place.trim() ? r.place.trim() : null }];
   });
 }
 
@@ -32,11 +35,7 @@ export function liveSection(event: LiveEvent, today: string): LiveSection {
   return "Live";
 }
 
-const KIND_LABEL: Record<LiveEvent["kind"], string> = { trip: "Golf trip", tournament: "Tournament", league: "League" };
-
-/** One line under the name: kind · dates · course · players. */
+/** The line under the name (owner 2026-11-22): a trip's location; a league's or tournament's golf course. Empty when unknown. */
 export function liveEventDetail(event: LiveEvent): string {
-  const day = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const dates = event.firstDate ? (event.lastDate && event.lastDate !== event.firstDate ? `${day(event.firstDate)} – ${day(event.lastDate)}` : day(event.firstDate)) : null;
-  return [KIND_LABEL[event.kind], dates, event.course, `${event.playerCount} ${event.playerCount === 1 ? "player" : "players"}`].filter(Boolean).join(" · ");
+  return (event.kind === "trip" ? event.place ?? event.course : event.course) ?? "";
 }

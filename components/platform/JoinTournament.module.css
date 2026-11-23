@@ -1,7 +1,7 @@
 /* Tourneys + My Tournaments: maroon top to bottom. The negative bottom margin runs the
    maroon through the site's bottom-menu padding (SITE_BOTTOM_NAV_CONTENT_CLASS) on phones. */
 .page{--tj-bg:var(--lm-bg-240001);--tj-box:var(--color-maroon-700);--tj-text:var(--lm-ink-fbf8f1);--tj-muted:var(--lm-ink-d6c5ca);--tj-gold:var(--lm-ink-dcc495);--tj-line:color-mix(in srgb,var(--lm-ink-c9a86e) 25.1%,transparent);
-  min-height:calc(100svh - 64px);margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));padding:32px max(20px,calc((100% - 680px)/2)) calc(48px + 5.75rem + env(safe-area-inset-bottom));
+  min-height:calc(100svh - 64px);margin-bottom:calc(-5.75rem - env(safe-area-inset-bottom));padding:32px max(16px,calc((100% - 680px)/2)) calc(48px + 5.75rem + env(safe-area-inset-bottom));
   background:var(--tj-bg);color:var(--tj-text)}
 .title{font:500 40px/1.1 var(--font-spectral),Georgia,serif;text-align:center;margin:0 0 24px;color:var(--tj-text);letter-spacing:-.02em}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -63,7 +63,7 @@ a.actionBox:hover{background:var(--color-maroon-600)}
 .lowerContent {
   width: 100%;
   margin: 0 auto;
-  padding: 1px max(20px, calc((100% - 680px)/2)) 32px;
+  padding: 1px max(16px, calc((100% - 680px)/2)) 32px;
   background: var(--lm-bg-240001);
 }
 .lowerContent > .tournamentSection > .descriptor { color: var(--lm-ink-ead8b8); }

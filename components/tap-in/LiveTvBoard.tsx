@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { pointsText, toParText, tvBoards, tvSideScore, type TvBoardData, type TvShow } from "@/lib/platform/liveTv";
+import { pointsText, toParText, tvBoards, tvSideScore, TV_PHASE_WORD, type TvBoardData, type TvShow } from "@/lib/platform/liveTv";
 import styles from "./LiveTvBoard.module.css";
 
 /** Seconds each row takes to scroll past; a board that fits on screen stays put this long before the next board. */
@@ -25,12 +25,14 @@ export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoard
   return <div className={styles.screen} data-surface={surface} data-board={board}
     style={teams ? { "--team-left": teams[0].color, "--team-right": teams[1].color } as CSSProperties : undefined}>
     <header className={styles.header}>
-      <p className={styles.brand}>The Maroon Live</p>
-      <div className={styles.title}><h1>{data.eventName}</h1><p>{data.roundLabel}</p></div>
-      <Clock />
+      {/* Owner 2026-11-22: brand with the time under it (left), name with the location / course under it (middle),
+          the stage with the round under it (right): Upcoming / Live (red) / Up next / Final. */}
+      <div className={styles.brand}><p>The Maroon Live</p><Clock /></div>
+      <div className={styles.title}><h1>{data.eventName}</h1>{data.place && <p>{data.place}</p>}</div>
+      <div className={styles.status}><p className={styles.live} data-phase={data.phase}>{TV_PHASE_WORD[data.phase]}</p>{data.roundLabel && <p className={styles.round}>{data.roundLabel}</p>}</div>
     </header>
     {!board ? <p className={styles.empty}>Scores will show here once the round starts.</p>
-      : board === "individual" ? <Scroller key={`individual-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={<IndividualHeading />}>
+      : board === "individual" ? <Scroller key={`individual-${index}`} onCycle={boards.length > 1 ? next : undefined} heading={<IndividualHeading today={data.phase === "between" || data.phase === "final" ? "Last rd" : "Today"} />}>
         {data.individual!.map((row, i) => <div key={i} className={styles.row}>
           <span className={styles.pos}>{row.position}</span>
           <span className={styles.player}>{row.name}</span>
@@ -43,7 +45,7 @@ export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoard
         <div className={styles.teams}>
           {/* Tigers · 12½ to win · Rebels: the target sits between the two teams. */}
           {data.match!.teams.map((team, i) => <Fragment key={team.name}>
-            {i === 1 && <span className={styles.toWin}>{data.match!.toWin != null ? <><b>{pointsText(data.match!.toWin)}</b>to win</> : "vs"}</span>}
+            {i === 1 && <span className={styles.toWin}>{data.phase === "final" ? <b>Final</b> : data.match!.toWin != null ? <><b>{pointsText(data.match!.toWin)}</b>to win</> : "vs"}</span>}
             <div className={`${styles.team} ${i === 1 ? styles.teamRight : ""}`} style={{ "--team": team.color } as CSSProperties}>
               <span className={styles.teamName}>{team.name}</span><span className={styles.teamPoints}>{pointsText(team.points)}</span>
             </div>
@@ -70,9 +72,10 @@ export function LiveTvBoard({ data, show, surface = "desktop" }: { data: TvBoard
 
 const tone = (value: number | null) => value != null && value < 0 ? styles.under : "";
 
-function IndividualHeading() {
+/** `today`: the round column's name, "Today" before / during a round, "Last rd" once it's finished. */
+function IndividualHeading({ today }: { today: string }) {
   return <div className={`${styles.row} ${styles.headRow}`}><span className={styles.pos}>Pos</span><span className={styles.player}>Player</span>
-    <span className={styles.num}>Total</span><span className={`${styles.num} ${styles.today}`}>Today</span><span className={styles.num}>Thru</span></div>;
+    <span className={styles.num}>Total</span><span className={`${styles.num} ${styles.today}`}>{today}</span><span className={styles.num}>Thru</span></div>;
 }
 
 /**
@@ -129,7 +132,7 @@ function Scroller({ heading, children, onCycle }: { heading: ReactNode; children
   </section>;
 }
 
-/** The time, top right, like a broadcast. */
+/** The time, under "The Maroon Live", like a broadcast. */
 function Clock() {
   const [now, setNow] = useState<string>("");
   useEffect(() => {
@@ -138,5 +141,5 @@ function Clock() {
     const timer = window.setInterval(tick, 15000);
     return () => window.clearInterval(timer);
   }, []);
-  return <p className={styles.clock}><span className={styles.liveDot} aria-hidden />Live{now ? ` · ${now}` : ""}</p>;
+  return <p className={styles.time}>{now}</p>;
 }

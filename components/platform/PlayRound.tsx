@@ -445,6 +445,18 @@ function RoundStatus({ save, onRetry, leave }: { save: SaveState; onRetry: () =>
   </>;
 }
 
+/** Cancel round (whoever started the round): Save & exit keeps every score for later; Delete round erases it after a warning. */
+export function CancelRound({ onDelete, deleteText, startOpen = false }: { onDelete: () => void | Promise<void>; deleteText: string; startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
+  if (!open) return <button type="button" className={styles.discard} onClick={() => setOpen(true)}>Cancel round</button>;
+  return <div className={styles.cancelRound} role="group" aria-label="Cancel round">
+    <p className={styles.note}>Save &amp; exit keeps every score, so you can finish later from Play. Delete round erases the round.</p>
+    <Link href="/" className={styles.secondary}>Save &amp; exit</Link>
+    <button type="button" className={styles.deleteRound} onClick={() => { if (window.confirm(deleteText)) void onDelete(); }}>Delete round</button>
+    <button type="button" className={styles.discard} onClick={() => setOpen(false)}>Keep playing</button>
+  </div>;
+}
+
 /** A round on my own (kept only on this phone). */
 function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void }) {
   const [setup, setSetup] = useState(saved.setup);
@@ -470,7 +482,7 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
       <h1 className={styles.title}>{setup.course.name}</h1>
       <p className={styles.place}>{[setup.tee?.name, holesLabel(setup.holes), setup.countForHandicap ? null : "Practice"].filter(Boolean).join(" · ")}</p>
       <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
-        leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Discard this round? Scores on this phone will be deleted.")) onDiscard(); }}>Discard round</button>} />
+        leave={<CancelRound onDelete={onDiscard} deleteText="Delete this round? Every score in it is erased. This can't be undone." />} />
     </section>
     {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}
       par={setup.course.par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit}
@@ -543,6 +555,24 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
     if (confirmText && !window.confirm(confirmText)) return;
     const result = await post(sharedUrl(id), body);
     if (!result.ok) setProblem(result.message ?? "That didn't work. Try again.");
+  }
+  /** Cancel round → Delete round (host): erased for everyone, then off this phone. */
+  async function deleteRound() {
+    const result = await post(sharedUrl(id), { action: "delete" });
+    if (!result.ok) { setProblem(result.code === "not_installed" ? "Deleting rounds isn't set up in this database yet." : result.message ?? "Couldn't delete the round. Try again."); return; }
+    onLeave();
+  }
+  /** Leave round: a player drops out (scores already in the round stay); the host, or anyone once it's over, just clears this phone. */
+  async function leaveRound() {
+    const dropOut = snap?.host !== me && snap?.status !== "ended";
+    if (!window.confirm(dropOut ? "Leave this round? You'll drop out, and it won't be saved to your profile. Scores already in it stay in the host's round."
+      : "Leave this round on this phone? Scores already sent stay in the round.")) return;
+    if (dropOut) {
+      const result = await post(sharedUrl(id), { action: "leave" });
+      // Until shared_round_delete.sql is run there's no drop-out: leave on this phone, as before.
+      if (!result.ok && result.code !== "not_installed") { setProblem(result.message ?? "Couldn't leave the round. Try again."); return; }
+    }
+    onLeave();
   }
 
   if (!snap || !me) return <main className={styles.page}>
@@ -626,7 +656,6 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
           <div className={styles.hostMenu} role="group" aria-label="Host">
             <button type="button" className={styles.secondary} aria-expanded={menu === "players"} onClick={() => setMenu(menu === "players" ? null : "players")}>Add players</button>
             <button type="button" className={styles.secondary} aria-expanded={menu === "game"} onClick={() => setMenu(menu === "game" ? null : "game")}>Change game</button>
-            <button type="button" className={styles.secondary} onClick={() => hostAction({ action: "end" }, "End the round for everyone without saving? Submit & Save on your card saves everyone's round.")}>End round</button>
           </div>
           {menu === "players" && (room
             ? <div className={styles.form}>
@@ -644,7 +673,9 @@ function SharedPlayStep({ saved, onLeave }: { saved: Saved; onLeave: () => void 
         </>}
         <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."
           : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
-        <button type="button" className={styles.discard} onClick={() => { if (window.confirm(isHost ? "Leave this round on this phone? Scores already sent stay in the round." : "Leave this round on this phone? You can rejoin it from Play.")) onLeave(); }}>Leave round on this phone</button>
+        {isHost && !ended && save.status !== "saved"
+          ? <CancelRound onDelete={deleteRound} deleteText="Delete this round? Every score in it is erased for everyone in it, guests too. This can't be undone." />
+          : <button type="button" className={styles.discard} onClick={() => void leaveRound()}>{isHost || ended ? "Leave round on this phone" : "Leave round"}</button>}
       </div>
     </GolfTripActionSheet>}
     {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}

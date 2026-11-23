@@ -18,13 +18,13 @@ const shift = (days: number) => { const d = new Date(); d.setDate(d.getDate() + 
 /** The directory: something Live, Upcoming and Past for each kind. */
 export function sampleLiveEvents(): LiveEvent[] {
   return [
-    { kind: "trip", name: "Pinehurst Boys Trip", href: "/dev/live/event", firstDate: shift(-1), lastDate: shift(2), ended: false, course: "Pinehurst No. 2", playerCount: 12 },
-    { kind: "tournament", name: "The Fall Classic", href: "/dev/live/event", firstDate: today(), lastDate: shift(1), ended: false, course: "Stevens Park", playerCount: 24 },
-    { kind: "league", name: "Thursday Night League", href: "/dev/live/event", firstDate: today(), lastDate: today(), ended: false, course: "Cedar Crest", playerCount: 16 },
-    { kind: "trip", name: "Bandon Week", href: "/dev/live/event", firstDate: shift(20), lastDate: shift(24), ended: false, course: "Pacific Dunes", playerCount: 8 },
-    { kind: "tournament", name: "Member-Guest", href: "/dev/live/event", firstDate: shift(9), lastDate: shift(10), ended: false, course: null, playerCount: 40 },
-    { kind: "trip", name: "Scottsdale Spring", href: "/dev/live/event", firstDate: shift(-60), lastDate: shift(-57), ended: true, course: "TPC Scottsdale", playerCount: 8 },
-    { kind: "league", name: "Summer Scramble League", href: "/dev/live/event", firstDate: shift(-30), lastDate: shift(-30), ended: true, course: "Tenison Highlands", playerCount: 20 },
+    { kind: "trip", name: "Pinehurst Boys Trip", href: "/dev/live/event", firstDate: shift(-1), lastDate: shift(2), ended: false, course: "Pinehurst No. 2", playerCount: 12, place: "Pinehurst, NC" },
+    { kind: "tournament", name: "The Fall Classic", href: "/dev/live/event", firstDate: today(), lastDate: shift(1), ended: false, course: "Stevens Park", playerCount: 24, place: null },
+    { kind: "league", name: "Thursday Night League", href: "/dev/live/event", firstDate: today(), lastDate: today(), ended: false, course: "Cedar Crest", playerCount: 16, place: null },
+    { kind: "trip", name: "Bandon Week", href: "/dev/live/event", firstDate: shift(20), lastDate: shift(24), ended: false, course: "Pacific Dunes", playerCount: 8, place: "Bandon, OR" },
+    { kind: "tournament", name: "Member-Guest", href: "/dev/live/event", firstDate: shift(9), lastDate: shift(10), ended: false, course: null, playerCount: 40, place: null },
+    { kind: "trip", name: "Scottsdale Spring", href: "/dev/live/event", firstDate: shift(-60), lastDate: shift(-57), ended: true, course: "TPC Scottsdale", playerCount: 8, place: "Scottsdale, AZ" },
+    { kind: "league", name: "Summer Scramble League", href: "/dev/live/event", firstDate: shift(-30), lastDate: shift(-30), ended: true, course: "Tenison Highlands", playerCount: 20, place: null },
   ];
 }
 

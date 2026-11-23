@@ -12,6 +12,7 @@ import { appHref } from "@/lib/app/appPaths";
 import { DatePicker } from "./DatePicker";
 import { InviteCodeCard } from "./InviteCodeCard";
 import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
+import { LiveTvLink } from "./LiveTvLink";
 import { TripTapInInvite } from "./TripTapInInvite";
 import { liveSettingsFrom, type LiveSettings } from "@/lib/platform/liveVisibility";
 import type { SheetCard } from "@/lib/platform/liveCards";
@@ -328,6 +329,7 @@ function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onC
       <h2 id="live-settings">Who can watch</h2>
       {(() => { const watching = liveSettingsFrom(league.liveVisibility, league.livePlayersCanShare, "private"); return <LiveVisibilityPicker key={`${watching.visibility}|${watching.playersCanShare}`} settings={watching}
         onChange={async (next) => (await onLive(next)).ok} />; })()}
+      {league.watchCode && (league.liveVisibility ?? "private") !== "private" && <LiveTvLink code={league.watchCode} />}
     </section>
 
     {live && <TeeTimesEditor league={league} onGroups={(groups) => void act({ action: "groups", groups })} />}

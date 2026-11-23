@@ -1,4 +1,4 @@
-.page{position:relative;min-height:max(100dvh,720px);background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);padding:0 24px;box-sizing:border-box}
+.page{position:relative;min-height:max(100dvh,720px);background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);padding:0 16px;box-sizing:border-box}
 .title{position:absolute;top:15%;left:24px;right:24px;transform:translateY(-50%);margin:0;text-align:center;font:400 clamp(36px,10vw,56px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em}
 .panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(360px,calc(100% - 48px));font:400 16px/1.4 var(--font-barlow),sans-serif}
 .panel form,.panel label{display:flex;flex-direction:column;gap:16px}.panel label{gap:8px}.panel h2{font:400 26px/1.2 var(--font-spectral),Georgia,serif;margin:0;text-align:center}.panel p{margin:0;overflow-wrap:anywhere}.panel label span{font-size:12px;color:var(--lm-ink-e1cec4)}

@@ -14,3 +14,8 @@ export const isLivePreview = (value: unknown): value is LivePreview => (LIVE_PRE
 export const LIVE_SURFACES = [["desktop", "Website desktop"], ["mobile", "Website mobile"], ["app", "App"]] as const;
 export type LiveSurface = (typeof LIVE_SURFACES)[number][0];
 export const isLiveSurface = (value: unknown): value is LiveSurface => LIVE_SURFACES.some(([id]) => id === value);
+
+/** TV mode in the simulator: which event the sample board belongs to (its name and the line under it). */
+export const TV_KINDS = [["trip", "Golf trip"], ["tournament", "Tournament"], ["league", "League"]] as const;
+export type TvKind = (typeof TV_KINDS)[number][0];
+export const isTvKind = (value: unknown): value is TvKind => TV_KINDS.some(([id]) => id === value);

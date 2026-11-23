@@ -20,7 +20,7 @@ function insideScrolled(target: EventTarget | null): boolean {
  */
 export function AppNative() {
   const [pull, setPull] = useState(0);
-  const start = useRef<number | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
   const pulled = useRef(0);
 
   useEffect(() => {
@@ -32,28 +32,41 @@ export function AppNative() {
 
   useEffect(() => {
     const onStart = (event: TouchEvent) => {
-      start.current = window.scrollY <= 0 && event.touches.length === 1 && canRefreshApp() && !insideScrolled(event.target) ? event.touches[0].clientY : null;
+      const touch = event.touches[0];
+      start.current = window.scrollY <= 0 && event.touches.length === 1 && canRefreshApp() && !insideScrolled(event.target) ? { x: touch.clientX, y: touch.clientY } : null;
+      pulled.current = 0;
+      setPull(0);
     };
     const onMove = (event: TouchEvent) => {
       if (start.current === null) return;
-      pulled.current = Math.max(0, event.touches[0].clientY - start.current);
+      const touch = event.touches[0];
+      if (event.touches.length !== 1 || !touch || Math.abs(touch.clientX - start.current.x) > Math.abs(touch.clientY - start.current.y)) {
+        start.current = null;
+        pulled.current = 0;
+        setPull(0);
+        return;
+      }
+      pulled.current = Math.max(0, touch.clientY - start.current.y);
       setPull(pulled.current);
     };
-    const onEnd = () => {
-      if (start.current !== null && pulled.current >= PULL) refreshApp();
+    const reset = () => {
       start.current = null;
       pulled.current = 0;
       setPull(0);
     };
+    const onEnd = () => {
+      if (start.current !== null && pulled.current >= PULL) refreshApp();
+      reset();
+    };
     document.addEventListener("touchstart", onStart, { passive: true });
     document.addEventListener("touchmove", onMove, { passive: true });
     document.addEventListener("touchend", onEnd);
-    document.addEventListener("touchcancel", onEnd);
+    document.addEventListener("touchcancel", reset);
     return () => {
       document.removeEventListener("touchstart", onStart);
       document.removeEventListener("touchmove", onMove);
       document.removeEventListener("touchend", onEnd);
-      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("touchcancel", reset);
     };
   }, []);
 

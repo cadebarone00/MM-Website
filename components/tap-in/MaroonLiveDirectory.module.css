@@ -1,4 +1,4 @@
-.page{min-height:100dvh;background:radial-gradient(ellipse at 50% 0,rgba(201,168,110,.08),transparent 48%),#240001;color:#fbf8f1;padding:28px clamp(20px,6vw,96px) 64px;font-family:var(--font-barlow),Arial,sans-serif}
+.page{min-height:100dvh;background:radial-gradient(ellipse at 50% 0,rgba(201,168,110,.08),transparent 48%),#240001;color:#fbf8f1;padding:28px clamp(16px,6vw,96px) 64px;font-family:var(--font-barlow),Arial,sans-serif}
 .header{display:flex;align-items:center;justify-content:space-between;gap:24px;max-width:1280px;margin:0 auto}
 .back{color:#dcc495;font-size:13px;text-decoration:none;white-space:nowrap}
 .back:hover{text-decoration:underline}
@@ -23,7 +23,7 @@
 .appPage .directory{margin:28px auto 0}
 .appPage .trip h3{font-size:22px}
 @media(min-width:1024px){.appPage{margin-bottom:0;padding-top:48px;padding-bottom:48px}}
-@media(max-width:600px){.page{padding-top:24px}.header{gap:12px}.back{font-size:12px}.directory{margin-top:58px}.title{margin-bottom:40px}.trip{padding:23px 0}.trip h3{font-size:22px}}
+@media(max-width:600px){.page{padding-top:24px;padding-inline:16px}.header{gap:12px}.back{font-size:12px}.directory{margin-top:58px}.title{margin-bottom:40px}.trip{padding:23px 0}.trip h3{font-size:22px}}
 /* Step 2: real directory — search, Live / Upcoming / Past sections, tappable rows. */
 .search{display:flex;align-items:center;gap:10px;min-height:46px;margin:0 0 28px;padding:0 14px;border:1px solid rgba(220,196,149,.45);border-radius:999px;color:#dcc495}
 .search input{flex:1;min-width:0;border:0;background:transparent;color:#fbf8f1;font:500 15px var(--font-barlow),Arial,sans-serif;outline:none}
@@ -35,3 +35,34 @@
 .eventLink:hover h3{text-decoration:underline;text-underline-offset:4px}
 .eventLink:focus-visible{outline:2px solid #dcc495;outline-offset:4px;border-radius:4px}
 .livePill{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:999px;background:#e8c98a;color:#3b0d18;font:700 11px/1.5 var(--font-barlow),Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}
+/* Compact rows (owner 2026-11-22): about half the height per trip — smaller name, one tight detail line, less padding. */
+.directory{margin-top:40px}
+.title{margin-bottom:28px;font-size:clamp(30px,4vw,44px)}
+.search{min-height:40px;margin-bottom:18px}
+.listHeading{padding-bottom:8px}
+.listHeading h2{font-size:17px}
+.section+.section{margin-top:22px}
+.trip{padding:9px 0}
+.trip h3,.appPage .trip h3{font-size:17px;line-height:1.25}
+.trip p{margin-top:2px;font-size:12px;line-height:1.35}
+.livePill{margin-left:8px;padding:1px 6px;font-size:9px}
+.appPage .directory{margin-top:18px}
+@media(max-width:600px){.directory{margin-top:32px}.title{margin-bottom:22px}.trip{padding:9px 0}.trip h3{font-size:17px}}
+/* Live · Upcoming · Past: the app's pill (GolfTripHome bubbleUnderline, the Team / Indi switch). A gold-edged bubble with a
+   soft gold glow at the top; the picked word lights up with a short glowing gold line under it. */
+.pills{display:grid;grid-template-columns:repeat(3,1fr);margin:0 0 10px;padding:2px 4px;border:1px solid rgba(201,168,110,.6);border-radius:16px;
+  background:radial-gradient(120% 70% at 50% -18%,rgba(201,168,110,.3),transparent 70%),#240001}
+.pill{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:2px 4px;border:0;background:transparent;cursor:pointer;
+  color:color-mix(in srgb,#fff 55%,transparent);font:700 14px/1 var(--font-barlow),Arial,sans-serif;letter-spacing:.02em;transition:color .15s ease,text-shadow .15s ease}
+.pill::after{content:"";position:absolute;left:calc(50% - 18px);bottom:3px;width:36px;height:2px;border-radius:999px;background:#dcc495;opacity:0;
+  box-shadow:0 0 5px rgba(220,196,149,.85),0 0 12px rgba(220,196,149,.45);transition:opacity .15s ease}
+.pill:hover{color:color-mix(in srgb,#fff 85%,transparent)}
+.pill:focus-visible{outline:2px solid #dcc495;outline-offset:2px;border-radius:8px}
+.pill[aria-selected="true"]{color:#fbf8f1;text-shadow:0 0 12px rgba(251,248,241,.55)}
+.pill[aria-selected="true"]::after{opacity:1}
+.pillCount{color:#c7b3a8;font-size:11px;font-weight:600;text-shadow:none}
+.pill[aria-selected="true"] .pillCount{color:#dcc495}
+@media(prefers-reduced-motion:reduce){.pill,.pill::after{transition:none}}
+/* No lines between trips (owner 2026-11-22). */
+.trip{border-bottom:0}
+.trip p{min-height:1.35em}

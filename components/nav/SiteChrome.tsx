@@ -30,6 +30,7 @@ function AppChrome({ children }: { children: ReactNode }) {
   const ownShell = pathname === "/t" || pathname.startsWith("/t/") || pathname === "/tournaments" || pathname.startsWith("/tournaments/") || pathname.startsWith("/admin/") || pathname.startsWith("/play/") || pathname === "/dev/play" || pathname.startsWith("/dev/play/") || pathname.startsWith("/dev/invites/") || pathname.startsWith("/golf-trips/") || pathname === "/dev/tournament" || pathname.startsWith("/dev/tournament/") || pathname.startsWith("/rounds/") || pathname === "/dev/tourney"
     || pathname.startsWith("/leagues/") || pathname === "/dev/leagues"
     // Edit profile has its own top bar (back | Edit profile | Save) right under the camera (owner request 2026-11-13).
+    || pathname === "/profile" || pathname === "/profile/user" || /^\/profile\/[^/]+\/?$/.test(pathname) || pathname === "/settings"
     || pathname === "/profile/edit" || pathname === "/profile/search"
     // Someone's Friends list (2026-11-20): its own top bar too (Back | @username).
     || pathname === "/profile/user-friends" || /^\/profile\/[^/]+\/friends\/?$/.test(pathname);

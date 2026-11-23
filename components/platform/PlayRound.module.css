@@ -1,10 +1,10 @@
 /* Play a round (/rounds/new): same maroon + cream look as the Play page (MobileHome.module.css). */
 .page{--app-maroon:var(--color-maroon-950);--app-cream:#f4efe6;min-height:calc(100svh - 72px);background:var(--app-maroon);color:var(--app-cream);padding:4px 0 140px}
-.header{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;padding:10px 20px}
+.header{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;padding:10px 16px}
 .back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #b99c6b77;border-radius:50%;background:transparent;color:var(--app-cream);cursor:pointer}
 .kicker{margin:0;font:500 11px/1.5 var(--font-barlow),sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--lm-ink-d6c5ca)}
-.search{max-width:640px;margin:0 auto;padding:0 18px}.search>section{border-radius:20px;overflow:hidden;background:var(--app-cream);min-height:0}
-.panel{max-width:640px;margin:0 auto;padding:6px 20px 0}
+.search{max-width:640px;margin:0 auto;padding:0 16px}.search>section{border-radius:20px;overflow:hidden;background:var(--app-cream);min-height:0}
+.panel{max-width:640px;margin:0 auto;padding:6px 16px 0}
 .title{margin:0;font:400 clamp(28px,8vw,40px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.03em}
 .place{margin:6px 0 18px;font-size:13px;color:var(--lm-ink-d6c5ca)}
 .note{font-size:14px;line-height:1.5;color:var(--lm-ink-d6c5ca)}
@@ -195,3 +195,7 @@
 .settingsTitle{margin:0;font:600 22px/1.2 var(--font-spectral),Georgia,serif}
 .settingsLabel{margin:0;font:600 12px/1.4 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1cec4}
 .settingsBody .roster{margin:0}
+/* Cancel round (2026-11-22): Save & exit / Delete round */
+.cancelRound{display:grid;gap:10px;margin-top:24px}
+.cancelRound .discard{margin-top:0;justify-self:center}
+.deleteRound{min-height:48px;padding:0 18px;border:1px solid var(--lm-ink-e0a3a3);border-radius:14px;background:var(--lm-bg-3a1218);color:var(--lm-ink-ffd9d9);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}

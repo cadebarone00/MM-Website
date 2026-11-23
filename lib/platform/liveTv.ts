@@ -5,6 +5,15 @@
 
 export type TvShow = "individual" | "match" | "both";
 
+/**
+ * Where the event is (owner 2026-11-22): before it starts, a round being played, between two rounds, or finished.
+ * The top right reads Upcoming / Live (red) / Up next / Final, with `roundLabel` under it.
+ */
+export const TV_PHASES = ["before", "live", "between", "final"] as const;
+export type TvPhase = (typeof TV_PHASES)[number];
+export const isTvPhase = (value: unknown): value is TvPhase => (TV_PHASES as readonly unknown[]).includes(value);
+export const TV_PHASE_WORD: Record<TvPhase, string> = { before: "Upcoming", live: "Live", between: "Up next", final: "Final" };
+
 /** One golfer on the individual board. `total` / `today`: strokes to par (null = no score yet). */
 export interface TvPlayerRow { position: string; name: string; team?: string | null; total: number | null; today: number | null; thru: string }
 /**
@@ -21,7 +30,9 @@ export function tvSideScore(row: TvMatchRow, side: "left" | "right"): string {
 }
 export interface TvTeam { name: string; color: string; points: number }
 export interface TvBoardData {
-  eventName: string; roundLabel: string;
+  eventName: string; roundLabel: string; phase: TvPhase;
+  /** Under the name, top middle: a trip's location, or the course for a tournament / league; null hides it. */
+  place: string | null;
   individual: TvPlayerRow[] | null;
   match: { teams: [TvTeam, TvTeam]; toWin: number | null; matches: TvMatchRow[] } | null;
 }

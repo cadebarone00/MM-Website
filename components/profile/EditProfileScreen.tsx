@@ -115,7 +115,7 @@ export function EditProfileScreen({ initial, backHref = "/profile", savers = ACC
   }
 
   const name = displayName.trim() || username.trim() || "?";
-  return <main className={styles.page}>
+  return <main className={`${styles.page} app-own-top-clearance`}>
     <div className={styles.inner}>
       <header className={styles.topBar}>
         <button type="button" className={styles.iconButton} aria-label="Back" onClick={() => dirty ? setPanel("discard") : router.push(backHref)}><ChevronLeft size={28} aria-hidden="true" /></button>
