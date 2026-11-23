@@ -6402,3 +6402,48 @@ Full design: `docs/superpowers/specs/2026-11-22-simulators-scoring-design.md`.
 - **Par:** results show "Par 72" only when the search reply has it. GolfCourseAPI's search doesn't, so its rows show the city only.
 - **Checked** at 390px: bar, 64px rows, Recent save / remove / Clear, no results, Back keeps the words, Back closes and scrolling works again, no sideways scroll, no console errors. Friends search looks the same. `/leagues/new` opens the new search.
 
+- **Owner (2026-11-22):** the invite code card moves from under the leaderboard into Round settings (gear).
+- **Fix (2026-11-22):** in the iPhone app the bottom menu still showed on Play (the app's address is /rounds/new/), covering the scoring tab; the hide rule now ignores an ending "/".
+- **Owner (2026-11-22): playing order in Round settings** for games where order matters (Wolf: who's the Wolf each hole;
+  Sixes: partner rotation) — **Randomize**, or ↑ / ↓ to set it by hand (`setup.playerOrder`, profile + guest ids). It
+  can change until the first hole is scored, then it's set (so earlier Wolf picks keep their meaning).
+
+## Play a round, round 4: on/off pill toggles + side games (greenies, longest drive, closest to the pin) (owner request 2026-11-22) — APPROVED + BUILT 2026-11-22 (A: from each other player; B: the group decides; C: both allowed)
+
+**What the owner asked for:** every yes/no on the build screens is an on/off pill toggle instead of a checkbox; the build
+screen can add greenies, longest drive and closest to the pin, each with a small money value for whoever wins it;
+greenies show a small card under the Wolf card on the scoring tab with the group's names and a carryover option;
+longest drive and closest to the pin let you pick which holes they're on.
+
+**1. Pill toggles.** Every switch on the round-building pages (Track stats, Count toward handicap, Birdies double,
+Eagles triple, Carryovers, Allow doubles, Use handicaps, Automatic presses, the new side games) becomes an on/off pill
+(gold when on, grey when off) instead of a checkbox. Same look in Round settings.
+**2. Side games — Game page, a "Side games" section** (works with or without a main game):
+   - **Greenies** (toggle) + **$ per greenie**. On every **par 3**, the scoring tab shows a small **Greenie** card under
+     the Wolf card: the group's names to tap who won it, plus **Carry over** (nobody got it → its value adds to the next
+     par 3's greenie).
+   - **Longest drive** (toggle) + **$** + **which holes** (tap hole numbers 1–18; par 4s and 5s suggested). On those holes a
+     small **Longest drive** card with the names.
+   - **Closest to the pin** (toggle) + **$** + **which holes** (par 3s suggested). On those holes a small **Closest to the
+     pin** card with the names.
+   - Only the scorekeeper taps the winners (saved with the hole like the Wolf pick, so every phone sees it).
+**3. Money.** The winner collects the value **from each other player** (5 players, $5 greenie → +$20 / −$5 each), the same
+way the main game's money works. It's added into the leaderboard's **$** column and each player's scorecard **$** row
+for that hole. A carried greenie is worth its value × the number of par 3s it carried.
+**4. Review page** lists the side games and their values.
+
+**Data:** no new tables — side games live in the round setup (`sideGames`) and winners with the hole's picks.
+**Done looks like:** pill toggles on every build page; greenies with carryover, longest drive and closest to the pin on
+chosen holes; winners tapped on the scoring tab; money in the leaderboard and P&L rows (tests for the money and
+carryover); type check, lint, tests; `npm run build:app`; checked in the browser.
+
+**Questions for the owner:**
+- A. Money: the winner gets the value from **each** other player (plan), or the value is split from the group's pot?
+- B. Greenie rule: just tap whoever won it (plan — the group decides), or only offer it to someone who hit the green
+  in one and made par or better?
+- C. Can a hole have both a greenie and closest to the pin (par 3s), or does picking greenies replace closest to the pin there? (plan: both allowed)
+- **Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.** In Round settings the
+  scorekeeper has one red **Delete round** button (confirm first): the round is deleted for every player and from the
+  database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
+  don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
+  Back to Play. After deleting, the scorekeeper goes to the Play home screen.

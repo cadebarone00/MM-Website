@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-22 - Reconcile Play round changes (implemented locally; deployment not verified).** The merged round screen combines the settings invite code and Wolf/Sixes order controls with side-game picks, and retains the live-round cancel/delete and player leave flow. Section 22 and the Mermaid annotation are updated; the delete/leave database functions require `supabase/shared_round_delete.sql`. Side-game money rules and launch compliance remain subject to review.
+
 **2026-11-22 - Profile header starting line (presentation implemented locally; deployment not verified).** Profile, Edit profile, Search and friends could count top clearance twice or add extra offsets, while Settings added its own margin. Their top controls now use the shared phone starting line once: the device safe-area inset plus 8px. Section 22 and the Mermaid annotation are updated; navigation and data are unchanged. Other individually styled screens still require an audit and real-device verification.
 
 **2026-11-22 - Pull-to-refresh gesture handling (implemented locally; deployment not verified).** A sideways drag could trigger the refresh prompt and a cancelled touch could refresh the screen. Pull-to-refresh now cancels when horizontal movement dominates, a second touch is added, or the touch is cancelled; a qualifying downward pull still refreshes on release. Section 22 and the Mermaid annotation are updated; data sources and workflow paths are unchanged. Real-device verification remains outstanding.
@@ -810,6 +812,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+  %% Play round settings include invite code and playing order; side-game picks and live round cancellation retain their own paths.
   %% Profile, Settings, Edit profile, Search and friends align controls to one shared safe-area starting line.
   %% Pull-to-refresh cancels on sideways, multitouch or cancelled gestures.
   %% Profile and Settings use their own headers; shared chrome does not add a second title bar.
@@ -1379,6 +1382,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+Play round settings include the invite code and, for Wolf or Sixes, playing order until scoring begins. Side games store selected winners with hole picks and show their calculated amounts. Live shared-round deletion and participant departure use `supabase/shared_round_delete.sql`; installed migration and deployment status are not verified. Money-related and platform review remains open.
 
 Profile and its edit, search and friends screens own their top clearance; the shell does not add it a second time. Settings uses the shell clearance. On phone-width layouts their controls start at the safe-area inset plus 8px. Other headers have not all been reconciled to this rule.
 

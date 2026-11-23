@@ -199,3 +199,31 @@
 .cancelRound{display:grid;gap:10px;margin-top:24px}
 .cancelRound .discard{margin-top:0;justify-self:center}
 .deleteRound{min-height:48px;padding:0 18px;border:1px solid var(--lm-ink-e0a3a3);border-radius:14px;background:var(--lm-bg-3a1218);color:var(--lm-ink-ffd9d9);font:600 15px var(--font-barlow),sans-serif;cursor:pointer}
+
+/* Playing order (owner 2026-11-22): Wolf / Sixes order in Round settings — Randomize, or ↑ / ↓ to set it by hand. */
+.orderBox{display:grid;gap:8px}
+.orderHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.orderHead .secondary{min-height:36px;padding:0 14px;font-size:14px}
+.orderList{display:grid;margin:0;padding:0;list-style:none;border-top:1px solid #b99c6b33}
+.orderList li{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid #b99c6b33}
+.orderNum{width:22px;font-weight:700;color:#c9a86e;text-align:center}
+.orderName{flex:1;min-width:0;font:600 16px var(--font-barlow),sans-serif}
+.orderList button{width:36px;height:36px;border:1px solid #b99c6b77;border-radius:10px;background:transparent;color:inherit;font-size:16px;cursor:pointer}
+.orderList button:disabled{opacity:.3;cursor:default}
+
+/* Side games' holes (owner 2026-11-22): tap hole numbers, chosen ones gold. */
+.holePicker{margin:0;padding:0;border:0;min-width:0}
+.holePicker legend{padding:0 0 6px;font:400 12px/1.4 var(--font-barlow),sans-serif;color:#e1cec4}
+.holePicker>div{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.holePicker button{display:grid;gap:2px;justify-items:center;padding:6px 0;border:1px solid rgba(201,168,110,.35);border-radius:10px;background:rgba(251,248,241,.08);color:#fbf8f1;cursor:pointer}
+.holePicker button b{font:700 15px/1 var(--font-barlow),sans-serif}
+.holePicker button small{font-size:10px;opacity:.7}
+.holePicker button[aria-pressed=true]{background:#c9a86e;border-color:#c9a86e;color:#240001}
+/* On / off pill toggles on the build pages and Round settings (owner 2026-11-22), instead of checkboxes. */
+.wizToggle input{appearance:none;-webkit-appearance:none;position:relative;width:48px;height:28px;margin:0;border-radius:999px;background:rgba(251,248,241,.22);cursor:pointer;transition:background .2s}
+.wizToggle input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fbf8f1;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s}
+.wizToggle input:checked{background:#c9a86e}
+.wizToggle input:checked::before{transform:translateX(20px)}
+.wizToggle input:disabled{opacity:.45;cursor:not-allowed}
+.wizToggle input:focus-visible{outline:2px solid #c9a86e;outline-offset:2px}
+.wolfRow .wolfNameWrap{white-space:normal;line-height:1.1;text-align:center}

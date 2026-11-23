@@ -101,6 +101,10 @@ export interface HoleInput {
   teams?: number[];
   /** Mid-round double: this hole's points / skins count twice (when the game allows doubles). */
   doubled?: boolean;
+  /** Side games (lib/platform/sideGames.ts): the greenie's winner (null = carry over), longest drive, closest to the pin. */
+  greenie?: number | null;
+  longestDrive?: number;
+  closestPin?: number;
 }
 
 export interface GamePlayer { name: string; /** Handicap index, for net games. */ handicap: number | null }

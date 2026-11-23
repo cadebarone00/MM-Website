@@ -62,3 +62,8 @@ test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/dev/tournament/settings", "/golf-trips"), true);
   assert.equal(siteBottomNavTabActive("/golf-trips", "/"), false);
 });
+
+test("the app's addresses end in a slash: Play a round and Log in still hide the bottom menu", () => {
+  for (const path of ["/rounds/new", "/rounds/new/", "/login/", "/tournaments/new/"]) assert.equal(isSiteBottomNavHidden(path), true, path);
+  for (const path of ["/", "/golf-trips/", "/profile/"]) assert.equal(isSiteBottomNavHidden(path), false, path);
+});
