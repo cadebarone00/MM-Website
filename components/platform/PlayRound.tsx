@@ -848,8 +848,9 @@ function MyStats({ range, par, holes, pending, onChange }: { range: [number, num
   </div>;
 }
 
-/** Round complete (owner 2026-11-22): a hole-by-hole card for everyone — front and back nine — ending with each player's
- *  total score and money; Save & exit round. Few words. Also the simulator's sample (/dev/round-complete). */
+/** Round complete (owner 2026-11-22): everyone's card like the scoring tab's Card — holes down the side, a column per
+ *  player (best money first) — ending with each player's total score and money; Save & exit. Few words. Also the
+ *  simulator's sample (/dev/round-complete). */
 export function RoundCompleteSheet({ title, board, saving, error, onSave, onClose }: { title: string; board: Parameters<typeof Leaderboard>[0];
   saving: boolean; error: string | null; onSave: () => void; onClose: () => void }) {
   const { rows, par, range, result, extraMoney } = board;
@@ -864,22 +865,20 @@ export function RoundCompleteSheet({ title, board, saving, error, onSave, onClos
   return <GolfTripActionSheet label="Round complete" slideUp onClose={onClose}>
     <div className={styles.settingsBody}>
       <h2 className={styles.settingsTitle}>{title}</h2>
-      <div className={styles.finalCard}>{nines.map((holes, n) => {
-        const last = n === nines.length - 1;
-        return <table key={n}>
-          <thead><tr><th scope="col" />{holes.map((h) => <th key={h} scope="col">{h + 1}</th>)}<th scope="col">{holes[0] < 9 ? "Out" : "In"}</th>
-            {last && <th scope="col">Tot</th>}{last && hasMoney && <th scope="col">$</th>}</tr>
-            <tr className={styles.finalPar}><th scope="row">Par</th>{holes.map((h) => <td key={h}>{par[h]}</td>)}<td>{holes.reduce((t, h) => t + par[h], 0)}</td>
-              {last && <td>{parTotal}</td>}{last && hasMoney && <td />}</tr></thead>
-          <tbody>{lines.map((line) => <tr key={line.name}>
-            <th scope="row">{line.name}</th>
-            {holes.map((h) => <td key={h}>{line.strokes[h] != null && <span className={styles.scoreMark} data-mark={scoreMark(line.strokes[h]! - par[h])}>{line.strokes[h]}</span>}</td>)}
-            <td>{holes.reduce((t, h) => t + (line.strokes[h] ?? 0), 0) || ""}</td>
-            {last && <td className={styles.finalTotal}>{line.total || ""}</td>}
-            {last && hasMoney && <td className={styles.finalMoney} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</td>}
-          </tr>)}</tbody>
-        </table>;
-      })}</div>
+      {/* Like the scoring tab's Card: holes down the side, one column per player; Out / In, then Tot and $ at the bottom. */}
+      <table className={styles.finalCard}>
+        <thead><tr><th scope="col">Hole</th><th scope="col">Par</th>{lines.map((line) => <th key={line.name} scope="col">{line.name}</th>)}</tr></thead>
+        <tbody>{nines.map((holes, n) => <Fragment key={n}>
+          {holes.map((h) => <tr key={h}><th scope="row">{h + 1}</th><td className={styles.finalPar}>{par[h]}</td>
+            {lines.map((line) => <td key={line.name}>{line.strokes[h] != null && <span className={styles.scoreMark} data-mark={scoreMark(line.strokes[h]! - par[h])}>{line.strokes[h]}</span>}</td>)}</tr>)}
+          <tr className={styles.finalSub}><th scope="row">{holes[0] < 9 ? "Out" : "In"}</th><td>{holes.reduce((t, h) => t + par[h], 0)}</td>
+            {lines.map((line) => <td key={line.name}>{holes.reduce((t, h) => t + (line.strokes[h] ?? 0), 0) || ""}</td>)}</tr>
+        </Fragment>)}</tbody>
+        <tfoot>
+          <tr className={styles.finalTotal}><th scope="row">Tot</th><td>{parTotal}</td>{lines.map((line) => <td key={line.name}>{line.total || ""}</td>)}</tr>
+          {hasMoney && <tr className={styles.finalMoneyRow}><th scope="row">$</th><td />{lines.map((line) => <td key={line.name} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</td>)}</tr>}
+        </tfoot>
+      </table>
       {error && <p className={styles.error} role="alert">{error}</p>}
       <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit"}</button>
       <button type="button" className={styles.discard} onClick={onClose}>Back</button>

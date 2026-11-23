@@ -6233,3 +6233,5 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - **Owner (2026-11-22): Round complete is a hole-by-hole card, few words.** The course name, then everyone's scores hole by
   hole (front nine + Out, back nine + In), ending with each player's **Tot** and **$** (best money first); buttons
   **Save & exit** and **Back**.
+- **Owner (2026-11-22): Round complete layout = like the Card tab** — holes down the side (1–18 with Par), one column per
+  player (best money first), Out / In rows, then **Tot** and **$** at the bottom.
