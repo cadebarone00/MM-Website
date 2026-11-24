@@ -6664,3 +6664,48 @@ Each part is phone-checked before the next starts. **"Nothing missing" checklist
 
 **Question for the owner (one):**
 - **Tab bar look.** (A) **Keep today's maroon tab bar** (gold active icon), drawn to match the website exactly. (B) **Apple's real iOS tab bar** (the newer glassy one), which gives the most native feel, but it follows iOS's look and is less maroon. **Plan: A** for now, so the app matches what testers know; B can be tried later on its own.
+
+## Feature: Expo app Step 2 — Golf Trips (owner request 2026-11-24) — APPROVED 2026-11-24. Part 2a (Golf Trips tab, join by code / link, accept / decline) BUILT + committed 2026-11-24; 2b (Trip Builder) next, checklist first
+
+**Side:** App (`mobile/`), plus Server only where a trip screen's logic lives in a website component and has to move into shared `lib/` (same rule as Play: one brain, used by both). Follows `docs/architecture/app-first.md`.
+
+**Why.** Golf Trips is the second area of the approved rebuild order and the app's biggest: the trip list, the Trip Builder, the trip page (Home, Golf, Venue, Itinerary tabs), trip scoring (Player & Attest), the Team Draft and Match Selection, travel and flights, settings, and Import past trip. It's about ten times Play's size, so it's built and phone-checked in parts.
+
+**How it's built (my calls, correct me).**
+- Same as Play: the app uses the website's own `/api/golf-trips/*` and `/api/app/golf-trips/*` routes (all already accept the app login) and the shared `lib/platform/golfTrip*` code. Where a rule only lives inside a website screen, it moves into `lib/` first and the website uses it from there.
+- The Play building blocks are reused (tuck-in sheet, leaderboard, search, sheets, cards, avatars, CodeCard). Trip scoring reuses the Play scoring sheet with a **trip mode** (my score + the player I attest, matched / mismatched, corrections).
+- **Not changed in the app:** The Maroon Live directory and watch pages stay website pages (spectators, desktop companion); the trips list links to them in the browser.
+
+### The parts (each gets its own "nothing missing" checklist, approved right before it's built)
+| Part | What | Size |
+|---|---|---|
+| **2a** | Golf Trips tab: Create / Join, The Maroon Live link, Upcoming / Past trips, join by code or link, accept / decline an invite | small |
+| **2b** | Trip Builder: Learn + tour (first time), name + destination, dates, players, teams, format, golf days, courses, lodging, transportation, flights, review → create | medium |
+| **2c** | Trip page shell + **Home** tab: header + gear, tabs, big board + Momentum, roster, invite link card, draft widget, competition summary, Golf / The Trip / Travelers / Logistics sections, weather, tap-in invite, chat, tips | large |
+| **2d** | **Golf** tab: Overview / Competition / leaderboard / matches / games / stats / Predict, round days, and **trip scoring** (Player & Attest, corrections) | large |
+| **2e** | **Team Draft** room + **Match Selection** | medium |
+| **2f** | **Venue** (places), **Itinerary** (add travel / items), My Travel, **Flights** page | medium |
+| **2g** | **Trip Settings** (general, members + roles, games, pars, round robin, corrections, notifications, tutorials, delete), **Import past trip**, the imported trip page | large |
+
+### Part 2a checklist (from `GolfTripsView`, `GolfTripsActions`, `JoinCodeCard`, `GolfTripJoinLink`, `GolfTripInviteResponse`)
+**Golf Trips tab**
+- [ ] "Golf Trips" title; **Create** (→ Trip Builder, part 2b; until then a "coming in part 2b" screen) and **Join** (→ slide-up with the 6-character Join a Trip code box, same rules as Play's).
+- [ ] **The Maroon Live** row ("Check out other trips happening now") → opens the website's live directory in the browser.
+- [ ] **Upcoming** and **Past Trips** cards (trips from `GET /api/golf-trips`, split by today in Chicago time, the shared `splitGolfTrips`): each row = icon, name, "destination · N players · Organizer / Member", date range; tap → the trip page (part 2c; until then a "coming in part 2c" screen with the trip's name).
+- [ ] Empty Upcoming → "No upcoming trip yet · Start +" (→ Create). Empty Past → "No past trips yet".
+- [ ] **Import past trip** button beside Past Trips → part 2g (until then "coming in part 2g").
+- [ ] Signed out → "Log in to see your trips"; server down → "We couldn't load your trips" + Try again. Fixed-size slots, pull to refresh.
+
+**Join by code or link** (`/golf-trips/join?code=`, `GET/POST /api/golf-trips/join/<code>`)
+- [ ] Header: "Golf trip invite", trip name, dates · destination, "Organized by …".
+- [ ] States: **Join trip** button (→ joined or already a member → the trip page), already in ("Open trip"), bad code ("That code isn't working…"), bad / replaced link, **expired** 30-minute link, no connection.
+
+**Accept / decline an invite** (`/golf-trips/invite?token=`, `GET/POST /api/golf-trips/invitations/<token>[/decline]`)
+- [ ] Header: "Golf trip invitation", trip name, dates · destination, "Cade invited Cam."
+- [ ] **Accept** (→ the trip page) and **Decline** (asks first: "Decline this invitation? The link will stop working.").
+- [ ] States: declined, cancelled / replaced / already answered, claimed by someone else, already yours / a member, account with no golfer profile ("Contact support…").
+- [ ] Opening these links from a text message opens the app: needs app links (Universal Links), which come with the EAS build step; until then they open in the browser.
+
+**Done when (2a):** every checkbox works on the owner's iPhone side by side with the current app; `npm test` + `npx tsc --noEmit` pass in `mobile/`; website tests still pass; GitHub checks green.
+
+**Questions for the owner:** none for 2a. For later parts I'll bring questions with each part's checklist.

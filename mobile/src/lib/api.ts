@@ -66,3 +66,18 @@ export async function apiJson<T>(path: string, init: { method?: "GET" | "POST"; 
     return { ok: false, error: NETWORK_ERROR, code: null };
   }
 }
+
+/**
+ * Call a website route whose reply has no `ok` field (e.g. POST /api/golf-trips/join/<code> answers `{ status, tripId }`).
+ * Gives back the HTTP status and the parsed JSON (null when it isn't JSON). Never throws; no connection = status 0.
+ */
+export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown } = {}): Promise<{ status: number; body: T | null }> {
+  const auth = await token();
+  if (!auth) return { status: 401, body: null };
+  try {
+    const { status, text } = await send(path, init, auth);
+    try { return { status, body: JSON.parse(text) as T }; } catch { return { status, body: null }; }
+  } catch {
+    return { status: 0, body: null };
+  }
+}

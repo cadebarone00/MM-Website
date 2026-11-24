@@ -35,6 +35,12 @@ function Screens() {
           <Stack.Screen name="range" />
           <Stack.Screen name="range/trip" options={sheetOptions} />
           <Stack.Screen name="range/post/[id]" />
+          {/* Golf Trips (project_specs.md "Expo app Step 2", part 2a). */}
+          <Stack.Screen name="trips/join" />
+          <Stack.Screen name="trips/invite" />
+          <Stack.Screen name="trips/[id]" />
+          <Stack.Screen name="trips/new" />
+          <Stack.Screen name="trips/import" />
           {/* Dev only: the Building blocks gallery (Profile → Building blocks) and its sample slide-up. */}
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="dev/blocks" />

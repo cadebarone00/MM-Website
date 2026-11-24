@@ -26,3 +26,8 @@ test("website paths become full links; full links pass through", () => {
   assert.equal(absoluteUrl("https://www.themaroon.site", "b.png"), "https://www.themaroon.site/b.png");
   assert.equal(absoluteUrl("https://www.themaroon.site", "https://cdn.x/c.jpg"), "https://cdn.x/c.jpg");
 });
+
+test("a route that says why in its error field (Golf Trips) shows that text", () => {
+  assert.deepEqual(parseJsonReply(409, JSON.stringify({ ok: false, error: "Someone else already accepted this invitation." })),
+    { ok: false, error: "Someone else already accepted this invitation.", code: null });
+});

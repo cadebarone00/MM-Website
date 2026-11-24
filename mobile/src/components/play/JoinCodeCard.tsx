@@ -4,20 +4,24 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { JOIN_CODE_HINT, shownJoinCode, typedJoinCode } from "~/lib/play.ts";
 import { colors, fonts, minTap, radius } from "~/lib/theme.ts";
 
-/** Play home's "Join a Round" card (website JoinCodeCard): a 6-character code, any case, dash optional → the Join screen. */
-export function JoinCodeCard() {
+const TITLE = { round: "Join a Round", trip: "Join a Trip" } as const;
+const SCREEN = { round: "/rounds/join", trip: "/trips/join" } as const;
+
+/** The "Join a Round" / "Join a Trip" card (website JoinCodeCard): a 6-character code, any case, dash optional → that kind's Join screen. */
+export function JoinCodeCard({ kind = "round", onJoin }: { kind?: "round" | "trip"; onJoin?: () => void }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function join() {
     if (code.length !== 6) { setError(JOIN_CODE_HINT); return; }
-    router.push({ pathname: "/rounds/join", params: { code } });
+    onJoin?.();
+    router.push({ pathname: SCREEN[kind], params: { code } });
     setCode("");
   }
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Join a Round</Text>
+      <Text style={styles.title}>{TITLE[kind]}</Text>
       <Text style={styles.hint}>Enter the code you were sent.</Text>
       <View style={styles.row}>
         <TextInput
