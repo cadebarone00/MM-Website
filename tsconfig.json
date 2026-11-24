@@ -48,6 +48,7 @@
     "capacitor-web",
     "ios/App/App/public",
     "android/app/src/main/assets/public",
-    "out/backups"
+    "out/backups",
+    "mobile"
   ]
 }

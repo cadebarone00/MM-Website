@@ -6502,3 +6502,29 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 - **No faked results:** a step that can't find its button stops in red. No sim UI inside phone screens.
 - **Data:** in-memory only (fake Supabase); nothing in Supabase prod.
 - **Done (Phase 1):** a 4-ball created in the form plays start → invites → accepts → 18 holes → submit on the real screens with all checks green; take-over works; resize keeps all phones visible; tests (layout math, step generation, driver actions, custom seed, one Playwright end-to-end run) + full suite + type check pass; checked in Chrome.
+
+## Feature: The Maroon native app with Expo (React Native) — Step 1: bare app on the owner's phone (owner request 2026-11-24) — APPROVED + BUILT + PHONE-CHECKED 2026-11-24 (owner: sign in, Profile name, sign out, stays signed in, wrong password all OK in Expo Go; Expo Go on a real iPhone needs the same Expo account signed in on the phone and in `npx expo login`)
+
+**Why.** Owner wants the phone app to feel perfectly smooth. The Capacitor app shows web pages inside the app, so it never feels fully native. Owner picked (2026-11-24) "Option 2": rebuild the **screens** natively with Expo (React Native), keep all the TypeScript logic, the Supabase database and the server. One codebase still makes iPhone + Android. The Capacitor app keeps shipping on TestFlight until the Expo app replaces it, area by area. The Apple Watch app stays Swift (designed in the /dev simulator first).
+
+**Who uses it.** The owner, testing on their iPhone through the **Expo Go** app (installed 2026-11-24). Nobody else yet.
+
+**Tech stack.**
+- **New:** a `mobile/` top-level folder (owner said yes 2026-11-24) holding its own Expo project: Expo (current SDK, the version Expo Go supports), Expo Router (screens = files), TypeScript, `expo-secure-store` (login saved encrypted in the iPhone Keychain), `@supabase/supabase-js`.
+- **Existing, unchanged:** the Next.js server at `https://themaroon.site`, Supabase, the `/api/app/*` routes, which already accept the app login (`Authorization: Bearer <token>`, `lib/supabase/requestIdentity.ts`).
+- **No new services in Step 1.** An expo.dev account and EAS Build (cloud iPhone builds → TestFlight) come in a later step.
+- Website, Capacitor app, `ios/`, `android/` and the TestFlight workflow are not touched.
+
+**Screens in Step 1.**
+1. **Sign in:** email + password (same Supabase login as today). Wrong password / no internet show a plain message. Sign-up, forgot-password and Google/Apple come later; Step 1 uses an existing account.
+2. **Bottom tabs**, same five as today: Play · Golf Trips · Profile · Tourneys · Leagues, maroon + cream, Spectral font.
+3. **Profile tab** loads `GET /api/app/profile` with the saved login and shows your name and username, which proves the app reaches the real server as you.
+4. Other tabs show "Coming soon" for now. A **Sign out** button clears the saved login.
+
+**Data.** Nothing new is stored. The login session lives only in the phone's Keychain. Supabase URL + public (anon) key are read from `mobile/.env` (same values as the website's `SUPABASE_URL` / `SUPABASE_ANON_KEY`; `.env` never committed; `mobile/.env.example` is the template). The server address is `https://www.themaroon.site`: the bare domain redirects there and a redirect drops the login header.
+
+**How the owner runs it.** `cd mobile`, then `npx expo start --tunnel`, then scan the QR code with the iPhone camera, and it opens in Expo Go. Changes show in a second or two.
+
+**Done when.** On the owner's iPhone: the app opens in Expo Go → sign in with a real account → five tabs → Profile shows their real name → sign out returns to Sign in → reopening the app keeps them signed in. A wrong password shows a message, not a crash. Type check passes in `mobile/`; the website's own tests/type check still pass (nothing outside `mobile/` changed except this spec, `.gitignore` if needed, and the root `tsconfig`/lint ignoring `mobile/`).
+
+**Next steps (separate specs, one at a time).** Step 2: shared logic (move pure `lib/` code both apps use, or import it). Step 3+: rebuild areas one at a time: Play → Golf Trips → Scoring → Profile → Tourneys → Leagues. Then EAS Build → TestFlight, then Android. Apple Watch simulator screens run alongside.

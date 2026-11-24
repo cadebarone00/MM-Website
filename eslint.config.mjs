@@ -25,6 +25,8 @@ const eslintConfig = defineConfig([
     // Playwright screenshots and bundled capture scripts, not app source.
     "test-results/**",
     ".superpowers/**",
+    // The Expo (React Native) app has its own type check and lint (cd mobile).
+    "mobile/**",
   ]),
   // CommonJS scripts can only import with require().
   { files: ["**/*.cjs"], rules: { "@typescript-eslint/no-require-imports": "off" } },
