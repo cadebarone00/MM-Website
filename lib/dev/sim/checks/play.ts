@@ -34,8 +34,28 @@ async function leftoverRows(db: SimDb, round: string): Promise<number> {
   return total;
 }
 
-const hostOf = (seeded: SimSeeded) => seeded.people.find((p) => p.key === "cam")?.id ?? seeded.people[0].id;
-const roundOf = (seeded: SimSeeded) => seeded.refs.round;
+/** Finds the round a check is about; null while there is none. */
+export type Resolve = (db: SimDb, seeded: SimSeeded) => Promise<string | null>;
+
+/** Old scenarios: the round is seeded and named in refs. */
+export const seededRound: Resolve = async (_db, seeded) => seeded.refs.round ?? null;
+
+/**
+ * Custom setups: the phones start the round themselves, so follow the newest round the host created. Once found it sticks
+ * (so "deleted" can see it vanish) until a newer round by the host appears. Make one per setup; a Reset makes a new one.
+ */
+export function hostsNewestRound(): Resolve {
+  let known: string | null = null;
+  return async (db, seeded) => {
+    const host = seeded.refs.host;
+    if (!host || !UUID.test(host)) return known;
+    const newest = (await db.query<{ id: string }>("select id from shared_rounds where host = $1 order by started_at desc, id desc limit 1", [host])).rows[0]?.id ?? null;
+    if (newest) known = newest;
+    return known;
+  };
+}
+
+const hostOf = (seeded: SimSeeded) => seeded.refs.host ?? seeded.people.find((p) => p.key === "cam")?.id ?? seeded.people[0].id;
 
 async function savedHoles(db: SimDb, round: string): Promise<{ n: number; names: string[] }> {
   const people = await db.query<{ name: string; n: string | number }>(
@@ -49,23 +69,26 @@ async function savedHoles(db: SimDb, round: string): Promise<{ n: number; names:
   return { n: rows.reduce((sum, r) => sum + Number(r.n), 0), names: rows.map((r) => r.name) };
 }
 
-const linked: SimCheck = {
+const linked = (r: Resolve): SimCheck => ({
   id: "linked", label: "Card linked to the round",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     if (!row) return (await leftoverRows(db, round)) === 0 ? pass("Round deleted") : fail("The round is gone but some of its rows are left");
-    return row.host === hostOf(seeded) ? pass("The round exists and Cam is the host") : fail("The round has the wrong host");
+    return row.host === hostOf(seeded) ? pass(`The round exists and ${seeded.people.find((p) => p.id === hostOf(seeded))?.name ?? "the host"} is the host`) : fail("The round has the wrong host");
   },
-};
+});
 
-const saved: SimCheck = {
+const saved = (r: Resolve): SimCheck => ({
   id: "saved", label: "Scores saved",
   async run(db, seeded) {
-    const { n, names } = await savedHoles(db, roundOf(seeded));
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
+    const { n, names } = await savedHoles(db, round);
     return n === 0 ? waiting("No scores yet") : pass(`${n} holes saved (${names.join(", ")})`);
   },
-};
+});
 
 /**
  * Tries to change a score and always undoes it. One statement, so it is as short as it can be and a failure can't leave the
@@ -86,21 +109,23 @@ async function lockAttempt(db: SimDb, round: string, host: string): Promise<{ lo
   return { locked: false, detail: `The lock test hit a different error: ${result || "no error and no refusal"}` };
 }
 
-const ended: SimCheck = {
+const ended = (r: Resolve): SimCheck => ({
   id: "ended", label: "Submitted and locked",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     if (!row || row.status === "live") return waiting("Round is still live");
     const attempt = await lockAttempt(db, round, row.host);
     return attempt.locked ? pass(attempt.detail) : fail(attempt.detail);
   },
-};
+});
 
-const profileOnce: SimCheck = {
+const profileOnce = (r: Resolve): SimCheck => ({
   id: "profile-once", label: "On each player's profile, once",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     if (!row) return waiting("Round is gone");
     const counts: { name: string; n: number }[] = [];
@@ -113,13 +138,14 @@ const profileOnce: SimCheck = {
     if (counts.some((c) => c.n === 0)) return row.status === "ended" ? fail(`Missing from a profile: ${text}`) : waiting(`Not saved yet: ${text}`);
     return pass(text);
   },
-};
+});
 
 /** Each saved profile card's per-hole strokes must equal what the shared round holds for that player (pure comparison of stored values). */
-const cardMatches: SimCheck = {
+const cardMatches = (r: Resolve): SimCheck => ({
   id: "card-matches", label: "Profile card matches the round",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     if (!row) return waiting("Round is gone");
     const lines: string[] = [];
@@ -137,12 +163,13 @@ const cardMatches: SimCheck = {
     }
     return lines.length === 0 ? waiting("No saved cards yet") : pass(lines.join(", "));
   },
-};
+});
 
-const handicapCheck = (expectCounted: boolean): SimCheck => ({
+const handicapCheck = (r: Resolve, expectCounted: boolean): SimCheck => ({
   id: "handicap", label: "Handicap",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     const players = row ? await playersOf(db, round, row.host) : [];
     const lines: string[] = [];
@@ -160,10 +187,11 @@ const handicapCheck = (expectCounted: boolean): SimCheck => ({
   },
 });
 
-const guest: SimCheck = {
+const guest = (r: Resolve): SimCheck => ({
   id: "guest", label: "Guest never reaches a profile",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     const row = await roundRow(db, round);
     if (!row) return waiting("Round is gone");
     const players = await playersOf(db, round, row.host);
@@ -171,19 +199,21 @@ const guest: SimCheck = {
     if (n === 0) return waiting("Nothing saved yet");
     return n === players.length ? pass(`${n} profile rounds for ${players.length} players`) : fail(`${n} profile rounds but ${players.length} players`);
   },
-};
+});
 
-const deleted: SimCheck = {
+const deleted = (r: Resolve): SimCheck => ({
   id: "deleted", label: "Delete round removes everything",
   async run(db, seeded) {
-    const round = roundOf(seeded);
+    const round = await r(db, seeded);
+    if (!round) return waiting("No round yet");
     if (await roundRow(db, round)) return waiting("The round still exists");
     const left = await leftoverRows(db, round);
     return left === 0 ? pass("Nothing left of the round") : fail(`${left} rows left behind`);
   },
-};
+});
 
 /** The checks a Play scenario shows; the unrated one expects the round not to count toward handicap. */
-export function playChecks(opts: { expectCounted: boolean; withGuest?: boolean }): SimCheck[] {
-  return [linked, saved, ended, profileOnce, cardMatches, handicapCheck(opts.expectCounted), ...(opts.withGuest ? [guest] : []), deleted];
+export function playChecks(opts: { expectCounted: boolean; withGuest?: boolean; round?: Resolve }): SimCheck[] {
+  const r = opts.round ?? seededRound;
+  return [linked(r), saved(r), ended(r), profileOnce(r), cardMatches(r), handicapCheck(r, opts.expectCounted), ...(opts.withGuest ? [guest(r)] : []), deleted(r)];
 }

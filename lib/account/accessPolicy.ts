@@ -26,6 +26,8 @@ export const API_RULES: readonly AccessRule[] = [
   { pattern: /^\/api\/auth\//, category: "public", why: "sign-up / log-in / recovery flows" },
   { pattern: /^\/api\/account\/(activation-seen|birthday|birthday-correction|delete|finish|initialize|me|onboarding|password|photo|privacy|profile|sessions|terms)$/, category: "account",
     why: "onboarding steps, recovery, correction and deletion must work for Pending / Ineligible accounts" },
+  { pattern: /^\/api\/account\/(links|preferences)$/, category: "active", methods: ["PUT"],
+    why: "profile links and preferences require an active account and a completed profile" },
   { pattern: /^\/api\/golf-trips\/invitations\/[^/]+(\/decline)?$/, category: "invite", why: "view / hold (Pending) / accept (Active) / decline a trip invitation" },
   { pattern: /^\/api\/(platform\/tournament-invitations|code-tournaments\/invite)\/[^/]+$/, category: "invite", methods: READS, why: "view a tournament invitation" },
   { pattern: /^\/api\/platform\/tournament-invitations\/[^/]+\/decline$/, category: "invite", why: "decline a tournament invitation" },

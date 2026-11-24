@@ -33,7 +33,9 @@ export function DevLiveEvent() {
     : preview === "event-missing" ? "missing" as const : sampleLiveTrip(), [preview]);
   // Desktop = TV (2026-11-23): the simulator's Desktop / TV view shows the TV board; phones keep the live page.
   const surface = useSurface();
-  return <LiveEventPage key={`${preview}-${surface}`} code="W4K9PZ" sample={sample} wide={surface === "desktop"} />;
+  const state = useSimulator()?.state;
+  const start = { mode: state?.liveMode ?? "board", statsOpen: state?.liveStats === "open", full: state?.liveFull === "on" };
+  return <LiveEventPage key={`${preview}-${surface}-${start.mode}-${start.statsOpen}-${start.full}`} code="W4K9PZ" sample={sample} wide={surface === "desktop"} start={start} />;
 }
 
 /** Trip Settings → Members → The Maroon Live: the organizer's picker, or what a player sees. */

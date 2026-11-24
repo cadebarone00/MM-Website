@@ -14,12 +14,21 @@ const STILL_SECONDS = 20;
  * board and/or the match play board, each scrolling slowly top to bottom and starting over; with both, they take turns.
  * Nothing to tap. Reduced motion: pages through instead of scrolling.
  */
-export function LiveTvBoard({ data, show, surface = "desktop", player, homeHref }: { data: TvBoardData; show: TvShow;
+export function LiveTvBoard({ data, show, surface = "desktop", player, homeHref, framed, controls, stats, statsStartOpen }: { data: TvBoardData; show: TvShow;
   /** Where it's open: a computer / TV browser ("desktop"), a phone's browser ("mobile") or the app ("app"); phones get a narrow layout. */
   surface?: "desktop" | "mobile" | "app";
   /** Desktop = TV (owner 2026-11-23), the mouse extras a TV ignores: names with a trip profile can be clicked (and the
    *  scroll pauses under the mouse), and "The Maroon Live" goes back to the directory. */
-  player?: { has: (name: string) => boolean; open: (name: string) => void }; homeHref?: string }) {
+  player?: { has: (name: string) => boolean; open: (name: string) => void }; homeHref?: string;
+  /** Plays inside a box (the phone's 16×9 TV screen) instead of filling the whole screen. */
+  framed?: boolean;
+  /** Bottom left: the Board | TV mode pills on an event page. */
+  controls?: ReactNode;
+  /** Bottom right: a Stats button that slides this panel out on the right, like Twitch chat; the board makes room. */
+  stats?: ReactNode;
+  /** The dev simulator's "Stats open" Conditional. */
+  statsStartOpen?: boolean }) {
+  const [statsOpen, setStatsOpen] = useState(statsStartOpen ?? false);
   const boards = tvBoards(data, show);
   const [index, setIndex] = useState(0);
   const board = boards[index % Math.max(boards.length, 1)];
@@ -28,7 +37,7 @@ export function LiveTvBoard({ data, show, surface = "desktop", player, homeHref 
   // Pairs / 3-Ball / 4-Ball: no team header and no team glow from the screen's sides, just the matches.
   const teamHeader = data.match?.teamHeader !== false;
   const teams = teamHeader ? data.match?.teams : undefined;
-  return <div className={styles.screen} data-surface={surface} data-board={board} data-header={teamHeader ? undefined : "none"} data-interactive={player || homeHref ? "" : undefined}
+  return <div className={styles.screen} data-surface={surface} data-board={board} data-header={teamHeader ? undefined : "none"} data-interactive={player || homeHref ? "" : undefined} data-framed={framed ? "" : undefined} data-stats={stats && statsOpen ? "open" : undefined}
     style={teams ? { "--team-left": teams[0].color, "--team-right": teams[1].color } as CSSProperties : undefined}>
     <header className={styles.header}>
       {/* Owner 2026-11-22: brand with the time under it (left), name with the location / course under it (middle),
@@ -72,7 +81,14 @@ export function LiveTvBoard({ data, show, surface = "desktop", player, homeHref 
         </Scroller>
       </>}
     {/* With both boards, small dots show which one is up. */}
-    <footer className={styles.footer}>{boards.length > 1 && <span className={styles.dots} aria-hidden>{boards.map((b, i) => <i key={b} data-on={i === index % boards.length ? "" : undefined} />)}</span>}</footer>
+    <footer className={styles.footer}>
+      <span className={styles.footerStart}>{controls}</span>
+      {boards.length > 1 ? <span className={styles.dots} aria-hidden>{boards.map((b, i) => <i key={b} data-on={i === index % boards.length ? "" : undefined} />)}</span> : <span />}
+      <span className={styles.footerEnd}>{stats && <button type="button" className={styles.statsButton} aria-expanded={statsOpen} aria-controls="tv-stats" onClick={() => setStatsOpen((open) => !open)}>{statsOpen ? "Close stats" : "Stats"}</button>}</span>
+    </footer>
+    {stats && <aside id="tv-stats" className={styles.statsPanel} data-open={statsOpen ? "" : undefined} aria-label="Stats insights" aria-hidden={!statsOpen} inert={!statsOpen}>
+      <p className={styles.statsTitle}>Stats insights</p>{stats}
+    </aside>}
   </div>;
 }
 

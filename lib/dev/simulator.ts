@@ -193,6 +193,10 @@ export type SimulatorState = {
   tvKind?: TvKind;
   /** TV mode: the team structure (2 Teams / Pairs / 3-Ball / 4-Ball) and players per tee time. Unset = 2 Teams, groups of 2. */
   tvTeams?: TvTeams;
+  /** The Maroon Live → Event live page: Board or TV mode pill, the stats panel open, the phone's TV screen full screen. */
+  liveMode?: "board" | "tv";
+  liveStats?: "closed" | "open";
+  liveFull?: "off" | "on";
   tvGroup?: TvGroup;
   /** Play → Games mid round (/dev/round?game=…, lib/dev/sampleRoundGames.ts): group size, moment and options. Unset = ROUND_SAMPLE_DEFAULTS. */
   roundPlayers?: number;
@@ -339,6 +343,9 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.tvPhase !== undefined && !isTvPhase(state.tvPhase)) return null;
   if (state.tvKind !== undefined && !isTvKind(state.tvKind)) return null;
   if (state.tvTeams !== undefined && !isTvTeams(state.tvTeams)) return null;
+  if (state.liveMode !== undefined && !["board", "tv"].includes(String(state.liveMode))) return null;
+  if (state.liveStats !== undefined && !["closed", "open"].includes(String(state.liveStats))) return null;
+  if (state.liveFull !== undefined && !["off", "on"].includes(String(state.liveFull))) return null;
   if (state.tvGroup !== undefined && !isTvGroup(state.tvGroup)) return null;
   if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
   if (state.roundPlayers !== undefined && ![2, 3, 4, 5].includes(state.roundPlayers as number)) return null;

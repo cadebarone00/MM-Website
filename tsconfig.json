@@ -41,13 +41,16 @@
     ".next-v1-retirement/types/**/*.ts",
     ".next-v1-retirement/dev/types/**/*.ts",
     ".next-sim/types/**/*.ts",
-    ".next-sim/dev/types/**/*.ts"
+    ".next-sim/dev/types/**/*.ts",
+    ".next-sim-alt/types/**/*.ts",
+    ".next-sim-alt/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "capacitor-web",
     "ios/App/App/public",
     "android/app/src/main/assets/public",
-    "out/backups"
+    "out/backups",
+    "mobile"
   ]
 }

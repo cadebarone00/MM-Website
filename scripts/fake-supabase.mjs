@@ -36,7 +36,7 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
     await db.exec(`create role anon; create role authenticated; create role service_role;
       create schema auth; create table auth.users(id uuid primary key, email text, encrypted_password text);
       create function auth.uid() returns uuid language sql as $$select null::uuid$$;
-      create schema storage; create table storage.buckets(id text primary key, name text, public boolean);
+      create schema storage; create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       create publication supabase_realtime;`);
     for (const file of migrations) await db.exec(readFileSync(`${root}/${file}`, "utf8"));
   }
@@ -95,12 +95,70 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
       params.push(parseValue(operand));
       sql = `"${column}" @> $${params.length}`;
     } else {
-      const ops = { eq: "=", neq: "<>", gt: ">", gte: ">=", lt: "<", lte: "<=" };
+      const ops = { eq: "=", neq: "<>", gt: ">", gte: ">=", lt: "<", lte: "<=", like: "like", ilike: "ilike" };
       if (!ops[op]) throw Object.assign(new Error(`unsupported filter ${op}`), { code: "PGRST100" });
-      params.push(parseValue(operand));
+      // like/ilike patterns hold a literal %, which parseValue's second decode would reject.
+      params.push(op === "like" || op === "ilike" ? operand : parseValue(operand));
       sql = `"${column}" ${ops[op]} $${params.length}`;
     }
     return negate ? `not (${sql})` : sql;
+  }
+
+  /** `or=(col.op.value,col.op.value)`: plain filters joined by OR (no nested and/or, no commas inside a value). */
+  function orFilter(expression, params) {
+    const unsupportedOr = () => Object.assign(new Error(`unsupported or filter ${expression}`), { code: "PGRST100", unsupportedOr: true });
+    const inner = expression.match(/^\((.*)\)$/)?.[1];
+    // Nested and/or, quoted values (which may hold commas) and anything else fancier answer red.
+    if (!inner || /[()"]/.test(inner)) throw unsupportedOr();
+    const parts = inner.split(",").map((part) => {
+      const dot = part.indexOf(".");
+      if (dot < 1) throw unsupportedOr();
+      return buildFilter(part.slice(0, dot), part.slice(dot + 1), params);
+    });
+    return `(${parts.join(" or ")})`;
+  }
+
+  const notSupported = () => Object.assign(new Error("unsupported select"), { unsupported: true });
+
+  /**
+   * The select list as SQL. Plain columns, "*", and one level of child tables as "child(col, col)" (each child table has a
+   * single-column foreign key to this table; it comes back as a JSON array, [] when there are none). Everything else
+   * (aliases, !hints, nesting, parent-side embeds) is unsupported and answers red.
+   */
+  async function selectList(table, select) {
+    if (select === "*") return "*";
+    const items = [];
+    let depth = 0, current = "";
+    for (const ch of select) {
+      if (ch === "(") depth++;
+      if (ch === ")") depth--;
+      if (ch === "," && depth === 0) { items.push(current); current = ""; } else current += ch;
+    }
+    items.push(current);
+    const out = [];
+    for (const raw of items.map((i) => i.trim()).filter(Boolean)) {
+      const embed = raw.match(/^([a-z_][a-z0-9_]*)\(([^()]*)\)$/);
+      if (embed) {
+        const [, child, inner] = embed;
+        const cols = inner.split(",").map((c) => c.trim()).filter(Boolean);
+        if (!cols.length || cols.some((c) => !IDENT.test(c))) throw notSupported();
+        const fks = (await db.query(
+          `select a.attname as col from pg_constraint k join pg_attribute a on a.attrelid = k.conrelid and a.attnum = k.conkey[1]
+           where k.contype = 'f' and k.conrelid = $1::regclass and k.confrelid = $2::regclass and array_length(k.conkey, 1) = 1`,
+          [`public."${child}"`, `public."${table}"`]).catch(() => ({ rows: [] }))).rows;
+        if (fks.length !== 1) throw notSupported();
+        const pk = (await db.query(
+          `select a.attname as col from pg_constraint k join pg_attribute a on a.attrelid = k.conrelid and a.attnum = k.conkey[1]
+           where k.contype = 'p' and k.conrelid = $1::regclass and array_length(k.conkey, 1) = 1`, [`public."${table}"`])).rows;
+        if (pk.length !== 1) throw notSupported();
+        const pairs = cols.map((c) => `'${c}', c."${c}"`).join(", ");
+        out.push(`coalesce((select json_agg(json_build_object(${pairs})) from public."${child}" c where c."${fks[0].col}" = public."${table}"."${pk[0].col}"), '[]'::json) as "${child}"`);
+      } else {
+        if (!IDENT.test(raw)) throw notSupported();
+        out.push(`"${raw}"`);
+      }
+    }
+    return out.join(", ");
   }
 
   async function handleTable(req, res, table, url) {
@@ -109,11 +167,13 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
       return send(res, 501, { code: "PGRST501", message: `fake-supabase: ${req.method} on tables isn't supported` });
     }
     const select = url.searchParams.get("select") ?? "*";
-    if (/[()!:]/.test(select)) {
+    let columns;
+    try { columns = await selectList(table, select); }
+    catch (error) {
+      if (!error.unsupported) throw error;
       unsupported.push(`embedded select on ${table}: ${select}`); res.fakeUnsupported = `embedded select on ${table}: ${select}`;
-      return send(res, 400, { code: "PGRST100", message: "fake-supabase: embedded selects aren't supported" });
+      return send(res, 400, { code: "PGRST100", message: "fake-supabase: this embedded select isn't supported" });
     }
-    const columns = select === "*" ? "*" : select.split(",").map((c) => c.trim()).filter(Boolean).map((c) => { if (!IDENT.test(c)) throw new Error(`bad column ${c}`); return `"${c}"`; }).join(", ");
     const params = [];
     const where = [];
     let order = "";
@@ -129,6 +189,14 @@ export async function startFakeSupabase({ port, root = "supabase", migrations = 
         }).join(", ");
       } else if (key === "limit") limit = Number(value);
       else if (key === "offset") offset = Number(value);
+      else if (key === "or") {
+        try { where.push(orFilter(value, params)); }
+        catch (error) {
+          if (!error.unsupportedOr) throw error;
+          unsupported.push(`or filter on ${table}: ${value}`); res.fakeUnsupported = `or filter on ${table}: ${value}`;
+          return send(res, 400, { code: "PGRST100", message: "fake-supabase: this or filter isn't supported" });
+        }
+      }
       else where.push(buildFilter(key, value, params));
     }
     const range = req.headers.range?.match(/^(\d+)-(\d+)$/);

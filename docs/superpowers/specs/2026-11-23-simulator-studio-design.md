@@ -1,6 +1,6 @@
 # Simulator Studio: build-your-own rehearsal, phones that play themselves (design)
 
-Owner request 2026-11-23. Status: **design, awaiting owner approval.** Replaces the layout of the Scoring Simulator built on 2026-11-23 (`2026-11-22-simulators-scoring-design.md`), and keeps all of its engine: `npm run sim`, the fake Supabase, the front door, Reset, the checks and the log.
+Owner request 2026-11-23. Status: **APPROVED by owner 2026-11-23.** Replaces the layout of the Scoring Simulator built on 2026-11-23 (`2026-11-22-simulators-scoring-design.md`), and keeps all of its engine: `npm run sim`, the fake Supabase, the front door, Reset, the checks and the log.
 
 ## Why
 

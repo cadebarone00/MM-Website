@@ -1,11 +1,8 @@
 import { playChecks } from "../checks/play";
 import { addPeople } from "../people";
+import { RATED_TEE, STEVENS_PARK_PAR as PAR, UNRATED_TEE, type SampleTee as Tee } from "../studio/courses";
 import type { SimFake, SimPerson, SimScenario, SimSeeded } from "../types";
 
-const PAR = [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4];
-type Tee = { name: string; rating: number | null; slope: number | null };
-const RATED_TEE: Tee = { name: "Blue", rating: 70.4, slope: 124 };
-const UNRATED_TEE: Tee = { name: "Blue", rating: null, slope: null };
 
 const today = () => {
   const d = new Date();

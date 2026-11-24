@@ -62,3 +62,4 @@ next-env.d.ts
 
 # Simulator dev build output
 /.next-sim/
+/.next-sim-alt/

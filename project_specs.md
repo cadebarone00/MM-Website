@@ -5768,6 +5768,24 @@ On Android, people can resize the widget, so it picks the closest of the same th
 - Trips, tournaments and leagues all get it. No SQL, no new services.
 - **Done =** on a computer, a Public / Link only event opens as the TV board, names open trip profiles, hover pauses, the brand goes back to the Directory. Phones are unchanged. Private events still say "This event isn't available." Simulator Conditionals show it in Desktop and TV view. Typecheck and tests pass, and it's checked on screen.
 
+**Board / TV mode pills (owner request 2026-11-23) — APPROVED + BUILT 2026-11-23 (uncommitted). In the app, full screen = cover the page (no status-bar / orientation plugin installed yet; Android app gets true full screen via the browser).**
+- **Every event page (phone and desktop) gets two pills at the top: Board | TV mode.**
+  - **Board:** today's live page (Leaderboard, Matches, Stats, scorecards), where you can tap or click around.
+  - **TV mode:** the scrolling TV board.
+- **Phone, TV mode:**
+  - A **16×9 TV-shaped screen** sits near the top, under the pills, playing the TV board (its narrow-phone layout isn't used here; it's the real TV look, shrunk).
+  - A **Full screen** button on it.
+  - Under it, **stats insights**: the same stats as the Stats tab (hardest / easiest hole, most birdies, best round, player stats).
+- **Full screen:**
+  - In **the app**: true full screen, sideways, with the status bar hidden.
+  - In **a phone's web browser**: iPhones don't let websites go true full screen, so the TV screen covers the whole page instead. Turn the phone sideways and it fills the screen. Screen mirroring (AirPlay / Chromecast) then sends a proper wide picture to the TV.
+- **Desktop, TV mode:** the full TV board (what we have now), plus a **Stats** button. Pressing it slides a stats panel out on the right side, like Twitch chat, and the board shrinks to make room. Press again to close.
+- **The real TV link (`/tap-in/<code>/tv`):** just the board, no pills. It also gets the Stats slide-out button, since a TV browser, Xbox or HDMI laptop can still press it.
+- **Stats:** trips only for now. Tournaments and leagues have no stats today, so the stats area and button are hidden for them.
+- **Which pill starts picked:** **Board, always** (phone and desktop); toggle to TV mode with the pill (owner 2026-11-23).
+- Same data and privacy rules as now. No SQL, no new services.
+- **Done =** pills switch both ways on phone and desktop. The phone's TV screen stays 16×9 and Full screen works (app and phone browser). Stats show under it on the phone and slide out on desktop / TV. Simulator Conditionals cover Board, TV mode, stats open, and full screen. Typecheck and tests pass, and it's checked on screen.
+
 ## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
 
 **Why:** the owner wants every version used, so people don't get the exact same words every time for the same thing.
@@ -6500,7 +6518,7 @@ Once the server says Active, it stops checking (starts again if someone else sig
 is gone in the app: no profile → back to sign-up. The website isn't changed (its onboarding pages sit behind the
 MAROON_V2_ONBOARDING switch).
 
-## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — DESIGN, AWAITING APPROVAL (nothing built)
+## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — APPROVED; Phase 1 (Play) BUILT 2026-11-24 (uncommitted)
 
 Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Changes the Scoring Simulator's page; keeps its engine (`npm run sim`, fake Supabase, front door, Reset, checks, log).
 
@@ -6623,3 +6641,90 @@ apply to a game are hidden; typecheck, lint and tests pass; checked on screen in
 - **Found, not changed:** Nassau, Match Play and other games with no per-hole pick show an empty box in Scoring (the
   real app does this too). The old Round (sample) page logs a server-render error from the invite code card.
 
+**Progress (Phase 1, Play) — BUILT 2026-11-24 (uncommitted):**
+- **How to use:** run `npm run dev` (port 3001) and `npm run sim`, open `/dev` then Simulators then Scoring then Setup. Pick players 1–4 with names, the host, a sample course and tee, the game (None or Skins), whether there is a guest, and a seed. Press Create, then Next / Play all / Pause / Skip, change the speed, or fast-forward. Tap any phone to take it over yourself. If a step cannot find its button it stops in red (nothing is faked).
+- **Phones:** they fit the area (1, 2, 3, 2×2, 3×2, 4×2). Each screen shows only the app, with the name and role under each phone.
+- **Sample courses:** Stevens Park (real rating), Tenison Park Glen (sample values), Sample Municipal (no rating).
+- **The seed:** the same seed always plays the same round.
+- **Tests:** `npm run test:sim` now includes the driver tests and `scripts/test-sim-studio.ts` (a 4-ball plays itself on its own test ports 3025–3027). Green.
+- **Real app bug found, NOT fixed (owner decision pending):** in Play, the host's Submit & Save does not wait for the last hole's score sends. A fast submit can leave a player's round off their profile (Jake showed 0).
+- **Other app observations (not changed):** account search hides errors as "No Maroon accounts match"; players with the same first name get identical stepper labels; the Track stats switch label is missing a space; "Pick up where I left off" can reopen on an earlier hole.
+- **Small inert hooks added to real components:** `data-sim` hole-number (GolfTripScoring), game-<id> and track-stats-on/off (PlayRound).
+- **Start script:** `scripts/sim/start.ts` now accepts SIM_DOOR_PORT, SIM_APP_PORT, SIM_FAKE_PORT and SIM_BUILD_DIR (defaults unchanged). `.next-sim-alt` is the test build folder.
+- **Not yet:** Phase 2 (Trip, 4–8 players, organizer), Tourneys and Leagues; the Chrome walk-through by the controller is pending (needs ports 3005–3007 free).
+
+## Feature: The Maroon native app with Expo (React Native) — Step 1: bare app on the owner's phone (owner request 2026-11-24) — APPROVED + BUILT + PHONE-CHECKED 2026-11-24 (owner: sign in, Profile name, sign out, stays signed in, wrong password all OK in Expo Go; Expo Go on a real iPhone needs the same Expo account signed in on the phone and in `npx expo login`)
+
+**Why.** Owner wants the phone app to feel perfectly smooth. The Capacitor app shows web pages inside the app, so it never feels fully native. Owner picked (2026-11-24) "Option 2": rebuild the **screens** natively with Expo (React Native), keep all the TypeScript logic, the Supabase database and the server. One codebase still makes iPhone + Android. The Capacitor app keeps shipping on TestFlight until the Expo app replaces it, area by area. The Apple Watch app stays Swift (designed in the /dev simulator first).
+
+**Who uses it.** The owner, testing on their iPhone through the **Expo Go** app (installed 2026-11-24). Nobody else yet.
+
+**Tech stack.**
+- **New:** a `mobile/` top-level folder (owner said yes 2026-11-24) holding its own Expo project: Expo (current SDK, the version Expo Go supports), Expo Router (screens = files), TypeScript, `expo-secure-store` (login saved encrypted in the iPhone Keychain), `@supabase/supabase-js`.
+- **Existing, unchanged:** the Next.js server at `https://themaroon.site`, Supabase, the `/api/app/*` routes, which already accept the app login (`Authorization: Bearer <token>`, `lib/supabase/requestIdentity.ts`).
+- **No new services in Step 1.** An expo.dev account and EAS Build (cloud iPhone builds → TestFlight) come in a later step.
+- Website, Capacitor app, `ios/`, `android/` and the TestFlight workflow are not touched.
+
+**Screens in Step 1.**
+1. **Sign in:** email + password (same Supabase login as today). Wrong password / no internet show a plain message. Sign-up, forgot-password and Google/Apple come later; Step 1 uses an existing account.
+2. **Bottom tabs**, same five as today: Play · Golf Trips · Profile · Tourneys · Leagues, maroon + cream, Spectral font.
+3. **Profile tab** loads `GET /api/app/profile` with the saved login and shows your name and username, which proves the app reaches the real server as you.
+4. Other tabs show "Coming soon" for now. A **Sign out** button clears the saved login.
+
+**Data.** Nothing new is stored. The login session lives only in the phone's Keychain. Supabase URL + public (anon) key are read from `mobile/.env` (same values as the website's `SUPABASE_URL` / `SUPABASE_ANON_KEY`; `.env` never committed; `mobile/.env.example` is the template). The server address is `https://www.themaroon.site`: the bare domain redirects there and a redirect drops the login header.
+
+**How the owner runs it.** `cd mobile`, then `npx expo start --tunnel`, then scan the QR code with the iPhone camera, and it opens in Expo Go. Changes show in a second or two.
+
+**Done when.** On the owner's iPhone: the app opens in Expo Go → sign in with a real account → five tabs → Profile shows their real name → sign out returns to Sign in → reopening the app keeps them signed in. A wrong password shows a message, not a crash. Type check passes in `mobile/`; the website's own tests/type check still pass (nothing outside `mobile/` changed except this spec, `.gitignore` if needed, and the root `tsconfig`/lint ignoring `mobile/`).
+
+**Next steps (separate specs, one at a time).** Step 2: shared logic (move pure `lib/` code both apps use, or import it). Step 3+: rebuild areas one at a time: Play → Golf Trips → Scoring → Profile → Tourneys → Leagues. Then EAS Build → TestFlight, then Android. Apple Watch simulator screens run alongside.
+
+## Feature: Insights — the stats dashboard on the website (owner request 2026-11-24) — SPEC, AWAITING APPROVAL (nothing built)
+
+**What it is:** a stats dashboard for The Maroon golfers on the website, made for a computer screen. You log in on the web
+and see your own stats, look up other golfers and compare stats, and scroll a feed of rounds. It is one extra feature, a
+bigger place to see the same numbers the app has. Later it will hold deeper stats like strokes gained.
+This is the first real feature on the website. The owner approved that on purpose (2026-11-24), so the 2026-10-19
+"web = marketing + log in + admin" rule still covers everything else.
+
+**Who uses it:** any logged-in Maroon account. There is no Insights page for people who aren't logged in.
+
+**Where the numbers come from (no new tables):** the one saved round per account (`player_rounds`). Every hole already
+has strokes and par, plus putts, fairway and green when "Track stats" was on. We read it through the existing
+`list_profile_rounds` reader, which already follows the Public/Private setting. Nothing gets copied anywhere.
+
+**Pages (all at `/insights`, login required, else go to /login and come back):**
+1. **My Insights** (`/insights`). Top row: handicap index, rounds played, scoring average (18 holes), best round.
+   Then: a chart of the last 20 scores, scoring average on par 3s, 4s and 5s, and how often you make birdie or better,
+   par, bogey, or double+. Then putts per round, fairways hit % and greens hit %. These three only count rounds
+   where stats were tracked, and they say "from N rounds".
+2. **Look up a golfer** (`/insights/<username>`). Uses the standard search look (the same as Friends search).
+   It shows the same dashboard for that person. If their profile is Private and you aren't them, you only see their
+   name, photo and "This golfer's stats are private."
+3. **Compare** (`/insights/compare?a=<username>&b=<username>`). You plus one other golfer, side by side: the same
+   numbers in two columns, the better number in each row highlighted, and both score trends on one chart.
+4. **Rounds feed** (a tab on `/insights`). Newest first: your rounds and your friends' rounds (Public or friends-only,
+   whatever the reader allows). Each card shows the golfer, course, date, score, to par, and a small hole-by-hole
+   card when you open it.
+
+**Look:** the maroon + cream style and the Spectral font. Barlow only for tiny ALL-CAPS labels. Avatars follow the
+one-avatar rule (gold-ring initials or photo). Desktop-first with a left menu (My Insights · Feed · Compare · Search).
+At phone width it stacks into one column with the 16px gutter and no sideways scrolling. Each section stays a fixed
+size whether it is loading, empty or full.
+
+**Empty and edge states:** no rounds yet ("Play a round in the app and your stats show up here"); stats never
+tracked (those three tiles say "Turn on Track stats"); only 9-hole rounds (scoring average is per 18 and is left
+blank until there is an 18-hole round); a golfer not found; a Private golfer.
+
+**Build order:**
+- **Step 1, dev preview:** every Insights screen runs on sample golfers inside the /dev simulator, with each state above
+  as a Conditional on that page. The stats math goes in one plain file (`lib/insights/stats.ts`) with tests.
+- **Step 2, real data:** the real `/insights` pages read `player_rounds` for logged-in users. If the feed needs a new
+  database reader for friends' rounds, the SQL file is written but not run until the owner runs it.
+
+**Not in this version:** strokes gained, course-by-course stats, filters by date or course, the app version of these
+screens, and editing rounds from Insights.
+
+**Done means:** tests pass for the stats math (with empty, 9-hole, no-stats and Private cases); the type check and
+lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
+account on the local dev site.
