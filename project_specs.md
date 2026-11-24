@@ -6468,7 +6468,7 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - B. Greenie rule: just tap whoever won it (plan — the group decides), or only offer it to someone who hit the green
   in one and made par or better?
 - C. Can a hole have both a greenie and closest to the pin (par 3s), or does picking greenies replace closest to the pin there? (plan: both allowed)
-- **Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.** In Round settings the
+- **Superseded 2026-11-23 (owner: "stick with Cade's") — see "Cancel / leave a round".** ~~Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.~~ In Round settings the
   scorekeeper has one red **Delete round** button (confirm first): the round is deleted for every player and from the
   database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
@@ -6510,3 +6510,7 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 - **No faked results:** a step that can't find its button stops in red. No sim UI inside phone screens.
 - **Data:** in-memory only (fake Supabase); nothing in Supabase prod.
 - **Done (Phase 1):** a 4-ball created in the form plays start → invites → accepts → 18 holes → submit on the real screens with all checks green; take-over works; resize keeps all phones visible; tests (layout math, step generation, driver actions, custom seed, one Playwright end-to-end run) + full suite + type check pass; checked in Chrome.
+
+**Owner decision (2026-11-23): keep Cade's "Cancel / leave a round"** — the scorekeeper's Cancel round → Save & exit /
+Delete round / Keep playing, and friends' Leave round — instead of the Delete-round-only version. Needs
+`supabase/shared_round_delete.sql` run in Supabase for Delete round and Leave round to work.
