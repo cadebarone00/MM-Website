@@ -57,7 +57,7 @@ function Row({ name, note, onRemove, removeLabel }: { name: string; note: string
 }
 
 /** Search Maroon accounts by name (accounts only), a moment after typing stops (website InvitePlayer). */
-function InvitePlayer({ taken, onInvite }: { taken: string[]; onInvite: (player: RoundPlayer) => void }) {
+export function InvitePlayer({ taken, onInvite }: { taken: string[]; onInvite: (player: RoundPlayer) => void }) {
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Account[]>([]);
   const [searched, setSearched] = useState("");
@@ -105,7 +105,7 @@ function InvitePlayer({ taken, onInvite }: { taken: string[]; onInvite: (player:
 }
 
 /** Someone playing without the app: their score stays on this round only (website AddGuest). */
-function AddGuest({ onAdd }: { onAdd: (name: string) => void }) {
+export function AddGuest({ onAdd }: { onAdd: (name: string) => void }) {
   const [name, setName] = useState("");
   const text = guestName(name);
   const add = () => { if (text) { onAdd(text); setName(""); } };

@@ -14,6 +14,7 @@ import { Button } from "~/components/Button.tsx";
 import { Card } from "~/components/Card.tsx";
 import { PageHeader } from "~/components/PageHeader.tsx";
 import { Leaderboard } from "~/components/round/Leaderboard.tsx";
+import { RoundSettings } from "~/components/round/RoundSettings.tsx";
 import { ScoringSheet } from "~/components/round/ScoringSheet.tsx";
 import { TUCKED_HEIGHT } from "~/components/round/TuckSheet.tsx";
 import { apiJson } from "~/lib/api.ts";
@@ -57,6 +58,8 @@ function SharedRoundScreen({ id }: { id: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [actionProblem, setActionProblem] = useState<string | null>(null);
   useEffect(() => { readMyStats(id).then(setMyStats); }, [id]);
   const changeStats = useCallback((next: MyStats) => { setMyStats(next); void saveMyStats(id, next); }, [id]);
 
@@ -91,6 +94,14 @@ function SharedRoundScreen({ id }: { id: string }) {
     setSheetOpen(false);
     setSaved(result.saved);
   }
+  /** A Round settings change (remove, invite, setup, delete, leave). Leave works without the drop-out SQL (leaves this phone). */
+  async function hostAction(body: { action: string } & Record<string, unknown>): Promise<boolean> {
+    const reply = await apiJson(`/api/rounds/shared/${encodeURIComponent(id)}`, { method: "POST", body });
+    if (reply.ok || (body.action === "leave" && reply.code === "not_installed")) { setActionProblem(null); return true; }
+    setActionProblem(body.action === "delete" && reply.code === "not_installed" ? "Deleting rounds isn't set up in this database yet." : reply.error || "That didn't work. Try again.");
+    return false;
+  }
+  const exit = (clear: boolean) => { setSettingsOpen(false); if (clear) void saveMyStats(id, null); router.navigate("/"); };
   const changePar = setup.course.custom && !ended ? (hole: number, value: number) => {
     const next = { ...setup, course: { ...setup.course, par: setup.course.par.map((p, h) => h === hole ? value : p) } };
     void saveBuiltPars(next.course.ref, next.course.par);
@@ -100,7 +111,7 @@ function SharedRoundScreen({ id }: { id: string }) {
   return (
     <>
       <RoundBody setup={setup} people={people} inputs={scoring.inputs} subtitle={isHost ? "Round with friends · you keep score" : "Round with friends"} ended={ended}
-        problem={scoring.problem ?? state.problem}
+        problem={actionProblem ?? scoring.problem ?? state.problem} onSettings={() => setSettingsOpen(true)}
         footer={saved ? <SavedPanel saved={saved} />
           : isHost ? (
             <>
@@ -115,9 +126,11 @@ function SharedRoundScreen({ id }: { id: string }) {
               {setup.playerStats && <FriendStats round={state.round} me={state.me} send={scoring.sendStats} />}
             </>
           )} />
+      <RoundSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} round={state.round} me={state.me} inviteCode={state.inviteCode} ordered={people}
+        inputs={scoring.inputs} gameFits={view.gameFits} onAction={hostAction} onExit={exit} />
       {isHost && !ended && !saved && (
         <>
-              <ScoringSheet open={sheetOpen} onOpenChange={setSheetOpen} people={people} meKey={state.me} par={view.par} range={range} stats={setup.stats}
+          <ScoringSheet open={sheetOpen} onOpenChange={setSheetOpen} people={people} meKey={state.me} par={view.par} range={range} stats={setup.stats}
             myStats={myStats} onMyStats={changeStats} onStrokes={scoring.setStrokes} onFinish={(hole) => scoring.finishHole(hole, view.par, others)}
             holeAlert={(h) => setup.game?.id === "wolf" && view.gameFits && scoring.inputs[h]?.wolfPartner === undefined && people.every((p) => p.strokes[h] != null)}
             game={setup.game ?? null} gameFits={view.gameFits} sideGames={setup.sideGames} inputs={scoring.inputs} onPick={scoring.setPick}
@@ -194,12 +207,12 @@ function PhoneRoundScreen() {
 }
 
 /** The round screen's body: course header, the leaderboard, and a footer. */
-function RoundBody({ setup, people, inputs, subtitle, ended, problem, footer }: {
-  setup: PersonalRoundSetup; people: BoardPerson[]; inputs: HoleInput[]; subtitle: string; ended: boolean; problem: string | null; footer: ReactNode;
+function RoundBody({ setup, people, inputs, subtitle, ended, problem, footer, onSettings }: {
+  setup: PersonalRoundSetup; people: BoardPerson[]; inputs: HoleInput[]; subtitle: string; ended: boolean; problem: string | null; footer: ReactNode; onSettings?: () => void;
 }) {
   const view = roundGameView(setup, people, inputs);
   return (
-    <Shell subtitle={subtitle}>
+    <Shell subtitle={subtitle} onSettings={onSettings}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{setup.course.name}</Text>
         <Text style={styles.place}>{[setup.tee?.name, holesChoiceLabel(setup.holes), view.def?.name, ended ? "Round ended" : null].filter(Boolean).join(" · ")}</Text>
@@ -271,10 +284,10 @@ function FriendStats({ round, me, send }: { round: SharedRound; me: string; send
   );
 }
 
-function Shell({ children, subtitle = "Your round" }: { children: ReactNode; subtitle?: string }) {
+function Shell({ children, subtitle = "Your round", onSettings }: { children: ReactNode; subtitle?: string; onSettings?: () => void }) {
   return (
     <SafeAreaView style={styles.page} edges={["top"]}>
-      <View style={styles.gutter}><PageHeader title={subtitle} back onBack={() => router.navigate("/")} tone="dark" /></View>
+      <View style={styles.gutter}><PageHeader title={subtitle} back onBack={() => router.navigate("/")} onSettings={onSettings} tone="dark" /></View>
       <View style={styles.body}>{children}</View>
     </SafeAreaView>
   );

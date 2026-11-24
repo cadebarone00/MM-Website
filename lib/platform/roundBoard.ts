@@ -120,3 +120,24 @@ export const nineTotal = (holes: number[], values: (number | null)[]) => holes.s
 
 /** A $ cell on the scorecard's P&L row: "+5", "−3", "–" for even, "" for none. */
 export const cashCell = (n: number | null) => n == null ? "" : n === 0 ? "–" : `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+
+/** Wolf / Sixes: the playing order decides who's the Wolf / who partners whom (Round settings → order). */
+export const orderMatters = (gameId: string | undefined) => gameId === "wolf" || gameId === "sixes";
+
+/** The order can change until the first hole is scored or any game pick is made. */
+export const orderLocked = (rows: (number | null)[][], inputs: HoleInput[]) => rows.some((row) => row.some((v) => v != null)) || inputs.some((i) => Object.keys(i).length > 0);
+
+/** Move one player in the playing order (↑ / ↓). */
+export function movedOrder(keys: string[], from: number, to: number): string[] {
+  const next = [...keys];
+  const [key] = next.splice(from, 1);
+  next.splice(to, 0, key);
+  return next;
+}
+
+/** A random playing order (Randomize), Fisher–Yates. `random` is injectable for tests. */
+export function shuffledOrder(keys: string[], random: () => number = Math.random): string[] {
+  const out = [...keys];
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+}

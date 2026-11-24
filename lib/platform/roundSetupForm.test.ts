@@ -98,3 +98,11 @@ test("small helpers", () => {
   assert.equal(startErrorMessage("offline", undefined), "No connection. Check your internet and try again.");
   assert.equal(startErrorMessage(undefined, "Guests need the update."), "Guests need the update.");
 });
+
+test("Change game keeps net / birdies double only where the new game allows them", async () => {
+  const { changedGame } = await import("./roundSetupForm.ts");
+  const setup = buildRoundSetup(form({ gameId: "skins", net: true, birdiesDouble: true, players: [{ name: "Cam", profileId: "p2", handicap: null }] })).setup!;
+  assert.deepEqual(changedGame(setup, "stableford").game, { id: "stableford", net: true, birdiesDouble: true });
+  assert.deepEqual(changedGame(setup, "scramble").game, { id: "scramble", net: false, birdiesDouble: false });
+  assert.equal(changedGame(setup, "").game, null);
+});

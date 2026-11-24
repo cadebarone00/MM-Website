@@ -98,3 +98,16 @@ test("round people: invited/joined players by position (you = You, first names),
   assert.deepEqual(picksByHole([{ hole: 3, pick: { doubled: true } }])[2], { doubled: true });
   assert.deepEqual(picksByHole([])[0], {});
 });
+
+test("playing order: when it matters, when it locks, moving and shuffling", async () => {
+  const { orderMatters, orderLocked, movedOrder, shuffledOrder } = await import("./roundBoard.ts");
+  assert.equal(orderMatters("wolf"), true);
+  assert.equal(orderMatters("sixes"), true);
+  assert.equal(orderMatters("skins"), false);
+  assert.equal(orderLocked([[null, null]], [{}, {}]), false);
+  assert.equal(orderLocked([[4, null]], [{}]), true);
+  assert.equal(orderLocked([[null]], [{ wolfPartner: 1 }]), true);
+  assert.deepEqual(movedOrder(["a", "b", "c"], 2, 1), ["a", "c", "b"]);
+  const shuffled = shuffledOrder(["a", "b", "c", "d"], () => 0);
+  assert.deepEqual([...shuffled].sort(), ["a", "b", "c", "d"]);
+});

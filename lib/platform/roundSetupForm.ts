@@ -143,3 +143,9 @@ export function startErrorMessage(code: string | undefined, message: string | un
   if (code === "signed_out") return "signed_out";
   return message ?? (code === "offline" ? "No connection. Check your internet and try again." : "Couldn't start the round. Try again.");
 }
+
+/** Round settings → Change game (host, mid-round): the new game keeps net and birdies-double where the new game allows them. */
+export function changedGame(setup: PersonalRoundSetup, gameId: GameId | ""): PersonalRoundSetup {
+  const next = gameId ? gameDef(gameId) : null;
+  return { ...setup, game: next ? { id: next.id, net: !next.teamFormat && (setup.game?.net ?? false), birdiesDouble: next.points && (setup.game?.birdiesDouble ?? false) } : null };
+}

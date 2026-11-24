@@ -16,8 +16,8 @@ import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, typ
 import { guestStrokes } from "@/lib/platform/sharedRoundCards";
 import { sideGamesOn } from "@/lib/platform/sideGames";
 import { finishHoleSends, withDaytonaLeft, withDaytonaMiddle, withDouble, withWolfPick, wolfView } from "@/lib/platform/roundScoring";
-import { cardNines, cashCell, leaderboardLines, nineTotal, orderPeople, roundGameView, roundPeople, scoreMark } from "@/lib/platform/roundBoard";
-import { buildRoundSetup, firstName, GAME_GROUPS, handicapValue, holesChoiceLabel as holesLabel, money, PAGE_TITLES, playersLabel, reviewLines, SETUP_PAGES, stakeText, startErrorMessage, type RoundSetupForm, type SetupPage } from "@/lib/platform/roundSetupForm";
+import { cardNines, cashCell, leaderboardLines, movedOrder, nineTotal, orderLocked as isOrderLocked, orderMatters as orderMattersFor, orderPeople, roundGameView, roundPeople, scoreMark, shuffledOrder } from "@/lib/platform/roundBoard";
+import { buildRoundSetup, changedGame, firstName, GAME_GROUPS, handicapValue, holesChoiceLabel as holesLabel, money, PAGE_TITLES, playersLabel, reviewLines, SETUP_PAGES, stakeText, startErrorMessage, type RoundSetupForm, type SetupPage } from "@/lib/platform/roundSetupForm";
 
 export { playersLabel };
 import { customRef, isCustomRef } from "@/lib/platform/golfGps/courseRefs";
@@ -35,12 +35,6 @@ type Saved = { setup: PersonalRoundSetup; startedAt: string; card?: SheetCard; i
 /** `members`: the host's submit also saved these joined players' rounds (or couldn't, when a hole wasn't scored). */
 type MemberSave = { name: string; saved: boolean };
 type SaveState = { status: "idle" | "saving" } | { status: "saved"; round: PlayerRound; game: GameResult | null; members?: MemberSave[] } | { status: "error"; message: string };
-/** A random order (Fisher–Yates), for Randomize on the playing order. */
-function shuffled<T>(items: T[]): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
-  return out;
-}
 const newGuestId = () => `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 /** How often every phone in a shared round checks for the others' scores. */
 const POLL_MS = 4000;
@@ -605,11 +599,11 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const enteredRows = () => ordered.map((x) => x.strokes);
   const boardRows = () => view.rows;
   /** Wolf / Sixes: the order decides who's the Wolf / who partners whom. It can change until the first hole is scored. */
-  const orderMatters = setup.game?.id === "wolf" || setup.game?.id === "sixes";
-  const orderLocked = enteredRows().some((row) => row.some((v) => v != null)) || inputs.some((i) => Object.keys(i).length > 0);
+  const orderMatters = orderMattersFor(setup.game?.id);
+  const orderLocked = isOrderLocked(enteredRows(), inputs);
   const setOrder = (keys: string[]) => { const next = { ...setup, playerOrder: keys }; setSnap({ ...snap, setup: next }); void hostAction({ action: "setup", setup: next }); };
-  const shuffle = () => setOrder(shuffled(ordered.map((x) => x.key)));
-  const move = (from: number, to: number) => { const keys = ordered.map((x) => x.key); const [k] = keys.splice(from, 1); keys.splice(to, 0, k); setOrder(keys); };
+  const shuffle = () => setOrder(shuffledOrder(ordered.map((x) => x.key)));
+  const move = (from: number, to: number) => setOrder(movedOrder(ordered.map((x) => x.key), from, to));
   /** Next hole: every player's score for the hole goes to the round (and the leaderboard) — what the boxes show, par when untouched. */
   function finishHole(hole: number) {
     // What to send comes from the shared rules (lib/platform/roundScoring.ts), the same ones the Expo app uses.
@@ -675,8 +669,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
             : <p className={styles.note}>A round has up to 5 players, guests included.</p>)}
           {menu === "game" && <div className={styles.form}>
             <GamePicker gameId={setup.game?.id ?? ""} open={pickingGame} setOpen={setPickingGame} onPick={(gameId) => {
-              const next = gameId ? gameDef(gameId) : null;
-              void hostAction({ action: "setup", setup: { ...setup, game: next ? { id: next.id, net: !next.teamFormat && (setup.game?.net ?? false), birdiesDouble: next.points && (setup.game?.birdiesDouble ?? false) } : null } });
+              void hostAction({ action: "setup", setup: changedGame(setup, gameId) });
               setMenu(null);
             }} />
           </div>}
