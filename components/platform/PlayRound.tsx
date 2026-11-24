@@ -14,12 +14,13 @@ import gamesStyles from "./GolfTripGames.module.css";
 import { InviteCodeCard } from "./InviteCodeCard";
 import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, type RoundGuest, type RoundPlayer, type ScoringCourse } from "@/lib/platform/personalRound";
 import { guestStrokes } from "@/lib/platform/sharedRoundCards";
-import { sideGameMoney, sideGamesOn } from "@/lib/platform/sideGames";
+import { sideGamesOn } from "@/lib/platform/sideGames";
+import { cardNines, cashCell, leaderboardLines, nineTotal, orderPeople, roundGameView, roundPeople, scoreMark } from "@/lib/platform/roundBoard";
 import { buildRoundSetup, firstName, GAME_GROUPS, handicapValue, holesChoiceLabel as holesLabel, money, PAGE_TITLES, playersLabel, reviewLines, SETUP_PAGES, stakeText, startErrorMessage, type RoundSetupForm, type SetupPage } from "@/lib/platform/roundSetupForm";
 
 export { playersLabel };
 import { customRef, isCustomRef } from "@/lib/platform/golfGps/courseRefs";
-import { gameDef, moneyByHole, scoreGame, stakeUnit, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
+import { gameDef, scoreGame, stakeUnit, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import type { PlayerRound, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { SharedRound } from "@/lib/platform/sharedRoundsServer";
@@ -33,7 +34,6 @@ type Saved = { setup: PersonalRoundSetup; startedAt: string; card?: SheetCard; i
 /** `members`: the host's submit also saved these joined players' rounds (or couldn't, when a hole wasn't scored). */
 type MemberSave = { name: string; saved: boolean };
 type SaveState = { status: "idle" | "saving" } | { status: "saved"; round: PlayerRound; game: GameResult | null; members?: MemberSave[] } | { status: "error"; message: string };
-type Player = SharedRound["players"][number];
 /** A random order (Fisher–Yates), for Randomize on the playing order. */
 function shuffled<T>(items: T[]): T[] {
   const out = [...items];
@@ -594,36 +594,21 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   // First open on this phone with scores already in the round: start from them.
   const startCard = card ?? (myRemote.some((s) => s != null) ? { strokes: myRemote.map((s, h) => s ?? par[h]), putts: par.map(() => null), fairways: par.map(() => null), greens: par.map(() => null), penalties: [], attestStrokes: [] } : undefined);
   const { initialHoles, prefill } = restore(startCard, par);
-  const nameOf = (p: Player) => p.profileId === me ? "You" : firstName(p.name);
-  const handicapFor = (p: Player) => p.profileId === snap.host ? setup.myHandicap ?? null : setup.players?.find((x) => x.profileId === p.profileId)?.handicap ?? null;
-  // Everyone in the game, in order: players (host first) then guests.
-  // Everyone in the game, in the playing order: the host's chosen / shuffled order (Round settings), else players then guests.
-  const people = [...active.map((p) => ({ key: p.profileId, name: nameOf(p), handicap: handicapFor(p), strokes: () => strokesOf(p.profileId) })),
-    ...guests.map((g) => ({ key: g.id, name: firstName(g.name), handicap: g.handicap, strokes: () => guestRow(g.id) }))];
-  const orderOf = (key: string) => { const i = setup.playerOrder?.indexOf(key) ?? -1; return i < 0 ? 100 + people.findIndex((x) => x.key === key) : i; };
-  const ordered = [...people].sort((a, b) => orderOf(a.key) - orderOf(b.key));
-  const gamePlayers = ordered.map((x) => ({ name: x.name, handicap: x.handicap }));
-  const gameCourse = { par, strokeIndex: setup.course.strokeIndex, rating: setup.tee?.rating ?? null, slope: setup.tee?.slope ?? null };
-  const def = setup.game ? gameDef(setup.game.id) : null;
-  const gameFits = !def || def.players.includes(gamePlayers.length);
+  // Everyone in the game, in the playing order (Round settings), and the game's live view: the shared board
+  // (lib/platform/roundBoard.ts), the same one the Expo app uses.
+  const people = roundPeople(snap, me, strokesOf, guestRow);
+  const ordered = orderPeople(people, setup.playerOrder);
+  const view = roundGameView(setup, ordered, inputs);
+  const { gamePlayers, gameCourse, def, gameFits, result: liveResult, holeMoney, sideMoney, doubled: doubledHoles } = view;
   // What's actually been entered (no par for untouched holes): the leaderboard, friends' standings and the P&L use this.
-  const enteredRows = () => ordered.map((x) => x.strokes());
-  const boardRows = () => ordered.map((x) => ({ name: x.name, strokes: x.strokes() }));
+  const enteredRows = () => ordered.map((x) => x.strokes);
+  const boardRows = () => view.rows;
   /** Wolf / Sixes: the order decides who's the Wolf / who partners whom. It can change until the first hole is scored. */
   const orderMatters = setup.game?.id === "wolf" || setup.game?.id === "sixes";
   const orderLocked = enteredRows().some((row) => row.some((v) => v != null)) || inputs.some((i) => Object.keys(i).length > 0);
   const setOrder = (keys: string[]) => { const next = { ...setup, playerOrder: keys }; setSnap({ ...snap, setup: next }); void hostAction({ action: "setup", setup: next }); };
   const shuffle = () => setOrder(shuffled(ordered.map((x) => x.key)));
   const move = (from: number, to: number) => { const keys = ordered.map((x) => x.key); const [k] = keys.splice(from, 1); keys.splice(to, 0, k); setOrder(keys); };
-  const liveResult = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
-  const gameHoleMoney = setup.game && gameFits ? moneyByHole(setup.game, gamePlayers, gameCourse, range, enteredRows(), inputs) : null;
-  // Side games (greenies, longest drive, closest to the pin): their $ adds into the leaderboard's $ and the P&L rows.
-  const sideMoney = sideGameMoney(setup.sideGames, ordered.length, par, range, inputs);
-  const holeMoney = !sideMoney ? gameHoleMoney : ordered.map((_, p) => par.map((__, h) => {
-    const a = gameHoleMoney?.[p][h] ?? null, b = sideMoney.byHole[p][h];
-    return a == null && b == null ? null : (a ?? 0) + (b ?? 0);
-  }));
-  const doubledHoles = inputs.map((i) => setup.game?.doubles === true && i.doubled === true);
   /** Next hole: every player's score for the hole goes to the round (and the leaderboard) — what the boxes show, par when untouched. */
   function finishHole(hole: number) {
     const mine = read()?.card?.strokes[hole] ?? par[hole];
@@ -637,7 +622,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
     setSave({ status: "saving" });
     const result = await submitCard(setup, scored, id);
     if ("error" in result) { setSave({ status: "error", message: result.error }); return { ok: false, message: result.error }; }
-    const game = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes(ordered.map((x) => x.key === me ? scored.strokes : x.strokes()), par, 18, () => true), inputs) : null;
+    const game = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes(ordered.map((x) => x.key === me ? scored.strokes : x.strokes), par, 18, () => true), inputs) : null;
     write(null);
     setSave({ status: "saved", round: result.round, game, members: result.members });
     return { ok: true };
@@ -760,16 +745,12 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
 
 type HoleStats = { putts: number | null; fairway: ShotResult | null; green: ShotResult | null };
 
-/** A score's scorecard mark (owner 2026-11-22): circle = birdie, double circle = eagle or better, square = bogey, double
- *  square = double bogey or worse; par has none. */
-const scoreMark = (vsPar: number) => vsPar <= -2 ? "eagle" : vsPar === -1 ? "birdie" : vsPar === 0 ? "par" : vsPar === 1 ? "bogey" : "double";
-
 /** One player's scorecard, opened from the leaderboard: front and back nine, each with Par, the score, and — with a game
  *  that has money — what they won or lost on each hole (a P&L row). */
 function PlayerCard({ name, strokes, par, range, pnl, doubled }: { name: string; strokes: (number | null)[]; par: number[]; range: [number, number]; pnl: (number | null)[] | null; doubled: boolean[] }) {
-  const nines = [[0, 9], [9, 18]].filter(([a, b]) => a < range[1] && b > range[0]).map(([a, b]) => Array.from({ length: b - a }, (_, i) => a + i));
-  const sum = (holes: number[], values: (number | null)[]) => holes.some((h) => values[h] != null) ? holes.reduce((t, h) => t + (values[h] ?? 0), 0) : null;
-  const cash = (n: number | null) => n == null ? "" : n === 0 ? "–" : `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+  const nines = cardNines(range);
+  const sum = nineTotal;
+  const cash = cashCell;
   return <div className={styles.playerCard} role="region" aria-label={`${name}'s scorecard`}>
     {nines.map((holes, i) => <table key={i}>
       <thead><tr><th scope="row">{i === 0 && range[0] === 0 ? "Out" : "In"}</th>{holes.map((h) => <th key={h} scope="col">{h + 1}{doubled[h] && <sup aria-label="doubled">×2</sup>}</th>)}<th scope="col">Tot</th></tr></thead>
@@ -895,32 +876,14 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   /** Each player's $ per hole, in `rows` order (moneyByHole), for their scorecard's P&L row. */ holeMoney?: (number | null)[][] | null; doubled?: boolean[];
   /** Side-game $ per player, in `rows` order, added to the game's money. */ extraMoney?: number[] | null }) {
   const [open, setOpen] = useState<string | null>(null);
-  const holes = Array.from({ length: range[1] - range[0] }, (_, i) => range[0] + i);
-  const done = holes.filter((h) => rows.every((row) => row.strokes[h] != null));
-  const now = hole ?? holes.find((h) => !done.includes(h)) ?? range[1] - 1;
-  const game = new Map((result?.standings ?? []).map((s) => [s.label, s]));
-  const perPlayer = rows.every((row) => game.has(row.name));
-  const hasMoney = (perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined)) || Boolean(extraMoney);
-  // A SKINS column for Skins only (owner 2026-11-22: no PTS column); money shows in $.
-  const gameLabel = result && perPlayer && /skins?$/.test(game.get(rows[0].name)?.value ?? "") ? "SKINS" : null;
-  const lines = rows.map((row, index) => {
-    const played = holes.filter((h) => row.strokes[h] != null);
-    const toPar = played.reduce((sum, h) => sum + (row.strokes[h]! - par[h]), 0);
-    const standing = perPlayer ? game.get(row.name) : undefined;
-    return { ...row, played: played.length, toPar, standing, pnl: holeMoney?.[index] ?? null, cash: (standing?.money ?? 0) + (extraMoney?.[index] ?? 0) };
-  }).sort((a, b) => (b.standing?.rank ?? 0) - (a.standing?.rank ?? 0) || (a.played && b.played ? a.toPar - b.toPar : b.played - a.played));
-  type Line = typeof lines[number];
-  // Ties share a place (T2), like the trip's board.
-  const key = (line: Line) => `${line.standing?.rank ?? 0}|${line.played ? line.toPar : "x"}`;
-  const position = (i: number) => { const first = lines.findIndex((l) => key(l) === key(lines[i])); const tied = lines.filter((l) => key(l) === key(lines[i])).length > 1; return `${tied ? "T" : ""}${first + 1}`; };
-  const totText = (line: Line) => !line.played ? "–" : line.toPar === 0 ? "E" : line.toPar > 0 ? `+${line.toPar}` : String(line.toPar);
-  const parTone = (line: Line) => !line.played ? undefined : line.toPar < 0 ? "under" : line.toPar === 0 ? "even" : "over";
-  const gameValue = (value: string) => value.replace(/\s*(skins?|pts)$/, "");
+  const board = leaderboardLines({ rows, par, range, result, holeMoney, extraMoney, hole });
+  const { lines, perPlayer, hasMoney } = board;
+  const gameLabel = board.skins ? "SKINS" : null;
   // No THRU column: everyone in a round plays the same hole (owner 2026-11-22).
   const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""}${hasMoney ? " 52px" : ""}`;
   const initialsOf = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return <div className={`${trip.match} ${trip.leaderboard} ${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
-    <p className={styles.boardHead}><b>Hole {now + 1}</b>{done.length ? ` · thru ${done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
+    <p className={styles.boardHead}><b>Hole {board.now + 1}</b>{board.done.length ? ` · thru ${board.done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
     <div>
       <div className={trip.leaderboardListHeading}>
         <div className={`${trip.single} ${trip.columns}`} style={{ gridTemplateColumns: columns }} aria-hidden>
@@ -931,15 +894,15 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
           {hasMoney && <span className={trip.columnLabel}>$</span>}
         </div>
       </div>
-      <ul className={trip.lineup}>{lines.map((line, i) => <Fragment key={line.name}>
+      <ul className={trip.lineup}>{lines.map((line) => <Fragment key={line.name}>
         <li className={trip.single} style={{ gridTemplateColumns: columns }}>
-          <span className={trip.rank}>{position(i)}</span>
+          <span className={trip.rank}>{line.position}</span>
           <button type="button" className={trip.playerCardTrigger} aria-expanded={open === line.name} aria-label={`${line.name} scorecard`} onClick={() => setOpen(open === line.name ? null : line.name)}>
             <span className={trip.leaderboardAvatar} aria-hidden="true">{initialsOf(line.name)}</span>
             <span className={styles.boardName}>{line.name}</span>
           </button>
-          <span className={trip.number} data-par={parTone(line)}>{totText(line)}</span>
-          {gameLabel && <span className={trip.number}>{line.standing ? gameValue(line.standing.value) : "—"}</span>}
+          <span className={trip.number} data-par={line.tone}>{line.total}</span>
+          {gameLabel && <span className={trip.number}>{line.gameValue}</span>}
           {hasMoney && <span className={`${trip.number} ${styles.money}`} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</span>}
         </li>
         {open === line.name && <li className={styles.boardCard}><PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={line.pnl} doubled={doubled} /></li>}

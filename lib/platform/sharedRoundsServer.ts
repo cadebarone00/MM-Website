@@ -11,16 +11,8 @@ import type { ShotResult } from "./playerRounds.ts";
  * "not_installed" = shared_rounds.sql hasn't been run in this database yet.
  */
 
-export type SharedPlayerStatus = "invited" | "joined" | "declined" | "removed";
-export interface SharedRound {
-  id: string; host: string; status: "live" | "ended"; setup: PersonalRoundSetup; startedAt: string;
-  players: { profileId: string; name: string; position: number; status: SharedPlayerStatus }[];
-  holes: { profileId: string; hole: number; strokes: number | null; putts?: number | null; fairway?: ShotResult | null; green?: ShotResult | null }[];
-  /** Missing until shared_round_scorekeeper.sql is run. */
-  guestHoles?: { guestId: string; hole: number; strokes: number | null }[];
-  picks: { hole: number; pick: HoleInput }[];
-}
-export interface RoundInvite { roundId: string; hostName: string; setup: PersonalRoundSetup; startedAt: string }
+import type { RoundInvite, SharedRound } from "./sharedRoundTypes.ts";
+export type { RoundInvite, SharedPlayerStatus, SharedRound } from "./sharedRoundTypes.ts";
 export type Result<T> = { ok: true; value: T } | { ok: false; code: "not_installed" | "refused" | "failed"; message?: string };
 
 const db = () => createSupabaseServiceRoleClient();

@@ -1,6 +1,6 @@
 import { holeRange, type PersonalRoundSetup } from "./personalRound.ts";
 import type { ScoredCard } from "./playerRounds.ts";
-import type { SharedRound } from "./sharedRoundsServer.ts";
+import type { SharedRound } from "./sharedRoundTypes.ts";
 
 /**
  * Play a round with one scorekeeper (project_specs.md, 2026-11-21): the cards the host's Submit & Save saves for every
