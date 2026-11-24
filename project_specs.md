@@ -6492,7 +6492,7 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
   Back to Play. After deleting, the scorekeeper goes to the Play home screen.
 
-## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — APPROVED 2026-11-23 (not built yet)
+## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — APPROVED; Phase 1 (Play) BUILT 2026-11-24 (uncommitted)
 
 Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Changes the Scoring Simulator's page; keeps its engine (`npm run sim`, fake Supabase, front door, Reset, checks, log).
 
@@ -6502,6 +6502,18 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 - **No faked results:** a step that can't find its button stops in red. No sim UI inside phone screens.
 - **Data:** in-memory only (fake Supabase); nothing in Supabase prod.
 - **Done (Phase 1):** a 4-ball created in the form plays start → invites → accepts → 18 holes → submit on the real screens with all checks green; take-over works; resize keeps all phones visible; tests (layout math, step generation, driver actions, custom seed, one Playwright end-to-end run) + full suite + type check pass; checked in Chrome.
+
+**Progress (Phase 1, Play) — BUILT 2026-11-24 (uncommitted):**
+- **How to use:** run `npm run dev` (port 3001) and `npm run sim`, open `/dev` then Simulators then Scoring then Setup. Pick players 1–4 with names, the host, a sample course and tee, the game (None or Skins), whether there is a guest, and a seed. Press Create, then Next / Play all / Pause / Skip, change the speed, or fast-forward. Tap any phone to take it over yourself. If a step cannot find its button it stops in red (nothing is faked).
+- **Phones:** they fit the area (1, 2, 3, 2×2, 3×2, 4×2). Each screen shows only the app, with the name and role under each phone.
+- **Sample courses:** Stevens Park (real rating), Tenison Park Glen (sample values), Sample Municipal (no rating).
+- **The seed:** the same seed always plays the same round.
+- **Tests:** `npm run test:sim` now includes the driver tests and `scripts/test-sim-studio.ts` (a 4-ball plays itself on its own test ports 3025–3027). Green.
+- **Real app bug found, NOT fixed (owner decision pending):** in Play, the host's Submit & Save does not wait for the last hole's score sends. A fast submit can leave a player's round off their profile (Jake showed 0).
+- **Other app observations (not changed):** account search hides errors as "No Maroon accounts match"; players with the same first name get identical stepper labels; the Track stats switch label is missing a space; "Pick up where I left off" can reopen on an earlier hole.
+- **Small inert hooks added to real components:** `data-sim` hole-number (GolfTripScoring), game-<id> and track-stats-on/off (PlayRound).
+- **Start script:** `scripts/sim/start.ts` now accepts SIM_DOOR_PORT, SIM_APP_PORT, SIM_FAKE_PORT and SIM_BUILD_DIR (defaults unchanged). `.next-sim-alt` is the test build folder.
+- **Not yet:** Phase 2 (Trip, 4–8 players, organizer), Tourneys and Leagues; the Chrome walk-through by the controller is pending (needs ports 3005–3007 free).
 
 ## Feature: The Maroon native app with Expo (React Native) — Step 1: bare app on the owner's phone (owner request 2026-11-24) — APPROVED + BUILT + PHONE-CHECKED 2026-11-24 (owner: sign in, Profile name, sign out, stays signed in, wrong password all OK in Expo Go; Expo Go on a real iPhone needs the same Expo account signed in on the phone and in `npx expo login`)
 
@@ -6528,3 +6540,53 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 **Done when.** On the owner's iPhone: the app opens in Expo Go → sign in with a real account → five tabs → Profile shows their real name → sign out returns to Sign in → reopening the app keeps them signed in. A wrong password shows a message, not a crash. Type check passes in `mobile/`; the website's own tests/type check still pass (nothing outside `mobile/` changed except this spec, `.gitignore` if needed, and the root `tsconfig`/lint ignoring `mobile/`).
 
 **Next steps (separate specs, one at a time).** Step 2: shared logic (move pure `lib/` code both apps use, or import it). Step 3+: rebuild areas one at a time: Play → Golf Trips → Scoring → Profile → Tourneys → Leagues. Then EAS Build → TestFlight, then Android. Apple Watch simulator screens run alongside.
+
+## Feature: Insights — the stats dashboard on the website (owner request 2026-11-24) — SPEC, AWAITING APPROVAL (nothing built)
+
+**What it is:** a stats dashboard for The Maroon golfers on the website, made for a computer screen. You log in on the web
+and see your own stats, look up other golfers and compare stats, and scroll a feed of rounds. It is one extra feature, a
+bigger place to see the same numbers the app has. Later it will hold deeper stats like strokes gained.
+This is the first real feature on the website. The owner approved that on purpose (2026-11-24), so the 2026-10-19
+"web = marketing + log in + admin" rule still covers everything else.
+
+**Who uses it:** any logged-in Maroon account. There is no Insights page for people who aren't logged in.
+
+**Where the numbers come from (no new tables):** the one saved round per account (`player_rounds`). Every hole already
+has strokes and par, plus putts, fairway and green when "Track stats" was on. We read it through the existing
+`list_profile_rounds` reader, which already follows the Public/Private setting. Nothing gets copied anywhere.
+
+**Pages (all at `/insights`, login required, else go to /login and come back):**
+1. **My Insights** (`/insights`). Top row: handicap index, rounds played, scoring average (18 holes), best round.
+   Then: a chart of the last 20 scores, scoring average on par 3s, 4s and 5s, and how often you make birdie or better,
+   par, bogey, or double+. Then putts per round, fairways hit % and greens hit %. These three only count rounds
+   where stats were tracked, and they say "from N rounds".
+2. **Look up a golfer** (`/insights/<username>`). Uses the standard search look (the same as Friends search).
+   It shows the same dashboard for that person. If their profile is Private and you aren't them, you only see their
+   name, photo and "This golfer's stats are private."
+3. **Compare** (`/insights/compare?a=<username>&b=<username>`). You plus one other golfer, side by side: the same
+   numbers in two columns, the better number in each row highlighted, and both score trends on one chart.
+4. **Rounds feed** (a tab on `/insights`). Newest first: your rounds and your friends' rounds (Public or friends-only,
+   whatever the reader allows). Each card shows the golfer, course, date, score, to par, and a small hole-by-hole
+   card when you open it.
+
+**Look:** the maroon + cream style and the Spectral font. Barlow only for tiny ALL-CAPS labels. Avatars follow the
+one-avatar rule (gold-ring initials or photo). Desktop-first with a left menu (My Insights · Feed · Compare · Search).
+At phone width it stacks into one column with the 16px gutter and no sideways scrolling. Each section stays a fixed
+size whether it is loading, empty or full.
+
+**Empty and edge states:** no rounds yet ("Play a round in the app and your stats show up here"); stats never
+tracked (those three tiles say "Turn on Track stats"); only 9-hole rounds (scoring average is per 18 and is left
+blank until there is an 18-hole round); a golfer not found; a Private golfer.
+
+**Build order:**
+- **Step 1, dev preview:** every Insights screen runs on sample golfers inside the /dev simulator, with each state above
+  as a Conditional on that page. The stats math goes in one plain file (`lib/insights/stats.ts`) with tests.
+- **Step 2, real data:** the real `/insights` pages read `player_rounds` for logged-in users. If the feed needs a new
+  database reader for friends' rounds, the SQL file is written but not run until the owner runs it.
+
+**Not in this version:** strokes gained, course-by-course stats, filters by date or course, the app version of these
+screens, and editing rounds from Insights.
+
+**Done means:** tests pass for the stats math (with empty, 9-hole, no-stats and Private cases); the type check and
+lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
+account on the local dev site.

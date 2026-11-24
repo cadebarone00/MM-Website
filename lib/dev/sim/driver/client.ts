@@ -1,7 +1,9 @@
 import { runAction } from "./actions";
 import type { DriverMessage } from "./types";
 
-const ALLOWED_ORIGIN = "http://localhost:3001";
+// Replaced by the front door (esbuild define) with the control page origin.
+declare const __SIM_CONTROL_ORIGIN__: string;
+const ALLOWED_ORIGIN = __SIM_CONTROL_ORIGIN__;
 
 function ripple(el: Element) {
   const r = el.getBoundingClientRect();
@@ -25,21 +27,20 @@ window.addEventListener("message", (event) => {
   });
 });
 
-// Announce the screen on load and after client-side navigations, so the runner knows it changed.
-let lastPath: string | null = null;
+// Announce the screen on load and after every navigation (even to the same path), once it has settled:
+// two animation frames after load, so Next has hydrated before the runner taps anything.
+const settle = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(fn));
 function announce() {
-  const path = location.pathname + location.search;
-  if (path === lastPath) return;
-  lastPath = path;
-  window.parent.postMessage({ sim: "ready", path } satisfies DriverMessage, "*");
+  window.parent.postMessage({ sim: "ready", path: location.pathname + location.search } satisfies DriverMessage, "*");
 }
 for (const name of ["pushState", "replaceState"] as const) {
   const orig = history[name];
   history[name] = function (this: History, ...args: Parameters<History["pushState"]>) {
     const r = orig.apply(this, args);
-    setTimeout(announce, 0);
+    setTimeout(() => settle(announce), 0);
     return r;
   } as History["pushState"];
 }
-window.addEventListener("popstate", () => setTimeout(announce, 0));
-announce();
+window.addEventListener("popstate", () => setTimeout(() => settle(announce), 0));
+if (document.readyState === "complete") settle(announce);
+else window.addEventListener("load", () => settle(announce));

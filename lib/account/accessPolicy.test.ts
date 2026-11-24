@@ -53,6 +53,7 @@ test("the protected inventory: Play, golf, tournaments, rounds, social, admin ar
     ["/api/golf-trips", "POST"], ["/api/golf-trips/x-tripId/scoring/submit", "POST"], ["/api/golf-trips/x-tripId/members", "POST"],
     ["/api/code-tournaments/join", "POST"], ["/api/code-tournaments/x-token", "GET"], ["/api/rounds/shared", "POST"], ["/api/rounds/personal", "POST"],
     ["/api/profile/friends", "POST"], ["/api/profile/search", "GET"], ["/api/account/search", "GET"], ["/api/platform/tournaments", "POST"],
+    ["/api/account/links", "PUT"], ["/api/account/preferences", "PUT"],
     ["/api/portal/admin/matches/start", "POST"], ["/api/wagers/mm-coins/bet", "POST"], ["/api/fantasy/team", "POST"], ["/api/tap-in/display", "GET"],
     ["/api/courses/x-ref/gps", "POST"], ["/api/platform/tournament-invitations/x-token", "POST"], ["/api/code-tournaments/invite/x-token", "POST"],
   ];

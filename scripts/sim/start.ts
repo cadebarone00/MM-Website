@@ -6,9 +6,21 @@ import { SIM_MIGRATIONS } from "../../lib/dev/sim/migrations";
 import { checkPortsFree } from "../../lib/dev/sim/ports";
 import { startFrontDoor } from "./frontDoor";
 
-const DOOR_PORT = 3005;
-const APP_PORT = 3006;
-const FAKE_PORT = 3007;
+// SIM_DOOR_PORT / SIM_APP_PORT / SIM_FAKE_PORT / SIM_BUILD_DIR run a second simulator next to the usual one (defaults unchanged).
+function portFrom(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1024 || n > 65535) { console.error(`${name}=${raw} isn't a usable port (a whole number from 1024 to 65535).`); process.exit(1); }
+  if (n === 3001) { console.error(`${name}=3001 is the owner's dev server. Pick another port.`); process.exit(1); }
+  return n;
+}
+const DOOR_PORT = portFrom("SIM_DOOR_PORT", 3005);
+const APP_PORT = portFrom("SIM_APP_PORT", 3006);
+const FAKE_PORT = portFrom("SIM_FAKE_PORT", 3007);
+const BUILD_DIR = process.env.SIM_BUILD_DIR || ".next-sim";
+if (!/^\.next-sim[a-z0-9-]*$/.test(BUILD_DIR)) { console.error(`SIM_BUILD_DIR=${BUILD_DIR} must start with .next-sim (e.g. .next-sim-alt).`); process.exit(1); }
+if (new Set([DOOR_PORT, APP_PORT, FAKE_PORT]).size !== 3) { console.error("SIM_DOOR_PORT, SIM_APP_PORT and SIM_FAKE_PORT must be three different ports."); process.exit(1); }
 
 async function main() {
   if (process.env.NODE_ENV === "production") {
@@ -31,7 +43,7 @@ async function main() {
     SUPABASE_URL: holder.current.url,
     SUPABASE_ANON_KEY: "test-anon",
     SUPABASE_SERVICE_ROLE_KEY: "test-service",
-    NEXT_BUILD_OUTPUT: ".next-sim",
+    NEXT_BUILD_OUTPUT: BUILD_DIR,
     NEXT_PUBLIC_SUPABASE_URL: "",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
   };

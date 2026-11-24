@@ -464,7 +464,7 @@ export function GolfTripScoring({ par, parIsReference = false, initialHoles, pla
       <div className={styles.holeHeader}>
         <dl className={styles.holeStat}><dt>Thru</dt><dd>{thru}</dd></dl>
         <div className={styles.holeTitle}>
-          <span className={styles.holeNumber}>Hole {current + 1}</span>
+          <span className={styles.holeNumber} data-sim="hole-number">Hole {current + 1}</span>
           {onParChange && !submitted
             ? <button type="button" className={`${styles.holePar} ${styles.holeParEdit}`} aria-label={`Par ${holePar ?? 4} for hole ${current + 1}. Tap to change`} onClick={() => onParChange(current, (holePar ?? 4) >= 6 ? 3 : (holePar ?? 4) + 1)}>Par {holePar ?? "—"} ✎</button>
             : <span className={styles.holePar}>Par {holePar ?? "—"}</span>}

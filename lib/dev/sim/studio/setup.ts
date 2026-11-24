@@ -25,6 +25,10 @@ export function validateSetup(s: StudioSetup): string | null {
   if (s.players.some((p) => RESERVED_KEYS.includes(p.key))) return "That player key is reserved. Pick another name.";
   const names = s.players.map((p) => p.name.trim().toLowerCase());
   if (new Set(names).size !== names.length) return "Two players have the same name.";
+  // The scoring screen labels each stepper by first name, so two people (guest included) can't share one.
+  const firsts = [...s.players.map((p) => p.name), ...(s.guest?.trim() ? [s.guest] : [])].map((n) => n.trim().split(/\s+/)[0]);
+  const shared = firsts.find((f, i) => firsts.findIndex((g) => g.toLowerCase() === f.toLowerCase()) !== i);
+  if (shared) return `Two people share the first name ${shared}; the scoring screen can't tell them apart.`;
   const keys = s.players.map((p) => p.key);
   if (new Set(keys).size !== keys.length) return "Two players have the same key.";
   if (!keys.includes(s.host)) return "The host must be one of the players.";

@@ -254,9 +254,10 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
 
   const at = SETUP_PAGES.indexOf(page);
   const canNext = page === "round" ? Boolean(course) : page === "game" ? fits : true;
-  const toggle = (label: string, note: string | null, checked: boolean, onChange: (value: boolean) => void, disabled = false) =>
+  // `sim`: an inert simulator hook that also says the switch's state ("<sim>-on" / "<sim>-off").
+  const toggle = (label: string, note: string | null, checked: boolean, onChange: (value: boolean) => void, disabled = false, sim?: string) =>
     <label className={`${styles.wizToggle} ${disabled ? styles.toggleOff : ""}`}><span>{label}{note && <small>{note}</small>}</span>
-      <input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} /></label>;
+      <input type="checkbox" role="switch" checked={checked} disabled={disabled} data-sim={sim ? `${sim}-${checked ? "on" : "off"}` : undefined} onChange={(event) => onChange(event.target.checked)} /></label>;
   const choices = <T extends string | number,>(label: string, value: T, options: [T, string][], onChange: (value: T) => void) =>
     <fieldset className={styles.wizChoices}><legend>{label}</legend>
       <div>{options.map(([v, text]) => <button key={String(v)} type="button" aria-pressed={value === v} onClick={() => onChange(v)}>{text}</button>)}</div>
@@ -297,7 +298,7 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
               </AppSelect></label> : <p className={styles.note}>No tees listed for this course.</p>}
             {choices("Holes", holes, [["18", "18 holes"], ["front", "Front 9"], ["back", "Back 9"]], setHoles)}
             <label className={wiz.field}><span className={wiz.fieldLabel}>Date</span><DatePicker value={datePlayed} max={today()} onChange={(event) => setDate(event.target.value || today())} /></label>
-            {toggle("Track stats", "Putts, fairways, greens", stats, setStats)}
+            {toggle("Track stats", "Putts, fairways, greens", stats, setStats, false, "track-stats")}
             {toggle("Count toward handicap", handicapNote, countForHandicap && !teamFormat, setCount, teamFormat)}
           </>}
         </>}
@@ -395,7 +396,7 @@ export function GamePicker({ gameId, onPick, open, setOpen }: { gameId: GameId |
         <h3 className={gamesStyles.sheetTitle}>Choose a game</h3>
         {GAME_GROUPS.map((group) => <section key={group.title} className={gamesStyles.sheetGroup} aria-label={group.title}>
           <h4 className={gamesStyles.sheetGroupTitle}>{group.title}</h4>
-          {group.ids.map((id) => { const g = gameDef(id); return <button type="button" key={id} className={gamesStyles.sheetGame} aria-pressed={gameId === id} onClick={() => { onPick(id); setOpen(false); }}>
+          {group.ids.map((id) => { const g = gameDef(id); return <button type="button" key={id} className={gamesStyles.sheetGame} data-sim={`game-${id}`} aria-pressed={gameId === id} onClick={() => { onPick(id); setOpen(false); }}>
             <strong>{g.name}</strong><span>{g.blurb} · {playersLabel(g.players)}</span>
           </button>; })}
         </section>)}

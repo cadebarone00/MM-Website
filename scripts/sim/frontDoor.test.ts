@@ -6,6 +6,8 @@ import { startFakeSupabase } from "../fake-supabase.mjs";
 import { SIM_MIGRATIONS } from "../../lib/dev/sim/migrations";
 import { startFrontDoor } from "./frontDoor";
 
+const DOC = { "sec-fetch-dest": "document" };
+
 async function setup() {
   const upstream = http.createServer((req, res) => {
     if (req.url?.startsWith("/redir")) {
@@ -25,9 +27,9 @@ async function setup() {
   const door = await startFrontDoor({ port: 0, appPort: (upstream.address() as AddressInfo).port, fake });
   const base = `http://localhost:${door.port}`;
   // Host header decides the person; fetch can't set Host, so use http.request.
-  const call = (host: string, path: string, method = "GET", body?: string) =>
+  const call = (host: string, path: string, method = "GET", body?: string, extra: Record<string, string> = {}) =>
     new Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }>((resolve, reject) => {
-      const req = http.request({ host: "127.0.0.1", port: door.port, path, method, headers: { host, ...(body ? { "content-type": "application/json" } : {}) } }, (res) => {
+      const req = http.request({ host: "127.0.0.1", port: door.port, path, method, headers: { host, ...extra, ...(body ? { "content-type": "application/json" } : {}) } }, (res) => {
         let b = ""; res.on("data", (c) => (b += c)); res.on("end", () => resolve({ status: res.statusCode!, headers: res.headers, body: b }));
       });
       req.on("error", reject);
@@ -182,16 +184,18 @@ test("app-router navigations (rsc: 1, no prefetch) are recorded without _rsc; pr
 test("HTML pages for a person host get the driver script tag; JSON and /_next files don't", async () => {
   const s = await setup();
   try {
-    const page = await s.call("cam.localhost:3005", "/page");
+    const page = await s.call("cam.localhost:3005", "/page", "GET", undefined, DOC);
     assert.equal(page.status, 200);
     assert.ok(page.body.includes('<script src="/__sim/driver.js" defer></script></head>'), page.body);
     assert.ok(page.body.includes("hello") && page.body.includes("</html>"));
     assert.equal(page.headers["content-length"], String(Buffer.byteLength(page.body)));
-    const json = await s.call("cam.localhost:3005", "/data");
+    const fetched = await s.call("cam.localhost:3005", "/page");
+    assert.ok(!fetched.body.includes("driver.js"), "a plain fetch (not a document load) is not injected");
+    const json = await s.call("cam.localhost:3005", "/data", "GET", undefined, DOC);
     assert.equal(json.body, '{"a":1}');
     const next = await s.call("cam.localhost:3005", "/_next/static/x");
     assert.ok(!next.body.includes("driver.js"));
-    const plain = await s.call("localhost:3005", "/page");
+    const plain = await s.call("localhost:3005", "/page", "GET", undefined, DOC);
     assert.ok(!plain.body.includes("driver.js"));
   } finally { await s.close(); }
 });
@@ -204,5 +208,49 @@ test("/__sim/driver.js is served as JavaScript", async () => {
     assert.match(String(r.headers["content-type"]), /javascript/);
     assert.equal(r.headers["cache-control"], "no-store");
     assert.ok(r.body.includes("ready") && r.body.length > 500);
+  } finally { await s.close(); }
+});
+
+const FOURBALL = { kind: "play", players: [{ key: "cam", name: "Cam" }, { key: "cade", name: "Cade" }], host: "cam", course: "sim:stevens-park", tee: "Blue", game: "none", guest: null, seed: 1 };
+
+test("POST /__sim/custom rejects an invalid setup with its message", async () => {
+  const s = await setup();
+  try {
+    const bad = await s.call("localhost:3005", "/__sim/custom", "POST", JSON.stringify({ setup: { ...FOURBALL, host: "nobody" } }));
+    assert.equal(bad.status, 400);
+    assert.equal(JSON.parse(bad.body).error, "The host must be one of the players.");
+    const none = await s.call("localhost:3005", "/__sim/custom", "POST", "{}");
+    assert.equal(none.status, 400);
+    assert.ok(JSON.parse(none.body).error);
+    const foreign = await s.call("localhost:3005", "/__sim/custom", "POST", JSON.stringify({ setup: FOURBALL }), { origin: "http://evil.example" });
+    assert.equal(foreign.status, 403);
+    assert.equal(JSON.parse((await s.call("localhost:3005", "/__sim/status")).body).setup, null);
+  } finally { await s.close(); }
+});
+
+test("custom then reset returns to no round", async () => {
+  const s = await setup();
+  try {
+    const res = await s.call("localhost:3005", "/__sim/custom", "POST", JSON.stringify({ setup: FOURBALL }), { origin: "http://localhost:3001" });
+    assert.equal(res.status, 200);
+    const status = JSON.parse(res.body);
+    assert.equal(status.scenario, "custom");
+    assert.deepEqual(status.setup, FOURBALL);
+    assert.deepEqual(status.roles, { cam: "Host", cade: "Player" });
+    assert.deepEqual(status.phones.map((p: any) => [p.person, p.startPath]), [["cam", "/"], ["cade", "/"]]);
+    const rows = async () => Number(((await s.fake.current.db.query("select count(*) n from shared_rounds")).rows[0] as { n: string }).n);
+    const checks = async () => JSON.parse((await s.call("localhost:3005", "/__sim/checks")).body) as { id: string; status: string; detail: string }[];
+    assert.equal(await rows(), 0);
+    assert.ok((await checks()).every((c) => c.status === "waiting" && c.detail === "No round yet"));
+    // The host's phone starts a round through the real app; here the same database call stands in for it.
+    const cam = (await s.fake.current.db.query("select id from profiles where username = 'cam'")).rows[0] as { id: string };
+    await s.fake.current.db.query("select create_shared_round($1, $2::jsonb, '{}'::uuid[])", [cam.id, JSON.stringify({ course: { ref: "sim:stevens-park", name: "S", place: "D", par: [], strokeIndex: null, tees: [] }, tee: { name: "Blue", rating: 70.4, slope: 124 }, holes: "18", stats: false, countForHandicap: true, datePlayed: "2026-11-24", players: [], guests: [], game: null })]);
+    assert.equal(await rows(), 1);
+    assert.equal((await checks()).find((c) => c.id === "linked")!.status, "pass");
+    await s.call("localhost:3005", "/__sim/reset", "POST");
+    assert.equal(await rows(), 0);
+    assert.ok((await checks()).every((c) => c.detail === "No round yet"));
+    // The accounts are still there after the reset.
+    assert.equal(JSON.parse((await s.call("localhost:3005", "/__sim/status")).body).people.length, 2);
   } finally { await s.close(); }
 });

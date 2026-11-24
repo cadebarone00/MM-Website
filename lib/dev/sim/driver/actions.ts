@@ -64,7 +64,9 @@ function resolve(doc: Document, t: Target): { els: Element[]; root: Element | nu
     rootEl = roots[0];
     root = rootEl;
   }
-  return { els: candidates(root, t.role ?? "any").filter((el) => isVisible(el) && matches(el, t)), root: rootEl };
+  const found = candidates(root, t.role ?? "any").filter((el) => isVisible(el) && matches(el, t));
+  // A wrapper around another match (<a><button>Next</button></a>) is the same control: keep the innermost.
+  return { els: found.filter((el) => !found.some((o) => o !== el && el.contains(o))), root: rootEl };
 }
 
 function describe(t: Target): string {
@@ -82,7 +84,37 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const fail = (reason: "not-found" | "ambiguous" | "disabled" | "timeout", message: string, seen: string): DriverResult => ({ ok: false, reason, message, seen });
 
 function isDisabled(el: Element): boolean {
-  return (el as HTMLButtonElement).disabled === true || el.getAttribute("aria-disabled") === "true";
+  return el.matches(":disabled") || el.getAttribute("aria-disabled") === "true";
+}
+
+// A Next/React app: server-rendered markup has no click handlers until React hydrates and tags each element.
+function needsHydration(doc: Document): boolean {
+  const w = doc.defaultView as (Window & { __next_f?: unknown; next?: unknown }) | null;
+  return !!w && (w.__next_f !== undefined || w.next !== undefined);
+}
+const isHydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactProps$"));
+
+function shortDescription(el: Element): string {
+  const sim = el.getAttribute("data-sim");
+  const text = textOf(el).slice(0, 30);
+  return `<${el.tagName.toLowerCase()}${sim ? ` data-sim="${sim}"` : ""}${text ? ` "${text}"` : ""}>`;
+}
+
+// Waits (up to 1.5s) for exactly one visible, enabled, hydrated match; otherwise says why not.
+async function settleTarget(doc: Document, t: Target): Promise<{ el: HTMLElement } | { result: DriverResult }> {
+  const end = Date.now() + 1500;
+  const what = describe(t);
+  for (;;) {
+    const els = resolve(doc, t).els;
+    let blocked: DriverResult | null = null;
+    if (els.length > 1) return { result: fail("ambiguous", `${els.length} matches for ${what}`, seenOn(doc, t)) };
+    if (els.length === 0) blocked = fail("not-found", `Nothing matches ${what}`, seenOn(doc, t));
+    else if (isDisabled(els[0])) blocked = fail("disabled", `${what} is disabled`, seenOn(doc, t));
+    else if (needsHydration(doc) && !isHydrated(els[0])) blocked = fail("timeout", "the screen never finished loading", seenOn(doc, t));
+    else return { el: els[0] as HTMLElement };
+    if (Date.now() >= end) return { result: blocked };
+    await sleep(POLL_MS);
+  }
 }
 
 async function waitForMatch(doc: Document, t: Target, timeoutMs: number): Promise<Element[]> {
@@ -100,16 +132,23 @@ export async function runAction(doc: Document, action: DriverAction, hooks?: { o
     }
     case "tap":
     case "type": {
-      // A short grace period lets a screen that is still rendering show its target.
-      const els = await waitForMatch(doc, action.target, 1500);
+      const settled = await settleTarget(doc, action.target);
+      if ("result" in settled) return settled.result;
+      const el = settled.el;
       const what = describe(action.target);
-      if (els.length === 0) return fail("not-found", `Nothing matches ${what}`, seenOn(doc, action.target));
-      if (els.length > 1) return fail("ambiguous", `${els.length} matches for ${what}`, seenOn(doc, action.target));
-      const el = els[0] as HTMLElement;
-      if (isDisabled(el)) return fail("disabled", `${what} is disabled`, seenOn(doc, action.target));
       el.scrollIntoView({ block: "center" });
       if (action.kind === "tap") {
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const hit = doc.elementFromPoint(x, y);
+        if (hit && hit !== el && !el.contains(hit)) return fail("not-found", `${what} is covered by ${shortDescription(hit)}`, seenOn(doc, action.target));
         hooks?.onTap?.(el);
+        const view = doc.defaultView!;
+        const pos = { bubbles: true, cancelable: true, view, clientX: x, clientY: y, button: 0 };
+        el.dispatchEvent(new view.PointerEvent("pointerdown", { ...pos, pointerType: "touch", isPrimary: true }));
+        el.dispatchEvent(new view.MouseEvent("mousedown", pos));
+        el.dispatchEvent(new view.PointerEvent("pointerup", { ...pos, pointerType: "touch", isPrimary: true }));
+        el.dispatchEvent(new view.MouseEvent("mouseup", pos));
         el.click();
         return { ok: true };
       }
@@ -138,5 +177,7 @@ export async function runAction(doc: Document, action: DriverAction, hooks?: { o
       }
       return { ok: true };
     }
+    default:
+      return fail("not-found", "unknown action", "");
   }
 }

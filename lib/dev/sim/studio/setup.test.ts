@@ -94,3 +94,15 @@ test("rejects a player name longer than 40 characters", () => {
   const s = base(); s.players[1].name = "x".repeat(41);
   assert.notEqual(validateSetup(s), null);
 });
+
+test("two people can't share a first name (the scoring steppers use it), guest included", () => {
+  const s = base();
+  s.players = [{ key: "cam", name: "Cam" }, { key: "cade", name: "Cade Smith" }, { key: "cade2", name: "cade Jones" }];
+  assert.equal(validateSetup(s), "Two people share the first name cade; the scoring screen can't tell them apart.");
+  const g = base();
+  g.guest = "Cade Jr";
+  assert.equal(validateSetup(g), "Two people share the first name Cade; the scoring screen can't tell them apart.");
+  const ok = base();
+  ok.guest = "Uncle Rob";
+  assert.equal(validateSetup(ok), null);
+});

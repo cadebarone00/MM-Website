@@ -1,11 +1,17 @@
 import http from "node:http";
 import net from "node:net";
+import path from "node:path";
+import { build } from "esbuild";
 import type { AddressInfo } from "node:net";
 import { startFakeSupabase } from "../fake-supabase.mjs";
 import type { FakeCall, FakeSupabase } from "../fake-supabase.mjs";
 import { scenarioById } from "../../lib/dev/sim/scenarios";
 import { SimLog, loginPage, personFromHost } from "../../lib/dev/sim/frontDoor";
-import type { SimCheckResult, SimScenario, SimSeeded } from "../../lib/dev/sim/types";
+import { playChecks, hostsNewestRound } from "../../lib/dev/sim/checks/play";
+import { seedSetup } from "../../lib/dev/sim/studio/seedSetup";
+import { SAMPLE_COURSES } from "../../lib/dev/sim/studio/courses";
+import { validateSetup, type StudioSetup } from "../../lib/dev/sim/studio/setup";
+import type { SimCheck, SimCheckResult, SimScenario, SimSeeded } from "../../lib/dev/sim/types";
 
 export type FakeHolder = { current: FakeSupabase };
 
@@ -24,12 +30,25 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
   controlOrigin?: string;
 }): Promise<{ close(): Promise<void>; log: SimLog; port: number }> {
   const log = new SimLog();
+  // The phone driver: bundled once now, served to every phone at /__sim/driver.js.
+  const driverJs = (await build({
+    entryPoints: [path.resolve(process.cwd(), "lib/dev/sim/driver/client.ts")],
+    bundle: true, write: false, format: "iife", platform: "browser",
+    define: { __SIM_CONTROL_ORIGIN__: JSON.stringify(controlOrigin) },
+  })).outputFiles[0].text;
+  const DRIVER_TAG = '<script src="/__sim/driver.js" defer></script>';
   // The fake reports the auth user id of each call; map it to this scenario's person key.
   const onCall = (c: FakeCall) =>
     log.add({ person: (c.user && seeded?.people.find((p) => p.id === c.user)?.key) || null, kind: c.kind, text: c.error ? `${c.name}: ${c.error}` : c.name, ok: c.kind === "unsupported" ? false : c.ok });
 
   const base = await fake.current.dump();
   let scenario: SimScenario | null = null;
+  // What is on screen: a built-in scenario, or a setup made in the Studio. `makeChecks` builds a fresh set each time the
+  // database goes back to its start (a custom setup's checks remember which round they follow).
+  let setup: StudioSetup | null = null;
+  let active: string | null = null;
+  let makeChecks: () => SimCheck[] = () => [];
+  let checks: SimCheck[] = [];
   let seeded: SimSeeded | null = null;
   let scenarioSnap: Blob | null = null;
   let busy: Promise<unknown> = Promise.resolve();
@@ -75,7 +94,9 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
 
   const status = () => ({
     ok: true,
-    scenario: scenario?.id ?? null,
+    scenario: active,
+    setup,
+    roles: setup ? Object.fromEntries(setup.players.map((p) => [p.key, p.key === setup!.host ? "Host" : "Player"])) : {},
     phones: seeded?.phones ?? [],
     people: (seeded?.people ?? []).map((p) => ({ key: p.key, name: p.name })),
     pages: pagesNow(),
@@ -122,6 +143,11 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
         res.end(loginPage(url.searchParams.get("next") ?? "/"));
         return;
       }
+      if (route === "/__sim/driver.js" && req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(driverJs);
+        return;
+      }
       if (route === "/__sim/status" && req.method === "GET") { await busy; return json(res, 200, status()); }
       if (route === "/__sim/log" && req.method === "GET") {
         return json(res, 200, log.since(Number(url.searchParams.get("since") ?? 0) || 0));
@@ -129,8 +155,8 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
       if (route === "/__sim/checks" && req.method === "GET") {
         const out = await serialize(async () => {
           const rows: { id: string; label: string; status: string; detail: string }[] = [];
-          if (!scenario || !seeded) return rows;
-          for (const c of scenario.checks) {
+          if (!active || !seeded) return rows;
+          for (const c of checks) {
             let r: SimCheckResult;
             try { r = await c.run(fake.current.db, seeded); }
             catch (e) { r = { status: "fail", detail: e instanceof Error ? e.message : String(e) }; }
@@ -146,12 +172,31 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
         const next = scenarioById(id);
         if (!next) return json(res, 400, { ok: false, error: `Unknown scenario: ${id}` });
         await serialize(async () => {
-          scenario = null; seeded = null; scenarioSnap = null; history = new Map();
+          scenario = null; setup = null; active = null; checks = []; seeded = null; scenarioSnap = null; history = new Map();
           await restore(base);
           seeded = await next.seed(fake.current);
-          scenario = next;
+          scenario = next; active = next.id; makeChecks = () => next.checks; checks = makeChecks();
           scenarioSnap = await fake.current.dump();
           log.add({ person: null, kind: "note", text: `Scenario: ${next.label}`, ok: true });
+        });
+        return json(res, 200, status());
+      }
+      if (route === "/__sim/custom" && req.method === "POST") {
+        let next: StudioSetup | null = null;
+        try { next = JSON.parse((await readBody(req)) || "{}").setup ?? null; } catch { /* bad json: treated as missing */ }
+        const problem = !next || typeof next !== "object" || !Array.isArray(next.players) ? "Send a setup to start from." : validateSetup(next);
+        if (problem || !next) return json(res, 400, { ok: false, error: problem });
+        const chosen = next;
+        const tee = SAMPLE_COURSES.find((c) => c.ref === chosen.course)?.tees.find((t) => t.name === chosen.tee);
+        await serialize(async () => {
+          scenario = null; setup = null; active = null; checks = []; seeded = null; scenarioSnap = null; history = new Map();
+          await restore(base);
+          seeded = await seedSetup(fake.current, chosen);
+          setup = chosen; active = "custom";
+          makeChecks = () => playChecks({ expectCounted: tee?.rating != null, withGuest: !!chosen.guest, round: hostsNewestRound() });
+          checks = makeChecks();
+          scenarioSnap = await fake.current.dump();
+          log.add({ person: null, kind: "note", text: "Custom setup started", ok: true });
         });
         return json(res, 200, status());
       }
@@ -160,6 +205,7 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
         const snap = scenarioSnap;
         await serialize(async () => {
           await restore(snap);
+          checks = makeChecks();
           history = new Map();
           log.add({ person: null, kind: "note", text: "Reset to the start", ok: true });
         });
@@ -180,6 +226,14 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
     }
   }
 
+  const withDriver = (html: string) => {
+    const head = html.search(/<\/head>/i);
+    if (head >= 0) return html.slice(0, head) + DRIVER_TAG + html.slice(head);
+    const body = html.search(/<body[^>]*>/i);
+    if (body >= 0) { const end = html.indexOf(">", body) + 1; return html.slice(0, end) + DRIVER_TAG + html.slice(end); }
+    return html + DRIVER_TAG;
+  };
+
   async function proxy(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
     const person = personFromHost(req.headers.host ?? "");
     const isApi = url.pathname.startsWith("/api/");
@@ -199,6 +253,9 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
     const isRsc = req.headers.rsc === "1" && !req.headers["next-router-prefetch"];
     const isPage = person && req.method === "GET" && (isNav || isRsc) && !url.pathname.startsWith("/_next");
     const pageKey = (() => { const q = new URLSearchParams(url.search); q.delete("_rsc"); const s = q.toString(); return url.pathname + (s ? `?${s}` : ""); })();
+    // Plain GETs from a phone may be HTML pages: ask for them uncompressed so the driver tag can be inserted.
+    const mayInject = !!person && req.method === "GET" && isNav && !isRsc && !isApi && !url.pathname.startsWith("/_next");
+    if (mayInject) outgoing["accept-encoding"] = "identity";
     const up = http.request(
       {
         host: "localhost", port: appPort, method: req.method, path: req.url,
@@ -216,6 +273,21 @@ export async function startFrontDoor({ port, appPort, fake, controlOrigin = "htt
           for (const own of [`http://localhost:${appPort}`, `http://127.0.0.1:${appPort}`]) {
             if (loc.startsWith(own)) { headers.location = `http://${origHost}${loc.slice(own.length)}`; break; }
           }
+        }
+        const type = String(r.headers["content-type"] ?? "");
+        if (mayInject && r.statusCode === 200 && /^text\/html/i.test(type) && !r.headers["content-encoding"]) {
+          const chunks: Buffer[] = [];
+          r.on("data", (c: Buffer) => chunks.push(c));
+          r.on("end", () => {
+            const html = withDriver(Buffer.concat(chunks).toString("utf8"));
+            const body = Buffer.from(html, "utf8");
+            delete headers["transfer-encoding"];
+            headers["content-length"] = String(body.length);
+            res.writeHead(200, headers);
+            res.end(body);
+          });
+          r.on("error", () => res.destroy());
+          return;
         }
         res.writeHead(r.statusCode ?? 502, headers);
         r.pipe(res);
