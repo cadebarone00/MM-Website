@@ -27,7 +27,8 @@ import { addMyItem, goingOnly, inviteToItem, itineraryFor, removeMyItem, respond
 import { GolfTripAddPlace, GolfTripAddTravel, type MyTravelChange } from "./GolfTripMyTravel";
 import { TravelKindIcon } from "./travelKinds";
 import type { TripWeather } from "@/lib/platform/weather/types";
-import { flightCounts, flightTime, type FlightSummary } from "@/lib/platform/golfTripFlights";
+import type { FlightSummary } from "@/lib/platform/golfTripFlights";
+import { dateRangeLabel, flightsSlide as sharedFlightsSlide } from "@/lib/platform/tripHome";
 
 /** The Info tab's Flights card: the viewer's flight summary, and the Flights page it opens (null = not a link). */
 export interface TripFlights { summary: FlightSummary; href: string | null }
@@ -904,13 +905,9 @@ function ItineraryList({ addControl, items, tripDays, today: tripToday, whoFor, 
 /** Info → Flights card (in the first account-card slot): your next flight and how many you've saved; opens the Flights page. */
 /** The Big Board's slide for a trip with no itinerary: the next flight (or Add your flights), opening Flights. */
 function flightsSlide(flights?: TripFlights): BoardSlide {
-  const summary = flights?.summary;
-  const next = summary?.next;
-  const counts = summary ? flightCounts(summary) : "";
-  const when = next ? flightTime(next.departureLocal) : counts ? "No upcoming flights" : "Add your flights";
-  return { key: "flights", title: next ? `${next.flightNumber} · ${next.departureAirport} → ${next.arrivalAirport}` : "Flights", href: flights?.href ?? undefined,
-    ariaLabel: `Flights: ${next ? `next ${next.flightNumber}` : counts || "add your flights"}`,
-    body: <BoardSlideBody icon={<Plane size={14} strokeWidth={2} aria-hidden />} kind="Flights" status={next ? "NEXT" : undefined} when={when} detail={counts || undefined} /> };
+  const slide = sharedFlightsSlide(flights?.summary);
+  return { key: slide.key, title: slide.title, href: flights?.href ?? undefined, ariaLabel: slide.ariaLabel,
+    body: <BoardSlideBody icon={<Plane size={14} strokeWidth={2} aria-hidden />} kind={slide.kind} status={slide.status} when={slide.when} detail={slide.detail} /> };
 }
 
 /**
@@ -1065,17 +1062,6 @@ function InfoAccount({ onGoToMatches, tripId, tapInCode, spectator = false, matc
 /** Dev simulator weather: still loading (never settles) / a sample forecast. Made once so React's use() sees the same promise. */
 const WEATHER_NEVER = new Promise<TripWeather>(() => {});
 const WEATHER_SAMPLE = Promise.resolve(SAMPLE_WEATHER);
-
-/** "Jan 7 – Jan 10, 2026": the year once, on the second date (on both if the trip crosses a year); one date if only one is set. */
-function dateRangeLabel(start: string | undefined, end: string | undefined): string {
-  const format = (day: string, withYear: boolean) => new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
-  const from = validDay(start) ? start! : null, to = validDay(end) ? end! : null;
-  if (from && to) return `${format(from, from.slice(0, 4) !== to.slice(0, 4))} – ${format(to, true)}`;
-  return from || to ? format((from ?? to)!, true) : "";
-}
-
-/** A saved trip date (YYYY-MM-DD) that can be shown. */
-const validDay = (value: string | undefined) => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
 
 export function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card} aria-label={title}>

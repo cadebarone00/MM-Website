@@ -6966,3 +6966,162 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 **Not in 2b:** the Featured trip's "Plan this trip" prefill (Play → On The Range) gets wired here too once Create exists — *my call: include it, it's one line*; Flights / Transportation screens (not in the current step order); the tour's phone pictures (after 2c).
 
 **Done when (2b):** a trip created in the app shows up in the current app's Golf Trips with the same name, destination, dates, players, golf days, courses and competition settings as one made on the website; every checkbox works on the owner's iPhone; tests (step order + draft rules stay shared; the app's draft storage and create retry), type checks, website tests, iPhone build pass.
+
+### Part 2c checklist — Trip page shell + Home tab (from `app/golf-trips/[tripId]/page.tsx`, `SavedGolfTripHome`, `GolfTripHome` (`InfoAccount`), `GolfTripHeader`, `TripFeedTab` / `TripFeed`, `GolfTripChat`, `TripBigBoard`, `TripMomentum` (`TripMomentum`, `TripDraftWidget`), `MomSection`, `TripTapInInvite`, `TripHomeInvite`, `TripHomeRoster`, `TripHomeCompetition`, `TripTips`, `RatePlacesPrompt`; shared `lib/platform/bigBoard`, `homeCompetition`, `homeRoster`, `homeDraft`, `momNotifications`, `golfTripItinerary`, `tripTravel`, `golfTripFlights`, `tapIn`, `savedTripPresentation`) — APPROVED 2026-11-24 (owner also asked: weather later, likely via WeatherKit on the server). Slice 1 BUILT 2026-11-24, awaiting phone check: shell + tabs + placeholders, head, Big Board (scores / highlights / Mom countdown + next round, upcoming slides), The Maroon Live, Players / Teams + invite link, Competition; Home rules shared in lib/platform/tripHome.ts (the website uses its date + flights rules). Slice 2 BUILT 2026-11-24, awaiting phone check: Drafts (Team Draft countdown / No Date Set / Set up teams; Match Selection per round, Matches Selected, blocked reasons, round robin sides; rules shared in lib/platform/tripHomeDrafts.ts), Feed + Chat (memory only, like the website; photo picker = expo-image-picker), first-visit tips, "How was yesterday?" ratings. Differences until later parts, my calls: (1) Draft Room, Selection Room and round-robin result entry open the part 2e placeholder (the website enters round-robin results right on Home); (2) a match selection confirmed in the room shows as Matches Selected after the next reload (the website watches the room live); (3) first-visit tips are cards with Next / Done instead of bubbles pointing at the buttons
+
+**Side:** App (`mobile/`). Server: none expected. The data already comes from `GET /api/app/golf-trips/<id>` (the same `loadTripPageData` the website uses), `GET /api/golf-trips/<id>/momentum` and `GET /api/golf-trips/<id>/join-link`. If either of the last two refuses the app's login, it gets the same Bearer support as the rest (that would be the only server change).
+
+**How it's built (my calls, correct me).**
+- **Same brain.** Every number, label and rule on Home comes from the shared `lib/` code the website uses. That covers Big Board score, upcoming plans, countdown and next-round reminder, competition summary, roster order, teams, Your team and invite-link states. The few rules that only live inside a website screen move into `lib/` first and the website uses them from there. These are `dateRangeLabel`, `validDay`, the flights slide text, the plan-slide text and Home's "which competition" choice.
+- **Trip tabs.** The four tabs (Home · Golf · Venue · Itinerary) are built now. Golf, Venue and Itinerary open "coming in part 2d / 2f" placeholders until those parts.
+- **Weather is left out.** The website's saved trips have weather switched off ("the app will use the phone's own weather"). Apple Weather needs a full app build, not Expo Go. So there's no weather on Home, same as the website today. Weather comes with the EAS build step.
+- **Chat and Feed stay memory-only.** On the website, Trip Chat and the Feed don't save or send anything: messages and posts vanish on reload. The app copies that exactly and doesn't invent a backend. Making them real is a separate spec.
+- **Imported past trips** open a "coming in part 2g" placeholder, because the imported trip page is part 2g.
+- **No live scoring sheet yet.** Today's round scoring (Player & Attest) is part 2d. Home still shows a round as LIVE when the server says it's in play.
+
+**Trip page shell**
+- [ ] Opening a trip from the Golf Trips tab, an invite, or "Your trip is ready" (2b) loads `/api/app/golf-trips/<id>`.
+- [ ] While it loads: the trip's name if we have it, plus a loading state. No blank flash.
+- [ ] **Errors:**
+  - Not a member, or the trip doesn't exist → "Trip not found" with Back.
+  - Signed out → Sign in.
+  - Server down or offline → "Couldn't load this trip. Try again." with Try again.
+- [ ] Imported trip → part 2g placeholder with the trip's name.
+- [ ] **Header:**
+  - ← back to Golf Trips.
+  - Feed icon (newspaper) and Chat icon on the left.
+  - Trip name centered (`GolfTripTitle` rules; "Your Golf Trip" when empty).
+  - Settings gear on the right. It opens a "coming in part 2g" placeholder for now.
+- [ ] **Tab bar:**
+  - Home · Golf · Venue · Itinerary; Home is selected on open.
+  - A tap gives a small bump (none with Reduce Motion) and switches tabs.
+  - Golf opens on Board for team trips, else Overview. That's the placeholder for now.
+- [ ] Pull down to refresh reloads the trip.
+- [ ] Coming back to the app reloads it too.
+
+**Feed (header icon) — memory only, like the website**
+- [ ] Full-screen "Feed" sheet with the maroon X.
+- [ ] **Upload pictures** and **Make a post** buttons.
+- [ ] **Post sheet:**
+  - "What is happening on the course?" box, up to 2,000 characters.
+  - Add pictures from the phone's library: up to 6, JPG/PNG/WebP, 10 MB each. Otherwise: "Choose up to 6 JPG, PNG or WebP pictures, 10 MB each."
+  - Post is disabled until there's text or a picture. The X discards.
+- [ ] Posts list newest first, "You" as author, with **Delete post**.
+- [ ] Posts reset when the trip page closes, same as the website.
+
+**Chat (header icon) — memory only, like the website**
+- [ ] 85% slide-up sheet titled with the trip name and the maroon X. Tapping outside closes it.
+- [ ] **Inbox:**
+  - "Find someone in your group" search.
+  - Column labels "Conversation · Messages".
+  - Pinned **Trip Chat** row (group icon, "Your whole group, together" until a message).
+  - Direct chats that have messages, newest first, numbered 01, 02…
+  - With none: "Your conversations will appear here." / "Find someone in your group to start a chat."
+- [ ] **Search:**
+  - "In your group" lists members (not me) matching the text. Tap = start a direct chat.
+  - No match: "No group members match "…"."
+- [ ] **A conversation:**
+  - ← back to chats, the avatar (group icon for Trip Chat) and the name.
+  - Empty welcome text, Trip Chat: "Everyone. One conversation." / "Tee times, dinner plans, and everything in between."
+  - Empty welcome text, a person: "Say hello to {first name}." / "Start your conversation with a message below."
+  - Bubbles with time, day separators ("Today" or the date), autoscroll to newest.
+  - Message box up to 4,000 characters; Send is disabled while empty.
+
+**Home: maroon head**
+- [ ] "Your trip to" plus the destination on one line (`shortPlace`: "City, ST" in the US, "City, CC" abroad). Just "Your trip" with no destination.
+- [ ] The trip dates in gold ("Jan 7 – Jan 10, 2026"; the year once, or on both if it crosses a year; one date if only one is set). Left out with no dates.
+- [ ] **Big Board top half, competition trips:** once a round is in play or done, `bigBoardScore`.
+  - Team: both team names and points with TO WIN between.
+  - Individual: Leader, total, thru.
+  - Team & Individual: the team side, a divider, then the Top 4 including me.
+  - Points shown as halves (½).
+  - Highlights rotate under the score every 10 s, newest 5.
+- [ ] **Big Board top half, otherwise:** the Momentum strip.
+  - Highlights from `/momentum`, refreshed every 10 s and when the app comes back.
+  - With no highlights, the Mom section:
+    - My live notifications, rotating every 10 s with a fade, plus a small link button when a note has one.
+    - Otherwise a Days · Hrs · Min · Sec flip countdown to arrival day's first plan, or 7:00 AM that day.
+    - Once the trip has started: "Next up is {course}" over "{format} · Round {n} · {tee time}".
+    - Nothing when no rounds are left.
+- [ ] **Big Board bottom half (upcoming):** `upcomingSlides` from the itinerary of plans I'm going on.
+  - Each slide: icon plus kind, the status (LIVE in play / NOW / NEXT / UPCOMING), when, the detail, and the title under it.
+  - Swipe sideways, ‹ › arrows (disabled at the ends), and dots under the board. A new list starts at the first slide.
+  - Tapping a slide opens the Itinerary tab (its placeholder until 2f).
+  - Nothing left: "Nothing else coming up · See the full itinerary".
+  - No itinerary at all: a Flights slide.
+    - Next flight: "AA1234 · RDU → DFW", NEXT, the time, the counts.
+    - Otherwise: "No upcoming flights" or "Add your flights".
+    - Tapping it opens the Flights placeholder (2f).
+- [ ] The board keeps the same height in every state, and the dots row keeps its height even with one slide.
+
+**Home: The Maroon Live card**
+- [ ] "The Maroon Live", **View** (opens the live page in the browser), and "Invite your peers to follow along."
+- [ ] The tap-in link (`tapInPath` on themaroon.site), **Copy link** (shows "Copied"), and Share (the phone's share sheet: "Follow {trip} on The Maroon Live").
+- [ ] With no code: "The Maroon Live link unavailable", and View, Copy and Share are disabled.
+
+**Home: Drafts (trips with a team or individual competition)**
+- [ ] **Team draft card** (`TripDraftWidget`), with the same states and words as the website:
+  - Set up teams / team selection.
+  - "Set team draft date and time".
+  - "No Date Set".
+  - Countdown to the draft (Days · Hrs · Mins · Secs).
+  - Draft Room open.
+  - Waiting To Start.
+  - Teams complete · View teams.
+  - Snake / Captain's Picks / Duck Race labels.
+  - Organizer only: **Edit**, which goes to Settings (placeholder until 2g).
+  - Blocked reasons: "Add at least two players first." / "Complete team assignments first." / "Complete the team draft first."
+- [ ] **Match selection cards per match-play round:**
+  - "Round x @ Course" plus its format, and its when.
+  - Set up match selection / "Set match selection date and time".
+  - Match Room open, Matches Selected, Match selection complete.
+  - "Add match-play rounds to set up match selection."
+- [ ] Tapping into the Draft Room or Match Room opens a "coming in part 2e" placeholder. "View teams" and "go to matches" open the Golf tab (its placeholder until 2d).
+- [ ] With no draft or match card: "No drafts coming up". The section is hidden when teams are already shown.
+
+**Home: Players / Teams**
+- [ ] **"Players"** with "{joined}/{allotted}" (or just the count when there's no player number), sorted like the website (`sortHomeRoster`).
+  - Each row: number, gold-ring avatar (photo or initials), name, @username (`shownUsername`).
+  - None: "Players show up here as they join the trip."
+- [ ] **Once teams are set** (draft done or saved in Settings) it becomes **"Teams"**: each team's name as a small gold label with its players under it (`homeTeamRoster`).
+- [ ] **Invite link box under the heading** (hidden once the roster is full, `homeRosterFull`):
+  - The trip's 30-minute link, plus Copy link → "Copied". If copying fails: "Hold link to copy". A fresh link is fetched on copy.
+  - "Getting your link…" while loading.
+  - "Invite links aren't switched on yet".
+  - The server's error text.
+  - Same height in every state.
+
+**Home: Competition**
+- [ ] The "Competition" heading.
+- [ ] **The summary card** (`homeCompetitionSummary`):
+  - Type, Team format, then "Your team" (2 Teams) or "Teammates" ("Not on a team yet" when none).
+  - Individual format, Days, Rounds.
+  - "Round robin standings: W-L-T / winning percentage" when a round uses round robin.
+- [ ] **Formats:** Round n, format and course, with "Format not set" / "Course TBD" dimmed.
+- [ ] Total points and To win (halves) when known.
+- [ ] No tournament: "No competition". A tournament with nothing set up yet: "Team drafts, matches and skins will show here."
+
+**Home: extras**
+- [ ] **First-visit tips:** coach marks once per account (`coachStops`, organizer or player stops), starting 600 ms after the page settles. Settings → "Show tips again" will bring them back (2g).
+- [ ] **"How was yesterday?" after-visit ratings:** for my going plans made from Venue (`placesToRate`, within `RATE_WITHIN_DAYS`), the same prompt and choices as the website, saved through the same route.
+- [ ] **Not shown:** weather (see above), the website's unused Golf / The Trip / Travelers / Logistics sheets (dead code there), and anything from the /dev simulator.
+
+**/dev simulator Conditionals to match.** Each of the website's Home Conditionals has a real counterpart the phone shows. This is checked side by side, not built as a simulator in the app:
+- Overview: normal, no destination, no dates (weather-loading doesn't apply).
+- Momentum: team scores, split, leader, highlights, arrival countdown, next round, empty.
+- Upcoming: live, next, none, flights.
+- Competition: none, empty.
+- Invite: ready, loading, off, copied.
+- Players: none, list, photos.
+
+**Not in 2c:**
+- Golf tab and trip scoring (2d), Team Draft / Match Selection rooms (2e), Venue / Itinerary / My Travel / Flights (2f), Settings and imported trip page (2g).
+- Real weather.
+- A real chat and feed backend.
+
+**Done when (2c):**
+- On the owner's iPhone, our test trip opens in the app and its Home matches the website's Home for the same account, section by section: head, Big Board, The Maroon Live, drafts, players / teams, invite link, competition.
+- Feed and Chat work as on the website.
+- Every error state shows its message.
+- Tests: the newly shared rules, plus the app's trip loading and errors.
+- Type checks, website tests and app tests pass.
