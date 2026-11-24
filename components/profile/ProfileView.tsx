@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChartNoAxesColumn, ChevronLeft, Lock, Pencil, Search, Settings } from "lucide-react";
 import { ProfileAvatar } from "./ProfileAvatar";
@@ -48,6 +48,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
   const friendsOfHref = (links.friendsOf ?? "/profile/{username}/friends").replace("{username}", encodeURIComponent(real.identity.username));
   const compareName = real.isOwner ? compare : null;
   const [tab, setTab] = useState<Tab>(real.isOwner && compareName ? "stats" : "overview");
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("tab") === "stats") setTab("stats"); }, []);
   // App simulator (dev only) → Profile → "Sample stats data": my own profile shows made-up rounds instead of my real ones.
   const sample = useSimulator()?.state.sampleStats === true && real.isOwner;
   const profile = sample ? withSampleRounds(real) : real;
@@ -79,7 +80,7 @@ export function ProfileView({ profile: real, friendsCount = null, links = { sett
     {/* Extend the profile background through the bottom-menu padding. Owner request 2026-11-02: the top section is maroon
         and everything under it is cream (.profile-body in app/globals.css gives the tabs the light palette), so the maroon
         curve shows the same way on Overview, Rounds and Stats. */}
-    <div className="profile-root flex min-h-screen min-w-0 flex-col bg-[#fbf8f1] text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
+    <div className="app-own-top-clearance profile-root flex min-h-screen min-w-0 flex-col bg-[#fbf8f1] text-maroon-900 mb-[calc(-5.75rem-env(safe-area-inset-bottom))] lg:mb-0">
       {/* The icon row starts on the app's icon line (--app-top-clearance, app/globals.css: 8px below the safe area /
           status bar) and everything else lower, so nothing lands where the clock, battery or notch are. */}
       <header className="profile-hero relative z-10 flex min-h-[228px] flex-col rounded-b-3xl bg-maroon-900 text-cream-50 px-5 pb-3" style={{ paddingTop: `calc(var(--app-top-clearance, 0px) + ${isOwner ? 60 : 56}px)` }}>

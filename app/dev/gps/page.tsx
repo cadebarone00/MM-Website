@@ -41,7 +41,7 @@ export default async function GolfGpsPrototypePage({ searchParams }: { searchPar
   if (!loaded || !gpsCourse) {
     return <main style={{ height: "100svh", background: "var(--color-maroon-900)", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
       <p>{message}</p>
-      <p><a href="/dev/course-search" style={{ color: "#dcc495" }}>Back to course search</a></p>
+      <p><a href="/dev" style={{ color: "#dcc495" }}>Back to the simulator</a></p>
     </main>;
   }
   const holeNumbers = [...loaded.course.holes].map((h) => h.number).sort((a, b) => a - b);
@@ -64,7 +64,7 @@ async function SavedCourseGps({ maroonCourse, hole }: { maroonCourse: string; ho
   if (!entry || !gpsCourse) {
     return <main style={{ height: "100svh", background: "var(--color-maroon-900)", color: "#fbf8f1", padding: 24, font: "15px system-ui" }}>
       <p>{message}</p>
-      <p><a href="/dev/course-search" style={{ color: "#dcc495" }}>Back to course search</a></p>
+      <p><a href="/dev" style={{ color: "#dcc495" }}>Back to the simulator</a></p>
     </main>;
   }
   const holeNumbers = entry.course.holes.map((h) => h.number).sort((a, b) => a - b);

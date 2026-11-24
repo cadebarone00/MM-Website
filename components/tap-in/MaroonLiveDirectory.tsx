@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Search } from "lucide-react";
 import { WebsiteBrand } from "@/components/marketing/WebsiteBrand";
 import { LIVE_TRIP_MOCKS, type LiveTripCount } from "@/lib/website/liveTripMocks";
-import { LIVE_SECTIONS, liveEventDetail, liveSection, type LiveEvent } from "@/lib/platform/liveDirectory";
+import { LIVE_SECTIONS, liveEventDetail, liveSection, type LiveEvent, type LiveSection } from "@/lib/platform/liveDirectory";
 import styles from "./MaroonLiveDirectory.module.css";
 
 /**
@@ -18,6 +18,8 @@ export function MaroonLiveDirectory({ sampleCount, sample, surface = "website" }
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState<LiveEvent[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  /** The Live / Upcoming / Past pill; null = the first one with something in it. */
+  const [picked, setPicked] = useState<LiveSection | null>(null);
   useEffect(() => {
     if (sampleCount !== undefined) return;
     if (sample !== undefined) {
@@ -38,7 +40,8 @@ export function MaroonLiveDirectory({ sampleCount, sample, surface = "website" }
   }, [query, sampleCount, sample]);
 
   const today = new Date().toLocaleDateString("en-CA");
-  const sections = events && LIVE_SECTIONS.map((name) => ({ name, events: events.filter((event) => liveSection(event, today) === name) })).filter((s) => s.events.length);
+  const sections = events && LIVE_SECTIONS.map((name) => ({ name, events: events.filter((event) => liveSection(event, today) === name) }));
+  const shown = sections && (sections.find((s) => s.name === picked) ?? sections.find((s) => s.events.length) ?? sections[0]);
   const samples = sampleCount !== undefined ? LIVE_TRIP_MOCKS.slice(0, sampleCount) : null;
 
   return <main className={`${styles.page} ${surface === "app" ? styles.appPage : ""}`}>
@@ -59,17 +62,21 @@ export function MaroonLiveDirectory({ sampleCount, sample, surface = "website" }
         </label>
         {problem ? <p className={styles.notice} role="alert">{problem}</p>
           : !sections ? <p className={styles.notice}>Loading…</p>
-          : !sections.length ? (query.trim() ? <div className={styles.empty}><h3>Nothing matches “{query.trim()}”</h3><p>Try another name or course.</p></div> : <Empty />)
-          : sections.map((section) => <div key={section.name} className={styles.section}>
-            <div className={styles.listHeading}><h2>{section.name}</h2><span>{section.events.length}</span></div>
-            <ul className={styles.list} aria-label={section.name}>
-              {section.events.map((event) => <li key={`${event.kind}-${event.name}-${event.href}`} className={styles.trip}>
+          : !events?.length ? (query.trim() ? <div className={styles.empty}><h3>Nothing matches “{query.trim()}”</h3><p>Try another name or course.</p></div> : <Empty />)
+          : shown && <>
+            {/* Live · Upcoming · Past in the app's pill (the Team / Indi switch): the picked one gets a short glowing gold line. */}
+            <div className={styles.pills} role="tablist" aria-label="When">
+              {sections!.map((section) => <button key={section.name} type="button" role="tab" aria-selected={shown.name === section.name}
+                className={styles.pill} onClick={() => setPicked(section.name)}>{section.name}<span className={styles.pillCount}>{section.events.length}</span></button>)}
+            </div>
+            {shown.events.length ? <ul className={styles.list} aria-label={shown.name}>
+              {shown.events.map((event) => <li key={`${event.kind}-${event.name}-${event.href}`} className={styles.trip}>
                 <Link href={event.href} prefetch={false} className={styles.eventLink}>
-                  <h3>{event.name}{section.name === "Live" && <span className={styles.livePill}>Live</span>}</h3><p>{liveEventDetail(event)}</p>
+                  <h3>{event.name}{shown.name === "Live" && <span className={styles.livePill}>Live</span>}</h3><p>{liveEventDetail(event)}</p>
                 </Link>
               </li>)}
-            </ul>
-          </div>)}
+            </ul> : <div className={styles.empty}><h3>{shown.name === "Live" ? "Nothing live right now" : shown.name === "Upcoming" ? "Nothing coming up yet" : "Nothing finished yet"}</h3></div>}
+          </>}
       </>}
     </section>
   </main>;

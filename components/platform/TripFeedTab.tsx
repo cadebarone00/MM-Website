@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Newspaper, X } from "lucide-react";
+import { SheetClose } from "@/components/ui/SheetClose";
+import { Newspaper } from "lucide-react";
 import { TripFeed } from "./TripFeed";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { SAMPLE_FEED_POSTS } from "@/lib/dev/sampleFeedPosts";
@@ -34,7 +35,7 @@ export function TripFeedTab({ scope, triggerClassName }: { scope: string; trigge
     <section id="trip-feed-sheet" className={styles.sheet} data-open={open || undefined} aria-label="Feed" aria-hidden={!open} inert={!open}>
       <header className={styles.header}>
         <h2 className={styles.title}>Feed</h2>
-        <button ref={close} type="button" className={styles.close} aria-label="Close feed" onClick={() => setOpen(false)}><X size={22} /></button>
+        <SheetClose ref={close} label="Close feed" onClick={() => setOpen(false)} />
       </header>
       {/* The feed itself: a slide-up sheet like Chats, rising once the screen has opened. */}
       <div className={styles.panel}><div className={styles.body}><TripFeed key={`${scope}-${mock}`} initialPosts={mock ? SAMPLE_FEED_POSTS : undefined} /></div></div>

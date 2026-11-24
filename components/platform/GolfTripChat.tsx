@@ -1,8 +1,9 @@
 "use client";
 
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { SheetClose } from "@/components/ui/SheetClose";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronRight, MessageCircle, Pin, Search, Send, Users, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, MessageCircle, Pin, Search, Send, Users } from "lucide-react";
 import styles from "./GolfTripChat.module.css";
 
 type Message = { id: number; text: string; createdAt: number; incoming?: boolean; author?: string };
@@ -54,7 +55,7 @@ export function GolfTripChat({ open, onClose, members, tripName }: {
       <header className={styles.header}>
         {active && <button type="button" className={styles.iconButton} aria-label="Back to chats" onClick={() => setSelected(null)}><ArrowLeft size={22} /></button>}
         <div className={styles.heading}><h2>{tripName}</h2></div>
-        <button type="button" className={styles.iconButton} aria-label="Close chats" onClick={close}><X size={22} /></button>
+        <SheetClose label="Close chats" onClick={close} />
       </header>
       <div className={styles.chatHeading}>
         {active && (active.id === TRIP ? <span className={`${styles.avatar} ${styles.groupAvatar}`}><Users size={22} /></span> : <ProfileAvatar name={active.name} size={42} />)}

@@ -1,0 +1,5 @@
+/* The slide-up sheets' close button: see-through maroon rounded square around an X (owner 2026-11-23). Doubled class so
+   the look wins over a page's placement class, whatever order the stylesheets load in. */
+.close.close{box-sizing:border-box;display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 22%,transparent);border-radius:10px;background:color-mix(in srgb,var(--color-maroon-500,#872a2e) 45%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--lm-ink-fbf8f1,#fbf8f1);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.close.close:hover{background:color-mix(in srgb,var(--color-maroon-500,#872a2e) 60%,transparent)}
+.close.close:focus-visible{outline:2px solid var(--lm-ink-dcc495,#dcc495);outline-offset:2px}

@@ -1,5 +1,5 @@
 /* DEV ONLY — Sign-up Simulator (components/dev/SignUpSimulation.tsx). Same maroon + cream as the sign-up screens. */
-.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:32px 20px calc(24px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
+.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:32px 16px calc(24px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
 .kicker{margin:0;color:#c9a86e;font:600 11px var(--font-barlow),sans-serif;letter-spacing:.12em;text-transform:uppercase}
 .title{margin:0;font:600 28px/1.15 var(--font-spectral),serif}
 .lead{margin:0 0 8px;color:#e1cec4;font-size:14px}

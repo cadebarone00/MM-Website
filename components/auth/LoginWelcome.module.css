@@ -1,4 +1,4 @@
-.page{position:relative;min-height:max(100dvh,480px);display:grid;place-items:center;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);padding:calc(32px + 0px) 24px calc(32px + env(safe-area-inset-bottom));box-sizing:border-box}
+.page{position:relative;min-height:max(100dvh,480px);display:grid;place-items:center;background:var(--lm-bg-240001);color:var(--lm-ink-fbf8f1);padding:calc(32px + 0px) 16px calc(32px + env(safe-area-inset-bottom));box-sizing:border-box}
 .welcome{width:100%;max-width:360px;text-align:center}
 .title{position:absolute;top:15%;left:24px;right:24px;transform:translateY(-50%);font:400 clamp(48px,12vw,64px)/1.1 var(--font-spectral),Georgia,serif;letter-spacing:-.04em;margin:0}
 .actions{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(360px,calc(100% - 48px));display:flex;flex-direction:column;align-items:stretch;gap:16px}

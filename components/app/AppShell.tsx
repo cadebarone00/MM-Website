@@ -29,7 +29,7 @@ const IN_APP = ["/", "/login", "/golf-trips", "/golf-trips/import", "/golf-trips
   "/play/tournament", "/t/site", "/tournaments/studio", "/tournaments/studio/next", "/tournaments/studio/preview", "/schedule", "/contact", "/watch-live", "/wagers", "/fantasy", "/dev/leagues",
   "/leagues", "/leagues/new", "/leagues/join", "/leagues/league", "/rounds/join", "/golf-trips/live",
   "/dev/tournament", "/dev/tournament/settings", "/dev/tournament/delete-trip",
-  "/dev/round", "/dev/tourney", "/dev/samples"];
+  "/dev/round", "/dev/tourney"];
 /** Cade's sign-up / log-in screens (/start, /start/*), his onboarding steps (/onboarding/*) and the account status screen. */
 const inApp = (path: string) => IN_APP.includes(path) || ["/start", "/onboarding/", "/golf-trips/new", "/tournaments/create/"].some((prefix) => path.startsWith(prefix));
 /** Screens a signed-out person may see (everything else sends them to Welcome). */

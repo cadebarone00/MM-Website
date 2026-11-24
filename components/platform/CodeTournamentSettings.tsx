@@ -6,6 +6,7 @@ import { AddRound } from "./CodeTournamentCreate";
 import { CutFields, cutSummary } from "./CodeTournamentCut";
 import { TeeSheetEditor } from "./CodeTournamentTeeSheet";
 import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
+import { LiveTvLink } from "./LiveTvLink";
 import { TripTapInInvite } from "./TripTapInInvite";
 import { LIVE_VISIBILITY_COPY, liveSettingsFrom } from "@/lib/platform/liveVisibility";
 import { formatCode, roundTeeSheet, tournamentDocUrl, type CodeTournament, type TournamentChange, type TournamentCut, type TournamentDocKind } from "@/lib/platform/codeTournaments";
@@ -102,7 +103,7 @@ export function CodeTournamentSettings({ t, act, upload, onDelete, onClose }: { 
           onChange={async (round, file) => { const result = await upload("pinSheet", file, round); setProblem(result.ok ? null : result.message ?? "Couldn't save that. Try again."); return result.ok; }} />
         : <><LiveVisibilityPicker key={`${watching.visibility}|${watching.playersCanShare}`} settings={watching}
           onChange={(next) => send({ action: "visibility", visibility: next.visibility, playersCanShare: next.playersCanShare }, "Couldn't change it. Try again.")} />
-          {watching.visibility !== "private" && t.watchCode && <TripTapInInvite code={t.watchCode} name={t.name} />}</>}
+          {watching.visibility !== "private" && t.watchCode && <><TripTapInInvite code={t.watchCode} name={t.name} /><LiveTvLink code={t.watchCode} /></>}</>}
     </div>
     {deleting && <DeleteConfirm name={t.name} onCancel={() => setDeleting(false)} onDelete={onDelete} />}
   </main>;

@@ -1,6 +1,7 @@
 import { normalizeTripScenario } from "./tripScenario";
 import { TOURNEY_PREVIEWS, type TourneyPreview } from "./sampleTourney";
-import { isLivePreview, isLiveSurface, type LivePreview, type LiveSurface } from "./livePreviews";
+import { isLivePreview, isLiveSurface, isTvGroup, isTvKind, isTvTeams, type LivePreview, type LiveSurface, type TvGroup, type TvKind, type TvTeams } from "./livePreviews";
+import { isTvPhase, type TvPhase } from "@/lib/platform/liveTv";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
 import { DEFAULT_DEV_ACCOUNT, DEV_ACCOUNTS } from "./devAccounts";
@@ -26,9 +27,33 @@ export const SIMULATOR_DEVICES = [
   { id: "iphone17promax", label: "iPhone 17 Pro Max", width: 440, height: 956, top: 62, bottom: 34 },
   { id: "pixel9", label: "Google Pixel (9)", width: 412, height: 924, top: 24, bottom: 24 },
   { id: "pixel9pro", label: "Google Pixel Pro (9 Pro)", width: 412, height: 918, top: 24, bottom: 24 },
+  // Apple Watch + CarPlay (project_specs.md "Simulator: Apple Watch + CarPlay devices"). Width × height = our app's area;
+  // the CarPlay side bar (80 px) and the Dashboard's pretend map are drawn around it by the simulator.
+  { id: "applewatch", label: "Apple Watch (46mm)", width: 208, height: 248, top: 0, bottom: 0 },
+  { id: "carplay", label: "CarPlay · Full screen", width: 720, height: 480, top: 0, bottom: 0 },
+  // Dashboard: the right column holds two stacked cards; our app gets one of them (top or bottom), never the whole column.
+  { id: "carplaydashtop", label: "CarPlay · Dashboard · top card", width: 300, height: 237, top: 0, bottom: 0 },
+  { id: "carplaydashbottom", label: "CarPlay · Dashboard · bottom card", width: 300, height: 237, top: 0, bottom: 0 },
   { id: "desktop", label: "Desktop browser", width: 1440, height: 900, top: 0, bottom: 0 },
+  { id: "tv", label: "TV", width: 1920, height: 1080, top: 0, bottom: 0 },
   { id: "custom", label: "Custom viewport", width: 402, height: 874, top: 0, bottom: 0 },
 ] as const;
+
+/** The Device section's View list (project_specs.md "Simulator: one Device section for every view"). */
+export const SIMULATOR_VIEWS = [["app", "App"], ["mobileweb", "Mobile website"], ["desktop", "Desktop"], ["tv", "TV"], ["carplay", "CarPlay"], ["watch", "Apple Watch"]] as const;
+export type SimulatorView = (typeof SIMULATOR_VIEWS)[number][0];
+
+/** The device presets a view offers (more than one = the second dropdown: phones, or CarPlay's screens). */
+export function simulatorViewDevices(view: SimulatorView): string[] {
+  if (view === "app" || view === "mobileweb") return SIMULATOR_DEVICES.filter(item => item.id.startsWith("iphone") || item.id.startsWith("pixel")).map(item => item.id);
+  if (view === "carplay") return SIMULATOR_DEVICES.filter(item => item.id.startsWith("carplay")).map(item => item.id);
+  return [view === "watch" ? "applewatch" : view];
+}
+
+/** Which version of a The Maroon Live screen a view draws (the old Website desktop / Website mobile / App switch). */
+export function liveSurfaceForView(view: SimulatorView): "app" | "mobile" | "desktop" {
+  return view === "mobileweb" ? "mobile" : view === "desktop" || view === "tv" ? "desktop" : "app";
+}
 
 /** Trip Builder preview stages (simulator Conditionals). */
 export const TRIP_BUILDER_STAGES = ["join-signed-out", "join-open", "join-member", "join-expired", "join-invalid", "tour-first", "tour-seen", "tips-organizer", "tips-member", "tips-seen"] as const;
@@ -161,6 +186,12 @@ export type SimulatorState = {
   livePreview?: LivePreview;
   /** The Maroon Live group: the toggle above the simulator (Website desktop / Website mobile / App). Unset = "app". */
   liveSurface?: LiveSurface;
+  /** The Maroon Live → TV mode: the stage (before / during / between rounds / completed) and the event kind. Unset = live, trip. */
+  tvPhase?: TvPhase;
+  tvKind?: TvKind;
+  /** TV mode: the team structure (2 Teams / Pairs / 3-Ball / 4-Ball) and players per tee time. Unset = 2 Teams, groups of 2. */
+  tvTeams?: TvTeams;
+  tvGroup?: TvGroup;
   /** Mock people group (/dev/people/…): which of the 5 pretend people is "signed in" (lib/dev/mockPeople.ts). Unset = Cade. */
   mockPerson?: MockPersonId;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
@@ -287,6 +318,10 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.tourneyPreview !== undefined && !TOURNEY_PREVIEWS.includes(state.tourneyPreview as TourneyPreview)) return null;
   if (state.livePreview !== undefined && !isLivePreview(state.livePreview)) return null;
   if (state.liveSurface !== undefined && !isLiveSurface(state.liveSurface)) return null;
+  if (state.tvPhase !== undefined && !isTvPhase(state.tvPhase)) return null;
+  if (state.tvKind !== undefined && !isTvKind(state.tvKind)) return null;
+  if (state.tvTeams !== undefined && !isTvTeams(state.tvTeams)) return null;
+  if (state.tvGroup !== undefined && !isTvGroup(state.tvGroup)) return null;
   if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;

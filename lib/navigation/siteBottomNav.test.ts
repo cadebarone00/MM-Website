@@ -26,7 +26,6 @@ test("dev profile preview pages wear the real screens' chrome", () => {
   assert.equal(chromePathname("/dev/profile"), "/profile");
   assert.equal(chromePathname("/dev/profile/settings"), "/settings");
   assert.equal(chromePathname("/dev/profile/edit"), "/profile/edit");
-  assert.equal(chromePathname("/dev/profile/requests"), "/dev/profile/requests");
   assert.equal(chromePathname("/profile"), "/profile");
   assert.equal(chromePathname("/dev/trip-builder/tips"), "/golf-trips/preview");
   assert.equal(siteBottomNavTabHref("/dev/profile/settings", "/profile"), "/dev/profile");
@@ -45,7 +44,7 @@ test("siteBottomNavTabActive", () => {
   assert.equal(siteBottomNavTabActive("/profile", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/account/choose", "/profile"), true);
   assert.equal(siteBottomNavTabActive("/profiles", "/profile"), false);
-  for (const path of ["/profile/jakeparker", "/profile/edit", "/settings", "/dev/profile", "/dev/profile/settings", "/dev/profile/edit", "/dev/profile/requests"]) {
+  for (const path of ["/profile/jakeparker", "/profile/edit", "/settings", "/dev/profile", "/dev/profile/settings", "/dev/profile/edit"]) {
     assert.equal(siteBottomNavTabActive(path, "/profile"), true, path);
     assert.equal(siteBottomNavTabActive(path, "/"), false, path);
     assert.equal(siteBottomNavTabActive(path, "/golf-trips"), false, path);

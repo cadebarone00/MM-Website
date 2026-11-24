@@ -103,10 +103,12 @@ test("the directory lists only Public trips and tournaments, golf details only, 
   const all = await list();
   assert.deepEqual(all.map((e) => e.kind).sort(), ["tournament", "trip"]);
   const trip = all.find((e) => e.kind === "trip")!;
-  assert.deepEqual(Object.keys(trip).sort(), ["code", "course", "ended", "firstDate", "kind", "lastDate", "name", "playerCount"]);
+  assert.deepEqual(Object.keys(trip).sort(), ["code", "course", "ended", "firstDate", "kind", "lastDate", "name", "place", "playerCount"]);
   assert.equal(trip.code, (await row(db, "golf_trips", oldTrip)).w);
   assert.equal(trip.playerCount, 1);
-  assert.ok(!JSON.stringify(all).includes("Pinehurst, NC"), "no destination");
+  assert.equal(trip.place, "Pinehurst, NC", "a trip shows its location (owner 2026-11-22)");
+  assert.equal(all.find((e) => e.kind === "tournament")!.place, null);
+  assert.deepEqual((await list("pinehurst, nc")).map((e) => e.name), ["Pinehurst"], "the location finds it");
   assert.ok(!JSON.stringify(all).includes(cam), "no profile ids");
   assert.deepEqual((await list("pine valley")).map((e) => e.name), ["Open"], "a course name finds it");
   assert.deepEqual((await list("PINEHURST")).map((e) => e.name), ["Pinehurst"]);

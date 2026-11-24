@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, ExternalLink, Settings } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, Settings } from "lucide-react";
 import { GolfTripLeaderboard } from "./GolfTripMatch";
 import { CodeTournamentTeeSheet } from "./CodeTournamentTeeSheet";
 import { GolfTripScoring } from "./GolfTripScoring";
@@ -60,7 +60,7 @@ export function CodeTournamentHome({ id, meId, watchCode, publicView = false, sa
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, [load]);
 
-  const back = (!spectating || publicView) && <Link href="/tournaments/join" className={styles.back}><ChevronLeft size={18} aria-hidden="true" /> Tourneys</Link>;
+  const back = (!spectating || publicView) && <Link href="/tournaments/join" className={styles.back} aria-label="Back to Tourneys"><ArrowLeft size={22} aria-hidden="true" /></Link>;
   if (!t) return <main className={homeStyles.page}>
     {back}
     <p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the tournament…"}</p>

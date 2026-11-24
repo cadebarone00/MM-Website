@@ -171,7 +171,7 @@ export function ProfileSearch({ source = ACCOUNT_SEARCH, backHref = "/profile", 
   const needle = words.toLowerCase().replace(/^@/, "");
   const shownFriends = friends && (needle ? friends.filter((f) => f.name.toLowerCase().includes(needle) || (f.username ?? "").toLowerCase().includes(needle)) : friends);
 
-  return <main className={styles.page}>
+  return <main className={`${styles.page} app-own-top-clearance`}>
     <div className={styles.inner}>
       <div className={styles.top}>
         <div className={styles.bar}>

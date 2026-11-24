@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Beer, Check, Coffee, Flag, Heart, MapPin, Navigation, Plus, Search, SlidersHorizontal, X, Star, Ticket, Utensils, type LucideIcon } from "lucide-react";
+import { SheetClose } from "@/components/ui/SheetClose";
+import { Beer, Check, Coffee, Flag, Heart, MapPin, Navigation, Plus, Search, SlidersHorizontal, Star, Ticket, Utensils, type LucideIcon } from "lucide-react";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
 import { distanceLabel, distanceMiles, isAppleDevice, mapsLink, PLACE_CATEGORIES, placeBadge, rankPlaces, type Place, type PlaceCategory } from "@/lib/platform/venuePlaces";
 import { SAMPLE_CENTER, samplePlaces } from "@/lib/dev/samplePlaces";
@@ -128,7 +129,7 @@ function PlacesView({ destination, center, loading, places, saved, added, onSave
     </div>
     <dialog ref={dialog} className={styles.filterSheet} aria-labelledby="venue-filter-title" onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <form className={styles.filterForm} onSubmit={(event) => { event.preventDefault(); setFilters({ ...draft }); setCategory(draftCategory); dialog.current?.close(); }}>
-        <div className={styles.filterHeader}><h2 id="venue-filter-title">Filters</h2><button type="button" aria-label="Close filters" onClick={() => dialog.current?.close()}><X size={22} aria-hidden /></button></div>
+        <div className={styles.filterHeader}><h2 id="venue-filter-title">Filters</h2><SheetClose label="Close filters" onClick={() => dialog.current?.close()} /></div>
         <label>Location<AppSelect value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })}><option value="">Trip area · {place}</option>{places.map((p) => <option value={p.id} key={p.id}>Near {p.name}</option>)}</AppSelect></label>
         <label>Within miles<input type="number" min="0.1" step="any" placeholder="Any distance" value={draft.miles} onChange={(e) => setDraft({ ...draft, miles: e.target.value })} /></label>
         <p className={styles.filterHelp}>Straight-line distance from your selected location, using places available for this trip.</p>

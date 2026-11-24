@@ -1,5 +1,5 @@
 /* All-maroon entry screens: the Welcome fork (logo + Sign up / Log in), then the Sign up and Log in pages. */
-.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:0 24px calc(32px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
+.page{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:0 16px calc(32px + env(safe-area-inset-bottom));background:#240001;color:#fbf8f1;font:400 16px/1.4 var(--font-barlow),sans-serif}
 /* Welcome: the M with Sign up / Log in right under it, centred together, over the same gold glow from the bottom as
    Email confirmed (AuthLinkResultPreview.module.css). Owner tweaks 2026-11-02 (exact offsets, so nothing else moves):
    the buttons sit 20px above centre and span the middle 60% of the screen (200-360px); the M sits 80px above centre

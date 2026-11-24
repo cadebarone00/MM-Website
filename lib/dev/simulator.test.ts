@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SIMULATOR_STATE, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, TRIP_BUILDER_STAGES, type SimulatorPage } from "./simulator";
+import { DEFAULT_SIMULATOR_STATE, liveSurfaceForView, simulatorViewDevices, SIMULATOR_VIEWS, parseGpsCommand, parseGpsState, parseSimulatorConfig, parseSimulatorLocation, sameSimulatorNavigation, simulatorPageForLocation, SIMULATOR_DEVICES, TRIP_BUILDER_STAGES, type SimulatorPage } from "./simulator";
 import { HOME_COMPETITION_STAGES, HOME_INVITE_STAGES, HOME_MOMENTUM_STAGES, HOME_OVERVIEW_STAGES, HOME_PLAYERS_STAGES, HOME_UPCOMING_STAGES, daysAfter, samplePlayers, sampleUpcoming } from "./homeSections";
 import { randomMockTrip, simulatorNow, simulatorRoundLive, simulatorTripData } from "./golfTripSimulatorData";
 import { GOLF_MATCH_PREVIEW, GOLF_TRIP_MOCK_DRAFT } from "@/lib/platform/golfTripPreviewFixture";
@@ -65,7 +65,9 @@ test("real and mock preserve their sources; fixture/state overrides cannot mutat
 });
 
 test("phone presets retain portrait dimensions alongside the desktop browser", () => {
-  assert.equal(SIMULATOR_DEVICES.filter(device => device.id !== "desktop").length, 9);
+  assert.equal(SIMULATOR_DEVICES.filter(device => device.id !== "desktop").length, 14);
+  assert.deepEqual(SIMULATOR_DEVICES.find(device => device.id === "tv"), { id: "tv", label: "TV", width: 1920, height: 1080, top: 0, bottom: 0 });
+  assert.deepEqual(["applewatch", "carplay", "carplaydashtop", "carplaydashbottom"].map(id => SIMULATOR_DEVICES.find(device => device.id === id)).map(device => [device?.width, device?.height]), [[208, 248], [720, 480], [300, 237], [300, 237]]);
   assert.deepEqual(SIMULATOR_DEVICES.filter(device => device.id.startsWith("iphone17")).map(device => [device.width, device.height]), [[402, 874], [402, 874], [440, 956]]);
   assert.deepEqual(SIMULATOR_DEVICES.find(device => device.id === "desktop"), { id: "desktop", label: "Desktop browser", width: 1440, height: 900, top: 0, bottom: 0 });
 });
@@ -339,4 +341,28 @@ test("widget simulator choices validate", () => {
   for (const invalid of [{ widgetSize: "huge" }, { widgetState: "maybe" }, { widgetPhone: "pager" }, { widgetIphone: "mini" }]) {
     assert.equal(parseSimulatorConfig({ source: "maroon", state: { ...state, ...invalid } }), null);
   }
+});
+
+test("Device section views: each view's options and The Maroon Live version", () => {
+  assert.deepEqual(SIMULATOR_VIEWS.map(([id]) => id), ["app", "mobileweb", "desktop", "tv", "carplay", "watch"]);
+  assert.deepEqual(simulatorViewDevices("app"), ["iphone16", "iphone16pro", "iphone16promax", "iphone17", "iphone17pro", "iphone17promax", "pixel9", "pixel9pro"]);
+  assert.deepEqual(simulatorViewDevices("mobileweb"), simulatorViewDevices("app"));
+  assert.deepEqual(simulatorViewDevices("carplay"), ["carplay", "carplaydashtop", "carplaydashbottom"]);
+  assert.deepEqual(["desktop", "tv", "watch"].map(view => simulatorViewDevices(view as "desktop")), [["desktop"], ["tv"], ["applewatch"]]);
+  // Every option is a real preset.
+  for (const [view] of SIMULATOR_VIEWS) for (const id of simulatorViewDevices(view)) assert.ok(SIMULATOR_DEVICES.some(device => device.id === id), id);
+  assert.deepEqual(SIMULATOR_VIEWS.map(([view]) => liveSurfaceForView(view)), ["app", "mobile", "desktop", "desktop", "app", "app"]);
+});
+
+test("the Simulators group comes right after the four features and lists Scoring", async () => {
+  // "server-only" only exists inside Next; give plain node an empty stand-in so the registry can be loaded here.
+  const Module = (await import("node:module")).default as unknown as { _resolveFilename: (request: string, ...rest: unknown[]) => string; _cache: Record<string, unknown> };
+  const original = Module._resolveFilename;
+  Module._resolveFilename = (request, ...rest) => request === "server-only" ? "server-only-stub" : original(request, ...rest);
+  Module._cache["server-only-stub"] = { id: "server-only-stub", filename: "server-only-stub", loaded: true, exports: {} };
+  const { simulatorPages } = await import("./simulatorRoutes");
+  const pages = simulatorPages();
+  const groups = Array.from(new Set(pages.map(page => page.group)));
+  assert.equal(groups.indexOf("Simulators"), 4);
+  assert(pages.some(page => page.group === "Simulators" && page.label === "Scoring" && page.path === "/dev/simulators/scoring" && page.standalone && page.viewport === "desktop"));
 });

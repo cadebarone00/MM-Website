@@ -5,14 +5,27 @@
 
 export type TvShow = "individual" | "match" | "both";
 
+/**
+ * Where the event is (owner 2026-11-22): before it starts, a round being played, between two rounds, or finished.
+ * The top right reads Upcoming / Live (red) / Up next / Final, with `roundLabel` under it.
+ */
+export const TV_PHASES = ["before", "live", "between", "final"] as const;
+export type TvPhase = (typeof TV_PHASES)[number];
+export const isTvPhase = (value: unknown): value is TvPhase => (TV_PHASES as readonly unknown[]).includes(value);
+export const TV_PHASE_WORD: Record<TvPhase, string> = { before: "Upcoming", live: "Live", between: "Up next", final: "Final" };
+
 /** One golfer on the individual board. `total` / `today`: strokes to par (null = no score yet). */
-export interface TvPlayerRow { position: string; name: string; team?: string | null; total: number | null; today: number | null; thru: string }
+export interface TvPlayerRow { position: string; name: string; team?: string | null; total: number | null; today: number | null; thru: string;
+  /** First player of a new tee-time group (listed by group, before a round): the board draws a thin line above them. */
+  groupStart?: boolean }
 /**
  * One match on the match play board, drawn like the app's Matches list: names on their sides; in the middle the match
  * number over `middle` ("Thru 12", "F" or the tee time "8:40"). `score`: the match score ("2 UP", "3&2", "AS"; "" before it
  * starts), shown on the leader's half (on both halves when it's "AS"). `leader`: who's up / won (null = all square).
  */
-export interface TvMatchRow { number: number; left: string; right: string; middle: string; score: string; leader: "left" | "right" | null }
+export interface TvMatchRow { number: number; left: string; right: string; middle: string; score: string; leader: "left" | "right" | null;
+  /** Pairs / 3-Ball / 4-Ball (more than two teams): each side's own team color and its players, under the team name. */
+  leftColor?: string; rightColor?: string; leftPlayers?: string; rightPlayers?: string }
 
 /** The score each half shows: the leader's score on their half, "AS" on both, nothing before the match starts. */
 export function tvSideScore(row: TvMatchRow, side: "left" | "right"): string {
@@ -21,9 +34,12 @@ export function tvSideScore(row: TvMatchRow, side: "left" | "right"): string {
 }
 export interface TvTeam { name: string; color: string; points: number }
 export interface TvBoardData {
-  eventName: string; roundLabel: string;
+  eventName: string; roundLabel: string; phase: TvPhase;
+  /** Under the name, top middle: a trip's location, or the course for a tournament / league; null hides it. */
+  place: string | null;
   individual: TvPlayerRow[] | null;
-  match: { teams: [TvTeam, TvTeam]; toWin: number | null; matches: TvMatchRow[] } | null;
+  /** `teamHeader: false`: more than two teams (Pairs / 3-Ball / 4-Ball), so no "Tigers · to win · Rebels" line, just the matches. */
+  match: { teams: [TvTeam, TvTeam]; toWin: number | null; matches: TvMatchRow[]; teamHeader?: boolean } | null;
 }
 
 /** "E", "-3", "+2", or "–" with no score. */

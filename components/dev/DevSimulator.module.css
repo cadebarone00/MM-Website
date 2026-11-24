@@ -69,3 +69,23 @@
 /* Feature groups (Golf Trips, Tourneys, Leagues, Play): the Main · Active · Onboarding switch above their pages. */
 .stageToggle{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 0 10px;padding:3px;border:1px solid #dfe2e8;border-radius:8px;background:#f5f6f8}.stageToggle button{border:0;border-radius:5px;background:transparent;color:#697180;padding:7px 4px;font:600 11px/1 system-ui,sans-serif;cursor:pointer}.stageToggle button[aria-pressed="true"]{background:#fff;color:#671329;box-shadow:0 1px 4px #0002}
 .stageEmpty{margin:8px 2px;color:#697180;font:500 12px/1.4 system-ui,sans-serif}
+/* Apple Watch + CarPlay frames (project_specs.md "Simulator: Apple Watch + CarPlay devices"). The CarPlay side bar and
+   the Dashboard map are drawings only; our app is the .screen beside them. */
+.device.watchDevice{border-radius:54px;background:#1b1d22}
+.device.carDevice{display:flex;gap:6px;border-radius:16px;background:#111317}
+.carDock{flex:none;width:74px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0;border-radius:8px;background:#1c1e23;color:#fff;font:600 15px/1 system-ui,sans-serif}
+.carClock{margin-bottom:6px}
+.carIcon{width:46px;height:46px;border-radius:11px}
+.carHome{margin-top:auto;width:30px;height:30px;border-radius:7px;background:repeating-conic-gradient(#8b8f98 0 25%,transparent 0 50%) 0 0/15px 15px}
+.carMap{flex:none;position:relative;width:414px;border-radius:8px;overflow:hidden;background:linear-gradient(90deg,transparent 47%,#fff 47% 50%,transparent 50%),linear-gradient(0deg,transparent 30%,#fff 30% 33%,transparent 33%),linear-gradient(35deg,transparent 60%,#fff 60% 62%,transparent 62%),#dfe7d9}
+.carMap::after{content:"";position:absolute;left:47.5%;top:31%;width:8px;height:69%;background:#0a84ff;border-radius:4px}
+.carArrow{position:absolute;left:calc(47.5% - 8px);top:70%;z-index:1;width:24px;height:24px;border-radius:50%;background:#0a84ff;border:3px solid #fff;box-shadow:0 2px 6px #0004}
+/* CarPlay Dashboard: the right column = two stacked cards. Our app is one; a pretend Now Playing card is the other. */
+.passThrough{display:contents}
+.carColumn{flex:none;display:flex;flex-direction:column;gap:6px}
+.carColumn.carColumnBottom{flex-direction:column-reverse}
+.carNowPlaying{flex:1;display:flex;align-items:center;gap:14px;padding:0 18px;border-radius:8px;background:#1c1e23}
+.carAlbum{flex:none;width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#ff5f6d,#ffc371)}
+.carNowPlaying>span:last-child{flex:1;display:grid;gap:10px}.carNowPlaying i{display:block;height:10px;border-radius:5px;background:#5a5e68}.carNowPlaying i+i{width:60%;background:#3a3d44}
+/* TV view: a thin black TV bezel. */
+.device.tvDevice{border-radius:10px;background:#0b0c0f}

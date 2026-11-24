@@ -1,9 +1,9 @@
 "use client";
 
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { SheetClose } from "@/components/ui/SheetClose";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
 import styles from "./GolfTripMatch.module.css";
 import room from "./TripDraftRoom.module.css";
 
@@ -59,7 +59,7 @@ export function DraftPlayerProfile({ name, avatarUrl, username, stats, onClose }
           {header.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
         </dl>
       </div>
-      <button type="button" className={styles.playerTripProfileClose} onClick={onClose} autoFocus aria-label="Close player profile"><X size={18} strokeWidth={2.25} aria-hidden /></button>
+      <SheetClose className={styles.playerTripProfileClose} onClick={onClose} autoFocus label="Close player profile" />
     </div>
     {/* No trip rounds yet: instead of round tabs / scorecard / snapshot, every draft stat. */}
     <dl className={room.draftProfileStats} aria-label={name + " draft stats"}>

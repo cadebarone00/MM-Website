@@ -1,4 +1,5 @@
 import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
+import { SheetClose } from "@/components/ui/SheetClose";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { nonIndividualRound } from "@/lib/platform/nonIndividualRound";
 import { createPortal } from "react-dom";
@@ -253,6 +254,20 @@ export function GolfTripLeaderboard({ match, byToday = false, tripStats, cut, wi
   </div>;
 }
 
+/**
+ * The Maroon Live, Desktop = TV (owner 2026-11-23): one golfer's public trip profile opened by name from outside the
+ * leaderboard (the TV board on a computer). Same sheet the leaderboard opens; nothing when the name isn't on it.
+ */
+export function PublicTripProfileSheet({ match, name, tripStats, onClose }: { match: GolfMatchPreview; name: string; tripStats?: TripStatsView; onClose: () => void }) {
+  const isStableford = resolveGolfFormat(match.formatDef?.key ?? match.format).scoringMethod === "stableford";
+  const showNet = matchScoring(match) === "Net";
+  const card = rankLeaderboard(match.leaderboard, { net: showNet, stableford: isStableford, today: false }).find(row => row.golfer.name === name);
+  if (!card) return null;
+  return <PlayerPublicTripProfile match={match} name={card.golfer.name} avatarUrl={card.golfer.avatarUrl ?? null} username={card.golfer.username ?? null} round={match.round} roundCount={match.roundCount}
+    roundStandings={match.roundStandings} net={showNet} stableford={isStableford} par={match.par} holes={card.holes}
+    snapshot={{ position: card.position, total: parLabel(showNet ? card.netTotal : card.total), roundScore: parLabel(showNet ? card.netToday : card.today), thru: card.thru }} tripStats={tripStats} onClose={onClose} />;
+}
+
 function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roundCount, par, holes, snapshot, roundStandings, net = false, stableford = false, tripStats, onClose }: { match: GolfMatchPreview; name: string; avatarUrl: string | null; username: string | null; round: number; roundCount: number; roundStandings?: GolfMatchPreview["roundStandings"]; net?: boolean; stableford?: boolean; par: number[]; holes: (number | null)[]; snapshot: { position: string; total: string; roundScore: string; thru: string }; tripStats?: TripStatsView; onClose: () => void }) {
   // Organizer → Player Scoring → Player Stats off: no stats anywhere on the Golf tab.
   const showStats = usePlayerStats();
@@ -335,7 +350,7 @@ function PlayerPublicTripProfile({ match, name, avatarUrl, username, round, roun
             <div key={label}><dt>{label}</dt><dd>{value == null ? "—" : String(value)}</dd></div>)}
         </dl>
       </div>
-      <button type="button" className={styles.playerTripProfileClose} onClick={dismiss} autoFocus aria-label="Close player profile"><X size={18} strokeWidth={2.25} aria-hidden /></button>
+      <SheetClose className={styles.playerTripProfileClose} onClick={dismiss} autoFocus label="Close player profile" />
     </div>
     <div ref={roundTabsRef} className={styles.profileRoundTabs} role="tablist" aria-label="Player rounds">
       {Array.from({ length: Math.max(roundCount, round) }, (_, index) => index + 1).map(number => <button key={number} type="button" role="tab" id={"profile-round-tab-" + number} aria-controls="profile-round-panel" aria-selected={selectedRound === number} onClick={() => setSelectedRound(number)}>Round {number}</button>)}

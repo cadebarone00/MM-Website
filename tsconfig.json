@@ -39,7 +39,9 @@
     ".next-savedtrip-check/types/**/*.ts",
     ".next-savedtrip-check/dev/types/**/*.ts",
     ".next-v1-retirement/types/**/*.ts",
-    ".next-v1-retirement/dev/types/**/*.ts"
+    ".next-v1-retirement/dev/types/**/*.ts",
+    ".next-sim/types/**/*.ts",
+    ".next-sim/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

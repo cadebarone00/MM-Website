@@ -1,31 +1,24 @@
-/* Search page (2026-11-19, Instagram-style), solid maroon like Edit profile. */
-.page{min-height:100svh;padding:0 0 140px;background:var(--lm-bg-240001, var(--color-maroon-900));color:var(--lm-ink-f4efe6, #f4efe6);font-family:var(--font-spectral),Georgia,serif}
-.inner{width:min(640px,100%);margin:0 auto;padding:0 16px}
-/* The bar and the tabs stay at the top while the list scrolls. */
-.top{position:sticky;top:0;z-index:5;background:var(--lm-bg-240001, var(--color-maroon-900))}
-.bar{display:flex;align-items:center;gap:8px;padding:calc(var(--app-top-clearance,0px) + 6px) 0 10px}
+/* Search page (2026-11-19, Instagram-style), solid maroon like Edit profile. Since 2026-11-22 its look IS the app's
+   standard search look: the shared rules live in components/search/Search.module.css (change them there, not here). */
+.page{composes:page from "../search/Search.module.css"}
+.inner{composes:inner from "../search/Search.module.css"}
+.top{composes:top from "../search/Search.module.css"}
+.bar{composes:bar from "../search/Search.module.css"}
 /* Search · Friends · Suggested (2026-11-20): three equal tabs, the picked one underlined in gold. */
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid rgba(244,239,230,.15)}
-.tab{min-height:44px;margin-bottom:-1px;padding:0;border:0;border-bottom:2px solid transparent;background:transparent;color:rgba(244,239,230,.6);font:600 15px var(--font-spectral),Georgia,serif;cursor:pointer}
-.tabOn{border-bottom-color:#dcc495;color:var(--lm-ink-f4efe6, #f4efe6)}
+.tabs{composes:tabs from "../search/Search.module.css"}
+.tab{composes:tab from "../search/Search.module.css"}
+.tabOn{composes:tabOn from "../search/Search.module.css"}
 .inlineLink{padding:0;border:0;background:transparent;color:var(--lm-ink-dcc495, #dcc495);font:inherit;text-decoration:underline;cursor:pointer}
-.back{display:grid;place-items:center;flex:none;width:40px;height:44px;margin-left:-8px;padding:0;border:0;background:transparent;color:var(--lm-ink-f4efe6, #f4efe6);cursor:pointer}
-.field{display:flex;flex:1;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;background:rgba(244,239,230,.1);color:rgba(244,239,230,.6)}
-.field input{flex:1;min-width:0;border:0;background:transparent;color:var(--lm-ink-f4efe6, #f4efe6);font:500 16px var(--font-spectral),Georgia,serif;outline:none}
-.field input::placeholder{color:rgba(244,239,230,.5)}
-.field input::-webkit-search-cancel-button{display:none}
-.field:focus-within{box-shadow:inset 0 0 0 1px rgba(220,196,149,.6)}
-.cancel{flex:none;min-height:44px;padding:0 2px;border:0;background:transparent;color:var(--lm-ink-f4efe6, #f4efe6);font:600 15px var(--font-spectral),Georgia,serif;cursor:pointer}
-.heading{display:flex;align-items:center;gap:8px;margin:18px 0 6px;font:700 16px var(--font-spectral),Georgia,serif;color:var(--lm-ink-f4efe6, #f4efe6)}
-.headingRow{display:flex;align-items:center;justify-content:space-between}
-.clear{border:0;background:transparent;color:var(--lm-ink-dcc495, #dcc495);font:600 14px var(--font-spectral),Georgia,serif;cursor:pointer;min-height:44px}
+.back{composes:back from "../search/Search.module.css"}
+.field{composes:field from "../search/Search.module.css"}
+.cancel{composes:cancel from "../search/Search.module.css"}
+.heading{composes:heading from "../search/Search.module.css"}
+.headingRow{composes:headingRow from "../search/Search.module.css"}
+.clear{composes:clear from "../search/Search.module.css"}
 .count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#b42318;color:var(--lm-ink-ffffff, #fff);font:700 11px var(--font-barlow),sans-serif}
-.list{margin:0;padding:0;list-style:none}
-.list li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
-.who{display:flex;flex:1;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
-.names{display:grid;min-width:0}
-.names b{display:flex;align-items:center;gap:5px;overflow:hidden;font:700 15px/1.3 var(--font-spectral),Georgia,serif;white-space:nowrap;text-overflow:ellipsis}
-.names small{overflow:hidden;font:500 14px/1.3 var(--font-spectral),Georgia,serif;color:rgba(244,239,230,.6);white-space:nowrap;text-overflow:ellipsis}
+.list{composes:list from "../search/Search.module.css"}
+.who{composes:who from "../search/Search.module.css"}
+.names{composes:names from "../search/Search.module.css"}
 .lock{flex:none;color:var(--lm-ink-dcc495, #dcc495)}
 .add,.decline{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-height:34px;padding:0 14px;border:0;border-radius:10px;background:#dcc495;color:var(--color-maroon-900);font:700 13px var(--font-spectral),Georgia,serif;cursor:pointer}
 .decline{width:34px;padding:0;background:rgba(244,239,230,.1);color:var(--lm-ink-f4efe6, #f4efe6)}
@@ -33,12 +26,11 @@
 .answer{display:flex;gap:6px}
 .badge{display:inline-flex;align-items:center;gap:4px;flex:none;padding:0 12px;min-height:34px;border-radius:10px;background:rgba(244,239,230,.1);font:700 13px var(--font-spectral),Georgia,serif;color:var(--lm-ink-f4efe6, #f4efe6)}
 .badgeFriends{color:var(--lm-ink-dcc495, #dcc495)}
-.remove{display:grid;place-items:center;flex:none;width:40px;height:40px;border:0;background:transparent;color:rgba(244,239,230,.6);cursor:pointer}
-.note{margin:18px 0 0;text-align:center;font:500 14px/1.45 var(--font-spectral),Georgia,serif;color:rgba(244,239,230,.6)}
-.problem{margin:10px 0;padding:10px 12px;border-radius:10px;background:#9b1c1c;color:var(--lm-ink-ffffff, #fff);font:600 14px/1.4 var(--font-spectral),Georgia,serif}
-.page a:focus-visible,.page button:focus-visible{outline:2px solid #dcc495;outline-offset:2px}
+.remove{composes:remove from "../search/Search.module.css"}
+.note{composes:note from "../search/Search.module.css"}
+.problem{composes:problem from "../search/Search.module.css"}
 /* Someone's Friends list (UserFriendsList, 2026-11-20): Back, their @username centred, then the search bar. */
-.titleBar{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:calc(var(--app-top-clearance,0px) + 6px) 0 4px}
+.titleBar{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:var(--app-top-clearance,0px) 0 4px}
 .title{margin:0;overflow:hidden;text-align:center;font:700 17px var(--font-spectral),Georgia,serif;white-space:nowrap;text-overflow:ellipsis}
 .titleSpacer{width:40px}
 .privateNote{display:grid;justify-items:center;gap:6px;margin-top:48px;text-align:center;color:rgba(244,239,230,.6);font:500 14px var(--font-spectral),Georgia,serif}

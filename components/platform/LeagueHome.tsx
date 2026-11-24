@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Copy, Lock, Shuffle, Settings, X } from "lucide-react";
+import { ArrowLeft, Copy, Lock, Shuffle, Settings, X } from "lucide-react";
 import { GolfTripScoring } from "./GolfTripScoring";
 import { GamePicker, HolePicks, playersLabel, Standings } from "./PlayRound";
 import { applyLeagueChange, cardOf, drawPairs, gameCourse, groupOrder, leaderboard, makeTeeTimes, PAIR_FORMATS, PAIR_RULES, pairResults, pairsByPoints, SEGMENT_OPTIONS, skins, toParLabel, ungrouped, type League, type LeagueChange, type LeagueScoring, type PairFormat, type PairRule, type PairSegments } from "@/lib/platform/leagues";
@@ -12,6 +12,7 @@ import { appHref } from "@/lib/app/appPaths";
 import { DatePicker } from "./DatePicker";
 import { InviteCodeCard } from "./InviteCodeCard";
 import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
+import { LiveTvLink } from "./LiveTvLink";
 import { TripTapInInvite } from "./TripTapInInvite";
 import { liveSettingsFrom, type LiveSettings } from "@/lib/platform/liveVisibility";
 import type { SheetCard } from "@/lib/platform/liveCards";
@@ -94,7 +95,7 @@ export function LeagueHome({ id, sample, watchCode }: { id?: string; sample?: { 
   };
 
   const spectating = Boolean(watchCode || sample?.spectator);
-  const back = !spectating && <Link href={sample ? "/dev" : "/leagues"} className={tourney.back}><ChevronLeft size={18} aria-hidden="true" /> Leagues</Link>;
+  const back = !spectating && <Link href={sample ? "/dev" : "/leagues"} className={tourney.back} aria-label="Back to Leagues"><ArrowLeft size={22} aria-hidden="true" /></Link>;
   if (!league || meId === null) return <main className={homeStyles.page}>{back}<p className={tourney.status} role={problem ? "alert" : undefined}>{problem ?? "Loading the league…"}</p></main>;
 
   // A watcher is never the organizer (both ids are blank in a watcher's copy) and is in no group.
@@ -328,6 +329,7 @@ function LeagueSettings({ league, sample, problem, onClose, onSettings, act, onC
       <h2 id="live-settings">Who can watch</h2>
       {(() => { const watching = liveSettingsFrom(league.liveVisibility, league.livePlayersCanShare, "private"); return <LiveVisibilityPicker key={`${watching.visibility}|${watching.playersCanShare}`} settings={watching}
         onChange={async (next) => (await onLive(next)).ok} />; })()}
+      {league.watchCode && (league.liveVisibility ?? "private") !== "private" && <LiveTvLink code={league.watchCode} />}
     </section>
 
     {live && <TeeTimesEditor league={league} onGroups={(groups) => void act({ action: "groups", groups })} />}

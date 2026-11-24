@@ -32,6 +32,9 @@
 .phoneNoteTitle{display:flex;gap:8px;justify-content:space-between;margin:0;font-size:15px;line-height:1.25}
 .phoneNoteTitle b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .phoneNoteTitle time{flex:none;font-size:13px;color:rgba(0,0,0,.5)}
+/* The person's avatar, just left of the time (Apple keeps the time top-right); dark fill so the gold initials read on the light card. */
+.phoneNoteAvatar{align-self:center;background:var(--lm-bg-240001)}
+.phoneNoteTime{flex:none;margin-left:-2px;font-size:13px;line-height:1.45;color:rgba(0,0,0,.5)}
 .phoneNoteBody{margin:1px 0 0;font-size:15px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .stack{position:relative;padding-bottom:16px}
 .stackLayer{position:absolute;z-index:1;left:12px;right:12px;bottom:8px;height:30px;border-radius:0 0 18px 18px;background:rgba(245,240,230,.55)}
@@ -89,6 +92,8 @@
 .androidNote header{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--lm-ink-b9b9bd)}
 .androidNoteIcon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff)}
 .androidNoteIcon .smallIcon{width:13px;height:13px}
+.androidNoteRow{display:flex;align-items:center;gap:12px}
+.androidNoteWords{min-width:0;flex:1}
 .androidNoteTitle{margin:10px 0 0;font-size:16px;font-weight:500;color:var(--lm-ink-ffffff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .androidNoteText{margin:2px 0 0;font-size:14px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .androidProgress{height:6px;margin-top:12px;border-radius:3px;background:color-mix(in srgb,var(--lm-ink-ffffff) 18%,transparent);overflow:hidden}
@@ -150,20 +155,27 @@
 .phone.appScreen{padding-top:0}
 .appScreen{background:var(--color-cream-100,#f5efe2);color:var(--color-maroon-900);font-family:var(--font-spectral),Georgia,serif}
 .appBar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 14px;padding-top:calc(12px + env(safe-area-inset-top));background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);font:700 20px/1 var(--font-spectral),Georgia,serif}
-.bell{position:relative;display:inline-flex}
+.bell{position:relative;display:inline-flex;padding:0;border:0;background:none;color:inherit;cursor:pointer}
 .bell b{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b8945a;color:var(--color-maroon-900);font:700 11px/18px var(--font-barlow),sans-serif;text-align:center}
 .appPlaceholder{display:flex;flex-direction:column;gap:12px;padding:18px}
 .appPlaceholder i{height:110px;border-radius:18px;background:#fff;box-shadow:0 1px 3px color-mix(in srgb,var(--color-maroon-900) 8%,transparent)}
 /* The bell: the app's slide-up sheet, 85% of the screen tall, like the real one (GolfTripHome.module.css). */
-.sheetShade{position:absolute;z-index:1;inset:0;background:color-mix(in srgb,var(--lm-bg-000000) 45%,transparent)}
-.sheet{position:absolute;z-index:2;inset:auto 0 0;box-sizing:border-box;height:85%;overflow-y:auto;padding:26px 16px calc(20px + env(safe-area-inset-bottom));border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-bottom:0;border-radius:28px 28px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);box-shadow:0 -12px 60px #0006;animation:sheetUp .38s cubic-bezier(.22,1,.36,1) both}
+.sheetShade{position:absolute;z-index:1;inset:0;background:color-mix(in srgb,var(--lm-bg-211c1b) 70.2%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.sheet{position:absolute;z-index:2;inset:auto 0 0;box-sizing:border-box;height:85%;overflow-y:auto;padding:26px 16px calc(20px + env(safe-area-inset-bottom));border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);border-bottom:0;border-radius:28px 28px 0 0;background:var(--lm-bg-240001);color:var(--lm-ink-ffffff);box-shadow:0 -12px 60px #0006;animation:sheetUp .38s cubic-bezier(.22,1,.36,1) backwards}
+.sheetDragging{transition:none}
+.sheet:not(.sheetDragging){transition:transform .25s cubic-bezier(.22,1,.36,1)}
+/* Grab line: a wide, tall touch area (whole top strip) around the small line, like the app's other sheets. */
+.sheetGrab{position:absolute;top:0;left:60px;right:60px;height:26px;display:grid;place-items:center;touch-action:none;cursor:grab}
+.sheetGrab:active{cursor:grabbing}
+.sheetGrab span{width:40px;height:5px;border-radius:3px;background:rgba(220,196,149,.45)}
+.sheetX{position:absolute;top:26px;right:16px}
 .list h2{margin:0;font:700 22px/1 var(--font-spectral),Georgia,serif}
-.listHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.listHeader{display:flex;align-items:center;justify-content:space-between;min-height:36px;padding-right:48px;margin-bottom:12px}
 .listHeader span{font:600 12px/1 var(--font-barlow),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--lm-ink-dcc495)}
 .list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.list li{position:relative;display:flex;gap:12px;align-items:flex-start;padding:12px 26px 12px 10px;border-radius:14px}
+.list li{position:relative;display:flex;gap:12px;align-items:center;padding:12px 26px 12px 14px;border-radius:14px}
+.listText{min-width:0;flex:1}
 .list li.unread{background:color-mix(in srgb,var(--lm-ink-dcc495) 10%,transparent)}
-.listIcon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb,var(--lm-ink-dcc495) 18%,transparent);color:var(--lm-ink-dcc495)}
 .listTitle{margin:0;font-size:15px;font-weight:700;line-height:1.25}
 .listBody{margin:2px 0 0;font-size:14px;line-height:1.3;color:color-mix(in srgb,var(--lm-ink-ffffff) 78%,transparent)}
 .listMeta{margin:4px 0 0;font-size:12px;color:color-mix(in srgb,var(--lm-ink-ffffff) 50%,transparent)}
@@ -171,6 +183,7 @@
 .listEmpty{margin:24px 8px;font-size:15px;line-height:1.4;color:color-mix(in srgb,var(--lm-ink-ffffff) 65%,transparent);text-align:center}
 .topBanner{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 6px);left:10px;right:10px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--lm-bg-380001);color:var(--lm-ink-ffffff);border:1px solid color-mix(in srgb,var(--lm-ink-dcc495) 30%,transparent);box-shadow:0 10px 26px rgba(0,0,0,.45);animation:bannerIn .45s cubic-bezier(.22,1,.36,1) both}
 .topBannerText{min-width:0;flex:1}
+.personAvatar{flex:none}
 .topBanner .listTitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topBannerBody{margin:2px 0 0;font-size:14px;line-height:1.3;height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:color-mix(in srgb,var(--lm-ink-ffffff) 78%,transparent)}
 

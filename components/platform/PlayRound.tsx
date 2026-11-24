@@ -76,7 +76,7 @@ const withPar = (setup: PersonalRoundSetup, hole: number, value: number): Person
  * Save to Profile → Rounds. The round lives in the database; the host keeps score and joined players watch it live.
  * `openRound` (?round=<id>) opens a shared round, e.g. after Join on the Play page.
  */
-export function PlayRound({ openRound }: { openRound?: string }) {
+export function PlayRound({ openRound, resume = false }: { openRound?: string; resume?: boolean }) {
   // A round in progress on this phone (undefined while rendering on the server); starting / discarding overrides it.
   const stored = useSyncExternalStore(subscribeNever, storedText, () => undefined);
   const [override, setRound] = useState<Saved | null | undefined>(undefined);
@@ -87,7 +87,7 @@ export function PlayRound({ openRound }: { openRound?: string }) {
   // Joining from an invite (or another phone): load that shared round onto this phone.
   if (openRound && round?.sharedId !== openRound) return <OpenShared id={openRound} header={header} onOpen={open} />;
   // An unfinished round from earlier: ask before going back into it.
-  if (round && override === undefined && !openRound) return <main className={styles.page}>
+  if (round && override === undefined && !openRound && !resume) return <main className={styles.page}>
     {header}
     <section className={styles.panel}>
       <h1 className={styles.title}>Unfinished round</h1>
@@ -194,6 +194,15 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
         : setError(body.code === "no_scorecard" ? "This course doesn't have a scorecard on file yet." : "Couldn't load this course's scorecard right now."))
       .catch(() => setError("Couldn't reach the course. Check your connection."));
   }
+
+  useEffect(() => {
+    let selected: PickedRoundCourse | null = null;
+    try { const raw = sessionStorage.getItem("maroonPlayCourse"); sessionStorage.removeItem("maroonPlayCourse"); if (raw) selected = JSON.parse(raw) as PickedRoundCourse; } catch { /* search remains available */ }
+    // The one-time browser selection must be loaded after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (selected && typeof selected.ref === "string" && typeof selected.name === "string" && typeof selected.place === "string") pick(selected);
+  // Read the one-time selection only when setup opens.
+  }, []);
 
   // A built scorecard has no tees on file: an optional rating / slope from the course's own card lets the round count.
   const ratingValue = Number.parseFloat(rating), slopeValue = Number.parseInt(slope, 10);
@@ -490,6 +499,18 @@ function RoundStatus({ save, onRetry, leave }: { save: SaveState; onRetry: () =>
   </>;
 }
 
+/** Cancel round (whoever started the round): Save & exit keeps every score for later; Delete round erases it after a warning. */
+export function CancelRound({ onDelete, deleteText, startOpen = false }: { onDelete: () => void | Promise<void>; deleteText: string; startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
+  if (!open) return <button type="button" className={styles.discard} onClick={() => setOpen(true)}>Cancel round</button>;
+  return <div className={styles.cancelRound} role="group" aria-label="Cancel round">
+    <p className={styles.note}>Save &amp; exit keeps every score, so you can finish later from Play. Delete round erases the round.</p>
+    <Link href="/" className={styles.secondary}>Save &amp; exit</Link>
+    <button type="button" className={styles.deleteRound} onClick={() => { if (window.confirm(deleteText)) void onDelete(); }}>Delete round</button>
+    <button type="button" className={styles.discard} onClick={() => setOpen(false)}>Keep playing</button>
+  </div>;
+}
+
 /** A round on my own (kept only on this phone). */
 function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void }) {
   const [setup, setSetup] = useState(saved.setup);
@@ -515,7 +536,7 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
       <h1 className={styles.title}>{setup.course.name}</h1>
       <p className={styles.place}>{[setup.tee?.name, holesLabel(setup.holes), setup.countForHandicap ? null : "Practice"].filter(Boolean).join(" · ")}</p>
       <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }}
-        leave={<button type="button" className={styles.discard} onClick={() => { if (window.confirm("Discard this round? Scores on this phone will be deleted.")) onDiscard(); }}>Discard round</button>} />
+        leave={<CancelRound onDelete={onDiscard} deleteText="Delete this round? Every score in it is erased. This can't be undone." />} />
     </section>
     {save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}
       par={setup.course.par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit}
@@ -543,7 +564,6 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const [card, setCard] = useState(saved.card);
   const [menu, setMenu] = useState<null | "players" | "game">(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   /** Round complete (owner 2026-11-22): after the last hole's Next, a summary with Save & exit round. */
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [pickingGame, setPickingGame] = useState(false);
@@ -590,19 +610,28 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   }
   const sendStrokes = (player: string, hole: number, strokes: number | null) => void send(`${player}:${hole}`, strokes, { action: "strokes", player, hole: hole + 1, strokes });
   const sendGuestStrokes = (guest: string, hole: number, strokes: number | null) => void send(`guest:${guest}:${hole}`, strokes, { action: "guestStrokes", guest, hole: hole + 1, strokes });
-  /** Delete round (owner 2026-11-22): the scorekeeper deletes it for every player and from the database. */
-  async function deleteRound() {
-    if (!window.confirm("Delete this round for everyone? All scores are wiped and nothing is saved. This can't be undone.")) return;
-    setDeleting(true);
-    const result = await post(sharedUrl(id), { action: "delete" });
-    setDeleting(false);
-    if (result.ok) { exitToPlay(); return; }
-    setProblem(result.message ?? "Couldn't delete the round. Try again.");
-  }
   async function hostAction(body: object, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return;
     const result = await post(sharedUrl(id), body);
     if (!result.ok) setProblem(result.message ?? "That didn't work. Try again.");
+  }
+  /** Cancel round → Delete round (host): erased for everyone, then off this phone. */
+  async function deleteRound() {
+    const result = await post(sharedUrl(id), { action: "delete" });
+    if (!result.ok) { setProblem(result.code === "not_installed" ? "Deleting rounds isn't set up in this database yet." : result.message ?? "Couldn't delete the round. Try again."); return; }
+    exitToPlay();
+  }
+  /** Leave round: a player drops out (scores already in the round stay); the host, or anyone once it's over, just clears this phone. */
+  async function leaveRound() {
+    const dropOut = snap?.host !== me && snap?.status !== "ended";
+    if (!window.confirm(dropOut ? "Leave this round? You'll drop out, and it won't be saved to your profile. Scores already in it stay in the host's round."
+      : "Leave this round on this phone? Scores already sent stay in the round.")) return;
+    if (dropOut) {
+      const result = await post(sharedUrl(id), { action: "leave" });
+      // Until shared_round_delete.sql is run there's no drop-out: leave on this phone, as before.
+      if (!result.ok && result.code !== "not_installed") { setProblem(result.message ?? "Couldn't leave the round. Try again."); return; }
+    }
+    exitToPlay();
   }
 
   if (!snap || !me) return <main className={styles.page}>
@@ -752,7 +781,9 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
         {inviteCode && !ended && save.status !== "saved" && room && <InviteCodeCard kind="round" id={id} code={inviteCode} name={setup.course.name} canEmail={isHost} />}
         <p className={styles.note}>{isHost ? "Pull up Scoring to enter each hole. Submit & Save is on the Card once every hole is in."
           : `${firstName(active.find((p) => p.profileId === snap.host)?.name ?? "The host")} is keeping score. When they submit, this round is saved to your profile.`}</p>
-        {isHost && <button type="button" className={styles.deleteRound} disabled={deleting} onClick={() => void deleteRound()}>{deleting ? "Deleting…" : "Delete round"}</button>}
+        {isHost && !ended && save.status !== "saved"
+          ? <CancelRound onDelete={deleteRound} deleteText="Delete this round? Every score in it is erased for everyone in it, guests too. This can't be undone." />
+          : <button type="button" className={styles.discard} onClick={() => void leaveRound()}>{isHost || ended ? "Leave round on this phone" : "Leave round"}</button>}
       </div>
     </GolfTripActionSheet>}
     {isHost && save.status !== "saved" && <GolfTripScoring key={attempt} solo startOpen={!card} stats={setup.stats} holeRange={range} scoringViewOverride="slide" swipeHoles noBottomMenu cardTotals={false}

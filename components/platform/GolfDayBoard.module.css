@@ -1,5 +1,5 @@
 .board{position:relative;margin-inline:calc(-1 * var(--page-gutter));margin-bottom:10px;overflow:visible;border:0;border-radius:0 0 28px 28px;background:radial-gradient(ellipse at 50% 100%,rgba(220,196,149,.07),transparent 75%);box-shadow:none;color:var(--lm-ink-fbf8f1)}
-.content{padding:2px 26px 10px}
+.content{padding:2px var(--page-gutter) 10px}
 .details{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .25s ease,opacity .2s ease}
 .details[data-collapsed=true]{grid-template-rows:0fr;opacity:0}
 .detailsInner{min-height:0;overflow:hidden}

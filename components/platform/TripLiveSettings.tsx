@@ -6,6 +6,7 @@ import { canShareLiveLink, liveSettingsFrom, LIVE_VISIBILITY_COPY } from "@/lib/
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { LiveVisibilityPicker } from "./LiveVisibilityPicker";
 import { TripTapInInvite } from "./TripTapInInvite";
+import { LiveTvLink } from "./LiveTvLink";
 import styles from "./CodeTournament.module.css";
 
 /**
@@ -39,5 +40,6 @@ export function TripLiveSettings({ trip: given, isOrganizer, sample = false }: {
       <LiveVisibilityPicker key={`${settings.visibility}|${settings.playersCanShare}`} settings={settings} onChange={save} />
     </>}
     {code && <TripTapInInvite code={code} name={trip.trip.name} />}
+    {isOrganizer && code && settings.visibility !== "private" && <LiveTvLink code={code} />}
   </>;
 }

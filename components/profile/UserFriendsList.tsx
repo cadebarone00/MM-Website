@@ -50,7 +50,7 @@ export function UserFriendsList({ username, friends: initial, signedIn, backHref
     : <button type="button" className={styles.add} disabled={busy === f.id} onClick={() => void add(f)}>
       {f.relation === "incoming" ? <><Check size={15} aria-hidden="true" /> Accept</> : <><UserPlus size={15} aria-hidden="true" /> Add</>}</button>;
 
-  return <main className={styles.page}>
+  return <main className={`${styles.page} app-own-top-clearance`}>
     <div className={styles.inner}>
       <div className={styles.top}>
         <div className={styles.titleBar}>

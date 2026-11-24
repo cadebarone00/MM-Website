@@ -7,7 +7,7 @@ import { setupForViewer } from "./savedTripSetup.ts";
 import { loadSavedTripSetup } from "./savedTripSetupServer.ts";
 import { getTripRoundScoring } from "./tripScoringServer.ts";
 import { getLeague } from "./leaguesServer.ts";
-import { spectatorLeague, spectatorTournament, spectatorTrip, type WatchView } from "./watchView.ts";
+import { spectatorLeague, spectatorTournament, spectatorTrip, tripLivePlace, type WatchView } from "./watchView.ts";
 
 /**
  * Watch codes (supabase/watch_codes.sql): anyone with the code, signed in or not, gets a read-only view. The server
@@ -51,5 +51,6 @@ export async function loadWatch(code: string, today = new Date().toISOString().s
   const round = trip.rounds.find((r) => r.playDate === today) ?? [...trip.rounds].reverse().find((r) => r.playDate && r.playDate < today);
   const scoring = round ? await getTripRoundScoring(found.organizer, found.id, round.roundNumber) : null;
   const setup = setupForViewer(await loadSavedTripSetup(trip), false);
-  return { status: "ok", view: { kind: "trip", trip: spectatorTrip(trip, scoring === "failed" ? null : scoring, setup, watchId) } };
+  // The location only rides along for a Public trip (it's in the directory then): TV mode shows it under the name.
+  return { status: "ok", view: { kind: "trip", trip: { ...spectatorTrip(trip, scoring === "failed" ? null : scoring, setup, watchId), place: tripLivePlace(saved.trip) } } };
 }

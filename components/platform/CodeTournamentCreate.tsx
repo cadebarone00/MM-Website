@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Copy, Plus, Share2, X } from "lucide-react";
 import { DatePicker } from "@/components/platform/DatePicker";
-import { ExploreCourseSearch, place, type CourseResult } from "./ExploreCourseSearch";
+import { CourseSearchScreen, place, type CourseResult } from "./CourseSearchScreen";
 import { formatCode, type CodeRoundSetup } from "@/lib/platform/codeTournaments";
 import type { ScoringCourse } from "@/lib/platform/personalRound";
 import styles from "./PlayRound.module.css";
@@ -85,6 +85,7 @@ export function CodeTournamentCreate({ sample = false }: { sample?: boolean } = 
  *  with Create a league (`labels`: its own wording). */
 export function AddRound({ onCancel, onAdd, minDate, labels = { kicker: "Add a round", title: "Where's this round?", button: "Add round" } }: { onCancel: () => void; onAdd: (round: NewRound) => void; minDate?: string; labels?: { kicker: string; title: string; button: string } }) {
   const [picked, setPicked] = useState<CourseResult | null>(null);
+  const [query, setQuery] = useState("");
   const [course, setCourse] = useState<ScoringCourse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tee, setTee] = useState(0);
@@ -100,7 +101,8 @@ export function AddRound({ onCancel, onAdd, minDate, labels = { kicker: "Add a r
     return () => controller.abort();
   }, [picked]);
   const back = <header className={styles.header}><button type="button" className={styles.back} onClick={picked ? () => { setPicked(null); setCourse(null); setError(null); } : onCancel} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button><p className={styles.kicker}>{labels.kicker}</p></header>;
-  if (!picked) return <main className={styles.page}>{back}<div className={styles.search}><ExploreCourseSearch onPick={setPicked} kicker="Round course" title={labels.title} /></div></main>;
+  // Picking the course: the app's standard full-screen search (owner request 2026-11-22). Back from the scorecard keeps the words typed.
+  if (!picked) return <CourseSearchScreen query={query} onQuery={setQuery} onPick={setPicked} onBack={onCancel} />;
   // Only the course's own holes (some listings run extra, unlabelled holes past 18).
   const holes = course ? (course.par.length >= 18 ? 18 : course.par.length >= 9 ? 9 : 0) : 0;
   const chosenTee = course?.tees[tee] ?? null;
