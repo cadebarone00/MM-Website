@@ -1,0 +1,7 @@
+﻿# Expo Golf Trips 2c feature review
+
+Review started 2026-11-24; scope is the approved native trip page and Home checklist in project_specs.md. Implementation, deployment, phone verification and release review are pending. Accountable review owners, markets, ages, vendors, retention periods and professional reviewers remain unassigned.
+
+All categories in FEATURE_COMPLIANCE_CHECKLIST.md remain **review_required**. The existing member-only trip endpoint supplies names, profile images, trip plans, scoring and settings; the join link and public watch link can be shared onward. Engineering must verify authorization, visibility, link handling, account changes and error states. Policy and counsel must assess notices, organizer responsibility, minors, retention, deletion and public sharing. Existing feed and chat are device-memory-only; introducing stored or delivered messages or photos requires a fresh review of moderation, rights, retention and platform rules. Weather requires a separate provider and privacy review before connection.
+
+Code, fonts, images and golf content require rights and dependency review. Payments, subscriptions, advertising, sponsorship and other value flows are not introduced by the proposed scope, but their applicability has not been formally assessed. Store/provider requirements and qualified professional legal review remain unresolved. No item here establishes compliance or authorizes release.
