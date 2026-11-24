@@ -11,7 +11,8 @@ import { builtParsFor } from "./setupHelpers.ts";
 const ROUND_KEY = "maroonPersonalRound";
 const BUILT_KEY = "maroonBuiltCourses";
 
-export type PhoneRound = { setup: PersonalRoundSetup; startedAt: string };
+/** `strokes`: my score per hole (index 0–17), kept on the phone as I enter it. */
+export type PhoneRound = { setup: PersonalRoundSetup; startedAt: string; strokes?: (number | null)[] };
 
 export async function readPhoneRound(): Promise<PhoneRound | null> {
   try {
@@ -38,3 +39,11 @@ export type PickedCourse = { ref: string; name: string; place: string };
 let pending: PickedCourse | null = null;
 export const setPickedCourse = (course: PickedCourse) => { pending = course; };
 export const takePickedCourse = (): PickedCourse | null => { const course = pending; pending = null; return course; };
+
+/** Remember a scorecard built by hand at a course (website saveBuiltPars), so the next round there starts with those pars. */
+export async function saveBuiltPars(ref: string, par: number[]): Promise<void> {
+  try {
+    const all = JSON.parse((await AsyncStorage.getItem(BUILT_KEY)) ?? "{}") as Record<string, number[]>;
+    await AsyncStorage.setItem(BUILT_KEY, JSON.stringify({ ...all, [ref]: par }));
+  } catch { /* the pars just aren't remembered */ }
+}

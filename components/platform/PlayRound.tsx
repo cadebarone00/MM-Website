@@ -15,12 +15,13 @@ import { InviteCodeCard } from "./InviteCodeCard";
 import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, type RoundGuest, type RoundPlayer, type ScoringCourse } from "@/lib/platform/personalRound";
 import { guestStrokes } from "@/lib/platform/sharedRoundCards";
 import { sideGamesOn } from "@/lib/platform/sideGames";
+import { finishHoleSends, withDaytonaLeft, withDaytonaMiddle, withDouble, withWolfPick, wolfView } from "@/lib/platform/roundScoring";
 import { cardNines, cashCell, leaderboardLines, nineTotal, orderPeople, roundGameView, roundPeople, scoreMark } from "@/lib/platform/roundBoard";
 import { buildRoundSetup, firstName, GAME_GROUPS, handicapValue, holesChoiceLabel as holesLabel, money, PAGE_TITLES, playersLabel, reviewLines, SETUP_PAGES, stakeText, startErrorMessage, type RoundSetupForm, type SetupPage } from "@/lib/platform/roundSetupForm";
 
 export { playersLabel };
 import { customRef, isCustomRef } from "@/lib/platform/golfGps/courseRefs";
-import { gameDef, scoreGame, stakeUnit, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
+import { gameDef, scoreGame, stakeUnit, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import type { PlayerRound, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
 import type { SheetCard } from "@/lib/platform/liveCards";
 import type { SharedRound } from "@/lib/platform/sharedRoundsServer";
@@ -611,10 +612,11 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const move = (from: number, to: number) => { const keys = ordered.map((x) => x.key); const [k] = keys.splice(from, 1); keys.splice(to, 0, k); setOrder(keys); };
   /** Next hole: every player's score for the hole goes to the round (and the leaderboard) — what the boxes show, par when untouched. */
   function finishHole(hole: number) {
-    const mine = read()?.card?.strokes[hole] ?? par[hole];
-    if (strokesOf(me!)[hole] !== mine) { (sentMine.current ??= par.map((p, h) => myRemote[h] ?? p))[hole] = mine; sendStrokes(me!, hole, mine); }
-    for (const p of others) if (strokesOf(p.profileId)[hole] == null) sendStrokes(p.profileId, hole, par[hole]);
-    for (const g of guests) if (guestRow(g.id)[hole] == null) sendGuestStrokes(g.id, hole, par[hole]);
+    // What to send comes from the shared rules (lib/platform/roundScoring.ts), the same ones the Expo app uses.
+    const plan = finishHoleSends({ hole, par, myBox: read()?.card?.strokes[hole], myInRound: strokesOf(me!)[hole],
+      others: [...others.map((p) => ({ key: p.profileId, inRound: strokesOf(p.profileId)[hole] })), ...guests.map((g) => ({ key: `guest:${g.id}`, inRound: guestRow(g.id)[hole] }))] });
+    if (plan.mine != null) { (sentMine.current ??= par.map((p, h) => myRemote[h] ?? p))[hole] = plan.mine; sendStrokes(me!, hole, plan.mine); }
+    for (const o of plan.others) { if (o.key.startsWith("guest:")) sendGuestStrokes(o.key.slice(6), hole, o.strokes); else sendStrokes(o.key, hole, o.strokes); }
   }
   const setGuests = (next: RoundGuest[]) => { setSnap({ ...snap, setup: { ...setup, guests: next } }); void hostAction({ action: "setup", setup: { ...setup, guests: next } }); };
 
@@ -726,12 +728,12 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
           void send(`pick:${hole}`, next, { action: "pick", hole: hole + 1, pick: next });
         }} />}
         {setup.game?.doubles && gameFits && !ended && <button type="button" className={styles.doubleBet} aria-pressed={inputs[hole]?.doubled === true} onClick={() => {
-          const next = { ...inputs[hole], doubled: !inputs[hole]?.doubled };
+          const next = withDouble(inputs[hole] ?? {});
           void send(`pick:${hole}`, next, { action: "pick", hole: hole + 1, pick: next });
         }}>{inputs[hole]?.doubled ? "Doubled ×2 · tap to undo" : "Double bet"}</button>}
         {sideGamesOn(setup.sideGames, hole, par).map((kind) => <SidePick key={kind} kind={kind} names={gamePlayers.map((x) => x.name)}
           value={inputs[hole]?.[kind]} onChange={(winner) => {
-            const next = { ...inputs[hole], [kind]: winner };
+            const next: HoleInput = { ...inputs[hole], [kind]: winner };
             if (winner === undefined) delete next[kind];
             void send(`pick:${hole}`, next, { action: "pick", hole: hole + 1, pick: next });
           }} />)}
@@ -818,15 +820,15 @@ export function HolePicks({ game, hole, range, names, input, onChange }: { game:
       {choices.map((choice) => <button key={String(choice.value)} type="button" aria-pressed={chosen === choice.value} onClick={() => set(chosen === choice.value ? undefined : choice.value)}>{choice.label}</button>)}
     </div>;
   if (kind === "wolf") {
-    const wolf = wolfFor(hole, range, names.length);
     const chosen = input.wolfPartner;
+    const view = wolfView(hole, range, names, chosen);
     // Tap a partner (or Lone Wolf); tap it again to clear it.
-    const set = (value: number | null) => onChange({ wolfPartner: chosen === value ? undefined : value });
+    const set = (value: number | null) => onChange({ wolfPartner: withWolfPick(input, value).wolfPartner });
     return <div className={styles.wolfCard} role="group" aria-label="Wolf partner">
-      <p className={styles.wolfTitle}><b>{names[wolf]}</b> {names[wolf] === "You" ? "are" : "is"} the Wolf</p>
-      <p className={styles.wolfHint}>{chosen === undefined ? "Pick a partner, or go it alone" : chosen === null ? `${names[wolf]} ${names[wolf] === "You" ? "go" : "goes"} Lone Wolf · points ×2` : `${names[wolf]} + ${names[chosen]} vs the rest`}</p>
+      <p className={styles.wolfTitle}><b>{names[view.wolf]}</b> {view.title.slice(names[view.wolf].length + 1)}</p>
+      <p className={styles.wolfHint}>{view.hint}</p>
       <div className={styles.wolfRow}>
-        {everyone.filter((i) => i !== wolf).map((i) => <button key={i} type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
+        {view.partners.map((i) => <button key={i} type="button" aria-pressed={chosen === i} onClick={() => set(i)}>
           <span className={styles.wolfInitial} aria-hidden="true">{names[i].slice(0, 1).toUpperCase()}</span>
           <span className={styles.wolfName}>{names[i]}</span>
         </button>)}
@@ -845,15 +847,10 @@ export function HolePicks({ game, hole, range, names, input, onChange }: { game:
     return <>
       {pick("Middle", middle ?? undefined, everyone.map((i) => ({ value: i, label: names[i] })), (value) => {
         if (value == null) { onChange({ daytona: undefined }); return; }
-        const rest = everyone.filter((i) => i !== value);
-        onChange({ daytona: { middle: value, left: [rest[0], rest[1]], right: [rest[2], rest[3]] } });
+        onChange({ daytona: withDaytonaMiddle({}, names.length, value).daytona });
       })}
       {spot && <div className={styles.pickRow} role="group" aria-label="Left pair"><span>Left pair</span>
-        {sides.map((i) => <button key={i} type="button" aria-pressed={left.includes(i)} onClick={() => {
-          const nextLeft: number[] = left.includes(i) ? left : [left[1], i];
-          const right = sides.filter((j) => !nextLeft.includes(j));
-          onChange({ daytona: { middle: spot.middle, left: [nextLeft[0], nextLeft[1]], right: [right[0], right[1]] } });
-        }}>{names[i]}</button>)}
+        {sides.map((i) => <button key={i} type="button" aria-pressed={left.includes(i)} onClick={() => onChange({ daytona: withDaytonaLeft(input, names.length, i).daytona })}>{names[i]}</button>)}
       </div>}
     </>;
   }

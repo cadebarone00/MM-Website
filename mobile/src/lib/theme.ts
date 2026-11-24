@@ -56,6 +56,16 @@ export const colors = {
   wizardTrack: "rgba(251,248,241,0.12)",
   wizardDisabledFill: "rgba(251,248,241,0.1)",
   wizardDisabledInk: "rgba(251,248,241,0.35)",
+  // Scoring sheet (website GolfTripScoring.module.css): light cream sheet, maroon ink.
+  sheetTop: "#f8f3ea",
+  sheetBottom: "#f2ebdf",
+  sheetInk: "#240001",
+  sheetMuted: "rgba(47,12,14,0.7)",
+  sheetLine: "rgba(47,12,14,0.3)",
+  sheetLineSoft: "rgba(47,12,14,0.22)",
+  sheetGlass: "rgba(255,255,255,0.28)",
+  sheetGrabber: "rgba(122,79,41,0.5)",
+  sheetBackdrop: "rgba(20,4,6,0.55)",
 } as const;
 
 /** Rounded corners used everywhere. */
