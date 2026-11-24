@@ -6112,6 +6112,14 @@ prompt to add by hand"):**
   tees Black 75.1/133, Blue 70.2/126, Green 69.3/120, Red 70.0/122; yardages from the post-2024 card; stroke index not on
   file). Tested on a practice database: saved once even when run twice; Play reads the 18 pars and 4 tees.
 - Still to do (Part B): the Add a course screen, and saving a built scorecard to the library.
+- **Courses from the owner's scorecard screenshots (2026-11-24):** each card goes in `scripts/courses/<course>.ts`;
+  `npx tsx scripts/build-course-sql.ts` checks every card (18 pars, handicaps 1–18, each tee adds up to its printed
+  total) and writes ONE file, `supabase/course_library_new_courses.sql` (Eagle Pointe's shape; men's and women's
+  ratings; Play uses men's). Owner decisions: add each card without asking to confirm; run the one file in Supabase
+  once all cards are in (~40). `lib/platform/golfGps/repository/courseFiles.test.ts` runs the file twice on a practice
+  database and checks Play reads every course. Owner can also give course names: The Maroon finds the card online (GolfPass
+  scorecard pages), runs the same checks and notes the source in the card file. 19 courses so far (see the file's header).
+  NOT run in Supabase yet.
 - **Play circle (owner request 2026-11-21):** Cade's new Play home (circles: Play · Live · On The Range) had no way to
   start a round; the **Play** circle (handicap) now opens Play a round (`/rounds/new`). Look unchanged.
 
@@ -6728,3 +6736,88 @@ screens, and editing rounds from Insights.
 **Done means:** tests pass for the stats math (with empty, 9-hole, no-stats and Private cases); the type check and
 lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
 account on the local dev site.
+
+## Feature: The Maroon website, red edition: marketing + read-only stats and history (owner request 2026-11-24, revised same day) — APPROVED 2026-11-24: **keep Cade's look and layout** (owner: "keep his formatting but add to it"), add the missing tabs; step 1 BUILT 2026-11-24 (uncommitted): tabs + Features, Tutorials, Games, Help
+
+**What / who:** the public website (not the app). Visitors learn what The Maroon does; signed-in golfers look back at
+their own golf. **Rule (owner, 2026-11-24): the website is look-only.** Nobody plays, scores, creates or joins
+anything here (no rounds, trips, tournaments, leagues, invites or settings). Every "do something" button says
+**Get the app** and goes to Download.
+
+**Look (owner decision 2026-11-24): keep Cade's current `/website` look and layout**: maroon header and footer,
+cream sections, gold accents, Spectral headings, its section and card styles. The red / Supabase-style restyle is
+dropped. New tabs are new pages in that same style. At phone width everything stacks (16px gutter, no sideways scroll).
+
+**Tabs (top menu; the signed-in tabs show a lock and "Sign in" when signed out):**
+| Tab | Who | What it shows |
+|---|---|---|
+| **Home** | everyone | Hero + Get the app, feature cards, how it works, numbers band, download. |
+| **Features** | everyone | One section per app feature with screenshots: Golf Trips, Play a round, Tourneys, Leagues, The Maroon Live + TV mode, GPS, Profiles. |
+| **Tutorials** | everyone | Step-by-step guides with screenshots: create a trip, invite your crew, team draft and match selection, start a round, keep score, pick a game, watch live / TV mode, import a past trip. Each ends with Get the app. |
+| **Games** | everyone | The rule book: all 17 games + side games (greenies, longest drive, closest to the pin), each with how it's scored, group sizes and a worked example. |
+| **Live** | everyone | The existing Maroon Live directory (`/tap-in`): watch Public events, read-only. |
+| **Stats** | signed in | Your Insights numbers: handicap, rounds, scoring average, best round, last-20 trend, par 3/4/5 averages, birdie / par / bogey split, putts, fairways, greens. |
+| **History** | signed in | Every saved round, newest first (course, date, score, to par, game, money); open one for the hole-by-hole scorecard. Plus your past trips, tournaments and leagues with results. Read-only. |
+| **Help** | everyone | FAQ, contact us, Terms / Privacy (as in the app). |
+
+**Connected dashboard (owner request 2026-11-24: "connect all profiles … say connected and show an option to get in to
+each part"), building.** `/dashboard` reads the signed-in golfer's own profile (`loadProfileReadModel`, owner view)
+and shows a card per part, each marked **Connected** with its count and an Open button: **Stats** (`/dashboard/stats`),
+**Round history** (`/dashboard/history`), **Golf trips** and **Tournaments** (sections of History). The Stats and
+History tabs open those pages. They live under `/dashboard` (not `/website/…`) because they read account data, which
+the marketing boundary keeps out of `/website`. Signed out → sign in, then back. Dev: `?sample=1` on these pages shows
+made-up rounds (local dev server only), for checking the look.
+
+**Stats tab, the full breakdown (owner request 2026-11-24: "a very big breakdown"), building with the connected dashboard.**
+Every number comes from the saved rounds (each hole: par, strokes, putts, fairway hit or miss direction, green hit
+or miss direction, penalties; each round: course, tee rating / slope, date, 9 or 18, where it came from). A filter at the top:
+**Last 10 · Last 20 · This year · All time**, and **18-hole only** on or off. Sections, top to bottom:
+1. **Overview:** handicap index (and its trend), rounds played, scoring average, average to par, best and worst round,
+   lowest 9, last 5 compared with career (better / worse arrow).
+2. **Scoring:** score mix (eagle or better, birdie, par, bogey, double, triple+) as a bar and per round; birdies per
+   round; bogey-free rounds; average to par on par 3s, 4s and 5s; front 9 compared with back 9; average on each hole
+   number 1–18; bounce-back % (birdie or better right after a bogey or worse).
+3. **Off the tee:** fairways hit %, misses left / right %, penalties per round, average score when the fairway is hit
+   compared with missed.
+4. **Approach:** greens in regulation %, miss pattern (short / long / left / right) on a small green picture, GIR on
+   par 3s, 4s and 5s, average score with and without the green.
+5. **Short game & putting:** putts per round, putts per green hit, 1-putt %, 3-putt % and 3-putts per round,
+   scrambling % (par or better after missing the green).
+6. **Trends:** charts over time for score, handicap, fairways, greens and putts.
+7. **Courses:** every course played: rounds, average, best, most played first.
+8. **Where you played:** Play rounds, trips, tournaments and leagues: rounds and average for each.
+9. **Records:** best round, most birdies in a round, longest run of pars or better, eagles and holes-in-one (when and where).
+Sections built from fairway / green / putt data say "from N rounds with stats tracked", and show "Turn on Track stats in
+the app" when there are none. Built in the stats maths file (`lib/insights/stats.ts`) with tests for each number.
+
+**Why /dashboard says "Not connected yet":** Cade's dashboard was built as a sign-in shell only. Its boxes (handicap,
+round history, trips, tournaments) were placeholders, deliberately not reading any golf data yet
+(`components/marketing/WebsiteAccountDashboard.tsx`: "Real identity only. No … statistics, scores"). The Stats and
+History tabs replace those placeholders.
+
+**Builds on what exists:** `/website` (`components/marketing/…`) gets the new look and tabs, keeping its marketing
+boundary rule (`scripts/check-marketing-boundary.cjs`). `/dashboard` becomes Stats + History. The Insights spec above
+supplies the stats (its maroon + cream look becomes red; its "Compare" and "Feed" pages wait for a later step). Live
+reuses `/tap-in`. Tutorial / Features screenshots are captured from the /dev simulator on sample data.
+
+**Data:** nothing new stored, nothing written. Rounds from `player_rounds` via `list_profile_rounds` (follows Public /
+Private); trips / tournaments / leagues via the readers Profile already uses. The numbers band needs one small
+read-only count; if that needs SQL, the file is written but not run until the owner runs it.
+
+**Build order (each step checked before the next):**
+1. Red look + Home, Features, Games, Help on `/website` (simulator Website group, Desktop + Mobile).
+2. Tutorials with screenshots.
+3. Stats + History on sample golfers in the simulator (no rounds, no tracked stats, 9-hole only, lots of rounds;
+   signed out), stats maths in `lib/insights/stats.ts` + tests.
+4. Real data for signed-in users; Live tab linked.
+
+**Done looks like:** no page on the website can start, score, create, join or change anything; signed-out visitors
+can't see Stats / History; a signed-in golfer sees their real stats and history; every tab looks right at computer and
+phone width; boundary check, tests, type check, lint pass; checked on screen.
+
+**Owner decisions (2026-11-24):** keep Cade's look (A/C settled); tab list as above (D: nothing added).
+**Step 1 (building):** shared header with the tabs + footer for every website page (`WebsiteShell`), Home keeps its
+sections; new pages `/website/features`, `/website/tutorials` (text steps; screenshots in step 2),
+`/website/games`, `/website/help`. Stats and History open the existing `/dashboard` until step 3. The marketing
+boundary check covers every `app/website/**/page.tsx`.
+

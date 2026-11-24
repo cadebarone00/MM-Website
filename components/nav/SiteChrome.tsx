@@ -15,7 +15,7 @@ import { PageScrollBackground } from "./PageScrollBackground";
 export function SiteChrome({ children, catalog }: { children: ReactNode; catalog: SeasonCatalogData }) {
   const pathname = usePathname();
   if (pathname.startsWith("/tap-in/")) return children;
-  if (["/website", "/dev-website", "/dashboard", "/tap-in", "/broadcast"].includes(pathname)) return children;
+  if (["/website", "/dev-website", "/dashboard", "/tap-in", "/broadcast"].includes(pathname) || pathname.startsWith("/website/") || pathname.startsWith("/dashboard/")) return children;
   const content = <div className="app-camera-buffer"><AreaNavigation><RoundExitProvider>
     <PageScrollBackground /><AppChrome>{children}</AppChrome>
   </RoundExitProvider></AreaNavigation></div>;
