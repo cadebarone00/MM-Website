@@ -90,3 +90,19 @@ Update the Status column when an area is done.
 - **Previewing app screens in the /dev simulator.** The simulator is a website, so it shows website screens only. Options when we get there: Expo's web preview of `mobile/`, or previewing on the phone.
 - **Sharing `lib/` code with `mobile/`.** Step 1 doesn't import from `lib/` yet. The first area that needs shared logic (Play scoring) decides how (direct import vs. a shared package).
 - **Website features already planned for players** (for example the "Insights" stats dashboard spec of 2026-11-24): check them against rule 1 before building, and decide whether they belong in the app, the desktop website, or both.
+
+## Where we are + to-do list
+
+- **Next:** Golf Trips 2c (the trip page + Home tab), then 2d (the Golf tab + trip scoring with Player & Attest), 2e (Team Draft + Match Selection), 2f (Venue, Itinerary, My Travel, Flights), and 2g (Trip Settings, Import past trip). Then Profile → Sign-up/onboarding → Tourneys → Leagues → the rest → EAS Build to TestFlight → Android. Part 2c is in progress locally and is not complete.
+- **Waiting on Cade:**
+  - Phone-check 2b (the Trip Builder).
+  - Scoring sheet: one player per row, or two across (currently two across)?
+  - Apple Watch: should a group's scorer enter everyone's scores on the watch, or only their own?
+- **Apple Watch plan:** A native Swift watch app. Home shows a profile snapshot and upcoming/live/past rounds, or a prompt to play; rounds pop up while playing. Score and leaderboard cover Play, Trips, Tourneys and Leagues. Design it first in the /dev simulator's Apple Watch view (208×248). It can start any time after Play.
+- **Later:**
+  - The tour's phone pictures (after 2c).
+  - Lock-screen push notifications.
+  - App links so invite texts open the app (with EAS).
+  - Previewing app screens in the /dev simulator.
+  - Decide whether the “Insights” website spec belongs in the app or on the website.
+  - Tune the look by changing the building blocks.
