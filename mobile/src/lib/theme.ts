@@ -32,6 +32,23 @@ export const colors = {
   problem: "#9b1c1c",
   white: "#ffffff",
   money: { up: "#2e7d4f", down: "#a3261c" },
+  // Play home (website components/platform/MobileHome.module.css).
+  maroon950: "#1d0b11",
+  homeCream: "#f4efe6",
+  boardBorder: "#b99c6b",
+  boardBorderSoft: "rgba(185,156,107,0.53)",
+  boardGold: "#d7b77e",
+  boardInk: "#e5d4c7",
+  boardLink: "#f2d497",
+  boardTop: "#42131c",
+  boardBottom: "#23070d",
+  paper: "#fff9ef",
+  paperBorder: "rgba(213,183,127,0.5)",
+  paperInk: "#35141a",
+  paperInkSoft: "#462129",
+  inviteFill: "#2b1219",
+  rangePage: "#e6e2db",
+  rangeFilterOn: "#fffdf8",
 } as const;
 
 /** Rounded corners used everywhere. */
@@ -44,6 +61,9 @@ export const fonts = {
   regular: "Spectral_400Regular",
   semibold: "Spectral_600SemiBold",
   bold: "Spectral_700Bold",
+  /** Barlow: ONLY for tiny ALL-CAPS labels (owner font rule). */
+  capsSemibold: "Barlow_600SemiBold",
+  capsBold: "Barlow_700Bold",
 } as const;
 
 /** Everything sits 16px from the phone's edges (same rule as the website's --page-gutter). */

@@ -6591,7 +6591,7 @@ screens, and editing rounds from Insights.
 lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
 account on the local dev site.
 
-## Feature: Expo app Step 0 (building blocks) + Step 1 (Play) (owner request 2026-11-24) — APPROVED 2026-11-24 (tab bar: B, Apple's real iOS tab bar). Step 0 BUILT + owner-checked on the phone 2026-11-24 (dev gallery Profile → Building blocks; owner will tune the look as real screens arrive — change the block, every screen follows). Step 1a (Play home) IN PROGRESS
+## Feature: Expo app Step 0 (building blocks) + Step 1 (Play) (owner request 2026-11-24) — APPROVED 2026-11-24 (tab bar: B, Apple's real iOS tab bar). Step 0 BUILT + owner-checked on the phone 2026-11-24 (dev gallery Profile → Building blocks; owner will tune the look as real screens arrive — change the block, every screen follows). Step 1a (Play home) BUILT + owner-checked 2026-11-24 ("really like it"; tweaks later) (round screens open placeholders until 1b/1c; course GPS map + "Plan this trip" wait for later steps; solo phone-only rounds join the board in 1b)
 
 **Side:** App (`mobile/`). Server: no changes expected (every `/api/*` route already accepts the app login through `lib/supabase/server.ts` → `requestIdentity`). Follows `docs/architecture/app-first.md`.
 

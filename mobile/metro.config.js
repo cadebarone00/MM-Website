@@ -5,4 +5,6 @@ const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
 config.watchFolders = [path.resolve(__dirname, "../lib")];
+// The Maroon logo is an SVG (shown with expo-image).
+config.resolver.assetExts.push("svg");
 module.exports = config;
