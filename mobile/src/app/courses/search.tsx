@@ -44,14 +44,14 @@ export default function CourseSearch() {
   }, [words, typing]);
 
   const forRound = purpose === "play" || purpose === "setup";
-  function chooseForRound(course: { ref: string; name: string; place: string }) {
+  function chooseForRound(course: { ref: string; name: string; place: string; par?: number | null }) {
     if (purpose === "setup") { setPickedCourse(course); router.back(); return; }
-    router.replace({ pathname: "/rounds/new", params: course });
+    router.replace({ pathname: "/rounds/new", params: { ref: course.ref, name: course.name, place: course.place } });
   }
   function pick(course: CourseResult) {
     remember({ id: course.ref, ref: course.ref, name: course.name, city: course.city, state: course.state, par: course.par });
     if (forRound) {
-      chooseForRound({ ref: course.ref, name: course.name, place: coursePlace(course) });
+      chooseForRound({ ref: course.ref, name: course.name, place: coursePlace(course), par: course.par });
     } else {
       router.push({ pathname: "/courses/[ref]", params: { ref: course.ref, name: course.name, city: course.city ?? "", state: course.state ?? "", par: course.par === null ? "" : String(course.par) } });
     }

@@ -6665,7 +6665,7 @@ Each part is phone-checked before the next starts. **"Nothing missing" checklist
 **Question for the owner (one):**
 - **Tab bar look.** (A) **Keep today's maroon tab bar** (gold active icon), drawn to match the website exactly. (B) **Apple's real iOS tab bar** (the newer glassy one), which gives the most native feel, but it follows iOS's look and is less maroon. **Plan: A** for now, so the app matches what testers know; B can be tried later on its own.
 
-## Feature: Expo app Step 2 — Golf Trips (owner request 2026-11-24) — APPROVED 2026-11-24. Part 2a (Golf Trips tab, join by code / link, accept / decline) BUILT + committed 2026-11-24; 2b (Trip Builder) next, checklist first
+## Feature: Expo app Step 2 — Golf Trips (owner request 2026-11-24) — APPROVED 2026-11-24. Part 2a (Golf Trips tab, join by code / link, accept / decline) BUILT + committed 2026-11-24; 2b (Trip Builder) BUILT 2026-11-24, uncommitted, awaiting phone check (Plan this trip prefill moved to shared lib/content/builtInTrip.ts planTripDraft)
 
 **Side:** App (`mobile/`), plus Server only where a trip screen's logic lives in a website component and has to move into shared `lib/` (same rule as Play: one brain, used by both). Follows `docs/architecture/app-first.md`.
 
@@ -6709,3 +6709,30 @@ Each part is phone-checked before the next starts. **"Nothing missing" checklist
 **Done when (2a):** every checkbox works on the owner's iPhone side by side with the current app; `npm test` + `npx tsc --noEmit` pass in `mobile/`; website tests still pass; GitHub checks green.
 
 **Questions for the owner:** none for 2a. For later parts I'll bring questions with each part's checklist.
+
+### Part 2b checklist — Trip Builder (from `app/golf-trips/new/*`, `SetupStepForm`, `lib/platform/tripBuilderSteps.ts`, `golfTripDraft.ts`, `useCreateGolfTrip`, `GolfTripGolfStep`, `GolfTripCoursesStep`, `TripFormatsStep`, `TripLodgingStep`, `TripReadyScreen`, `GolfTripInviteDialog`, `tour/*`) — APPROVED 2026-11-24, BUILT
+Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped steps, missing answers, golf days clamped to the dates; `golfTripDraft.ts`: rounds, dates, review rows). The answers are kept on the phone while you go step to step, like the website.
+
+**Start**
+- [ ] Golf Trips → **Create**: the first time on this account → **Learn** ("Plan it in one place…", **Learn about Golf Trips** / **Skip for now**); after that straight to the first question (shared `tripTour` "seen" rule).
+- [ ] **Tour**: the swipeable slides (title + text) → the first question. *My call:* on the website each slide shows the real trip page inside a phone; in the app those pictures arrive once the native trip page exists (part 2c), so 2b shows the slides on a plain maroon card.
+
+**Questions (trip-builder look: progress bar, Back · Next, Skip for now where the website has it)**
+- [ ] **What's the trip?** Trip Name (required) + Destination (required; Google Places search, same `/api/places` the website uses).
+- [ ] **When are you going?** Start + End date in one calendar (required) · "How's everyone getting there?" Flying / Driving / A mix (optional).
+- [ ] **Who's coming?** Player count slider 1–24 (starts at 4) · "Are you all competing?" Yes / No (required; Skip for now).
+- [ ] **How do you want to compete?** (only when competing) 2 Teams / Pairs / Every player for themselves (Skip for now).
+- [ ] **Golf days:** − / + golf days (up to the trip's days); each day picks its date and 1 or 2 rounds; Next needs at least one; Skip for now = no golf yet.
+- [ ] **Courses** (skipped when golf was skipped): one row per round (date, round number, course search with the drop-down, or the typed name = "No scorecard"); optional.
+- [ ] **Formats** (only when competing): The Maroon picture + The Maroon Style, then Both (The Maroon Style) · Individual · Team · Create Your Own (a format per round or Decide later); cards never change size.
+- [ ] **Lodging:** "Do you know where you're staying?" Yes it's booked / Not yet / Not sure yet → **Create Trip**.
+- [ ] Opening a later step without the required answers jumps back to the first missing one (shared `firstMissingStep`); shortening the dates drops golf days outside them (shared `clampRoundsToDates`).
+
+**Create + finish**
+- [ ] **Create Trip** → `POST /api/golf-trips` with the answers and a request id (a double tap or retry never makes two trips), then the competition answers go to the trip's Settings (`PUT /api/golf-trips/<id>/setup`, shared `tripBuilderSetupValues` in `lib/platform/tripBuilderSetup.ts`); a failure there doesn't stop the trip.
+- [ ] Errors keep every answer: "Couldn't reach the server…", the server's message, signed out → sign in.
+- [ ] **Your trip is ready** (gold M + burst; no animation when Reduce Motion is on) → **Invite your crew**: the trip's 30-minute invite link (or the trip code before the join-link setup), Copy, Share, Done → the trip (part 2c; until then its placeholder).
+
+**Not in 2b:** the Featured trip's "Plan this trip" prefill (Play → On The Range) gets wired here too once Create exists — *my call: include it, it's one line*; Flights / Transportation screens (not in the current step order); the tour's phone pictures (after 2c).
+
+**Done when (2b):** a trip created in the app shows up in the current app's Golf Trips with the same name, destination, dates, players, golf days, courses and competition settings as one made on the website; every checkbox works on the owner's iPhone; tests (step order + draft rules stay shared; the app's draft storage and create retry), type checks, website tests, iPhone build pass.

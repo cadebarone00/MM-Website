@@ -38,3 +38,21 @@ export const BUILT_IN_TRIP: FeaturedTrip = {
       includes: ["4 premium rounds with cart & range", "3 nights resort lodging", "Airport transfers", "Group dinner", "Group games set up in the app"] },
   ],
 };
+
+/** Suggested dates for a planned trip: the first Thursday at least 4 weeks out, through Sunday (3 nights). Changeable in Trip Basics. */
+export function suggestedDates(today = new Date()): { startDate: string; endDate: string } {
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 28);
+  start.setDate(start.getDate() + ((4 - start.getDay() + 7) % 7));
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 3);
+  const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { startDate: day(start), endDate: day(end) };
+}
+
+/** Featured trip → Plan this trip: a new Trip Builder draft from this itinerary (one golf day per round, its courses). */
+export function planTripDraft(trip: FeaturedTrip, tier: FeaturedTrip["tiers"][number], today = new Date()): Record<string, string> {
+  return {
+    tripName: `${trip.city} Golf Trip`, destination: `${trip.city}, ${trip.region}`, playerCount: String(trip.players),
+    ...suggestedDates(today), golfDays: String(tier.courses.length), knowsLodging: "yes",
+    ...Object.fromEntries(tier.courses.flatMap((course, i) => [[`day${i + 1}Rounds`, "1"], [`round${i + 1}Course`, course]])),
+  };
+}

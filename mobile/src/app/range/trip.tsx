@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -10,12 +11,11 @@ import { colors, fonts, gutter, radius } from "~/lib/theme.ts";
 
 /**
  * The featured trip's itinerary (website TripPromos sheet): photo, city, length, price levels, day-by-day plan, stay
- * and what's included. "Plan this trip" fills in a new Golf Trip, which arrives with Golf Trips in the new app.
+ * and what's included. "Plan this trip" opens the Trip Builder filled in from this itinerary.
  */
 export default function FeaturedTripSheet() {
   const { trip } = usePlayData();
   const [tierId, setTierId] = useState("standard");
-  const [note, setNote] = useState<string | null>(null);
   const tier = trip.tiers.find((t) => t.id === tierId) ?? trip.tiers[0];
 
   return (
@@ -51,8 +51,8 @@ export default function FeaturedTripSheet() {
             ))}
           </>
         )}
-        <Button label="Plan this trip" onPress={() => setNote("Planning a trip comes with Golf Trips in the new app. For now, use Plan this trip in the current app.")} style={styles.plan} />
-        <Text style={styles.note} accessibilityLiveRegion="polite">{note ?? " "}</Text>
+        {/* Plan this trip: the Trip Builder, filled in from this itinerary (shared planTripDraft). */}
+        <Button label="Plan this trip" onPress={() => { router.back(); router.push({ pathname: "/trips/new", params: { plan: "featured", tier: tier?.id ?? "standard" } }); }} style={styles.plan} />
         <Text style={styles.fine}>Sample itinerary with estimated prices. Plan this trip fills in the trip setup for you, with suggested dates you can change.</Text>
       </ScrollView>
     </View>

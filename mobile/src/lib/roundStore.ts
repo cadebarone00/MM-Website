@@ -35,7 +35,7 @@ export async function builtPars(ref: string): Promise<number[] | undefined> {
 }
 
 /** A course picked on the search screen, handed back to the setup page that opened it. */
-export type PickedCourse = { ref: string; name: string; place: string };
+export type PickedCourse = { ref: string; name: string; place: string; par?: number | null };
 let pending: PickedCourse | null = null;
 export const setPickedCourse = (course: PickedCourse) => { pending = course; };
 export const takePickedCourse = (): PickedCourse | null => { const course = pending; pending = null; return course; };

@@ -19,7 +19,7 @@ async function token(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-async function send(path: string, init: { method?: "GET" | "POST"; body?: unknown }, auth: string, signal?: AbortSignal) {
+async function send(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown }, auth: string, signal?: AbortSignal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const onAbort = () => controller.abort();
@@ -55,7 +55,7 @@ export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
  * /api/courses/*, as the signed-in person. `messages` turns a reply code into what the screen should say. Never throws;
  * an aborted call (a newer search replaced it) comes back as `{ ok: false, code: "aborted" }`.
  */
-export async function apiJson<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal; messages?: Partial<Record<string, string>> } = {}): Promise<JsonResult<T>> {
+export async function apiJson<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown; signal?: AbortSignal; messages?: Partial<Record<string, string>> } = {}): Promise<JsonResult<T>> {
   const auth = await token();
   if (!auth) return { ok: false, error: SIGNED_OUT, code: "signed_out" };
   try {
@@ -71,7 +71,7 @@ export async function apiJson<T>(path: string, init: { method?: "GET" | "POST"; 
  * Call a website route whose reply has no `ok` field (e.g. POST /api/golf-trips/join/<code> answers `{ status, tripId }`).
  * Gives back the HTTP status and the parsed JSON (null when it isn't JSON). Never throws; no connection = status 0.
  */
-export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown } = {}): Promise<{ status: number; body: T | null }> {
+export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown } = {}): Promise<{ status: number; body: T | null }> {
   const auth = await token();
   if (!auth) return { status: 401, body: null };
   try {
