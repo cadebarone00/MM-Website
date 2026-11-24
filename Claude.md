@@ -1,3 +1,5 @@
+> **APP-FIRST (2026-11-24, owner decision): read `docs/architecture/app-first.md` before building anything.** New player-facing features go in `mobile/` (Expo app), not the website or `*.app.tsx`; the website is the desktop companion; every spec starts with a `**Side:** App / Website / Server` line; GitHub runs `scripts/check-app-first.mjs` on every push.
+
 # Project Overview
 
 

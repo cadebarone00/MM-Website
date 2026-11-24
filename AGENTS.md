@@ -1,3 +1,5 @@
+> **APP-FIRST (2026-11-24, owner decision): read `docs/architecture/app-first.md` before building anything.** New player-facing features go in `mobile/` (Expo app), not the website or `*.app.tsx`; the website is the desktop companion; every spec starts with a `**Side:** App / Website / Server` line; GitHub runs `scripts/check-app-first.mjs` on every push.
+
 # Living application workflow guide
 
 Do not add "Preview only" banners, notes, or equivalent disclaimers to the development app UI. The development context already makes this clear; document persistence and feature limitations in the workflow guide instead.
