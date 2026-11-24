@@ -5,6 +5,7 @@ import { SymbolView } from "expo-symbols";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { RoundInvites } from "./RoundInvites.tsx";
 import { apiJson } from "~/lib/api.ts";
+import { readPhoneRound } from "~/lib/roundStore.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
 
 type Active = { id: string; name: string; place: string };
@@ -13,16 +14,17 @@ type Look = { status: "loading" } | { status: "active"; round: Active } | { stat
 /**
  * Play home's "Your active board" (website PlayActiveBoard): a live round with friends → Round in progress (tap opens it);
  * none → "Ready for your next round?" + Search for a course; then Round invites and On The Range.
- * (A solo round kept only on this phone joins this board in Play part 2, when rounds can be started in the app.)
+ * A round kept only on this phone (rounds with friends not set up in the database) shows here too, as on the website.
  */
 export function ActiveBoard() {
   const [look, setLook] = useState<Look>({ status: "loading" });
 
   const load = useCallback(async (live: () => boolean) => {
-    const mine = await apiJson<{ id?: string | null }>("/api/rounds/shared");
+    const [mine, phone] = await Promise.all([apiJson<{ id?: string | null }>("/api/rounds/shared"), readPhoneRound()]);
     if (!live()) return;
-    if (!mine.ok) { setLook({ status: "error" }); return; }
-    if (!mine.body.id) { setLook({ status: "none" }); return; }
+    const phoneRound: Look | null = phone ? { status: "active", round: { id: "phone", name: phone.setup.course.name, place: phone.setup.course.place } } : null;
+    if (!mine.ok) { setLook(phoneRound ?? { status: "error" }); return; }
+    if (!mine.body.id) { setLook(phoneRound ?? { status: "none" }); return; }
     const id = mine.body.id;
     const detail = await apiJson<{ round?: { status: string; setup: { course: { name: string; place?: string } } } }>(`/api/rounds/shared/${encodeURIComponent(id)}`);
     if (!live()) return;

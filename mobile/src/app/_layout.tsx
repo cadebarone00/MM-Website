@@ -32,7 +32,7 @@ function Screens() {
           <Stack.Screen name="rounds/new" />
           <Stack.Screen name="courses/search" options={{ animation: "fade_from_bottom" }} />
           <Stack.Screen name="courses/[ref]" />
-          <Stack.Screen name="range/index" />
+          <Stack.Screen name="range" />
           <Stack.Screen name="range/trip" options={sheetOptions} />
           <Stack.Screen name="range/post/[id]" />
           {/* Dev only: the Building blocks gallery (Profile → Building blocks) and its sample slide-up. */}

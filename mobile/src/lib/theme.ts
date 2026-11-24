@@ -49,6 +49,13 @@ export const colors = {
   inviteFill: "#2b1219",
   rangePage: "#e6e2db",
   rangeFilterOn: "#fffdf8",
+  // Setup pages, trip-builder look (website CreateTournament.module.css .wizard, PlayRound.module.css .wiz*).
+  wizardFill: "rgba(251,248,241,0.08)",
+  wizardLine: "rgba(201,168,110,0.35)",
+  wizardMuted: "#e1cec4",
+  wizardTrack: "rgba(251,248,241,0.12)",
+  wizardDisabledFill: "rgba(251,248,241,0.1)",
+  wizardDisabledInk: "rgba(251,248,241,0.35)",
 } as const;
 
 /** Rounded corners used everywhere. */

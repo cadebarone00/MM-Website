@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SearchBar, SearchNote, SearchProblem, SearchRow } from "~/components/Search.tsx";
 import { apiJson } from "~/lib/api.ts";
 import { COURSE_DEBOUNCE_MS, courseLine, coursePlace, courseSearchError, isRecentCourse, RECENT_COURSES_KEY, type CourseResult } from "~/lib/courses.ts";
+import { customRef } from "@/lib/platform/golfGps/courseRefs";
+import { setPickedCourse } from "~/lib/roundStore.ts";
 import { useRecents } from "~/lib/useRecents.ts";
 import { colors, fonts, gutter, minTap } from "~/lib/theme.ts";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
@@ -15,7 +17,8 @@ type Result = { status: "loading" } | { status: "done"; courses: CourseResult[];
 /**
  * Course search in the standard search look (website CourseSearchScreen): Recent courses before typing, results after
  * 2+ letters, a moment after typing stops; a newer search cancels the older one. `for=play` → picking starts a new
- * round with that course; `for=explore` (On The Range → Courses) → the course preview.
+ * round with that course; `for=setup` → hands the course back to the round setup that opened it; `for=explore`
+ * (On The Range → Courses) → the course preview. Play / setup can also add a course by hand (its scorecard is built while playing).
  */
 export default function CourseSearch() {
   useLightStatusBar();
@@ -40,10 +43,15 @@ export default function CourseSearch() {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [words, typing]);
 
+  const forRound = purpose === "play" || purpose === "setup";
+  function chooseForRound(course: { ref: string; name: string; place: string }) {
+    if (purpose === "setup") { setPickedCourse(course); router.back(); return; }
+    router.replace({ pathname: "/rounds/new", params: course });
+  }
   function pick(course: CourseResult) {
     remember({ id: course.ref, ref: course.ref, name: course.name, city: course.city, state: course.state, par: course.par });
-    if (purpose === "play") {
-      router.replace({ pathname: "/rounds/new", params: { ref: course.ref, name: course.name, place: coursePlace(course) } });
+    if (forRound) {
+      chooseForRound({ ref: course.ref, name: course.name, place: coursePlace(course) });
     } else {
       router.push({ pathname: "/courses/[ref]", params: { ref: course.ref, name: course.name, city: course.city ?? "", state: course.state ?? "", par: course.par === null ? "" : String(course.par) } });
     }
@@ -65,7 +73,11 @@ export default function CourseSearch() {
                 {result.attribution ? <Text style={styles.credit}>{result.attribution}</Text> : null}
               </>
             )
-        ) : recents.length > 0 ? (
+        ) : null}
+        {typing && forRound && result.status !== "loading" ? (
+          <SearchRow title={`Add “${words}” by hand`} subtitle="Build its scorecard as you play" icon="plus" onPress={() => chooseForRound({ ref: customRef(words), name: words, place: "" })} />
+        ) : null}
+        {typing ? null : recents.length > 0 ? (
           <>
             <View style={styles.headingRow}>
               <Text style={styles.heading}>Recent</Text>

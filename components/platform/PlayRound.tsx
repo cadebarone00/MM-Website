@@ -14,7 +14,10 @@ import gamesStyles from "./GolfTripGames.module.css";
 import { InviteCodeCard } from "./InviteCodeCard";
 import { customCourse, holeRange, type HolesChoice, type PersonalRoundSetup, type RoundGuest, type RoundPlayer, type ScoringCourse } from "@/lib/platform/personalRound";
 import { guestStrokes } from "@/lib/platform/sharedRoundCards";
-import { sideGameMoney, sideGamesOn, type SideGames } from "@/lib/platform/sideGames";
+import { sideGameMoney, sideGamesOn } from "@/lib/platform/sideGames";
+import { buildRoundSetup, firstName, GAME_GROUPS, handicapValue, holesChoiceLabel as holesLabel, money, PAGE_TITLES, playersLabel, reviewLines, SETUP_PAGES, stakeText, startErrorMessage, type RoundSetupForm, type SetupPage } from "@/lib/platform/roundSetupForm";
+
+export { playersLabel };
 import { customRef, isCustomRef } from "@/lib/platform/golfGps/courseRefs";
 import { gameDef, moneyByHole, scoreGame, stakeUnit, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
 import type { PlayerRound, ScoredCard, ShotResult } from "@/lib/platform/playerRounds";
@@ -49,17 +52,6 @@ const subscribeNever = () => () => {};
 const write = (value: Saved | null) => { try { if (value) localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); else localStorage.removeItem(STORAGE_KEY); } catch { /* private mode: keep it in memory */ } };
 /** Saves part of the round in progress, keeping whatever else is already saved. */
 const update = (base: Saved, part: Partial<Saved>) => write({ ...(read() ?? base), ...part });
-const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
-const handicapValue = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n >= -10 && n <= 54 ? n : null; };
-const holesLabel = (holes: HolesChoice) => holes === "18" ? "18 holes" : holes === "front" ? "Front 9" : "Back 9";
-/** "2–5 players", "2 or 4 players", "5 players". */
-export const playersLabel = (sizes: number[]) => sizes.length === 1 ? `${sizes[0]} players` : sizes.every((n, i) => i === 0 || n === sizes[i - 1] + 1) ? `${sizes[0]}–${sizes.at(-1)} players` : `${sizes.slice(0, -1).join(", ")} or ${sizes.at(-1)} players`;
-/** The game picker's groups, as in the trip's New game sheet. */
-const GAME_GROUPS: { title: string; ids: GameId[] }[] = [
-  { title: "Points games", ids: ["skins", "wolf", "daytona", "vegas", "sixes", "nines", "bbb", "stableford"] },
-  { title: "Match & stroke play", ids: ["stroke", "match", "nassau", "bestball", "snake"] },
-  { title: "Team formats (don't count toward handicap)", ids: ["scramble", "shamble", "alternate", "chapman"] },
-];
 type PostResult = { ok: boolean; code?: string; message?: string; id?: string };
 const post = (url: string, body: unknown): Promise<PostResult> => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
   .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok }))
@@ -134,13 +126,7 @@ function OpenShared({ id, header, onOpen }: { id: string; header: ReactNode; onO
   </section></main>;
 }
 
-/** The round setup's pages (owner layout 2026-11-21), in the trip builder's look. */
-const SETUP_PAGES = ["round", "players", "game", "review"] as const;
-type SetupPage = typeof SETUP_PAGES[number];
-const PAGE_TITLES: Record<SetupPage, string> = { round: "Your round", players: "Who's playing?", game: "The game", review: "Ready to tee off?" };
 type PickedRoundCourse = { ref: string; name: string; place: string };
-const money = (n: number) => `${n < 0 ? "−" : "+"}$${Math.abs(n) % 1 ? Math.abs(n).toFixed(2) : Math.abs(n)}`;
-const dollars = (text: string) => { const n = Number.parseFloat(text); return Number.isFinite(n) && n > 0 && n <= 10000 ? Math.round(n * 100) / 100 : 0; };
 
 /**
  * Round setup, 4 pages like the trip builder: 1) the round — course (our library → GolfCourseAPI → add by hand), tees,
@@ -204,41 +190,11 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
   // Read the one-time selection only when setup opens.
   }, []);
 
-  // A built scorecard has no tees on file: an optional rating / slope from the course's own card lets the round count.
-  const ratingValue = Number.parseFloat(rating), slopeValue = Number.parseInt(slope, 10);
-  const customTee = ratingValue >= 20 && ratingValue <= 90 && slopeValue >= 55 && slopeValue <= 155 ? { name: "From the scorecard", rating: ratingValue, slope: slopeValue } : null;
-  const chosenTee = course?.custom ? customTee : course?.tees[tee] ?? null;
-  const rated = chosenTee?.rating != null && chosenTee.slope != null;
-  const size = players.length + guests.length + 1;
-  const def = gameId ? gameDef(gameId) : null;
-  const fits = !def || def.players.includes(size);
-  const teamOf = (i: number) => teams[i] ?? (i < size / 2 ? 0 : 1);
-  const teamFormat = def?.teamFormat ?? false;
-  const names = ["You", ...players.map((p) => p.name), ...guests.map((g) => g.name)];
-  const handicapNote = !countForHandicap ? "Practice round: saved, not counted" : teamFormat ? "Team formats can't count toward a handicap"
-    : !rated ? course?.custom ? "Add the course rating and slope for it to count" : "This tee has no rating, so it won't count" : holes !== "18" ? "9-hole rounds are saved but don't count yet" : "Counts once you submit";
-  const nassauStakes = nassau.map(dollars) as [number, number, number];
-  const game: GameConfig | null = def ? {
-    id: def.id, net: net && !def.teamFormat, birdiesDouble: def.points && birdiesDouble,
-    ...(def.points && eaglesTriple ? { eaglesTriple: true } : {}),
-    ...(net && !def.teamFormat && allowance !== 100 ? { allowance } : {}),
-    ...(def.id === "skins" && !carryovers ? { carryovers: false } : {}),
-    ...(def.id === "nassau" ? (nassauStakes.some(Boolean) ? { nassauStakes } : {}) : dollars(stake) ? { stake: dollars(stake) } : {}),
-    ...(def.id === "nassau" && autoPress ? { autoPress: true } : {}),
-    ...(def.points && doubles ? { doubles: true } : {}),
-    ...(def.teams ? { teams: names.map((_, i) => teamOf(i)) } : {}),
-  } : null;
-  const holesOfPar = (pars: number[]) => course ? course.par.flatMap((p, i) => pars.includes(p) && i >= holeRange(holes)[0] && i < holeRange(holes)[1] ? [i + 1] : []) : [];
-  const longestHoles = longest.holes ?? holesOfPar([5]);
-  const closestHoles = closest.holes ?? holesOfPar([3]);
-  const sideGames: SideGames = {
-    ...(greenies.on ? { greenies: { value: dollars(greenies.value) } } : {}),
-    ...(longest.on && longestHoles.length ? { longestDrive: { value: dollars(longest.value), holes: longestHoles } } : {}),
-    ...(closest.on && closestHoles.length ? { closestPin: { value: dollars(closest.value), holes: closestHoles } } : {}),
-  };
-  const setup: PersonalRoundSetup | null = course ? { course, tee: chosenTee, holes, stats, countForHandicap: countForHandicap && !teamFormat, datePlayed, players,
-    myHandicap: handicapValue(myHandicap), game, ...(guests.length ? { guests } : {}), ...(stats ? { playerStats: true } : {}),
-    ...(Object.keys(sideGames).length ? { sideGames } : {}) } : null;
+  // The round itself is built by the shared rules (lib/platform/roundSetupForm.ts), the same ones the Expo app uses.
+  const form: RoundSetupForm = { course, tee, holes, stats, countForHandicap, datePlayed, players, guests, myHandicap, gameId, net, allowance, birdiesDouble,
+    eaglesTriple, carryovers, stake, nassau: nassau as [string, string, string], autoPress, doubles, greenies, longest, closest, teams, rating, slope };
+  const built = buildRoundSetup(form);
+  const { setup, def, size, fits, names, teamOf, teamFormat, handicapNote, longestHoles, closestHoles } = built;
 
   async function start() {
     if (!setup) return;
@@ -249,11 +205,11 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
     if (result.ok && result.id) { onStart({ setup, startedAt: result.id, sharedId: result.id, openedAt: new Date().toISOString() }); return; }
     // Shared rounds not set up in this database yet: a round on my own still works (kept on this phone).
     if (result.code === "not_installed" && !players.length && !guests.length) { onStart({ setup, startedAt: new Date().toISOString() }); return; }
-    setStartError(result.code === "signed_out" ? "signed_out" : result.message ?? (result.code === "offline" ? "No connection. Check your internet and try again." : "Couldn't start the round. Try again."));
+    setStartError(startErrorMessage(result.code, result.message));
   }
 
   const at = SETUP_PAGES.indexOf(page);
-  const canNext = page === "round" ? Boolean(course) : page === "game" ? fits : true;
+  const canNext = built.canNext(page);
   // `sim`: an inert simulator hook that also says the switch's state ("<sim>-on" / "<sim>-off").
   const toggle = (label: string, note: string | null, checked: boolean, onChange: (value: boolean) => void, disabled = false, sim?: string) =>
     <label className={`${styles.wizToggle} ${disabled ? styles.toggleOff : ""}`}><span>{label}{note && <small>{note}</small>}</span>
@@ -264,7 +220,7 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
     </fieldset>;
   const stakeField = (label: string, value: string, onChange: (text: string) => void) =>
     <label className={wiz.field}><span className={wiz.fieldLabel}>{label}</span>
-      <input className={wiz.input} inputMode="decimal" placeholder="$0" value={value} onChange={(event) => onChange(event.target.value.replace(/[^0-9.]/g, ""))} /></label>;
+      <input className={wiz.input} inputMode="decimal" placeholder="$0" value={value} onChange={(event) => onChange(stakeText(event.target.value))} /></label>;
 
   return <main className={wiz.wizard}>
     <section className={`${wiz.wizardBody} ${styles.setup}`} aria-label="Round setup">
@@ -358,17 +314,7 @@ function SetupStep({ onStart }: { onStart: (saved: Saved) => void }) {
         </>}
 
         {page === "review" && setup && <dl className={styles.review}>
-          <div><dt>Course</dt><dd>{setup.course.name}{chosenTee ? ` · ${chosenTee.name}` : ""}</dd></div>
-          <div><dt>Round</dt><dd>{[holesLabel(holes), new Date(`${datePlayed}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" }), stats ? "Stats on" : null, setup.countForHandicap ? "Counts" : "Practice"].filter(Boolean).join(" · ")}</dd></div>
-          <div><dt>Players</dt><dd>{names.join(", ")}</dd></div>
-          <div><dt>Game</dt><dd>{def ? [def.name, game?.stake ? `${money(game.stake).slice(1)} per ${stakeUnit(def.id)}` : null, game?.nassauStakes ? `$${game.nassauStakes.join(" / $")}` : null,
-            game?.autoPress ? "presses" : null, game?.birdiesDouble ? "birdies ×2" : null, game?.eaglesTriple ? "eagles ×3" : null, game?.carryovers === false ? "no carryovers" : null, game?.doubles ? "doubles" : null,
-            game?.net ? `net ${allowance}%` : null].filter(Boolean).join(" · ") : "Just keeping score"}</dd></div>
-          {setup.sideGames && <div><dt>Side games</dt><dd>{[
-            setup.sideGames.greenies ? `Greenies${setup.sideGames.greenies.value ? ` $${setup.sideGames.greenies.value}` : ""}` : null,
-            setup.sideGames.longestDrive ? `Longest drive${setup.sideGames.longestDrive.value ? ` $${setup.sideGames.longestDrive.value}` : ""} (${setup.sideGames.longestDrive.holes.join(", ")})` : null,
-            setup.sideGames.closestPin ? `Closest to the pin${setup.sideGames.closestPin.value ? ` $${setup.sideGames.closestPin.value}` : ""} (${setup.sideGames.closestPin.holes.join(", ")})` : null,
-          ].filter(Boolean).join(" · ")}</dd></div>}
+          {reviewLines(form, built).map((line) => <div key={line.label}><dt>{line.label}</dt><dd>{line.value}</dd></div>)}
         </dl>}
         {startError === "signed_out" ? <p className={styles.error} role="alert">Log in to start a round. <Link href="/login?next=/rounds/new">Log in</Link></p>
           : startError && <p className={styles.error} role="alert">{startError}</p>}
