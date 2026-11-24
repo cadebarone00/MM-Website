@@ -42,7 +42,12 @@ export function SimulatorBridge({ children }: { children: ReactNode }) {
         // Fixture updates must not replay a previous tab command after in-app navigation.
         setConfig(current => ({ ...next, navigation: sameSimulatorNavigation(current?.navigation, next.navigation) ? current?.navigation : next.navigation }));
       } else if (active.current && event.data.type === "navigate" && isSimulatorPath(event.data.path) && allowedRoutes.current.has(event.data.path)) {
-        if (window.location.pathname !== event.data.path) router.push(`${event.data.path}?simulator=1`);
+        // A page can carry a query (/dev/round?game=wolf): go there unless this phone is already on it, then add simulator=1.
+        const target = new URL(event.data.path, window.location.origin), here = new URLSearchParams(window.location.search);
+        if (window.location.pathname !== target.pathname || [...target.searchParams].some(([key, value]) => here.get(key) !== value)) {
+          target.searchParams.set("simulator", "1");
+          router.push(`${target.pathname}${target.search}`);
+        }
       }
     }
     window.addEventListener("message", receive);

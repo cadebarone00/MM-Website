@@ -7,6 +7,8 @@ import { SIMULATOR_FEATURES, SIMULATOR_SOURCES, SIMULATOR_STAGES, type Simulator
 import { DEV_ACCOUNTS } from "./devAccounts";
 import { TV_GROUPS, TV_KINDS, TV_TEAMS } from "./livePreviews";
 import { TV_PHASES, type TvPhase } from "@/lib/platform/liveTv";
+import { GAMES } from "@/lib/platform/roundGames";
+import { defaultSamplePlayers, ROUND_MOMENTS, roundSampleOptionsFor } from "./sampleRoundGames";
 
 /** TV mode Conditionals, "When" section: the four stages of an event. */
 const TV_PHASE_LABEL: Record<TvPhase, string> = { before: "Before it starts", live: "During a round", between: "Between rounds", final: "Completed" };
@@ -179,7 +181,11 @@ export function simulatorPages(): SimulatorPage[] {
     if (page.navigation?.tab) page.conditions.push(...signedInAs());
     if (page.navigation?.golfSection === "Games") page.conditions.push(
       { id: "games-saved", label: "Your saved games", state: { sampleGames: false } },
-      { id: "games-sample", label: "Sample games, mid-round (every game)", state: { sampleGames: true, roundStatus: "live" } });
+      { id: "games-sample", label: "Sample games, mid-round (every game)", state: { sampleGames: true, sampleGame: undefined, roundStatus: "live" } },
+      // One game at a time (owner request 2026-11-24): use with the round state above (Live round / End of round / Trip complete).
+      ...GAMES.map(game => ({ id: `games-sample-${game.id}`, label: game.name, section: "Sample game", state: { sampleGames: true, sampleGame: game.id } })),
+      { id: "games-started", label: "Started", section: "Sample game setup", state: { sampleGamesStarted: true } },
+      { id: "games-not-started", label: "Not started yet (pre-round options)", section: "Sample game setup", state: { sampleGamesStarted: false } });
     if (page.navigation?.golfSection === "Stats") page.conditions.push(
       { id: "trip-stats-saved", label: "Trip stats from saved cards", state: { sampleTripStats: false } },
       { id: "trip-stats-sample", label: "Sample trip stats (every player, 3 courses)", state: { sampleTripStats: true } });
@@ -291,6 +297,27 @@ export function simulatorPages(): SimulatorPage[] {
   // Play → Cancel round (2026-11-22): the host's Save & exit / Delete round, and a player's Leave round, on the sample round.
   pages.push({ id: "play-round-cancel", path: "/dev/round?view=cancel", label: "Round · Cancel round (host)", fixtures: false, conditions: [] });
   pages.push({ id: "play-round-player", path: "/dev/round?view=player", label: "Round · Leave round (player)", fixtures: false, conditions: [] });
+  // Play → Games mid round (owner request 2026-11-24): one page per game on the real round screen, with only the group
+  // sizes and options that game has. Picking a game starts on a foursome when it allows one.
+  for (const game of GAMES) {
+    const offers = roundSampleOptionsFor(game.id);
+    const pair = (section: string, key: string, off: string, on: string, onFirst = false): SimulatorConditional[] =>
+      (onFirst ? [[true, on], [false, off]] as const : [[false, off], [true, on]] as const).map(([value, label]) => ({ id: `round-${game.id}-${key}-${value}`, label, section, state: { [key]: value } }));
+    pages.push({ id: `play-game-${game.id}`, path: `/dev/round?game=${game.id}`, label: game.name, group: "Play", stage: "Active", section: "Games mid round", fixtures: false,
+      state: { roundPlayers: defaultSamplePlayers(game.id) },
+      conditions: [
+        ...game.players.map(n => ({ id: `round-${game.id}-players-${n}`, label: `${n} players`, section: "Players", state: { roundPlayers: n } })),
+        ...ROUND_MOMENTS.map(([thru, label]) => ({ id: `round-${game.id}-thru-${thru}`, label, section: "Where in the round", state: { roundThru: thru } })),
+        ...(offers.net ? pair("Scoring", "roundNet", "Gross", "Net") : []),
+        ...(offers.birdies ? (["off", "birdies", "eagles"] as const).map(b => ({ id: `round-${game.id}-birdies-${b}`, label: { off: "No bonus", birdies: "Birdies double points", eagles: "Eagles triple, birdies double" }[b], section: "Birdies", state: { roundBirdies: b } })) : []),
+        ...pair("Money", "roundMoney", "No money", "Money on"),
+        ...(offers.doubles ? pair("Double bet", "roundDoubled", "Off", "On (hole 5 doubled)") : []),
+        ...(offers.carryovers ? pair("Carry-overs", "roundCarry", "Off (tied skins are dead)", "On", true) : []),
+        ...(offers.autoPress ? pair("Auto-press", "roundPress", "Off", "On") : []),
+        ...pair("Side games", "roundSide", "None", "Greenies, longest drive, closest to the pin"),
+        ...(["host", "player"] as const).map(v => ({ id: `round-${game.id}-viewer-${v}`, label: v === "host" ? "Scorekeeper (host)" : "Player watching", section: "You are", state: { roundViewer: v } })),
+      ] });
+  }
   // Mock people: each main tab for 5 pretend people (lib/dev/mockPeople.ts) sits in that feature's Main (Profile in Profile).
   for (const [slug, group] of [["play", "Play"], ["golf-trips", "Golf Trips"], ["tourneys", "Tourneys"], ["leagues", "Leagues"], ["profile", "Profile"]]) {
     const page = pages.find(item => item.path === `/dev/people/${slug}`);

@@ -41,11 +41,15 @@ export function GolfTripGames({ match, rounds, roundInfo, signedInName, saved, o
   // Saved games have loaded (from this device or the server), so the organizer's games can be added without duplicates.
   const [loaded, setLoaded] = useState(false);
   // App simulator "Sample games, mid-round": made-up games partway through the round (kept in memory, never saved).
-  const sample = useSimulator()?.state.sampleGames === true;
+  const simulator = useSimulator()?.state;
+  const sample = simulator?.sampleGames === true;
+  const sampleOnly = simulator?.sampleGame, sampleStarted = simulator?.sampleGamesStarted;
+  // Picks follow the holes my group has scored on the shown round (Live round / End of round / Trip complete).
+  const groupThru = holesThru(gameStrokes(match, { round: match.round, players: group.slice(0, 4) }), match.par.length);
   const groupKey = group.join("|");
   const holeCount = match.par.length, shownRound = match.round;
   const fieldKey = match.leaderboard.map((row) => row.golfer.name).join("|");
-  useEffect(() => { if (!saved) { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); setLoaded(true); } }, [saved, sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  useEffect(() => { if (!saved) { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|"), { played: groupThru, only: sampleOnly, started: sampleStarted }) : readGames()); setLoaded(true); } }, [saved, sample, shownRound, holeCount, groupKey, fieldKey, groupThru, sampleOnly, sampleStarted]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
   const save = (next: TripGame[]) => { setGames(next); if (!sample && !saved) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
 
   // Saved trip: load from the server, refresh on any change to this trip's games (Realtime), on return to the tab, and every 15s.

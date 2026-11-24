@@ -6514,3 +6514,112 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 **Owner decision (2026-11-23): keep Cade's "Cancel / leave a round"** — the scorekeeper's Cancel round → Save & exit /
 Delete round / Keep playing, and friends' Leave round — instead of the Delete-round-only version. Needs
 `supabase/shared_round_delete.sql` run in Supabase for Delete round and Leave round to work.
+
+## Feature: Colour schemes in Settings → Appearance (owner request 2026-11-23) — APPROVED 2026-11-23 (A: saved on the account; B: Step 1 first). Step 1 BUILT 2026-11-23, uncommitted — re-run `supabase/profile_preferences.sql` in Supabase to add `color_scheme`
+
+**What / who:** every user can pick the app's colours. Settings → Appearance gets a **Colour scheme** row under the
+Dark mode switch: 7 round swatches, tap one and the whole app recolours straight away. Dark mode still works with every
+scheme (Dark = the scheme's deep colour fills the pages; Light = cream pages with the scheme's colour on buttons and
+accents — exactly how Maroon works today).
+
+| Scheme | Main (deep) | Background | Accent |
+|---|---|---|---|
+| **The Maroon** (default, unchanged) | `#500001` | `#f7f4ee` | `#d6a75c` gold |
+| **Clubhouse Green** | `#0b4d2c` | `#f6f3ea` | `#e8c547` yellow |
+| **Links Navy** | `#14213d` | `#f4f1ea` | `#b33a3a` brick red |
+| **Desert Resort** | `#b5562f` terracotta | `#faf3e8` | `#2f7d7a` teal |
+| **Rivalry Cup** | `#1d3b6e` | `#ffffff` | `#c8102e` red |
+| **Midnight** | `#0f1115` | `#eef0f3` (cool grey; dark pages come from the deep colour) | `#c9a86e` gold |
+| **Stone** | `#2b2a27` | `#faf9f6` | `#8a7f6a` taupe |
+
+**How it works (tech):**
+- New `lib/theme/colorSchemes.ts`: the 7 schemes (id, name, swatch, and a full ramp for each — deep ×17 shades, accent
+  ×6, background ×4) + `applyScheme()`. Saved **on this device** in a `scheme` cookie, same as Dark mode, so the right
+  colours show from the first paint (website and iPhone app).
+- `app/layout.tsx` sets `<html data-scheme="green">` etc. from the cookie (nothing set = Maroon).
+- `app/globals.css`: one block per scheme that swaps the shared colour tokens the app already uses — the `maroon-*`,
+  `gold-*`, `cream-*` ramps, the `--brand-*` maroons and the dark-mode `--lm-bg-*` maroons. About 3,200 colour uses
+  already go through these tokens, so most of the app follows automatically.
+- `AppearanceSetting.tsx`: adds the swatch row.
+
+**Honest gap:** about 2,000 colours are still typed straight into individual screens (raw `#hex` / `rgba`). Those stay
+maroon after Step 1. **Step 2** goes screen by screen (main tabs first: Home, Golf Trips, Play, Profile, Settings,
+bottom menu) and points the maroon ones at the tokens. Step 2 is reviewed in the simulator and approved separately.
+
+**Not changed by the scheme:**
+- A tournament's or trip's own colours, and team colours (Team Maroon vs Team White).
+- Golf score colours (red under par, etc.).
+- The public Maroon tournament website and Admin Center.
+- The app icon and splash screen.
+
+**Done looks like:** pick each scheme in Settings → the app recolours immediately and is still set after a reload, on
+the website and in the iPhone app (`build:app`); works in both Dark and Light; Maroon looks exactly like today; text
+stays readable (contrast test for each scheme); tests, type check, lint and build pass; checked on screen in the simulator.
+
+**Open owner decisions:**
+- A. Save the choice **on this device** (recommended, matches Dark mode) or **on the account** (follows you to other phones; needs a SQL change).
+- B. Build Step 1 now and Step 2 after you've seen it (recommended), or both together.
+
+**Step 1 as built (2026-11-23):**
+- Saved on the account: `profile_preferences.color_scheme` (+ `{ colorScheme }` in `set_my_preference`); GET
+  `/api/account/preferences` returns it. The `scheme` cookie is this device's copy for the first paint; the website
+  (`ColorSchemeSync` in `app/layout.tsx`) and the app (`AppShell`, once signed in) check the account and follow it.
+  Until the SQL is re-run, everything else in Settings works and the colour row saves fail with "These settings aren't
+  switched on yet."
+- `app/color-schemes.css` is generated (`npm run build:schemes`) from `app/globals.css`: each token keeps its lightness
+  and takes the scheme's hue, so readability matches The Maroon. A test fails if the file is out of date.
+- Colour row shows only when signed in (it needs the account).
+
+
+## Simulator: every Play-a-round game mid round (owner request 2026-11-24) — APPROVED 2026-11-24 with A (Round complete per game) and B (Golf Trip → Games) both in; BUILT 2026-11-24 (uncommitted)
+
+**What / who:** dev only, for the owner. In the /dev simulator, **Play → Active → Round (sample)** (`/dev/round`) gets
+Conditionals so every game in `lib/platform/roundGames.ts` can be seen part way through a round, on the real round
+screens (standings card, the pull-up Scoring tab with that game's per-hole picks). Today the page is Skins only.
+
+**Conditionals (side panel), each its own section:**
+- **Game:** all 17: Stroke Play, Stableford, Match Play, Nassau, Best Ball, Skins, Wolf, Vegas, Daytona, Bingo Bango
+  Bongo, Nines, Sixes, Snake, Scramble, Shamble, Alternate Shot, Chapman.
+- **Players:** only the group sizes that game allows (e.g. Nines = 3, Daytona = 5, Match Play = 2 or 4); picking a game
+  jumps to its first allowed size.
+- **Where in the round:** Early (thru 3) · Halfway (thru 9) · Late (thru 15) · Last hole to play (thru 17).
+- **Options** (only the ones the game has): Net or Gross · Birdies double / Eagles triple · Money on (sample $ stake) ·
+  Hole doubled · Skins carry-overs on / off · Nassau auto-press · Side games (greenies, longest drive, closest to the pin).
+- **You are:** Host (scorekeeper) or Player.
+
+**Sample scores:** made up but fixed (same picks = same screen), chosen so each game shows its interesting moment:
+a skins carry-over, a Nassau press, Wolf / Daytona / Bingo Bango Bongo / Snake picks filled in on played holes, a
+tight match ("1 UP"), a Vegas birdie flip. Teams filled in for team games. Scores entered on the page still work and
+are forgotten on reload, as today.
+
+**Tech:** Conditionals in `lib/dev/simulatorRoutes.ts` pass `game=`, `players=`, `thru=` and option flags to
+`/dev/round`'s address; `components/dev/DevRoundPreview.tsx` reads them and builds the game config + sample scores
+from a new `lib/dev/sampleRoundGames.ts`. The real round components and scoring rules are reused unchanged. The
+existing Cancel round / Leave round pages keep working.
+
+**Not in this step:** any change to the real app. (Round complete and Golf Trip → Games were added by the owner, see A / B.)
+
+**Done looks like:** every game × allowed player count × moment shows in the simulator without errors, with standings
+that match the scoring rules (test that each sample scores with `scoreGame` and shows its moment); options that don't
+apply to a game are hidden; typecheck, lint and tests pass; checked on screen in the simulator.
+
+**Open owner decisions:**
+- A. Also add **Round complete** for each game (the swipe-between-players end screen)? Recommended: yes, as a second step.
+- B. Also cover **Golf Trip → Games** (games inside a trip round)? Recommended: later, separate step.
+
+**As built (2026-11-24):**
+- **Play → Active → "Games mid round":** one page per game (`/dev/round?game=<id>`). It shows the **real** round-with-friends
+  screen (`SharedRoundScreen` in `components/platform/PlayRound.tsx`) on a made-up round held in memory: the screen's
+  reads, saves and Save & exit go to the sample instead of the server (`SharedRoundSourceProvider`; the real app still
+  uses the server, unchanged). Conditionals: Players (only the sizes the game allows; starts on 4 when it can), Where in
+  the round (thru 3 / 9 / 15 / 17, **Round complete** = the Round complete pop-up for the scorekeeper, "Round ended" for a
+  player), and only the options that game has (Scoring, Birdies, Money, Double bet, Carry-overs, Auto-press, Side games),
+  You are (Scorekeeper / Player watching). The scorekeeper's phone has its card, so Scoring opens on the hole being played.
+- **Golf Trip → Golf → Games:** new Conditionals "Sample game" (one game at a time) and "Sample game setup" (Started /
+  Not started yet). Picks follow the holes the group has scored, so Live round / End of round / Trip complete each show
+  the game right (a finished game moves to the Settled tab).
+- **Simulator fix:** pages whose address has a "?" (these, and the existing Cancel / Leave round pages) now stay picked
+  and load their own address (`simulatorPageForLocation`, the bridge's navigate, `isSimulatorPath`).
+- **Found, not changed:** Nassau, Match Play and other games with no per-hole pick show an empty box in Scoring (the
+  real app does this too). The old Round (sample) page logs a server-render error from the invite code card.
+
