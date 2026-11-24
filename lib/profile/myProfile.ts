@@ -30,10 +30,7 @@ export function playerFullName(slotName: string | null | undefined, staticName: 
   return filled(slotName) ?? filled(staticName);
 }
 
-export function initialsFor(name: string): string {
-  const letters = name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase());
-  return letters.length ? letters.join("") : "?";
-}
+export { initialsFor } from "./initials";
 
 export function memberSinceLabel(createdAt: string | null | undefined): string | null {
   if (!createdAt) return null;

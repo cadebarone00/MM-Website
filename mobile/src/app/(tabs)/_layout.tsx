@@ -1,29 +1,37 @@
-import { Tabs } from "expo-router";
-import type { ColorValue } from "react-native";
-import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { colors, fonts } from "@/lib/theme.ts";
+import { NativeTabs } from "expo-router/native-tabs";
+import { badgeText, useTabBadges } from "~/lib/tabBadges.tsx";
+import { colors } from "~/lib/theme.ts";
 
-const icon = (name: SymbolViewProps["name"]) =>
-  function TabIcon({ color }: { color: ColorValue }) {
-    return <SymbolView name={name} tintColor={color} size={24} />;
-  };
-
-/** The same five tabs as the current app: Play · Golf Trips · Profile · Tourneys · Leagues. */
+/**
+ * Apple's real iOS tab bar (owner picked B, 2026-11-24): Play · Golf Trips · Profile · Tourneys · Leagues, maroon when
+ * selected. Play shows a red badge while round invites are waiting.
+ */
 export default function TabsLayout() {
+  const { play } = useTabBadges();
+  const playBadge = badgeText(play);
   return (
-    <Tabs screenOptions={{
-      headerShown: false,
-      tabBarStyle: { backgroundColor: colors.maroon900, borderTopColor: colors.maroon700 },
-      tabBarActiveTintColor: colors.goldBright,
-      tabBarInactiveTintColor: colors.tabInactive,
-      tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 11 },
-      sceneStyle: { backgroundColor: colors.cream },
-    }}>
-      <Tabs.Screen name="index" options={{ title: "Play", tabBarIcon: icon("flag.fill") }} />
-      <Tabs.Screen name="golf-trips" options={{ title: "Golf Trips", tabBarIcon: icon("airplane") }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: icon("person.fill") }} />
-      <Tabs.Screen name="tourneys" options={{ title: "Tourneys", tabBarIcon: icon("trophy.fill") }} />
-      <Tabs.Screen name="leagues" options={{ title: "Leagues", tabBarIcon: icon("person.3.fill") }} />
-    </Tabs>
+    <NativeTabs tintColor={colors.maroon700}>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: "flag", selected: "flag.fill" }} md="flag" />
+        <NativeTabs.Trigger.Label>Play</NativeTabs.Trigger.Label>
+        {playBadge && <NativeTabs.Trigger.Badge>{playBadge}</NativeTabs.Trigger.Badge>}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="golf-trips">
+        <NativeTabs.Trigger.Icon sf="airplane" md="flight" />
+        <NativeTabs.Trigger.Label>Golf Trips</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Icon sf={{ default: "person", selected: "person.fill" }} md="person" />
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="tourneys">
+        <NativeTabs.Trigger.Icon sf={{ default: "trophy", selected: "trophy.fill" }} md="emoji_events" />
+        <NativeTabs.Trigger.Label>Tourneys</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="leagues">
+        <NativeTabs.Trigger.Icon sf={{ default: "person.3", selected: "person.3.fill" }} md="groups" />
+        <NativeTabs.Trigger.Label>Leagues</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

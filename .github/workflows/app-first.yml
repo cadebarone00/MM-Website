@@ -1,0 +1,36 @@
+# App-first checks (docs/architecture/app-first.md): on every push and pull request.
+#  1. Guard: no new screens in the frozen Capacitor app; warn on new player-looking website pages.
+#  2. The Expo app in mobile/ still passes its tests and type check.
+name: App-first checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  guard:
+    name: App-first guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/check-app-first.mjs
+
+  mobile:
+    name: Expo app tests + type check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit
