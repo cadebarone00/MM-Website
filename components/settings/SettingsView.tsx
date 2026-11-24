@@ -6,7 +6,7 @@ import { OrganizerOffers } from "./OrganizerOffers";
 import { ChangePasswordSetting } from "./ChangePasswordSetting";
 import { DevicesSetting } from "./DevicesSetting";
 import { AppearanceSetting } from "./AppearanceSetting";
-import { GolfPreferences, HelpLegal, NotificationSettings, type SavePreference } from "./PreferenceSettings";
+import { ColorSchemeSetting, GolfPreferences, HelpLegal, NotificationSettings, type SavePreference } from "./PreferenceSettings";
 import { APP_VERSION } from "@/lib/appVersion";
 import type { AppMode } from "@/lib/theme/appMode";
 import type { SettingsData } from "@/lib/profile/profileScreensData";
@@ -37,7 +37,10 @@ export function SettingsView({ data, appearance, dev }: { data: SettingsData; ap
     </>}
     notifications={data.preferences && <NotificationSettings initial={data.preferences} save={dev?.savePreference} />}
     golf={data.preferences && <GolfPreferences initial={data.preferences} save={dev?.savePreference} />}
-    appearance={<AppearanceSetting initial={appearance} />}
+    appearance={<>
+      <AppearanceSetting initial={appearance} />
+      {data.preferences && <ColorSchemeSetting initial={data.preferences} save={dev?.savePreference} />}
+    </>}
     organizer={data.signedIn && <>
       <p className={`${styles.text} ${styles.organizerIntro}`}><span className={styles.muted}>When you organize a tournament or trip, your organizer tools live here.</span></p>
       <ul className={styles.rowList}>

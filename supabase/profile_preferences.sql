@@ -7,7 +7,8 @@
 --     distance_unit            yards / meters
 --     usual_tees               Black / Blue / White / Gold / Red / Green, or empty
 --     score_entry              simple / full
---   set_my_preference(profile, change)  saves ONE change: { notification, channel, on } | { distance } | { usualTees } | { scoreEntry }
+--     color_scheme             Settings → Appearance colour scheme (lib/theme/colorSchemes.ts); maroon = The Maroon
+--   set_my_preference(profile, change)  saves ONE change: { notification, channel, on } | { distance } | { usualTees } | { scoreEntry } | { colorScheme }
 --   closed accounts            a trigger removes the row when an account is closed (profiles.deleted_at is set)
 --
 -- Access: nothing here is readable or callable from the browser; the server uses the service-role key with the profile
@@ -23,6 +24,9 @@ create table if not exists public.profile_preferences (
   score_entry text not null default 'simple' check (score_entry in ('simple', 'full')),
   updated_at timestamptz not null default now()
 );
+-- Added 2026-11-23 (colour schemes): safe on a table made before it.
+alter table public.profile_preferences add column if not exists color_scheme text not null default 'maroon'
+  check (color_scheme in ('maroon', 'green', 'navy', 'desert', 'rivalry', 'midnight', 'stone'));
 alter table public.profile_preferences enable row level security;
 -- No policies on purpose: browsers can't read or write it.
 revoke all on table public.profile_preferences from public, anon, authenticated;
@@ -58,13 +62,16 @@ begin
   elsif p_change ? 'scoreEntry' then
     if coalesce(p_change->>'scoreEntry', '') not in ('simple', 'full') then raise exception 'Choose Simple or Full.' using errcode = '22023'; end if;
     v_row.score_entry := p_change->>'scoreEntry';
+  elsif p_change ? 'colorScheme' then
+    if coalesce(p_change->>'colorScheme', '') not in ('maroon', 'green', 'navy', 'desert', 'rivalry', 'midnight', 'stone') then raise exception 'Choose one of the colour schemes.' using errcode = '22023'; end if;
+    v_row.color_scheme := p_change->>'colorScheme';
   else
     raise exception 'Nothing to save.' using errcode = '22023';
   end if;
 
   update profile_preferences set notifications = v_row.notifications, distance_unit = v_row.distance_unit, usual_tees = v_row.usual_tees,
-    score_entry = v_row.score_entry, updated_at = now() where profile_id = p_profile;
-  return jsonb_build_object('notifications', v_row.notifications, 'distance', v_row.distance_unit, 'usualTees', coalesce(v_row.usual_tees, ''), 'scoreEntry', v_row.score_entry);
+    score_entry = v_row.score_entry, color_scheme = v_row.color_scheme, updated_at = now() where profile_id = p_profile;
+  return jsonb_build_object('notifications', v_row.notifications, 'distance', v_row.distance_unit, 'usualTees', coalesce(v_row.usual_tees, ''), 'scoreEntry', v_row.score_entry, 'colorScheme', v_row.color_scheme);
 end;
 $$;
 

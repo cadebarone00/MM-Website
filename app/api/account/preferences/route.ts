@@ -1,10 +1,10 @@
 import { privateJson, selfServiceCaller } from "@/lib/account/selfServiceRequest";
 import { preferenceChangeFromBody } from "@/lib/profile/preferences";
-import { saveMyPreference } from "@/lib/profile/preferencesServer";
+import { getMyPreferences, saveMyPreference } from "@/lib/profile/preferencesServer";
 
 /**
  * Settings → Notifications / Golf preferences: PUT one change ({ notification, channel, on } | { distance } |
- * { usualTees } | { scoreEntry }) for the signed-in golfer (supabase/profile_preferences.sql). Who it is always comes from
+ * { usualTees } | { scoreEntry } | { colorScheme }) for the signed-in golfer (supabase/profile_preferences.sql). Who it is always comes from
  * the session. Website cookie or app Bearer token; private, never cached.
  */
 export async function PUT(request: Request) {
@@ -20,4 +20,16 @@ export async function PUT(request: Request) {
   if (result.status === "invalid") return privateJson({ ok: false, error: result.error }, 400);
   if (result.status === "unavailable") return privateJson({ ok: false, error: "These settings aren't switched on yet." }, 503);
   return privateJson({ ok: false, error: "Couldn't save that. Try again." }, 500);
+}
+
+/** The signed-in golfer's colour scheme, so every device shows the one saved on the account (components/ColorSchemeSync). */
+export async function GET(request: Request) {
+  const caller = await selfServiceCaller(request);
+  if ("error" in caller) return caller.error;
+  const { current } = caller;
+  // Signed out is normal here (every page load asks): a quiet "nothing saved", not an error.
+  if (current.status !== "ok") return privateJson({ ok: false });
+  const preferences = await getMyPreferences(current.profile.profileId);
+  if (!preferences) return privateJson({ ok: false }, 503);
+  return privateJson({ ok: true, colorScheme: preferences.colorScheme });
 }

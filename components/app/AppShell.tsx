@@ -14,6 +14,8 @@ import { AppComingSoon, keptOutOfApp } from "./AppComingSoon";
 import { clearAppData, preloadAppData } from "./appDataCache";
 import { AppNative } from "./AppNative";
 import { AppUpdate } from "./AppUpdate";
+import { savedScheme, syncColorScheme } from "@/components/ColorSchemeSync";
+import { applyScheme } from "@/lib/theme/colorSchemes";
 import styles from "./App.module.css";
 
 // Before any screen loads: every fetch("/api/…") goes to the live server with the app's login (lib/app/appFetch.ts).
@@ -81,6 +83,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     }).catch(() => { /* offline: try again on the next screen */ });
     return () => { alive = false; };
   }, [session, pathname, router]);
+
+  // Colour scheme (Settings → Appearance): this phone's straight away, then the account's once signed in.
+  useEffect(() => { applyScheme(savedScheme()); }, []);
+  useEffect(() => { if (session === "in") void syncColorScheme(); }, [session]);
 
   // Once signed in, after the open screen has had its turn: load the main tabs quietly so the first tap on each is instant.
   useEffect(() => {

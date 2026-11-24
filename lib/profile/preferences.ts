@@ -4,6 +4,7 @@
  */
 
 import { NOTIFICATION_SWITCHES } from "../notifications/catalog.ts";
+import { colorScheme, isColorSchemeId, type ColorSchemeId } from "../theme/colorSchemes.ts";
 
 /** The Settings switches, straight from the notification master list (lib/notifications/catalog.ts). */
 export const NOTIFICATION_TYPES = NOTIFICATION_SWITCHES;
@@ -18,12 +19,12 @@ export type UsualTees = (typeof TEE_CHOICES)[number] | "";
 export const SCORE_ENTRIES = [{ id: "simple", label: "Simple", hint: "Strokes only" }, { id: "full", label: "Full", hint: "Strokes, putts, fairways, greens" }] as const;
 export type ScoreEntry = (typeof SCORE_ENTRIES)[number]["id"];
 
-export interface Preferences { notifications: NotificationSettings; distance: DistanceUnit; usualTees: UsualTees; scoreEntry: ScoreEntry }
+export interface Preferences { notifications: NotificationSettings; distance: DistanceUnit; usualTees: UsualTees; scoreEntry: ScoreEntry; colorScheme: ColorSchemeId }
 
 /** Defaults: every phone alert on; emails only for the ones that matter outside the app (catalog `email`: friend requests, trip invites). */
 export const DEFAULT_PREFERENCES: Preferences = {
   notifications: Object.fromEntries(NOTIFICATION_TYPES.map(({ id, email }) => [id, { push: true, email }])) as NotificationSettings,
-  distance: "yards", usualTees: "", scoreEntry: "simple",
+  distance: "yards", usualTees: "", scoreEntry: "simple", colorScheme: "maroon",
 };
 
 const record = (v: unknown): Record<string, unknown> | null => v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : null;
@@ -42,13 +43,13 @@ export function preferencesFromRow(row: unknown): Preferences {
   const tees = r.usualTees ?? r.usual_tees;
   const usualTees = TEE_CHOICES.includes(tees as (typeof TEE_CHOICES)[number]) ? tees as UsualTees : "";
   const scoreEntry = SCORE_ENTRIES.some((s) => s.id === (r.scoreEntry ?? r.score_entry)) ? (r.scoreEntry ?? r.score_entry) as ScoreEntry : DEFAULT_PREFERENCES.scoreEntry;
-  return { notifications, distance, usualTees, scoreEntry };
+  return { notifications, distance, usualTees, scoreEntry, colorScheme: colorScheme(r.colorScheme ?? r.color_scheme) };
 }
 
 /** One change to save (PUT /api/account/preferences). Only these shapes are accepted; anything else is refused. */
 export type PreferenceChange =
   | { notification: NotificationType; channel: NotificationChannel; on: boolean }
-  | { distance: DistanceUnit } | { usualTees: UsualTees } | { scoreEntry: ScoreEntry };
+  | { distance: DistanceUnit } | { usualTees: UsualTees } | { scoreEntry: ScoreEntry } | { colorScheme: ColorSchemeId };
 
 export function preferenceChangeFromBody(body: unknown): { ok: true; change: PreferenceChange } | { ok: false; error: string } {
   const r = record(body);
@@ -60,6 +61,7 @@ export function preferenceChangeFromBody(body: unknown): { ok: true; change: Pre
   if ("distance" in r) return DISTANCE_UNITS.some((d) => d.id === r.distance) ? { ok: true, change: { distance: r.distance as DistanceUnit } } : { ok: false, error: "Choose Yards or Meters." };
   if ("usualTees" in r) return r.usualTees === "" || TEE_CHOICES.includes(r.usualTees as (typeof TEE_CHOICES)[number]) ? { ok: true, change: { usualTees: r.usualTees as UsualTees } } : { ok: false, error: "Choose one of the tee colours." };
   if ("scoreEntry" in r) return SCORE_ENTRIES.some((s) => s.id === r.scoreEntry) ? { ok: true, change: { scoreEntry: r.scoreEntry as ScoreEntry } } : { ok: false, error: "Choose Simple or Full." };
+  if ("colorScheme" in r) return isColorSchemeId(r.colorScheme) ? { ok: true, change: { colorScheme: r.colorScheme } } : { ok: false, error: "Choose one of the colour schemes." };
   return { ok: false, error: "Nothing to save." };
 }
 

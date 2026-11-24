@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
   DISTANCE_UNITS, NOTIFICATION_TYPES, SCORE_ENTRIES, TEE_CHOICES, applyPreferenceChange,
   type NotificationChannel, type NotificationType, type PreferenceChange, type Preferences,
 } from "@/lib/profile/preferences";
+import { applyScheme, COLOR_SCHEMES, type ColorSchemeId } from "@/lib/theme/colorSchemes";
 import styles from "./Settings.module.css";
 
 /** Saves one change and returns the saved preferences (throws to show an error). Live = PUT /api/account/preferences. */
@@ -78,6 +79,24 @@ export function GolfPreferences({ initial, save = saveAccountPreference }: { ini
       </div>
       <p className={styles.note}>{SCORE_ENTRIES.find((s) => s.id === prefs.scoreEntry)?.hint}</p>
     </div>
+    {error && <p role="alert" className={styles.error}>{error}</p>}
+  </div>;
+}
+
+/** Settings → Appearance → Colour scheme: recolours the app straight away; saved on the account so every device follows. */
+export function ColorSchemeSetting({ initial, save = saveAccountPreference }: { initial: Preferences; save?: SavePreference }) {
+  const { prefs, change, error } = usePreferences(initial, save);
+  // The app shows whatever is picked here, and goes back with it if saving fails.
+  useEffect(() => { applyScheme(prefs.colorScheme); }, [prefs.colorScheme]);
+  const pick = (id: ColorSchemeId) => void change({ colorScheme: id });
+  const current = COLOR_SCHEMES.find((s) => s.id === prefs.colorScheme);
+  return <div className={styles.schemeGroup}>
+    <p className={styles.fieldLabel} id="pref-scheme">Colour scheme</p>
+    <div className={styles.schemes} role="group" aria-labelledby="pref-scheme">
+      {COLOR_SCHEMES.map((s) => <button key={s.id} type="button" aria-pressed={prefs.colorScheme === s.id} aria-label={s.name} title={s.name}
+        className={styles.schemeSwatch} style={{ background: `linear-gradient(135deg, ${s.deep} 0 55%, ${s.accent} 55% 75%, ${s.paper} 75%)` }} onClick={() => pick(s.id)} />)}
+    </div>
+    <p className={styles.note}>{current?.name}</p>
     {error && <p role="alert" className={styles.error}>{error}</p>}
   </div>;
 }

@@ -8,8 +8,10 @@ import { DEFAULT_PREFERENCES, preferencesFromRow, type NotificationChannel, type
  * comes from the signed-in session. "unavailable" = the SQL hasn't been run yet (Settings then hides those two cards).
  */
 export async function getMyPreferences(profileId: ProfileId): Promise<Preferences | null> {
-  const { data, error } = await createSupabaseServiceRoleClient().from("profile_preferences")
-    .select("notifications, distance_unit, usual_tees, score_entry").eq("profile_id", profileId).maybeSingle();
+  const read = (columns: string) => createSupabaseServiceRoleClient().from("profile_preferences").select(columns).eq("profile_id", profileId).maybeSingle();
+  let { data, error } = await read("notifications, distance_unit, usual_tees, score_entry, color_scheme");
+  // color_scheme (2026-11-23) not added yet: everything else still works, the scheme is The Maroon.
+  if (error?.code === "42703") ({ data, error } = await read("notifications, distance_unit, usual_tees, score_entry"));
   if (error) return null;
   return data ? preferencesFromRow(data) : DEFAULT_PREFERENCES;
 }

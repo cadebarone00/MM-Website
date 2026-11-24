@@ -5,6 +5,7 @@ import { ModalScrollLock } from "@/components/ModalScrollLock";
 import { AppShell } from "@/components/app/AppShell";
 import "@/lib/fonts/fallbacks.css";
 import "./globals.css";
+import "./color-schemes.css";
 
 // The iPhone / Android app build's root layout (MAROON_APP_BUILD=1, project_specs.md "The Maroon as a real iPhone
 // app"): the same fonts and styles as the website's app/layout.tsx, without its server reads — AppShell signs in on the
