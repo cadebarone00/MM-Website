@@ -5768,6 +5768,24 @@ On Android, people can resize the widget, so it picks the closest of the same th
 - Trips, tournaments and leagues all get it. No SQL, no new services.
 - **Done =** on a computer, a Public / Link only event opens as the TV board, names open trip profiles, hover pauses, the brand goes back to the Directory. Phones are unchanged. Private events still say "This event isn't available." Simulator Conditionals show it in Desktop and TV view. Typecheck and tests pass, and it's checked on screen.
 
+**Board / TV mode pills (owner request 2026-11-23) — APPROVED + BUILT 2026-11-23 (uncommitted). In the app, full screen = cover the page (no status-bar / orientation plugin installed yet; Android app gets true full screen via the browser).**
+- **Every event page (phone and desktop) gets two pills at the top: Board | TV mode.**
+  - **Board:** today's live page (Leaderboard, Matches, Stats, scorecards), where you can tap or click around.
+  - **TV mode:** the scrolling TV board.
+- **Phone, TV mode:**
+  - A **16×9 TV-shaped screen** sits near the top, under the pills, playing the TV board (its narrow-phone layout isn't used here; it's the real TV look, shrunk).
+  - A **Full screen** button on it.
+  - Under it, **stats insights**: the same stats as the Stats tab (hardest / easiest hole, most birdies, best round, player stats).
+- **Full screen:**
+  - In **the app**: true full screen, sideways, with the status bar hidden.
+  - In **a phone's web browser**: iPhones don't let websites go true full screen, so the TV screen covers the whole page instead. Turn the phone sideways and it fills the screen. Screen mirroring (AirPlay / Chromecast) then sends a proper wide picture to the TV.
+- **Desktop, TV mode:** the full TV board (what we have now), plus a **Stats** button. Pressing it slides a stats panel out on the right side, like Twitch chat, and the board shrinks to make room. Press again to close.
+- **The real TV link (`/tap-in/<code>/tv`):** just the board, no pills. It also gets the Stats slide-out button, since a TV browser, Xbox or HDMI laptop can still press it.
+- **Stats:** trips only for now. Tournaments and leagues have no stats today, so the stats area and button are hidden for them.
+- **Which pill starts picked:** **Board, always** (phone and desktop); toggle to TV mode with the pill (owner 2026-11-23).
+- Same data and privacy rules as now. No SQL, no new services.
+- **Done =** pills switch both ways on phone and desktop. The phone's TV screen stays 16×9 and Full screen works (app and phone browser). Stats show under it on the phone and slide out on desktop / TV. Simulator Conditionals cover Board, TV mode, stats open, and full screen. Typecheck and tests pass, and it's checked on screen.
+
 ## Notification wording: all 3 versions approved, picked at random (owner request 2026-11-21) — APPROVED + BUILT 2026-11-21 (uncommitted)
 
 **Why:** the owner wants every version used, so people don't get the exact same words every time for the same thing.
@@ -6474,7 +6492,7 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
   Back to Play. After deleting, the scorekeeper goes to the Play home screen.
 
-## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — DESIGN, AWAITING APPROVAL (nothing built)
+## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — APPROVED 2026-11-23 (not built yet)
 
 Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Changes the Scoring Simulator's page; keeps its engine (`npm run sim`, fake Supabase, front door, Reset, checks, log).
 

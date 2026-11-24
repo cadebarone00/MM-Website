@@ -13,6 +13,9 @@ async function setup() {
       res.end();
       return;
     }
+    if (req.url === "/page") { res.setHeader("content-type", "text/html"); res.end("<html><head><title>t</title></head><body>hello</body></html>"); return; }
+    if (req.url?.startsWith("/_next/")) { res.setHeader("content-type", "text/html"); res.end("<html><head></head></html>"); return; }
+    if (req.url === "/data") { res.setHeader("content-type", "application/json"); res.end("{\"a\":1}"); return; }
     res.setHeader("x-seen-cookie", req.headers.cookie ?? "");
     res.statusCode = req.url?.startsWith("/api/y") ? 500 : 200;
     res.end("hi");
@@ -173,5 +176,33 @@ test("app-router navigations (rsc: 1, no prefetch) are recorded without _rsc; pr
     await get("/rounds?_rsc=h", { rsc: "1" });
     const pages = JSON.parse((await s.call("localhost:3005", "/__sim/status")).body).pages;
     assert.deepEqual(pages.cam, { path: "/rounds", history: ["/play?x=1", "/rounds"] });
+  } finally { await s.close(); }
+});
+
+test("HTML pages for a person host get the driver script tag; JSON and /_next files don't", async () => {
+  const s = await setup();
+  try {
+    const page = await s.call("cam.localhost:3005", "/page");
+    assert.equal(page.status, 200);
+    assert.ok(page.body.includes('<script src="/__sim/driver.js" defer></script></head>'), page.body);
+    assert.ok(page.body.includes("hello") && page.body.includes("</html>"));
+    assert.equal(page.headers["content-length"], String(Buffer.byteLength(page.body)));
+    const json = await s.call("cam.localhost:3005", "/data");
+    assert.equal(json.body, '{"a":1}');
+    const next = await s.call("cam.localhost:3005", "/_next/static/x");
+    assert.ok(!next.body.includes("driver.js"));
+    const plain = await s.call("localhost:3005", "/page");
+    assert.ok(!plain.body.includes("driver.js"));
+  } finally { await s.close(); }
+});
+
+test("/__sim/driver.js is served as JavaScript", async () => {
+  const s = await setup();
+  try {
+    const r = await s.call("cam.localhost:3005", "/__sim/driver.js");
+    assert.equal(r.status, 200);
+    assert.match(String(r.headers["content-type"]), /javascript/);
+    assert.equal(r.headers["cache-control"], "no-store");
+    assert.ok(r.body.includes("ready") && r.body.length > 500);
   } finally { await s.close(); }
 });

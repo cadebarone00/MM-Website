@@ -271,6 +271,16 @@ export function simulatorPages(): SimulatorPage[] {
     const page = pages.find(item => item.path === path);
     if (!page) continue;
     Object.assign(page, { label, group: "The Maroon Live", conditions: conditions.map(([id, name]) => ({ id: `live-${id}`, label: name, state: { livePreview: id } })) });
+    // Event live page, Board / TV mode pills (owner 2026-11-23): Board always first; TV mode with the stats panel open
+    // (big screens) or the phone's TV screen full screen. Pick the View (App / Mobile web / Desktop / TV) to see each.
+    if (path === "/dev/live/event") page.conditions!.push(
+      { id: "live-mode-board", label: "Board", section: "Board / TV mode", state: { liveMode: "board" } },
+      { id: "live-mode-tv", label: "TV mode", section: "Board / TV mode", state: { liveMode: "tv" } },
+      { id: "live-stats-closed", label: "Stats closed", section: "TV mode", state: { liveStats: "closed" } },
+      { id: "live-stats-open", label: "Stats open (desktop / TV slide-out)", section: "TV mode", state: { liveMode: "tv", liveStats: "open" } },
+      { id: "live-full-off", label: "Not full screen", section: "Phone full screen", state: { liveFull: "off" } },
+      { id: "live-full-on", label: "Full screen (phone)", section: "Phone full screen", state: { liveMode: "tv", liveFull: "on" } },
+    );
     pages.push(...pages.splice(pages.indexOf(page), 1));
   }
   const tv = pages.find(item => item.path === "/dev/tv");

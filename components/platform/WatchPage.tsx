@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { GolfTripHome } from "./GolfTripHome";
@@ -23,8 +23,9 @@ const POLL_MS = 10_000;
  * Watch with a code (/watch/<code>), no sign-in: a tournament's header and leaderboard, or a golf trip's Golf tab
  * (Leaderboard, Matches, Stats), read only and refreshing on their own. Everything private was removed on the server.
  * `sample` (the dev simulator): show this watcher's view, or "missing" for the unavailable message; nothing is loaded.
+ * `toolbar`: shown under the top bar (The Maroon Live's Board | TV mode pills, owner 2026-11-23).
  */
-export function WatchPage({ code, sample }: { code: string; sample?: WatchView | "missing" }) {
+export function WatchPage({ code, sample, toolbar }: { code: string; sample?: WatchView | "missing"; toolbar?: ReactNode }) {
   const [view, setView] = useState<WatchView | null>(sample && sample !== "missing" ? sample : null);
   const [problem, setProblem] = useState<string | null>(sample === "missing" ? "This event isn't available." : null);
   const load = useCallback(async () => {
@@ -43,11 +44,11 @@ export function WatchPage({ code, sample }: { code: string; sample?: WatchView |
   }, [load, view?.kind]);
 
   // The Maroon Live: every live page (trip or tournament) has the same top bar, back to the directory.
-  if (view?.kind === "tournament") return <div className={tapStyles.spectator}><LiveTopBar />{sample ? <CodeTournamentHome id="sample" meId={null} sample={{ tournament: view.tournament, spectator: true }} />
+  if (view?.kind === "tournament") return <div className={tapStyles.spectator}><LiveTopBar />{toolbar}{sample ? <CodeTournamentHome id="sample" meId={null} sample={{ tournament: view.tournament, spectator: true }} />
     : <CodeTournamentHome id="" meId={null} watchCode={code} />}</div>;
-  if (view?.kind === "trip") return <SpectatorTrip trip={view.trip} problem={problem} />;
-  if (view?.kind === "league") return <div className={tapStyles.spectator}><LiveTopBar />{sample ? <LeagueHome sample={{ league: view.league, meId: "", spectator: true }} /> : <LeagueHome watchCode={code} />}</div>;
-  return <div className={tapStyles.spectator}><LiveTopBar /><main className={homeStyles.page}><p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading…"}</p></main></div>;
+  if (view?.kind === "trip") return <SpectatorTrip trip={view.trip} problem={problem} toolbar={toolbar} />;
+  if (view?.kind === "league") return <div className={tapStyles.spectator}><LiveTopBar />{toolbar}{sample ? <LeagueHome sample={{ league: view.league, meId: "", spectator: true }} /> : <LeagueHome watchCode={code} />}</div>;
+  return <div className={tapStyles.spectator}><LiveTopBar />{toolbar}<main className={homeStyles.page}><p className={styles.status} role={problem ? "alert" : undefined}>{problem ?? "Loading…"}</p></main></div>;
 }
 
 /** The top of every live page: back to The Maroon Live directory, and the brand. */
@@ -59,7 +60,7 @@ function LiveTopBar() {
 }
 
 /** A trip's Golf tab for spectators: the same leaderboard and matches members see, built the same way. */
-function SpectatorTrip({ trip, problem }: { trip: SpectatorTrip; problem: string | null }) {
+function SpectatorTrip({ trip, problem, toolbar }: { trip: SpectatorTrip; problem: string | null; toolbar?: ReactNode }) {
   const { savedTrip, scoring, setup, draft } = trip;
   const values = setup.values;
   const types = values.localCompetitionType as { individual: string | null; team: string | null } | undefined;
@@ -68,7 +69,7 @@ function SpectatorTrip({ trip, problem }: { trip: SpectatorTrip; problem: string
       values.compRounds as Record<string, boolean> | undefined, Number(values.playerTotal) || savedTrip.members.length) };
   return <SavedTripSetupProvider tripId={savedTrip.trip.id} snapshot={setup} editable={false}>
     <div className={tapStyles.spectator}>
-      <LiveTopBar />
+      <LiveTopBar />{toolbar}
       <header className={tapStyles.masthead}>
         <p className={tapStyles.brand}>The Maroon</p>
         <h1 className={tapStyles.tripName}>{savedTrip.trip.name}</h1>
