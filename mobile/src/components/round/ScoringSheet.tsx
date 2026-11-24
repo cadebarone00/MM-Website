@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import * as Haptics from "expo-haptics";
 import { Alert, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { HolePenalties, ShotResult } from "@/lib/platform/playerRounds";
@@ -23,12 +23,12 @@ const label = (name: string) => (name.trim().split(/\s+/)[0] || name).toUpperCas
  * 0–4+, FWY / GIR dials with PEN, the hole's game taps, Next hole. Card view: everyone's nines and Submit & Save.
  */
 export function ScoringSheet({ open, onOpenChange, people, meKey, par, range, stats, myStats, onMyStats, onStrokes, onFinish, holeAlert,
-  game, gameFits, sideGames, inputs, onPick, onParChange, onSubmit, submitting, locked }: {
+  game, gameFits, sideGames, inputs, onPick, onParChange, onSubmit, submitting, locked, referencePar = false, canSubmit = true, cardNotice }: {
   open: boolean; onOpenChange: (open: boolean) => void; people: Person[]; meKey: string; par: number[]; range: [number, number]; stats: boolean;
   myStats: MyStats; onMyStats: (next: MyStats) => void; onStrokes: (key: string, hole: number, strokes: number) => void;
   onFinish: (hole: number) => void; holeAlert: (hole: number) => boolean; game: GameConfig | null; gameFits: boolean; sideGames: SideGames | undefined;
   inputs: HoleInput[]; onPick: (hole: number, next: HoleInput) => void; onParChange?: (hole: number, par: number) => void;
-  onSubmit: () => void; submitting: boolean; locked: boolean;
+  onSubmit: () => void; submitting: boolean; locked: boolean; referencePar?: boolean; canSubmit?: boolean; cardNotice?: ReactNode;
 }) {
   const me = people.find((p) => p.key === meKey);
   const firstOpen = useMemo(() => {
@@ -50,7 +50,7 @@ export function ScoringSheet({ open, onOpenChange, people, meKey, par, range, st
     onPanResponderRelease: (_, g) => { if (Math.abs(g.dx) > 60 && Math.abs(g.dy) < 40) goRef.current(holeRef.current + (g.dx < 0 ? 1 : -1)); },
   })).current;
 
-  const done = cardDone({ range, par, ...myStats, stats });
+  const done = cardDone({ range, par, ...myStats, stats }) && (!referencePar || people.every(person => Array.from({ length: range[1] - range[0] }, (_, index) => person.strokes[range[0] + index]).every(stroke => stroke !== null && stroke !== undefined)));
   const setStat = (part: { putts?: number | null; fairway?: ShotResult | null; green?: ShotResult | null; penalty?: keyof HolePenalties }) => {
     const next: MyStats = { putts: [...myStats.putts], fairways: [...myStats.fairways], greens: [...myStats.greens], penalties: [...myStats.penalties] };
     if ("putts" in part) next.putts[hole] = part.putts ?? null;
@@ -102,7 +102,7 @@ export function ScoringSheet({ open, onOpenChange, people, meKey, par, range, st
 
           <View {...swipe.panHandlers} style={[styles.scoreSplit, people.length === 1 && styles.scoreSplitOne]}>
             {people.map((person) => (
-              <ScoreCard key={person.key} label={person.key === meKey ? "MY SCORE" : label(person.name)} strokes={person.strokes[hole]} par={holePar} disabled={locked}
+              <ScoreCard key={person.key} label={person.key === meKey ? "MY SCORE" : label(person.name)} strokes={person.strokes[hole]} par={holePar} disabled={locked} referencePar={referencePar}
                 step={(delta) => onStrokes(person.key, hole, stepStrokes(person.strokes[hole], holePar, delta))} />
             ))}
           </View>
@@ -156,15 +156,16 @@ export function ScoringSheet({ open, onOpenChange, people, meKey, par, range, st
                 <CardRow head={i === 0 && range[0] === 0 ? "Out" : "In"} cells={nine.map((h) => String(h + 1))} total="Tot" faint />
                 <CardRow head="Par" cells={nine.map((h) => String(par[h]))} total={String(nine.reduce((t, h) => t + par[h], 0))} faint />
                 {people.map((p) => (
-                  <CardRow key={p.key} head={p.key === meKey ? "You" : p.name} cells={nine.map((h) => String(p.strokes[h] ?? par[h]))}
-                    total={String(nineTotal(nine, p.strokes.map((s, h) => s ?? par[h])) ?? "")} />
+                  <CardRow key={p.key} head={p.key === meKey ? "You" : p.name} cells={nine.map((h) => referencePar ? String(p.strokes[h] ?? "") : String(p.strokes[h] ?? par[h]))}
+                    total={String(nineTotal(nine, referencePar ? p.strokes : p.strokes.map((s, h) => s ?? par[h])) ?? "")} />
                 ))}
               </View>
             </ScrollView>
           ))}
-          <Text style={styles.hint}>{done ? "Untouched holes count as par." : "Fill in your stats on every hole to submit."}</Text>
-          <Pressable accessibilityRole="button" disabled={!done || submitting || locked} onPress={confirmSubmit}
-            style={({ pressed }) => [styles.next, (!done || submitting || locked) && styles.off, pressed && styles.pressed]}>
+          {cardNotice}
+          <Text style={styles.hint}>{referencePar ? "Enter both scores and the required stats on every hole." : done ? "Untouched holes count as par." : "Fill in your stats on every hole to submit."}</Text>
+          <Pressable accessibilityRole="button" disabled={!done || !canSubmit || submitting || locked} onPress={confirmSubmit}
+            style={({ pressed }) => [styles.next, (!done || !canSubmit || submitting || locked) && styles.off, pressed && styles.pressed]}>
             <Text style={styles.nextText}>{submitting ? "Submitting…" : "Submit & Save"}</Text>
           </Pressable>
         </ScrollView>
@@ -178,7 +179,7 @@ function Stat({ label: text, value }: { label: string; value: string }) {
 }
 
 /** One player's score (website ScoreCard): label on top, − number +, untouched = par. */
-function ScoreCard({ label: text, strokes, par, step, disabled }: { label: string; strokes: number | null; par: number; step: (delta: number) => void; disabled: boolean }) {
+function ScoreCard({ label: text, strokes, par, step, disabled, referencePar }: { label: string; strokes: number | null; par: number; step: (delta: number) => void; disabled: boolean; referencePar: boolean }) {
   return (
     <View style={styles.scoreCard}>
       <Text style={styles.scoreLabel} numberOfLines={1}>{text}</Text>
@@ -186,7 +187,7 @@ function ScoreCard({ label: text, strokes, par, step, disabled }: { label: strin
         <Pressable accessibilityRole="button" accessibilityLabel={`One less stroke for ${text}`} disabled={disabled} onPress={() => { tap(); step(-1); }} style={[styles.stepButton, disabled && styles.off]}>
           <Text style={styles.stepText}>−</Text>
         </Pressable>
-        <Text style={styles.strokes} accessibilityLiveRegion="polite">{strokes ?? par}</Text>
+        <Text style={styles.strokes} accessibilityLiveRegion="polite">{strokes ?? (referencePar ? "—" : par)}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={`One more stroke for ${text}`} disabled={disabled} onPress={() => { tap(); step(1); }} style={[styles.stepButton, disabled && styles.off]}>
           <Text style={styles.stepText}>+</Text>
         </Pressable>

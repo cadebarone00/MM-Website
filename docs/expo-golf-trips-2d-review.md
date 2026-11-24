@@ -1,0 +1,5 @@
+﻿# Expo Golf Trips 2d feature review
+
+Started 2026-11-24. Scope: native Golf views and eventual Player & Attest scoring as described in project_specs.md. Initial implementation is read-only, using the existing member-only trip endpoint, and is not release-ready. Owners, markets, ages, retention, provider terms and qualified professional review are not established.
+
+All categories in FEATURE_COMPLIANCE_CHECKLIST.md remain review_required. Scores, names and trip membership are personal data; engineering must verify membership authorization, account switching, storage, offline synchronization, correction and submission behavior before enabling writes. Privacy notices, organizer responsibility, minors, retention, deletion and security need policy and professional assessment. Game and Predict rules, coins and any possible money or advertising, sponsorship or subscription implications require separate review; no new payments or providers are introduced in this initial read-only view. Rights to fonts, code, golf data and user-generated content, app-store and provider requirements and legal review remain unresolved. This record is not release approval.

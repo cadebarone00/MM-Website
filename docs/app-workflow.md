@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-24 - Expo trip Home countdown (implemented locally; deployment not verified).** When there were no Momentum events, the in-progress native Home previously showed a generic line. It now uses the shared arrival countdown and next-round reminder rules, with only the viewer's accepted tee times. Invite-copy feedback now appears by the player invite rather than the Live link. The rest of 2c remains incomplete and needs an iPhone check. Section 19 and the flowchart annotation are affected; review: docs/expo-golf-trips-2c-review.md, review_required.
+
+**2026-11-24 - Expo Golf tab foundation (implemented locally; deployment not verified).** Golf previously showed a later-part placeholder. It now offers native section and round selectors, reads the selected round from the existing member-only app endpoint and displays a score board when confirmed pars and scores are available. Matches, games, statistics, Predict and Player & Attest entry are not yet implemented; 2d and the preceding 2c remain incomplete and require phone checks. Section 19 and the flowchart annotation are affected. Review: docs/expo-golf-trips-2d-review.md; review_required.
+
 **2026-11-24 - Expo trip Home sharing feedback (implemented locally; deployment not verified).** The in-progress native Home previously offered The Maroon Live actions without showing the link or handling sharing failures. It now shows the watch path and reports copy, share and browser errors. Section 19 and the flowchart annotation are affected; the rest of 2c and phone verification remain outstanding. Review: docs/expo-golf-trips-2c-review.md; review_required.
 
 **2026-11-24 - Expo trip Home competition details (implemented locally; deployment not verified).** The in-progress native trip page previously omitted saved round formats and points and listed players without team headings. It now derives round formats, points, round-robin indication and team groupings using the existing shared rules, shows initial draft and match-selection details, and offers a Settings entry for the later settings screen. The draft room, full draft state, feed, chat, tips and real-phone verification remain outstanding. Section 19 and the flowchart annotation are affected. Review: docs/expo-golf-trips-2c-review.md; review_required.
@@ -826,6 +830,8 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+    %% Expo trip Home falls back to the shared trip countdown or next-round reminder when highlights are empty.
+    %% Expo Golf tab begins with member-only round reads; Player and Attest scoring remains pending.
     %% Expo trip Home shows its available watch path and sharing feedback; full 2c remains in progress.
     %% The in-progress Expo trip Home shows saved competition and draft details; later screens remain pending.
     %% Expo trip Home also derives teams, competition and upcoming plans from saved trip data; remaining Home features are pending.
