@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiGet } from "@/lib/api.ts";
-import { supabase } from "@/lib/supabase.ts";
-import { colors, fonts, gutter } from "@/lib/theme.ts";
+import { Avatar } from "~/components/Avatar.tsx";
+import { Button } from "~/components/Button.tsx";
+import { apiGet } from "~/lib/api.ts";
+import { supabase } from "~/lib/supabase.ts";
+import { colors, fonts, gutter } from "~/lib/theme.ts";
 
 /** What /api/app/profile (view=profile) sends back — only the parts this screen uses. */
 type ProfileReply = {
@@ -51,15 +54,16 @@ export default function Profile() {
         )}
         {state.kind === "ok" && (
           <>
-            <View style={styles.avatar}><Text style={styles.initials}>{state.initials}</Text></View>
+            <Avatar name={state.name} size={72} onLight />
             <Text style={styles.name}>{state.name}</Text>
             {state.username && <Text style={styles.username}>@{state.username}</Text>}
           </>
         )}
       </View>
-      <Pressable onPress={() => supabase.auth.signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
-        <Text style={styles.signOutText}>Sign out</Text>
-      </Pressable>
+      <View style={styles.actions}>
+        <Button label="Sign out" variant="dark" onPress={() => { supabase.auth.signOut(); }} />
+        {__DEV__ && <Button label="Building blocks (dev)" variant="secondary" onPress={() => router.push("/dev/blocks")} />}
+      </View>
     </SafeAreaView>
   );
 }
@@ -69,15 +73,10 @@ const styles = StyleSheet.create({
   heading: { fontFamily: fonts.bold, fontSize: 30, color: colors.ink, marginTop: 12, marginBottom: 16 },
   card: { height: 200, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line,
     alignItems: "center", justifyContent: "center", padding: gutter, gap: 6 },
-  avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: colors.gold, alignItems: "center",
-    justifyContent: "center", backgroundColor: colors.maroon900 },
-  initials: { fontFamily: fonts.semibold, fontSize: 24, color: colors.onMaroon },
   name: { fontFamily: fonts.bold, fontSize: 22, color: colors.ink, marginTop: 6 },
   username: { fontFamily: fonts.regular, fontSize: 16, color: colors.inkMuted },
   error: { fontFamily: fonts.regular, fontSize: 16, color: colors.error, textAlign: "center" },
   retry: { paddingVertical: 8, paddingHorizontal: 16 },
   retryText: { fontFamily: fonts.semibold, fontSize: 16, color: colors.maroon700 },
-  signOut: { marginTop: 24, borderRadius: 12, height: 52, alignItems: "center", justifyContent: "center", backgroundColor: colors.maroon900 },
-  pressed: { opacity: 0.85 },
-  signOutText: { fontFamily: fonts.semibold, fontSize: 17, color: colors.onMaroon },
+  actions: { marginTop: 24, gap: 10 },
 });

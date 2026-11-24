@@ -25,7 +25,8 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "themaroon",
     "backgroundColor": "#fbf8f1",

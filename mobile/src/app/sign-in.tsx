@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "@/lib/supabase.ts";
-import { NETWORK_ERROR } from "@/lib/apiReply.ts";
-import { colors, fonts, gutter } from "@/lib/theme.ts";
+import { supabase } from "~/lib/supabase.ts";
+import { NETWORK_ERROR } from "~/lib/apiReply.ts";
+import { colors, fonts, gutter } from "~/lib/theme.ts";
 
 /** Email + password, the same Supabase login as the website (Step 1: existing accounts only). */
 export default function SignIn() {

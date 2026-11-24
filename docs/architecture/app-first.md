@@ -60,7 +60,7 @@ A red X on GitHub means stop and fix before merging. Optional (owner's call): Gi
 | # | Area | Contents | Status |
 |---|---|---|---|
 | 1 (setup) | **Bare app** | Expo project, sign in, five tabs, real Profile name, sign out | ✅ Done (commit `a181b633`), phone-checked |
-| 0 | **Building blocks** | Buttons, cards, avatars, slide-up sheet, search, page headers, tab bar | Next |
+| 0 | **Building blocks** | Buttons, cards, avatars, slide-up sheet, search, page headers, tab bar | ✅ Done 2026-11-24 (look tuned as screens arrive) |
 | 1 | **Play** | Play home, start / join a round, scoring, live leaderboard | Next, with Step 0 |
 | 2 | **Golf Trips** | List, join, create wizard, trip page (all tabs), scoring, drafts, settings, flights, import | |
 | 3 | **Profile** | Profile, edit, friends, search golfers, other profiles, settings, delete account | |

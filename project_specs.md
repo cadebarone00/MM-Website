@@ -6590,3 +6590,77 @@ screens, and editing rounds from Insights.
 **Done means:** tests pass for the stats math (with empty, 9-hole, no-stats and Private cases); the type check and
 lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
 account on the local dev site.
+
+## Feature: Expo app Step 0 (building blocks) + Step 1 (Play) (owner request 2026-11-24) — APPROVED 2026-11-24 (tab bar: B, Apple's real iOS tab bar). Step 0 BUILT + owner-checked on the phone 2026-11-24 (dev gallery Profile → Building blocks; owner will tune the look as real screens arrive — change the block, every screen follows). Step 1a (Play home) IN PROGRESS
+
+**Side:** App (`mobile/`). Server: no changes expected (every `/api/*` route already accepts the app login through `lib/supabase/server.ts` → `requestIdentity`). Follows `docs/architecture/app-first.md`.
+
+**Why.** First real area of the native rebuild. Play is what golfers open first, and it holds the scoring screen that Trips, Tourneys and Leagues reuse later, so the building blocks and scoring built here carry over.
+
+**Who.** Every signed-in golfer. Tested by the owner in Expo Go, side by side with the current TestFlight app.
+
+### How it's built (my calls, correct me)
+- **Same brain:** the app imports the website's own `lib/` code (`lib/platform/personalRound`, `roundGames`, `sideGames`, `sharedRoundCards`, `playerRounds`, `liveCards`, `lib/handicap/whs`, `lib/profile/roundStats`). Nothing is re-written. To make that work, `@/…` in `mobile/` means the repo root (same as the website), and the app's own code moves to `~/…` (`mobile/src`). Metro is told to watch `../lib`.
+- **Same server:** the routes the website uses: `/api/app/play`, `/api/app/profile`, `/api/rounds/shared` (+ `/[id]`), `/api/rounds/personal`, `/api/rounds/join`, `/api/rounds/invites`, `/api/rounds/course/[ref]`, `/api/courses/search`, `/api/account/search`.
+- **Live updates:** friends' phones refresh the round every few seconds, the same as now.
+- **A round in progress on this phone** (solo, not yet shared) is kept in the phone's local storage so "Finish your round" works after closing the app (the website uses the browser's storage for the same thing).
+- **Native feel:** the 85% slide-up uses the real iOS sheet (Expo Router `formSheet`), haptic taps on score entry, native swipe between holes.
+
+### Step 0: building blocks (`mobile/src/components/`), each built once and used everywhere
+1. **Button**: primary (gold), secondary (maroon outline), danger (red), with pressed + disabled + loading states.
+2. **Card**: cream page card, and the dark maroon card.
+3. **Avatar**: gold-ring initials (photo when the person has one), sizes 24–72.
+4. **Sheet**: the 85% slide-up with the maroon rounded-square **X** and the blur backdrop.
+5. **Search**: the Friends-search look (field, results list, empty / loading / error rows).
+6. **Page header**: title, optional back arrow, optional gear on the right.
+7. **Pill toggle**: gold on / grey off.
+8. **Select + date picker**: native pickers in the Maroon look.
+9. **Code card**: the big invite code with Copy / Share (iOS share sheet).
+10. **Tab bar**: the five tabs, with a red badge on Play for round invites.
+11. **Fixed-size slots**: loading / empty / error states keep each box the same height (no jumping).
+Rules: the 16px gutter, Spectral (Barlow only for tiny ALL-CAPS labels), and colors only from `theme.ts`.
+
+### Step 1: Play, built and phone-checked in 4 parts
+Each part is phone-checked before the next starts. **"Nothing missing" checklist** (from today's code: `PlatformHome`, `PlayActiveBoard`, `JoinCodeCard`, `RoundInvites`, `RoundInviteBadge`, `RoundJoin`, `PlayRound`, `GolfTripScoring`, plus the approved "Play a round" rounds 1–4 and "Cancel round" Play specs):
+
+**1a. Play home**
+- [ ] "The Maroon" heading + the M logo.
+- [ ] Profile snapshot: avatar, name, @username (tap → Profile); **HDP · AVG · ADJ** (a "?" when not known; tap → Profile stats).
+- [ ] Active round board, with 3 states: a live/shared round → "Finish your round" (course + place, tap reopens it); a solo round saved on this phone → reopens it; none → "Ready for your next round?" + **Search for a course** (picking one starts setup with that course). Error → "Couldn't load your active round" + Try again.
+- [ ] Round invite cards at the top ("Cam invited you to play Eagle Pointe · Skins"): **Accept** opens the round, **Decline** removes it. Red badge on the Play tab while invites are waiting.
+- [ ] **Have a code?** card: type a 6-character round code → join that round (wrong / expired code → plain message).
+- [ ] **Feed** heading (empty today, kept so the layout matches).
+- [ ] **On The Range**: Explore · Courses · Equipment · Teaching · News filters. Explore = featured trip promo + Explore posts; Courses = course search + Courses posts; the others = their posts, or the empty message. Back arrow returns home.
+- **Not in the app:** the admin ribbon editor (`RibbonAdminBar` / `RibbonEditor`). Posting stays on the desktop website.
+
+**1b. Start a round (setup, 4 pages in the trip-builder look, progress bar, Back / Next)**
+- [ ] **Round:** course search (library → GolfCourseAPI → add by hand with pars, rating/slope); tees; holes (18, front 9, back 9); date; **Track stats**, **Count toward handicap** pill toggles.
+- [ ] **Players** (up to 5 including guests): add friends with the app (search) and **guests** by name; handicap per player; remove.
+- [ ] **Game:** none or a game (the `roundGames` list); stakes ($ per point / skin / hole / match); Birdies double, Eagles triple, Carryovers, Allow doubles (on by default for points games), Use handicaps + allowance 100/90/80; Nassau front/back/overall + automatic press; teams for team games. **Side games:** Greenies ($ + carry over), Longest drive ($ + holes), Closest to the pin ($ + holes, par 3s suggested).
+- [ ] **Review** lists everything → **Start**. Inviting friends sends them the in-app invite; the round's code shows with Copy / Share.
+- [ ] Database not updated yet (shared round SQL missing) → the same "needs the database update" message as the website.
+
+**1c. Scoring + leaderboard**
+- [ ] Main screen: course, leaderboard, scoring tab at the bottom (no bottom menu on this screen), gear top right.
+- [ ] Leaderboard (trip look): POS · PLAYER (avatars) · TOT (red under par) · **$** (+green / −red) · SKINS for Skins. No THRU column.
+- [ ] Tap a name → their scorecard: two 9-hole rows, Par, Score (circle = birdie, double circle = eagle, square = bogey, double square = double bogey or worse, outline style), a **$ row** per hole, fixed equal columns, ×2 in the corner of doubled holes.
+- [ ] **Scoring tab (pull-up):** big score boxes per player (scorekeeper only), swipe left/right between holes, hole chips (red = a finished Wolf hole with no partner), **Wolf** row picker (players as columns, Lone Wolf last), **Double bet** (one per hole, ×2 tag, stacks with birdie/eagle multipliers), **Greenie** card on par 3s (names + Carry over), **Longest drive** / **Closest to the pin** cards on their holes, **Card** tab (no totals list under it), **Next hole** sends every score for that hole.
+- [ ] Track stats on: putts / fairway / green for the host, and for each joined player their own only.
+- [ ] Friends (joined with the app): same leaderboard and cards, **view-only**, refreshed every few seconds.
+- [ ] **Submit & Save** (host): saves to the host's and every joined player's Profile → Rounds (counts toward handicap when it qualifies). Guests never saved.
+
+**1d. Round settings (gear) + leaving**
+- [ ] Players (remove), **Add players**, **Change game**, the scoring tip.
+- [ ] Host: **Cancel round** → **Save & exit** (round stays on Play home with every score) or **Delete round** (confirm: "Delete this round? Every score in it is erased for everyone in it. This can't be undone." → erased for everyone, phone copy cleared, back to Play home).
+- [ ] Invited players: **Leave round** only (their scores stay in the host's round).
+- [ ] A friend whose round was deleted sees that it was deleted + **Back to Play**.
+- [ ] Back arrow keeps the round.
+
+**Every screen also handles:** loading, no internet / server error (plain message + Try again, nothing lost), signed out → Sign in, fixed-size boxes.
+
+**Not in this step:** the GPS map (it's dev-only on the website today); lock-screen push notifications (invites show in the app as today); Trips / Tourneys / Leagues scoring (they reuse 1c later); the Apple Watch.
+
+**Done when:** every checkbox above works on the owner's iPhone in Expo Go, checked side by side with the current app; the same round scored in both gives the same totals and money; `npm test` + `npx tsc --noEmit` pass in `mobile/` (tests for the shared-code import, the code-entry and the local saved round); the website's tests still pass; the GitHub checks are green.
+
+**Question for the owner (one):**
+- **Tab bar look.** (A) **Keep today's maroon tab bar** (gold active icon), drawn to match the website exactly. (B) **Apple's real iOS tab bar** (the newer glassy one), which gives the most native feel, but it follows iOS's look and is less maroon. **Plan: A** for now, so the app matches what testers know; B can be tried later on its own.

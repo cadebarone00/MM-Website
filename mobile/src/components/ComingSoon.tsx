@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, fonts, gutter } from "@/lib/theme.ts";
+import { colors, fonts, gutter } from "~/lib/theme.ts";
 
 /** Placeholder for a tab that hasn't been rebuilt natively yet. */
 export function ComingSoon({ title }: { title: string }) {
