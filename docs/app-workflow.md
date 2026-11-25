@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-25 - Expo tournament code joining (implemented locally; deployment not verified).** The native Tourneys list previously had no join action and code tournament rows were read-only. A golfer can now look up a six-character code, see the event and its rounds, enter a handicap for net scoring, join through the existing server rules, and open a member-only overview of rounds and players. Ended events and existing members follow the existing join rules. New app routes delegate to existing tournament handlers; they require server deployment before the app can use them. Native scoring, full tournament details, other tournament types and phone verification remain outstanding. Section 22 and the flowchart annotation are affected; review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 - Expo Tourneys list (implemented locally; deployment not verified).** The Tourneys tab previously showed a placeholder. It now reads the existing signed-in Tourneys endpoint and lists current code tournaments and past code and platform tournaments, with refresh and error states. Rows are read-only; create, join, search, details, scoring and phone verification remain outstanding. Section 22 and the flowchart annotation are affected; review: docs/expo-tourneys-review.md, review_required.
+
 **2026-11-24 - Expo trip Home countdown (implemented locally; deployment not verified).** When there were no Momentum events, the in-progress native Home previously showed a generic line. It now uses the shared arrival countdown and next-round reminder rules, with only the viewer's accepted tee times. Invite-copy feedback now appears by the player invite rather than the Live link. The rest of 2c remains incomplete and needs an iPhone check. Section 19 and the flowchart annotation are affected; review: docs/expo-golf-trips-2c-review.md, review_required.
 
 **2026-11-24 - Expo Golf tab foundation (implemented locally; deployment not verified).** Golf previously showed a later-part placeholder. It now offers native section and round selectors, reads the selected round from the existing member-only app endpoint and displays a score board when confirmed pars and scores are available. Matches, games, statistics, Predict and Player & Attest entry are not yet implemented; 2d and the preceding 2c remain incomplete and require phone checks. Section 19 and the flowchart annotation are affected. Review: docs/expo-golf-trips-2d-review.md; review_required.
@@ -830,6 +834,8 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+    %% Expo Tourneys joins by code and opens a member-only overview through app routes.
+    %% Expo Tourneys reads current and past tournament lists; native details and actions remain pending.
     %% Expo trip Home falls back to the shared trip countdown or next-round reminder when highlights are empty.
     %% Expo Golf tab begins with member-only round reads; Player and Attest scoring remains pending.
     %% Expo trip Home shows its available watch path and sharing feedback; full 2c remains in progress.
@@ -1407,6 +1413,8 @@ The separate test-season controls operate on a designated database season. This 
 **Code:** `components/portal/admin/LiveScoringPreview.tsx`, `components/portal/admin/ScoringPreviewPhone.tsx`, `components/portal/admin/TestSeasonPanel.tsx`, `lib/live/testSeason.ts`.
 
 ## 22. Legacy integrations and unfinished pages
+
+**Expo Tourneys (in progress):** The native Tourneys tab reads the signed-in player’s current code tournaments and past code and platform tournaments from /api/app/tourneys?view=join. Pull to refresh reloads the list. Code tournament entries open a member-only overview. Join with code looks up an event, accepts a net handicap and joins through app routes backed by existing server rules. Platform history entries remain read-only; native create, search, full tournament details and scoring are not yet connected. Phone verification and release remain outstanding. Review: docs/expo-tourneys-review.md.
 
 Play round settings include the invite code and, for Wolf or Sixes, playing order until scoring begins. Side games store selected winners with hole picks and show their calculated amounts. Live shared-round deletion and participant departure use `supabase/shared_round_delete.sql`; installed migration and deployment status are not verified. Money-related and platform review remains open.
 

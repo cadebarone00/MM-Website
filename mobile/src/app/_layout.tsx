@@ -40,7 +40,8 @@ function Screens() {
           <Stack.Screen name="profile/search" />
           <Stack.Screen name="profile/[username]/index" />
           <Stack.Screen name="profile/[username]/friends" />
-          <Stack.Screen name="settings" />
+          <Stack.Screen name="settings/index" />
+          <Stack.Screen name="settings/delete-account" />
           {/* Golf Trips (project_specs.md "Expo app Step 2", part 2a). */}
           <Stack.Screen name="trips/join" />
           <Stack.Screen name="trips/invite" />
