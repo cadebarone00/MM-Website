@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MaroonMark } from "@/components/brand/MaroonMark";
-import { NAME_MAX, usernameProblem } from "@/lib/profile/profileEdit";
+import { NAME_MAX, suggestUsername, usernameProblem } from "@/lib/profile/profileEdit";
 import { signUpProgress } from "@/lib/dev/authScreens";
 import styles from "./AuthNamePreview.module.css";
 
-/** "Alex" + "Smith" → "alexsmith": letters and numbers only, 30 max (the username rules in profileEdit.ts). */
-export function suggestUsername(first: string, last: string) {
-  return (first + last).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
-}
+// Moved to lib/profile/profileEdit.ts (shared with the phone app); kept exported here for old imports.
+export { suggestUsername };
 
 /** DEV ONLY: Authentication screen "Name + username". The username fills itself from the name until the person
  * edits it. Not wired to onboarding yet; the database still decides whether a username is free. */

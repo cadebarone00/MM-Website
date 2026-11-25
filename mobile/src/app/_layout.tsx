@@ -9,9 +9,13 @@ import { PlayDataProvider } from "~/lib/playData.tsx";
 import { TabBadgesProvider } from "~/lib/tabBadges.tsx";
 import { colors } from "~/lib/theme.ts";
 
-/** Signed in → the tabs. Signed out → Sign in. Expo Router switches automatically when that changes. */
+/**
+ * Signed out → Welcome / Sign up / Log in (start/*). Signed in but not finished signing up (the server's onboarding step,
+ * project_specs.md "Expo app Step 4") → onboarding/*. Finished → the tabs. Expo Router switches automatically.
+ */
 function Screens() {
-  const { loading, session } = useAuth();
+  const { loading, session, step } = useAuth();
+  const playing = !!session && step === "play";
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.maroon900 }}>
@@ -21,10 +25,10 @@ function Screens() {
   }
   return (
     // Play content is loaded once per signed-in person (a new sign-in starts fresh).
-    <PlayDataProvider key={session?.user.id ?? "signed-out"}>
-      <StatusBar style={session ? "dark" : "light"} />
+    <PlayDataProvider key={`${session?.user.id ?? "signed-out"}:${playing}`}>
+      <StatusBar style={playing ? "dark" : "light"} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }}>
-        <Stack.Protected guard={!!session}>
+        <Stack.Protected guard={playing}>
           <Stack.Screen name="(tabs)" />
           {/* Play (project_specs.md "Expo app Step 0 + Step 1", part 1a). */}
           <Stack.Screen name="rounds/join" />
@@ -40,7 +44,7 @@ function Screens() {
           <Stack.Screen name="profile/search" />
           <Stack.Screen name="profile/[username]/index" />
           <Stack.Screen name="profile/[username]/friends" />
-          <Stack.Screen name="settings/index" />
+          <Stack.Screen name="settings" />
           <Stack.Screen name="settings/delete-account" />
           {/* Golf Trips (project_specs.md "Expo app Step 2", part 2a). */}
           <Stack.Screen name="trips/join" />
@@ -54,8 +58,24 @@ function Screens() {
             <Stack.Screen name="dev/sheet" options={sheetOptions} />
           </Stack.Protected>
         </Stack.Protected>
+        {/* Sign up + onboarding (project_specs.md "Expo app Step 4"). */}
+        <Stack.Protected guard={!!session && !playing}>
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="onboarding/password" />
+          <Stack.Screen name="onboarding/name" />
+          <Stack.Screen name="onboarding/birthday" />
+          <Stack.Screen name="onboarding/photo" />
+          <Stack.Screen name="onboarding/settings" />
+          <Stack.Screen name="onboarding/created" options={{ animation: "fade" }} />
+          <Stack.Screen name="onboarding/status" />
+        </Stack.Protected>
         <Stack.Protected guard={!session}>
-          <Stack.Screen name="sign-in" />
+          <Stack.Screen name="start" />
+          <Stack.Screen name="start/sign-up" />
+          <Stack.Screen name="start/verify" />
+          <Stack.Screen name="start/log-in" />
+          <Stack.Screen name="start/forgot" />
+          <Stack.Screen name="start/reset-password" />
         </Stack.Protected>
       </Stack>
     </PlayDataProvider>

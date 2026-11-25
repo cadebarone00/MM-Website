@@ -6859,3 +6859,23 @@ Codex's call: the first list remains read-only until native detail screens exist
 - Claude's call: Appearance (dark mode) left out until the screenshot look pass.
 
 **2026-11-25 Tourneys continuation (App + Server):** Native Join with code uses the existing lookup and join handlers via `/api/app/code-tournaments/*`, accepts a net handicap and opens a member-only overview; current and ended code rows open the same overview. Existing members and ended events follow the existing handler behavior. Platform-history detail, creation, search, full event controls, scoring, complete parity inventory and phone checks remain outstanding. App routes require deployment. Review: `docs/expo-tourneys-review.md`, review_required.
+
+## Feature: Expo app Step 4 — Sign up + onboarding (owner request 2026-11-25) — FAST MODE
+
+**Side:** App (uses the existing website routes; no new server routes, no SQL). The live flow is V2 (MAROON_V2_ONBOARDING=on in production): email → code → password → name → birthday → photo → Last step → Profile Created.
+
+### Checklist (from `components/onboarding/*`, `lib/account/onboardingRoutes.ts`, `lib/account/onboardingClient.ts`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] The app follows the server's step (`GET /api/account/onboarding`): signed out → Welcome / Sign up / Log in; signed in but not finished → the first unfinished step; Active → the tabs. Asked once per account (a login refresh doesn't ask again); a failed check → "We couldn't check your account" + Try again + Sign out, never the tabs.
+- [ ] Welcome: the M, Sign up, Log in (+ the under-13 message after a Birthday that closed the account).
+- [ ] Sign up: email → `POST /api/auth/signup` → Email Verification; an email that already has an account → the message and Log in (email filled in). "By continuing, you agree…". No Google / Apple on Sign up (beta decision 2026-10-30).
+- [ ] Email Verification / Enter Code To Reset: 6 boxes (paste / auto-fill works, verifies on the 6th digit), Resend code, help email. `POST /api/auth/verify-code` with `client: "app"`: sign-up keeps the login on the phone; reset only holds it in memory for the next screen.
+- [ ] Log in: email or username + password (eye) through `POST /api/auth/login` (`client: "app"`); not verified → a fresh code + the code screen; "Password saved" notice after a reset; Forgot password?.
+- [ ] Forgot password → code → Set a new password (same password rules) → every device signed out → Log in.
+- [ ] Create a password (right after the code, `POST /api/auth/create-password`, "already set" carries on) and the Terms / Privacy versions recorded then (not fatal).
+- [ ] What's your name? (first, last, username filled from the name until edited; `suggestUsername` moved to `lib/profile/profileEdit.ts`, shared) → `POST /api/account/profile`.
+- [ ] What's your birthday? (date wheel, saved once) → 13+ → Photo, or Play for an older account that only needed it; under 13 → the server closes it, the phone signs out, Welcome says why.
+- [ ] Add a profile image (optional, square crop) → `POST /api/account/photo`; Skip for now.
+- [ ] Last step!: Public profile (off = Private), Notifications (shown, nothing to save yet, like the website), Terms line when still needed → privacy, terms, `POST /api/account/finish`; failures say which step is missing; one Finish at a time.
+- [ ] Profile Created!: the M grows in with buzzes, then Let's go → Play.
+- [ ] Blocked accounts (under 13 / being reviewed / closed) → their message + Sign out.
+- Claude's calls: Set a new password uses the reset code's login directly on the phone (the website's `/api/auth/reset-password` only reads website cookies), same steps: set the password, clear the "no password yet" flag via Create a password when needed, sign every device out. No separate "Email confirmed" screen: the code goes straight to Create a password. Profile Created's M grows in instead of the hand-drawn line (screenshot pass). Google / Apple on Log in wait until they're switched on and checked for the app.
