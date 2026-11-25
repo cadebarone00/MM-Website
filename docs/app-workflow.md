@@ -6,6 +6,8 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-25 - Expo Play full-screen menu (implemented locally; deployment not verified).** The Play menu previously expanded inline with Profile and Settings. It now opens a full-screen menu with the current profile avatar and username. App Settings, Account & Security, Notifications and Help open existing Settings; Your Activity opens Profile. Resources and Reviews are unavailable until destinations exist. Log Out uses the existing push-token cleanup and sign-out flow. Updated section 22 and the flowchart annotation; phone verification is outstanding.
+
 **2026-11-25 - Expo Play header alignment (implemented locally; deployment not verified).** The Balata logo previously sat farther from the menu. It now sits closer and is vertically aligned with the menu icon. Section 22 and the flowchart annotation describe the header; navigation and data are unchanged.
 
 **2026-11-25 - Expo Play header (implemented locally; deployment not verified).** Play previously centered its logo above the profile snapshot. It now shows a menu button beside the Balata logo in a maroon header with white logo and menu icon, with the same profile snapshot below. The menu opens Profile and Settings; existing Play content and profile data are unchanged. Updated section 22 and the flowchart annotation; overview paths are unchanged.
@@ -894,7 +896,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
-    %% Expo Play header aligns the Balata logo beside its menu, which opens Profile or Settings above the existing profile snapshot.
+    %% Expo Play header opens a full-screen account menu; existing profile and settings destinations and sign-out remain available.
     %% Expo startup shows the Balata logo while fonts and session load, then follows existing account routing; server and legacy website remain unchanged.
     %% Expo Tourneys opens pasted first-party tournament page links through the existing public summary.
     %% Expo platform tournament summaries show available teams, public handicaps, schedule courses and tied positions.
@@ -1503,7 +1505,7 @@ The separate test-season controls operate on a designated database season. This 
 
 ## 22. Legacy integrations and unfinished pages
 
-**Expo Play header:** A menu closely aligned beside the Balata logo opens Profile or Settings; the profile snapshot and its existing data appear below the header.
+**Expo Play header:** A menu beside the Balata logo opens a full-screen account menu with the profile avatar and username. App Settings, Account & Security, Notifications and Help open existing Settings; Your Activity opens Profile; Resources and Reviews are unavailable. Log Out follows the existing notification cleanup and sign-out flow. The profile snapshot and its existing data appear below the header.
 
 **Expo branding:** The app display name and player-facing app copy use Balata. Existing server addresses and legacy website branding remain unchanged. The supplied Balata logo appears on the startup loading screen, welcome, sign-in and onboarding, Play home and trip builder. Startup shows a gradient while fonts and the account session load, then opens the existing destination. Expo Go and installed builds can show their own native launch screens before the app loads.
 
