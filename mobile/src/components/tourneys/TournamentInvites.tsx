@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Pressable, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
@@ -40,7 +40,7 @@ export function TournamentInvites({ tournamentId, net }: { tournamentId: string;
         if (!Array.isArray(parsed.body.invites) || !Array.isArray(parsed.body.problems) || !Array.isArray(parsed.body.missing)) { setMessage("Could not read that file."); return; }
         setFilename(file.name); setPreview(parsed.body);
       } finally { clearTimeout(timer); }
-    } catch { setMessage("Could not read the file or reach The Maroon. Try again."); } finally { setBusy(false); }
+    } catch { setMessage("Could not read the file or reach Balata. Try again."); } finally { setBusy(false); }
   }
   function addImported() {
     if (!preview) return;

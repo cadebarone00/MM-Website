@@ -56,7 +56,7 @@ export function birthdayValue(date: Date): string {
 /** The blocked / problem screens' words (website AccountStatusView). */
 export function statusWords(step: AccountStep): { title: string; body: string } {
   switch (step) {
-    case "ineligible": return { title: "This account can't use The Maroon", body: "The Maroon is for people 13 and older." };
+    case "ineligible": return { title: "This account can't use Balata", body: "Balata is for people 13 and older." };
     case "restricted": return { title: "Your account is being reviewed", body: "We'll be in touch." };
     case "closed": return { title: "This account is closed", body: "Sign out to log in with another account." };
     case "welcome": case "verification": return { title: "Log in again", body: "Sign out, then log in to keep going." };

@@ -45,10 +45,10 @@ export async function turnOnPush(ask = true): Promise<PushAnswer> {
     if (unsupported()) return { state: "unsupported", message: "Notifications need a real phone (and the full app on Android)." };
     const id = projectId();
     if (!id) return { state: "not_set_up", message: "Phone notifications aren't set up for this app build yet." };
-    if (Platform.OS === "android") await Notifications.setNotificationChannelAsync("default", { name: "The Maroon", importance: Notifications.AndroidImportance.HIGH });
+    if (Platform.OS === "android") await Notifications.setNotificationChannelAsync("default", { name: "Balata", importance: Notifications.AndroidImportance.HIGH });
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted" && ask) ({ status } = await Notifications.requestPermissionsAsync());
-    if (status !== "granted") return { state: status === "denied" ? "denied" : "off", message: status === "denied" ? "Notifications are off for The Maroon in your phone's Settings." : undefined };
+    if (status !== "granted") return { state: status === "denied" ? "denied" : "off", message: status === "denied" ? "Notifications are off for Balata in your phone's Settings." : undefined };
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: id })).data;
     const r = await apiJson("/api/app/push-devices", { method: "POST", body: { token, platform: Platform.OS === "ios" ? "ios" : "android" } });
     if (!r.ok) return { state: "off", message: r.error };

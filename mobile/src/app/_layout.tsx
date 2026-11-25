@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useFonts, Spectral_400Regular, Spectral_600SemiBold, Spectral_700Bold } from "@expo-google-fonts/spectral";
 import { Barlow_600SemiBold, Barlow_700Bold } from "@expo-google-fonts/barlow";
-import { ActivityIndicator, View } from "react-native";
+import { LoadingScreen } from "~/components/LoadingScreen.tsx";
 import { sheetOptions } from "~/components/SheetClose.tsx";
 import { AuthProvider, useAuth } from "~/lib/auth.tsx";
 import { PlayDataProvider } from "~/lib/playData.tsx";
@@ -20,11 +20,7 @@ function Screens() {
   // Phone notifications: keep this phone signed up and open the right screen on a tap (project_specs.md "Expo app Step 6").
   usePush(playing);
   if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.maroon900 }}>
-        <ActivityIndicator color={colors.goldBright} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
   return (
     // Play content is loaded once per signed-in person (a new sign-in starts fresh).
@@ -91,7 +87,7 @@ function Screens() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Spectral_400Regular, Spectral_600SemiBold, Spectral_700Bold, Barlow_600SemiBold, Barlow_700Bold });
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: colors.maroon900 }} />;
+  if (!fontsLoaded) return <LoadingScreen />;
   return (
     <AuthProvider>
       <TabBadgesProvider>

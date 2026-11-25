@@ -35,7 +35,7 @@ export default function PostScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {cover && <View style={styles.cover}><Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} /></View>}
         {coverVideo && <OpenLink label="Watch the video" url={coverVideo} icon="play.circle.fill" />}
-        <Text style={styles.kicker}>THE MAROON · {post.tab.toUpperCase()}</Text>
+        <Text style={styles.kicker}>BALATA · {post.tab.toUpperCase()}</Text>
         <Text style={post.format === "quick" ? styles.quick : styles.title}>{post.title}</Text>
         {post.summary ? <Text style={styles.summary}>{post.summary}</Text> : null}
         {post.blocks.map((block, i) => <Block key={i} block={block} />)}

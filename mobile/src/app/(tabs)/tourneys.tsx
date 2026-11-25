@@ -1,16 +1,16 @@
 ﻿import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
-import type { PastTournament } from "@/lib/platform/pastTournaments";
+import { tournamentPathFromLink, type PastTournament } from "@/lib/platform/pastTournaments";
 import { TournamentHistory } from "~/components/tourneys/TournamentHistory.tsx";
 import { TournamentInvite } from "~/components/tourneys/TournamentInvite.tsx";
 import { CreateTournament } from "~/components/tourneys/CreateTournament.tsx";
 import { PublicTournaments } from "~/components/tourneys/PublicTournaments.tsx";
 import { TournamentSheet } from "~/components/tourneys/TournamentSheet.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
-import { apiGet } from "~/lib/api.ts";
+import { apiGet, shareUrl } from "~/lib/api.ts";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
 
@@ -27,6 +27,15 @@ export default function Tourneys() {
   const [inviting, setInviting] = useState(false);
   const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [link, setLink] = useState("");
+  const [linkError, setLinkError] = useState("");
+  function openTournamentLink() {
+    const path = tournamentPathFromLink(link, shareUrl("/"));
+    if (!path) { setLinkError("That doesn't look like a tournament link."); return; }
+    const year = Number(path.split("/")[3]);
+    setLinkError(""); setLink("");
+    setHistory({ name: "Tournament", year, destination: null, startDate: null, endDate: null, href: path });
+  }
   const fetchHome = useCallback(async () => {
     const result = await apiGet<Home>("/api/app/tourneys?view=join");
     setLoad(result.ok ? { status: "ok", data: result.data } : { status: "error", message: result.error });
@@ -43,6 +52,10 @@ export default function Tourneys() {
       <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.join}><Text style={styles.joinText}>Create a Tournament</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={() => setSheet({ visible: true, id: null })} style={styles.join}><Text style={styles.joinText}>Join with code</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={() => setInviting(true)} style={styles.join}><Text style={styles.joinText}>Open invitation link</Text></Pressable>
+      <Text style={styles.linkLabel}>Open a tournament page</Text>
+      <TextInput accessibilityLabel="Tournament page link" value={link} onChangeText={value => { setLink(value); setLinkError(""); }} autoCapitalize="none" autoCorrect={false} placeholder="Paste a tournament link" style={styles.linkInput} onSubmitEditing={openTournamentLink} />
+      <Pressable accessibilityRole="button" onPress={openTournamentLink} style={styles.join}><Text style={styles.joinText}>Open tournament page</Text></Pressable>
+      {linkError ? <Text accessibilityRole="alert" style={styles.linkError}>{linkError}</Text> : null}
       <PublicTournaments />
       {load.status !== "ok" ? <View style={styles.card}><StateSlot height={80} state={load.status === "loading" ? { kind: "loading" } : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchHome(); } }} /></View> : <>
         <Text style={styles.heading}>CURRENT</Text>
@@ -69,6 +82,9 @@ function Row({ name, detail, onPress }: { name: string; detail: string; onPress?
 const styles = StyleSheet.create({
   join: { borderWidth: 1, borderColor: colors.avatarGold, borderRadius: 16, padding: 16, alignItems: "center" },
   joinText: { fontFamily: fonts.bold, fontSize: 16, color: colors.avatarGold },
+  linkLabel: { fontFamily: fonts.regular, fontSize: 15, color: colors.cream },
+  linkInput: { backgroundColor: colors.white, color: colors.maroon900, borderRadius: 12, padding: 12 },
+  linkError: { color: colors.errorOnMaroon, fontFamily: fonts.regular, fontSize: 15 },
   page: { flex: 1, backgroundColor: colors.maroon900 },
   content: { paddingHorizontal: gutter, paddingTop: 12, paddingBottom: 48, gap: 12 },
   title: { marginBottom: 8, textAlign: "center", fontFamily: fonts.regular, fontSize: 36, letterSpacing: -1, color: colors.cream },

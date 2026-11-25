@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image } from "expo-image";
+import { BalataLogo } from "~/components/BalataLogo.tsx";
 import * as Haptics from "expo-haptics";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,7 +7,6 @@ import { Button } from "~/components/Button.tsx";
 import { useAuth } from "~/lib/auth.tsx";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
-import logo from "../../../assets/brand/maroon-m-white.svg";
 
 /**
  * Profile Created! (website ProfileCreatedScreen): the M grows in while the phone buzzes, then the words and Let's go.
@@ -41,7 +40,7 @@ export default function Created() {
     <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
       <View style={styles.middle}>
         <Animated.View style={{ opacity: grow, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
-          <Image source={logo} style={styles.logo} contentFit="contain" accessible={false} tintColor={colors.gold} />
+          <BalataLogo light style={styles.logo} />
         </Animated.View>
         <View style={[styles.words, !done && styles.hidden]}>
           <Text accessibilityRole="header" style={styles.title}>Profile Created!</Text>
@@ -58,7 +57,7 @@ export default function Created() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.maroon900, paddingHorizontal: gutter },
   middle: { flex: 1, alignItems: "center", justifyContent: "center", gap: 24 },
-  logo: { width: 180, height: 180 },
+  logo: { width: 280, height: 94 },
   words: { alignItems: "center", gap: 6 },
   title: { fontFamily: fonts.bold, fontSize: 32, color: colors.cream },
   subtitle: { fontFamily: fonts.regular, fontSize: 17, color: colors.wizardMuted },

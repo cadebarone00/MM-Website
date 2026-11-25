@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "The Maroon",
+    "name": "Balata",
     "slug": "the-maroon",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,7 +33,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The Maroon uses your photos so you can pick a profile picture.",
+          "photosPermission": "Balata uses your photos so you can pick a profile picture.",
           "cameraPermission": false,
           "microphonePermission": false
         }

@@ -34,7 +34,7 @@ export default function SignUp() {
       <AuthMessage error={error} />
       {exists ? <Button label="Log in" onPress={logIn} />
         : <Button label={busy ? "Sending code…" : "Continue"} onPress={() => void signUp()} disabled={!ready} loading={busy} />}
-      <AuthSmall>By continuing, you agree to The Maroon&apos;s Terms of Service and Privacy Policy.</AuthSmall>
+      <AuthSmall>By continuing, you agree to Balata&apos;s Terms of Service and Privacy Policy.</AuthSmall>
     </AuthFrame>
   );
 }

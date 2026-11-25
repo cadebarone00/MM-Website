@@ -1,4 +1,4 @@
-/** The Maroon's colors and fonts (same values as the website's globals.css). Use these, never hard-coded colors. */
+/** Balata's colors and fonts (same values as the website's globals.css). Use these, never hard-coded colors. */
 export const colors = {
   maroon900: "#240001",
   maroon700: "#500001",

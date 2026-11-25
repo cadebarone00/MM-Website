@@ -75,7 +75,7 @@ export function TournamentSheet({ visible, onClose, selectedId }: { visible: boo
             {screen.tournament.scoring === "Net" && <><Text style={styles.text}>Your handicap index</Text><TextInput accessibilityLabel="Handicap index" value={handicap} onChangeText={setHandicap} keyboardType="numbers-and-punctuation" placeholder="e.g. 12.3" style={styles.input} /></>}
             <Button label="Join tournament" disabled={busy} onPress={() => void join(screen.tournament)} /></>}
           <Button label="Try another code" disabled={busy} onPress={() => { setScreen({ kind: "code" }); setError(""); }} /></>}
-        {screen.kind === "detail" && <><TournamentDetail tournament={screen.tournament} busy={busy} refresh={() => void open(screen.tournament.id)} onOpenProfile={username => { close(); setTimeout(() => router.push({ pathname: "/profile/[username]", params: { username } }), 500); }} /><TournamentScoring tournament={screen.tournament} reload={() => open(screen.tournament.id)} /><TournamentSettings tournament={screen.tournament} reload={async () => { await open(screen.tournament.id); }} onDeleted={close} /></>}
+        {screen.kind === "detail" && <><TournamentDetail tournament={screen.tournament} busy={busy} refresh={() => void open(screen.tournament.id)} onOpenProfile={username => { close(); setTimeout(() => router.push({ pathname: "/profile/[username]", params: { username } }), 500); }} /><TournamentScoring tournament={screen.tournament} reload={() => open(screen.tournament.id)} /><TournamentSettings tournament={screen.tournament} reload={() => open(screen.tournament.id)} onDeleted={close} /></>}
       </ScrollView>
     </View>
   </Modal>;

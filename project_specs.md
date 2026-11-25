@@ -6989,6 +6989,18 @@ Bind unsaved scores to tournament, round, hole and player; reject a draft after 
 **Side:** App
 After an uncertain score write or failed follow-up read, scoring writes are blocked until an explicit successful refresh; the uncertain entry remains visible for review. A confirmed write clears the entry. Online-only, server-side atomic conflict handling and real-phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
 
+**2026-11-25 Expo tournament tee-sheet save recovery**
+**Side:** App
+An uncertain tee-sheet write or failed follow-up read blocks further saves until a successful refresh and explicit round selection; the draft remains visible until that selection. This does not provide atomic server-side conflict protection. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament add-round recovery**
+**Side:** App
+An uncertain round write or failed follow-up read blocks another add until a successful refresh and explicit review of the current rounds; the draft remains visible. There is no automatic retry or atomic server idempotency. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament organizer settings recovery**
+**Side:** App
+Uncertain settings or deletion responses and unsuccessful post-save reads require refresh before further settings changes; live links are hidden until refresh succeeds. Changed or uncertain cut drafts require loading the saved cut. This is not atomic server conflict protection. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
 ## Feature: Expo app Step 6 — Phone notifications (owner request 2026-11-25) — FAST MODE
 
 **Side:** App + Server. Real lock-screen notifications for the iPhone / Android app through Expo's free push service, built on the existing master list (`lib/notifications/catalog.ts`: types, approved V1–V3 wording, Settings switches).
@@ -7004,3 +7016,15 @@ After an uncertain score write or failed follow-up read, scoring writes are bloc
 
 ### 6b (next) — hook up the other types
 Trip invite, join request + accepted / declined, add past rounds, tee time soon, opponent submitted, card mismatch, round final, draft starting, your pick, chat, then the Highlights-sheet types. Each where its change already saves on the server.
+
+**2026-11-25 Expo platform tournament overview**
+**Side:** App
+Display available announcements, activity, the viewer's match, courses and tournament information from the existing access-controlled tournament response. Public summaries only use the public projection. Detailed event actions, phone and access verification and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo platform tournament team and standings details**
+**Side:** App
+Show available team rosters and points, player team and explicitly public handicap, schedule courses and shared tied-place labels from existing tournament responses. Detailed actions, access and phone verification and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament page links**
+**Side:** App
+Signed-in players can paste a first-party tournament page link or path and open the existing public summary without enrolling. Shared parsing rejects other origins; existing server access rules apply. Automatic app links, device and access checks, remaining parity and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.

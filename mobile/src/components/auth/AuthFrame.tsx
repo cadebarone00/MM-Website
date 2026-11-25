@@ -1,12 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { Image } from "expo-image";
+import { BalataLogo } from "~/components/BalataLogo.tsx";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
-import logo from "../../../assets/brand/maroon-m-white.svg";
 
 /** Progress line on the sign-up screens, in the order they really come (website onboardingRoutes PROGRESS). */
 const PROGRESS = ["sign-up", "verify", "password", "name", "birthday", "photo", "settings", "created"] as const;
@@ -31,7 +30,7 @@ export function AuthFrame({ title, subtitle, progress, back, children }: {
                 <SymbolView name="chevron.left" size={22} tintColor={colors.cream} />
               </Pressable>
             ) : <View style={styles.back} />}
-            <Image source={logo} style={styles.logo} contentFit="contain" accessible={false} />
+            <BalataLogo light style={styles.logo} />
             <View style={styles.back} />
           </View>
           {progress && (
@@ -92,7 +91,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: gutter, paddingBottom: 32 },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 8 },
   back: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  logo: { width: 40, height: 40 },
+  logo: { width: 150, height: 50 },
   track: { height: 4, marginTop: 14, borderRadius: 2, overflow: "hidden", backgroundColor: colors.wizardTrack },
   fillBar: { height: "100%", borderRadius: 2, backgroundColor: colors.goldBright },
   title: { marginTop: 28, fontFamily: fonts.bold, fontSize: 30, color: colors.cream },

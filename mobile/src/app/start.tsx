@@ -1,13 +1,12 @@
-import { Image } from "expo-image";
 import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "~/components/Button.tsx";
+import { BalataLogo } from "~/components/BalataLogo.tsx";
 import { useAuth } from "~/lib/auth.tsx";
 import { statusWords } from "~/lib/onboardingFlow.ts";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
-import logo from "../../assets/brand/maroon-m-white.svg";
 
 /** Welcome (website WelcomeScreen): the M, Sign up, Log in. After an under-13 birthday it says why the account stopped. */
 export default function Welcome() {
@@ -16,7 +15,7 @@ export default function Welcome() {
   const ineligible = notice === "ineligible" ? statusWords("ineligible") : null;
   return (
     <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
-      <View style={styles.mark}><Image source={logo} style={styles.logo} contentFit="contain" accessibilityLabel="The Maroon" /></View>
+      <View style={styles.mark}><BalataLogo light /></View>
       {ineligible && (
         <View style={styles.notice} accessibilityRole="alert">
           <Text style={styles.noticeTitle}>{ineligible.title}</Text>

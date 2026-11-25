@@ -51,7 +51,7 @@ export default function LastStep() {
     <AuthFrame title="Last step!" subtitle="Choose who can see your profile and how we keep you in the loop. You can change both later in Settings." progress="settings">
       <View style={styles.cards}>
         <PillToggle tone="dark" label="Public profile" value={publicProfile} onChange={setPublicProfile}
-          note={publicProfile ? "Anyone on The Maroon can find you and see your profile and rounds." : "Off: your profile is private. Only people you play with can see it and your rounds."} />
+          note={publicProfile ? "Anyone on Balata can find you and see your profile and rounds." : "Off: your profile is private. Only people you play with can see it and your rounds."} />
         <PillToggle tone="dark" label="Notifications" value={notifications} onChange={setNotifications}
           note="We only notify you about your trips and rounds: tee times, live scores and results." />
       </View>
