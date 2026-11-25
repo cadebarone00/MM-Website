@@ -1,10 +1,22 @@
-﻿# Maroon Tournament: complete application workflow
+# Maroon Tournament: complete application workflow
 
 Baseline reviewed September 18, 2026 against release `ce85a83`; updated locally October 28, 2026 for V1 UI retirement. Deployment has not been verified. Current entry points are described below; retained legacy engines and historical implementation notes are explicitly distinguished from available screens.
 
 Open **app-workflow.html** for the interactive version. Select a workflow box to expand its description, or search for a feature or database table.
 
 ## What changed
+
+**2026-11-24 - Expo trip Home countdown (implemented locally; deployment not verified).** When there were no Momentum events, the in-progress native Home previously showed a generic line. It now uses the shared arrival countdown and next-round reminder rules, with only the viewer's accepted tee times. Invite-copy feedback now appears by the player invite rather than the Live link. The rest of 2c remains incomplete and needs an iPhone check. Section 19 and the flowchart annotation are affected; review: docs/expo-golf-trips-2c-review.md, review_required.
+
+**2026-11-24 - Expo Golf tab foundation (implemented locally; deployment not verified).** Golf previously showed a later-part placeholder. It now offers native section and round selectors, reads the selected round from the existing member-only app endpoint and displays a score board when confirmed pars and scores are available. Matches, games, statistics, Predict and Player & Attest entry are not yet implemented; 2d and the preceding 2c remain incomplete and require phone checks. Section 19 and the flowchart annotation are affected. Review: docs/expo-golf-trips-2d-review.md; review_required.
+
+**2026-11-24 - Expo trip Home sharing feedback (implemented locally; deployment not verified).** The in-progress native Home previously offered The Maroon Live actions without showing the link or handling sharing failures. It now shows the watch path and reports copy, share and browser errors. Section 19 and the flowchart annotation are affected; the rest of 2c and phone verification remain outstanding. Review: docs/expo-golf-trips-2c-review.md; review_required.
+
+**2026-11-24 - Expo trip Home competition details (implemented locally; deployment not verified).** The in-progress native trip page previously omitted saved round formats and points and listed players without team headings. It now derives round formats, points, round-robin indication and team groupings using the existing shared rules, shows initial draft and match-selection details, and offers a Settings entry for the later settings screen. The draft room, full draft state, feed, chat, tips and real-phone verification remain outstanding. Section 19 and the flowchart annotation are affected. Review: docs/expo-golf-trips-2c-review.md; review_required.
+
+**2026-11-24 - Expo trip Home competition and plans (implemented locally; deployment not verified).** The unfinished native Home previously showed a flat player list and planned rounds. It now uses shared rules for assigned teams, competition summary and upcoming accepted itinerary items, with previous / next controls. Round formats and points are not yet fully connected; the rest of 2c and phone verification remain outstanding. Trip data still comes from the existing member-only endpoint. Review: docs/expo-golf-trips-2c-review.md; review_required.
+**2026-11-24 - Expo trip Home foundation (implemented locally; deployment not verified).** Previously a saved trip opened a placeholder. The native app now loads a member's saved trip, shows its destination, planned rounds, accepted players, Momentum, player invite link and available The Maroon Live link. The other trip tabs and imported trip remain future parts. This is an incomplete first step of the approved 2c checklist: competition, teams, full Big Board behavior, draft, tips, feed and chat are not yet implemented. Trip data comes from the existing member-only app endpoint; Momentum and the invite link use existing trip routes. Weather remains unconnected. Review: docs/expo-golf-trips-2c-review.md; review_required.
+
 
 **2026-11-24 - Simulator Studio for Play (development tool; implemented locally; deployment not verified).** The Scoring Simulator page now has a Setup form where you choose 1 to 4 players with names, the host, a sample course and tee, the game (none or Skins), a guest and a seed. Create builds a pretend Play round, and the phones then play it themselves on the real screens (start, invites, accepts, 18 holes, submit) with Next, Play all, Pause, Skip, speed and fast-forward controls; you can tap any phone to take it over, and a step that cannot find its button stops in red. Same seed gives the same round. It is developer-only, uses the in-memory pretend database, and adds no production routes or data. It also found a real Play bug (host Submit & Save does not wait for the last hole scores), which is not fixed. Trip, Tourney and League are not yet built.
 
@@ -818,6 +830,11 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
+    %% Expo trip Home falls back to the shared trip countdown or next-round reminder when highlights are empty.
+    %% Expo Golf tab begins with member-only round reads; Player and Attest scoring remains pending.
+    %% Expo trip Home shows its available watch path and sharing feedback; full 2c remains in progress.
+    %% The in-progress Expo trip Home shows saved competition and draft details; later screens remain pending.
+    %% Expo trip Home also derives teams, competition and upcoming plans from saved trip data; remaining Home features are pending.
   %% Play profile identity opens Overview; HDP, AVG and ADJ open profile Stats.
   %% Play active board: course search to round setup; one current shared or local round resumes; invitations remain actionable.
   %% Play round settings include invite code and playing order; side-game picks and live round cancellation retain their own paths.
@@ -1771,6 +1788,8 @@ This map identifies remaining distinctions worth reviewing: static versus correc
 These are observations from the documentation review. No application behavior was changed while creating this map.
 
 ## What changed
+
+
 
 **2026-10-20 - Restore development simulator CSS compilation (implemented locally; deployment not verified).** Before, malformed generated Tailwind utility CSS caused the local simulator URL to return HTTP 500. After, global Tailwind detection explicitly scans app, components and lib source directories instead of the repository-wide artifact/cache tree. No trip data, scoring or permissions changed. Updated section 22 and Mermaid annotation; overview paths/mapping unchanged.
 
