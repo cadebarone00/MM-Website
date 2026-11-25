@@ -3,11 +3,23 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { flightFromRow, flightInputFromBody, golfTripFlightFailure } from "@/lib/platform/golfTripFlights";
+import { getGolfTrip, getMyGolfTripFlights } from "@/lib/platform/golfTripsServer";
 
 /**
  * Golf Trip Info → Flights: add one of your own flights, or edit it when the body has its id. Members only; a
  * missing trip and someone else's trip get the same 404. Manual data only: nothing here calls a flight provider.
+ *   GET  → { ok, flights }   my own flights on this trip (the app's Flights screen; the website page loads them itself)
+ *   POST → { ok, flight }    add, or edit when the body has its id
  */
+export async function GET(_request: Request, { params }: { params: Promise<{ tripId: string }> }) {
+  const { tripId } = await params;
+  const view = await getGolfTrip(tripId);
+  if (view.status !== "ok") return NextResponse.json({ ok: false, error: view.status === "signed-out" ? "Log in to see your flights." : "Trip not found." }, { status: view.status === "signed-out" ? 401 : 404 });
+  const mine = await getMyGolfTripFlights(tripId);
+  if (mine.status !== "ok") return NextResponse.json({ ok: false, error: "Saving flights isn't switched on yet." }, { status: 503 });
+  return NextResponse.json({ ok: true, flights: mine.flights }, { headers: { "Cache-Control": "private, no-store" } });
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
   const current = await getCurrentProfile();
   if (current.status === "signed-out") return NextResponse.json({ ok: false, error: "Log in to save your flights." }, { status: 401 });

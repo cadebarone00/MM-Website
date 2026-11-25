@@ -26,7 +26,7 @@ import { useTeamDraft, type TeamDraftTransport } from "@/lib/platform/useTeamDra
 import { MOCK_DRAFT_PRESETS, MOCK_DRAFT_TRIP, mockDraftTransport } from "@/lib/dev/mockDraft";
 import { MOCK_MATCH_PRESETS, mockMatchTransport, newMockMatch } from "@/lib/dev/mockMatchSelection";
 import { routeMatchSelectionTransport } from "@/lib/platform/useMatchSelection";
-import { draftBoardFor, draftRoomPlayersFrom, type DraftCaptains } from "@/lib/platform/teamDraftPicks";
+import { draftRoomPlayersFrom, teamDraftRoomState } from "@/lib/platform/teamDraftPicks";
 import { TripRoundRobin } from "./TripRoundRobin";
 import type { RoundRobinResults } from "@/lib/platform/roundRobin";
 
@@ -259,19 +259,11 @@ function DraftStrip({ matchesSelected = false, draft, board, now, editHref, play
 
 /** A saved draft as the room needs it: who may pick / start, and the one status line. */
 function liveDraftRoom(liveDraft: ReturnType<typeof useTeamDraft>): LiveDraftRoom {
-  const data = liveDraft.data;
-  const captains = data ? Object.fromEntries(data.captains.flatMap((id, team) => id ? [[String(team), id]] : [])) as DraftCaptains : {};
-  const board = data ? draftBoardFor(data.members, captains, data.settings, data.draft.picks) : null;
-  const ready = !!data && !!board && !board.missingCaptains.length && !board.countError;
-  const organizer = !!data?.viewer.isOrganizer;
-  const status = !data ? "Loading the draft…" : data.draft.completedAt ? "Draft complete — the teams are saved."
-    : board?.countError ? board.countError
-    : !ready ? (organizer ? "Every team needs a captain first (Settings → Players)." : "Waiting for the organizer to set captains.")
-    : !data.draft.startedAt ? (organizer ? "Tap Start Draft Now when everyone's ready." : "Waiting for the organizer to start the draft.") : "";
+  const room = teamDraftRoomState(liveDraft.data);
   return {
-    started: !!data?.draft.startedAt && !data.draft.completedAt, busy: liveDraft.busy, message: liveDraft.message || status,
-    canPick: team => ready && (organizer || data!.viewer.captainOf === team), canStart: ready && organizer, isOrganizer: organizer,
-    onPick: id => void liveDraft.pick(id), onStart: () => void liveDraft.start(), onReset: () => void liveDraft.reset(), onConfirm: () => void liveDraft.confirm(), confirmed: !!data?.draft.completedAt,
+    started: room.started, busy: liveDraft.busy, message: liveDraft.message || room.status,
+    canPick: room.canPick, canStart: room.canStart, isOrganizer: room.organizer,
+    onPick: id => void liveDraft.pick(id), onStart: () => void liveDraft.start(), onReset: () => void liveDraft.reset(), onConfirm: () => void liveDraft.confirm(), confirmed: room.completed,
   };
 }
 

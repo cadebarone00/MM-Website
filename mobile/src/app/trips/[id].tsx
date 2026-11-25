@@ -4,12 +4,24 @@ import { AccessibilityInfo, Animated, Pressable, RefreshControl, ScrollView, Sty
 import { SafeAreaView } from "react-native-safe-area-context";
 import { localNow } from "@/lib/platform/golfTripItinerary";
 import { GOLF_TRIP_TABS } from "@/lib/platform/golfTripNavigation";
+import { tripDates } from "@/lib/platform/golfTripDraft";
+import type { Place } from "@/lib/platform/venuePlaces";
+import type { RoundRobinResults } from "@/lib/platform/roundRobin";
 import { tripHomeView } from "@/lib/platform/tripHome";
 import { Card } from "~/components/Card.tsx";
 import { PageHeader } from "~/components/PageHeader.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { TripHome } from "~/components/trips/TripHome.tsx";
+import { TripDraftRoom } from "~/components/trips/TripDraftRoom.tsx";
+import { TripFlights } from "~/components/trips/TripFlights.tsx";
 import { TripGolf } from "~/components/trips/TripGolf.tsx";
+import { TripItinerary } from "~/components/trips/TripItinerary.tsx";
+import { InvitePeople, TripTravelForm } from "~/components/trips/TripTravelForm.tsx";
+import { TripSettings } from "~/components/trips/TripSettings.tsx";
+import { TripVenue } from "~/components/trips/TripVenue.tsx";
+import { TripRoundRobin } from "~/components/trips/TripRoundRobin.tsx";
+import { TripSelectionRoom } from "~/components/trips/TripSelectionRoom.tsx";
+import { TripScoringSheet, tripScoringNote } from "~/components/trips/TripScoringSheet.tsx";
 import { TripChat } from "~/components/trips/TripChat.tsx";
 import { RatePlaces, TripTips } from "~/components/trips/TripExtras.tsx";
 import { TripFeed } from "~/components/trips/TripFeed.tsx";
@@ -17,14 +29,10 @@ import { SymbolView } from "expo-symbols";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter, minTap } from "~/lib/theme.ts";
 import { useInviteLink, useTripMomentum, useTripPage } from "~/lib/tripPage.ts";
+import { useTripPlans } from "~/lib/useTripPlans.ts";
 
 type Tab = (typeof GOLF_TRIP_TABS)[number];
 
-/** Where a later Golf Trips part picks up (a placeholder until then, so nothing goes nowhere). */
-const LATER: Record<Exclude<Tab, "Home" | "Golf">, { part: string; note: string }> = {
-  Venue: { part: "2f", note: "The Venue tab (places nearby, add to the itinerary)." },
-  Itinerary: { part: "2f", note: "The day-by-day Itinerary, adding travel and plans." },
-};
 const openPart = (title: string, heading: string, part: string, note: string) => router.push({ pathname: "/trips/part", params: { title, heading, part, note } });
 
 /**
@@ -40,11 +48,19 @@ export default function TripScreen() {
   const invite = useInviteLink(live ? id : null);
   const [tab, setTab] = useState<Tab>("Home");
   const [sheet, setSheet] = useState<"feed" | "chat" | null>(null);
+  // Part 2e: the draft rooms open over the trip page.
+  const [room, setRoom] = useState<"draft" | "selection" | "robin" | null>(null);
+  // Part 2f: my plans (Itinerary, Venue → Add to itinerary), Flights, and a place being added.
+  const plans = useTripPlans(id, live?.planSnapshot ?? null);
+  const [flightsOpen, setFlightsOpen] = useState(false);
+  const [addingPlace, setAddingPlace] = useState<{ place: Place; done: () => void } | null>(null);
+  const [invitingPlan, setInvitingPlan] = useState<string | null>(null);
   // "Now" is read once, when Home opens (website rule), so plans don't jump while you look at them.
   const [now] = useState(() => localNow(new Date()));
   const view = useMemo(() => live ? tripHomeView(live, now, momentum) : null, [live, now, momentum]);
   const title = view?.tripName ?? (state.kind === "imported" ? state.name : name || "Golf trip");
-  const settings = () => openPart("Trip settings", title, "2g", "Trip Settings (general, members and roles, games, pars, corrections, notifications, tips).");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settings = () => setSettingsOpen(true);
 
   if (state.kind === "imported") { router.replace({ pathname: "/trips/part", params: { title: "Golf trip", heading: state.name, part: "2g", note: "The imported past trip page." } }); return null; }
 
@@ -72,21 +88,21 @@ export default function TripScreen() {
         <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reload(true)} tintColor={colors.goldBright} />}>
           <TripHome view={view} invite={invite}
             onOpenItinerary={() => setTab("Itinerary")}
-            onOpenFlights={() => openPart("Flights", title, "2f", "Your flights for this trip.")} onSettings={settings}
-            onRoom={(which) => openPart(which === "selection" ? "Selection Room" : which === "robin" ? "Round robin" : "Draft Room", title, "2e",
-              which === "selection" ? "Match Selection (picking each round's matches)." : which === "robin" ? "Entering round-robin results." : "The Team Draft room.")} />
+            onOpenFlights={() => setFlightsOpen(true)} onSettings={settings}
+            onRoom={setRoom} />
         </ScrollView>
       ) : tab === "Golf" ? (
         <TripGolf match={view.match} schedule={view.draft} structure={view.structure} viewerName={view.viewerName} roundLive={view.roundLive}
-          playerStats={live!.setupSnapshot.values.playerStats === true}
-          predictOn={(live!.setupSnapshot.values.predict as { on?: boolean } | undefined)?.on !== false} />
+          playerStats={live!.setupSnapshot.values.playerStats === true} predict={view.predict} games={view.games}
+          notice={live!.scoring?.profileId === live!.viewer.profileId ? tripScoringNote(live!.scoring.scoring, live!.viewer.profileId) : null} />
+      ) : tab === "Venue" ? (
+        <TripVenue tripId={id} destination={view.draft.destination ?? ""}
+          center={Number.isFinite(Number(view.draft.destinationLatitude)) && Number.isFinite(Number(view.draft.destinationLongitude)) && view.draft.destinationLatitude && view.draft.destinationLongitude
+            ? { latitude: Number(view.draft.destinationLatitude), longitude: Number(view.draft.destinationLongitude) } : null}
+          onAddToItinerary={plans.available ? (place, done) => setAddingPlace({ place, done }) : undefined} />
       ) : (
-        <View style={styles.gutter}>
-          <Card tone="dark" style={{ marginTop: 16 }}>
-            <Text style={styles.laterHeading}>{tab}</Text>
-            <Text style={styles.laterBody}>{LATER[tab].note} This comes to the new app in Golf Trips part {LATER[tab].part}; until then use the current Maroon app.</Text>
-          </Card>
-        </View>
+        <TripItinerary tripId={id} plans={plans} rounds={view.rounds} tripDays={tripDates(view.draft.startDate, view.draft.endDate)}
+          activeRound={view.roundLive ? view.match.round : undefined} refreshing={refreshing} onRefresh={() => void reload(true)} />
       ))}
       {live && view && <>
         <TripFeed open={sheet === "feed"} onClose={() => setSheet(null)} />
@@ -94,6 +110,32 @@ export default function TripScreen() {
           members={view.roster.players.map((p) => p.name).filter((n) => n !== live.savedTrip.members.find((m) => m.profileId === live.viewer.profileId)?.displayName)} />
         <TripTips profileId={live.viewer.profileId} isOrganizer={live.viewer.isOrganizer} />
         <RatePlaces tripId={id} visits={view.rateVisits} />
+        {settingsOpen && <TripSettings trip={live.savedTrip} draft={view.draft} viewer={{ profileId: live.viewer.profileId, memberId: live.savedTrip.members.find((m) => m.profileId === live.viewer.profileId)?.id ?? "", isOrganizer: live.viewer.isOrganizer }}
+          setupValues={live.setupSnapshot.values as Record<string, unknown>} onChanged={() => void reload(true)}
+          onClose={() => { setSettingsOpen(false); void reload(true); }} onLeft={() => { setSettingsOpen(false); router.replace("/(tabs)/golf-trips"); }} />}
+        {flightsOpen && <TripFlights tripId={id} onClose={() => setFlightsOpen(false)} />}
+        {addingPlace && <TripTravelForm kind="other" initial={{ name: addingPlace.place.name, place: addingPlace.place.address, placeId: addingPlace.place.id }} onClose={() => setAddingPlace(null)}
+          onSave={(details, startsAt, endsAt, invite) => {
+            const planId = `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+            plans.change({ type: "add", item: { id: planId, kind: "other", details: { ...details, placeId: addingPlace.place.id }, startsAt, endsAt, joinPolicy: "none" } });
+            addingPlace.done(); setAddingPlace(null);
+            if (invite) setInvitingPlan(planId);
+          }} />}
+        {invitingPlan && <InvitePeople travel={plans.travel} itemId={invitingPlan} onClose={() => setInvitingPlan(null)}
+          onSend={(memberIds) => { plans.change({ type: "invite", id: invitingPlan, memberIds }); setInvitingPlan(null); }} />}
+        {room === "draft" && <TripDraftRoom tripId={id} onSettings={() => { setRoom(null); settings(); }}
+          when={view.drafts?.team?.kind === "board" ? view.drafts.team.countdown.when : null} target={view.drafts?.team?.kind === "board" ? view.drafts.team.countdown.target : null}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {room === "selection" && <TripSelectionRoom tripId={id} rounds={view.drafts?.match?.rounds ?? []} initialRound={view.drafts?.match?.next?.key ?? null}
+          onSettings={() => { setRoom(null); settings(); }} onGoToMatches={() => { setRoom(null); setTab("Golf"); void reload(true); }}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {room === "robin" && view.drafts?.match?.robin?.ready && <TripRoundRobin tripId={id} sides={view.drafts.match.robin.sides} roster={view.drafts.match.robin.roster}
+          courses={view.drafts.match.robin.courses} canEdit={view.isOrganizer}
+          initial={live.setupSnapshot.values.roundRobinResults as RoundRobinResults | undefined}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {/* Player & Attest (part 2d slice 3): today's round, for a seated member only; the sheet tucks into the bottom. */}
+        {live.scoring && live.scoring.profileId === live.viewer.profileId && (tab === "Home" || tab === "Golf") &&
+          <TripScoringSheet key={`${live.scoring.scoring.roundId}:${live.viewer.profileId}`} tripId={id} profileId={live.viewer.profileId} initial={live.scoring.scoring} initialCorrections={live.scoring.corrections} />}
       </>}
     </SafeAreaView>
   );

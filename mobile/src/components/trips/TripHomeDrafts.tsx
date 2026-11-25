@@ -30,7 +30,7 @@ export function TripHomeDrafts({ drafts, hasTeams, isOrganizer, onSettings, onRo
               <Text style={styles.heading}>Round robin</Text>
               {match.robin.sides.map((side) => <Text key={side.name} style={styles.line}>{side.name}</Text>)}
               <Text style={styles.muted}>{match.robin.courses.join(" · ")}</Text>
-              <Room label="Enter results" onPress={() => onRoom("robin")} />
+              <Room label={isOrganizer ? "Enter results" : "View results"} onPress={() => onRoom("robin")} />
             </View>
           : <Status text={match.robin.message} action={isOrganizer ? "Set up players" : undefined} onPress={onSettings} />)}
         {match.next && <DraftStrip heading={`Round ${match.next.round} @ ${match.next.course}`} format={match.next.format} countdown={match.next.countdown}

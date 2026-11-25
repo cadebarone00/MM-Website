@@ -1,4 +1,4 @@
-import { sortItinerary, type ItineraryItem } from "./golfTripItinerary";
+import { ITINERARY_KIND_LABEL, itineraryDay, itineraryTime, sortItinerary, type ItineraryItem } from "./golfTripItinerary";
 
 /**
  * Trip travel: everyone's flights, rides, lodging and plans, who's going on what, and each member's itinerary (derived,
@@ -194,4 +194,27 @@ export function cleanDetails(kind: TravelKind, details: TravelDetails): TravelDe
   if (kind === "ride") return { rideType: details.rideType ?? "driving", from: text(details.from), to: text(details.to), place: text(details.place), seats: details.seats };
   const placeId = details.placeId && /^[0-9a-f-]{36}$/i.test(details.placeId) ? details.placeId : undefined;
   return { name: text(details.name), place: text(details.place), note: text(details.note), ...(placeId ? { placeId } : {}) };
+}
+
+// ---------- Labels (website My travel and the app's Itinerary) ----------
+
+/** A plan's small label: Flight, Driving / Rental car, Lodging, … (website My travel and the app). */
+export function travelRowLabel(item: TravelItem): string {
+  if (item.kind === "ride") return item.details.rideType === "rental" ? "Rental car" : "Driving";
+  return ITINERARY_KIND_LABEL[item.kind];
+}
+
+/** "Thu, Apr 22 · 6:10 AM – 8:05 AM", or across days "Thu, Apr 22 3:00 PM – Sun, Apr 25 10:00 AM". */
+export function travelWhenLabel(item: TravelItem): string {
+  const start = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
+  if (!item.endsAt) return start;
+  return item.endsAt.slice(0, 10) === item.startsAt.slice(0, 10) ? `${start} – ${itineraryTime(item.endsAt)}` : `${start} – ${itineraryDay(item.endsAt)} ${itineraryTime(item.endsAt)}`;
+}
+
+/** Where / extra line: the airline, the ride's destination and open seats, or the place and note. */
+export function travelPlaceLabel(item: TravelItem): string {
+  const d = item.details;
+  if (item.kind === "flight") return d.airline ?? "";
+  if (item.kind === "ride") return [d.rideType === "rental" ? d.place : d.to && `To ${d.to}`, d.seats !== undefined ? `${d.seats} open seat${d.seats === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  return [d.place, d.note].filter(Boolean).join(" · ");
 }

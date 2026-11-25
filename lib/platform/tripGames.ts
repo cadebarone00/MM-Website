@@ -160,3 +160,18 @@ export function organizerGames(allocations: Record<string, GameId[]> | undefined
       config: { id, net: false, birdiesDouble: false, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } }];
   }));
 }
+
+/** Games that still need something before teeing off: picking teams (Vegas picks teams hole by hole instead). */
+export const tripGameNeedsSetup = (id: GameId) => gameDef(id).teams && id !== "vegas";
+
+/**
+ * Small tidy-ups to Play's standings for the trip card: Match Play's extra line repeats the leader (dropped), and team
+ * stroke totals (Best Ball and the team formats) show to par, like Stroke Play.
+ */
+export function tidyTripGameResult(result: GameResult, id: GameId, parSoFar: number): GameResult {
+  const repeats = (id === "match" || id === "nassau") && result.note && result.standings.some((s) => s.label && result.note!.startsWith(s.label));
+  const teamTotal = id === "bestball" || id === "scramble" || id === "shamble" || id === "alternate" || id === "chapman";
+  const toPar = (n: number) => n === parSoFar ? "E" : n > parSoFar ? `+${n - parSoFar}` : String(n - parSoFar);
+  return { ...result, note: repeats ? undefined : result.note,
+    standings: teamTotal ? result.standings.map((s) => /^\d+$/.test(s.value) ? { ...s, value: `${s.value} (${toPar(Number(s.value))})` } : s) : result.standings };
+}

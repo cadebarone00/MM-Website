@@ -20,7 +20,10 @@ import { shownUsername } from "@/lib/platform/playerUsername";
 import { teamPoints } from "@/lib/platform/teamPoints";
 import { skinsCount } from "@/lib/platform/tripSkins";
 import { Avatar } from "~/components/Avatar.tsx";
+import { TripGames, type TripGamesContext } from "./TripGames.tsx";
 import { TripMatchDetail } from "./TripMatchDetail.tsx";
+import { TripPredict } from "./TripPredict.tsx";
+import { TripStats } from "./TripStats.tsx";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 const COLLAPSED_KEY = "golfDayBoardCollapsed";
@@ -32,13 +35,16 @@ type Slot = GolfTripSection | "Predict";
 /**
  * The trip's Golf tab (project_specs.md Golf Trips part 2d, slice 1a): the golf-day board, the section pill (Board ·
  * Games · Stats · Predict), Team / Indi, round pills, the leaderboard or tee sheet, team points and the round's matches.
- * Everything is worked out by the website's shared lib/ code. Games, Stats and Predict come in slice 2; match details,
- * player and team cards in slice 1b.
+ * Everything is worked out by the website's shared lib/ code. Match details, player and team cards: slice 1b; Games,
+ * Stats and Predict (Predict's wallet on the account): slice 2.
  */
-export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predictOn }: {
+export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predict, games, notice }: {
   match: GolfMatchPreview; schedule: GolfTripDraft; structure: CompetitionStructure; viewerName: string | null; roundLive: boolean;
-  playerStats: boolean; predictOn: boolean;
+  playerStats: boolean; predict: { on: boolean; off: string[] }; games: TripGamesContext;
+  /** Why today's scoring sheet isn't open yet (no confirmed pars, no attestee), or null. */
+  notice?: string | null;
 }) {
+  const predictOn = predict.on;
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed((value) => { storeCollapsed(!value); return !value; });
   const noComp = !structure.individual && !structure.team;
@@ -47,8 +53,17 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
   const sections = golfSections(structure, playerStats).filter((s) => !(teamOnly && s.id === "Overview")).map((s) => s.id === "Competition" ? { ...s, label: "Board" } : s);
   const slots: { id: Slot; label: string }[] = [...sections, ...(predictOn && !noComp ? [{ id: "Predict" as const, label: "Predict" }] : [])];
   const pillTabs = slots.filter(({ id }) => !(both && id === "Competition"));
-  const [active, setActive] = useState<Slot>(structure.team ? "Competition" : "Overview");
-  const boardActive = active === "Overview" || active === "Competition";
+  // Which section is open (Board / Games / Stats / Predict) and, on Board, which leaderboard (Team or Indi) are kept apart:
+  // coming back to Board from another section always opens the team board when the trip has teams.
+  const homeBoard: "Competition" | "Overview" = structure.team ? "Competition" : "Overview";
+  const [area, setArea] = useState<"Board" | "Games" | "Stats" | "Predict">("Board");
+  const [board, setBoard] = useState<"Competition" | "Overview">(homeBoard);
+  const active: Slot = area === "Board" ? board : area;
+  const boardActive = area === "Board";
+  const openSection = (id: Slot) => {
+    if (id === "Overview" || id === "Competition") { if (area !== "Board") setBoard(homeBoard); else if (!both) setBoard(id); setArea("Board"); }
+    else setArea(id as "Games" | "Stats" | "Predict");
+  };
 
   // Rounds: a pill per round; an earlier round shows its own saved standings and matches.
   const rounds = useMemo(() => plannedRounds(schedule), [schedule]);
@@ -69,11 +84,12 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <DayBoard match={source} schedule={schedule} structure={structure} viewerName={viewerName} collapsed={collapsed} />
+      {notice && <View style={styles.notice} accessibilityRole="summary"><Text style={styles.noticeText}>{notice}</Text></View>}
       <View style={styles.navRow}>
         <View style={styles.pill} accessibilityRole="tablist" accessibilityLabel="Golf sections">
           {pillTabs.map(({ id, label }) => {
-            const on = id === active || (both && id === "Overview" && active === "Competition");
-            return <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => setActive(id === "Overview" && both ? "Competition" : id)} style={[styles.pillTab, on && styles.pillTabOn]}>
+            const on = id === "Overview" || id === "Competition" ? boardActive : id === area;
+            return <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => openSection(id)} style={[styles.pillTab, on && styles.pillTabOn]}>
               <Text style={[styles.pillText, on && styles.pillTextOn]}>{label}</Text>
             </Pressable>;
           })}
@@ -84,7 +100,7 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
       </View>
 
       {both && boardActive && <View style={styles.switch} accessibilityRole="radiogroup" accessibilityLabel="Leaderboard type">
-        {(["Competition", "Overview"] as const).map((id) => <Pressable key={id} accessibilityRole="radio" accessibilityState={{ checked: active === id }} onPress={() => setActive(id)} style={[styles.switchTab, active === id && styles.switchOn]}>
+        {(["Competition", "Overview"] as const).map((id) => <Pressable key={id} accessibilityRole="radio" accessibilityState={{ checked: active === id }} onPress={() => setBoard(id)} style={[styles.switchTab, active === id && styles.switchOn]}>
           <Text style={[styles.switchText, active === id && styles.switchTextOn]}>{id === "Competition" ? "Team" : "Indi"}</Text></Pressable>)}
       </View>}
 
@@ -105,7 +121,11 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
 
       {active === "Overview" && (teamOnly ? <TeeSheet match={match} /> : <Leaderboard match={leaderboardMatch} byToday={noComp} />)}
       {active === "Competition" && <Matches full={source} match={match} roundStarted={roundLive && match.round === source.round} showStats={playerStats} />}
-      {!boardActive && <Later what={active === "Games" ? "Games" : active === "Stats" ? "Trip stats" : "Predict"} />}
+      {active === "Games" && <View style={styles.section}><TripGames match={source} saved={games}
+        rounds={rounds.map((r) => ({ number: r.number, date: r.date, course: schedule[`round${r.number}Course`] || undefined }))} /></View>}
+      {/* Live trips have no recorded-round stats yet (same as the website); imported trips bring theirs in part 2g. */}
+      {active === "Stats" && <View style={styles.section}><TripStats stats={undefined} /></View>}
+      {active === "Predict" && <View style={styles.section}><TripPredict tripId={games.tripId} match={source} structure={structure} off={predict.off} /></View>}
     </ScrollView>
   );
 }
@@ -327,13 +347,9 @@ function Empty({ text }: { text: string }) {
   return <View style={[styles.board, { alignItems: "center", paddingVertical: 28 }]}><Text style={styles.muted}>{text}</Text></View>;
 }
 
-function Later({ what }: { what: string }) {
-  return <View style={[styles.board, { gap: 6 }]}><Text style={styles.cardTitle}>{what}</Text>
-    <Text style={styles.muted}>{what} comes to the new app in the next step of Golf Trips part 2d; until then use the current Maroon app.</Text></View>;
-}
-
 const styles = StyleSheet.create({
   scroll: { paddingBottom: 48 },
+  section: { marginTop: 14 },
   day: { marginHorizontal: gutter, marginTop: 12, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop },
   profile: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   identity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 },

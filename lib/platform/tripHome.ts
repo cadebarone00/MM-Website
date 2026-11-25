@@ -10,6 +10,7 @@ import { homeTeamRoster, type HomeRosterPlayer, type HomeRosterTeam } from "./ho
 import { homeRosterFull } from "./tapIn";
 import type { MomRound } from "./momNotifications";
 import type { RoundCompSettings } from "./roundCompetition";
+import type { GameId } from "./roundGames";
 import { savedTripPresentation } from "./savedTripPresentation";
 import { skinsRoundsFrom } from "./tripSkins";
 import type { GolfMatchPreview } from "./golfTripPreviewFixture";
@@ -18,6 +19,7 @@ import type { TripSetupSnapshot } from "./savedTripSetup";
 import type { SavedTravelSnapshot } from "./savedTripTravel";
 import { tapInPath } from "./tapIn";
 import { roundScoringFrom } from "./teamPoints";
+import type { TripCorrections } from "./tripCorrections";
 import type { TripRoundScoring } from "./tripScoring";
 import { goingOnly, itineraryFor, type TripTravel } from "./tripTravel";
 import type { MomentumEvent } from "./tripPush";
@@ -76,7 +78,8 @@ export function homeSlides(itinerary: ItineraryItem[] | undefined, now: string, 
 export type TripHomeData = {
   savedTrip: SavedGolfTrip; viewer: { profileId: string; isOrganizer: boolean };
   setupSnapshot: TripSetupSnapshot; planSnapshot: SavedTravelSnapshot; flightSummary: FlightSummary;
-  scoring: { profileId: string; scoring: TripRoundScoring } | null;
+  /** corrections: requests + submission history for the round (null until golf_trip_scoring_corrections.sql is installed). */
+  scoring: { profileId: string; scoring: TripRoundScoring; corrections?: TripCorrections | null } | null;
 };
 
 export type TripHomeView = {
@@ -100,7 +103,24 @@ export type TripHomeView = {
   draft: GolfTripDraft; rounds: MomRound[];
   /** The Golf tab (part 2d): the trip's scores and matches, which competition it has, who I am, and whether today's round is live. */
   match: GolfMatchPreview; structure: CompetitionStructure; viewerName: string | null; roundLive: boolean;
+  /** Golf → Games: me, my group (today's scoring group, else everyone who accepted) and the organizer's games per round. */
+  games: { tripId: string; meId: string; group: { profileId: string; name: string }[]; organizerGames: Record<string, GameId[]> | undefined };
+  /** Organizer → Predict (saved on the trip): shown or not, and the bets switched off. */
+  predict: { on: boolean; off: string[] };
 };
+
+/** Golf → Games' group: the players in my scoring group today; before groups exist, everyone who accepted (website and app). */
+export function tripGamesGroup(members: SavedGolfTrip["members"], groups: { players: { profileId: string | null }[] }[] | undefined, meId: string) {
+  const accepted = members.filter((m) => m.profileId && m.invitationStatus === "accepted");
+  const mine = groups?.find((g) => g.players.some((p) => p.profileId === meId))?.players.map((p) => p.profileId);
+  return accepted.filter((m) => !mine || mine.includes(m.profileId)).map((m) => ({ profileId: m.profileId as string, name: m.displayName }));
+}
+
+/** Organizer → Predict from the trip's saved settings: on unless switched off. */
+export function predictSettingsFrom(setup: Record<string, unknown>): { on: boolean; off: string[] } {
+  const value = setup.predictSettings as { on?: unknown; off?: unknown } | undefined;
+  return { on: value?.on !== false, off: Array.isArray(value?.off) ? value!.off.filter((id): id is string => typeof id === "string") : [] };
+}
 
 /** Everything on Home, from the trip page data. `now` = "YYYY-MM-DDTHH:mm" (device local, read once when Home opens). */
 export function tripHomeView(data: TripHomeData, now: string, momentum: MomentumEvent[]): TripHomeView {
@@ -176,5 +196,8 @@ export function tripHomeView(data: TripHomeData, now: string, momentum: Momentum
         when: `${itineraryWeekday(item.startsAt)} · ${itineraryTime(item.startsAt)}`, visitedOn: item.startsAt.slice(0, 10) })), now.slice(0, 10), [], RATE_WITHIN_DAYS) : [],
     competition, competitionNote: competitive ? "Team drafts, matches and skins will show here." : "No competition",
     draft, rounds, match, structure, viewerName, roundLive,
+    games: { tripId: savedTrip.trip.id, meId: viewer.profileId, group: tripGamesGroup(savedTrip.members, live?.groups, viewer.profileId),
+      organizerGames: setup.gameRounds as Record<string, GameId[]> | undefined },
+    predict: predictSettingsFrom(setup),
   };
 }

@@ -70,3 +70,27 @@ test("the server's submit answer is checked", () => {
   assert.equal(submitResultFromJson({ status: "maybe" }), null);
   assert.equal(submitResultFromJson({ status: "rejected", reason: "because" }), null);
 });
+
+test("a par 3 needs no fairway when the round's pars are confirmed; without pars every hole asks for one", () => {
+  const pars = Array.from({ length: 18 }, (_, i) => (i === 2 ? 3 : 4));
+  const entries = [...holes.map((h) => own(h, 4, h === 3 || h === 5 ? { fairway: null } : {})), ...holes.map((h) => att(h, 4))];
+  const withPars = { ...scoring(entries), pars: { pars } } as TripRoundScoring;
+  assert.deepEqual(submissionCheck(withPars, ME, ME), { ok: false, reason: "incomplete", holes: [5] });
+  assert.deepEqual(submissionCheck(scoring(entries), ME, ME), { ok: false, reason: "incomplete", holes: [3, 5] });
+});
+
+test("card check: my score must match my attester's before submit; my attestee's column is shown, never blocks", async () => {
+  const { tripCardCheck } = await import("./tripScoring.ts");
+  const blank = () => Array<number | null>(18).fill(null);
+  const seat = { submitted: false, attestedForMe: Array(18).fill(4), attesteeOwn: blank() } as never;
+  const card = { holes: Array(18).fill(4), opponentHoles: [5, ...Array(17).fill(null)] };
+  const ok = { connected: true, pending: false, conflict: false, complete: true };
+  const all = tripCardCheck(seat, card, ok);
+  assert.deepEqual([all.ready, all.status, all.theirs.waiting], [true, "Verified", [1]]);
+  const off = tripCardCheck({ ...(seat as object), attestedForMe: [5, ...Array(17).fill(4)] } as never, card, ok);
+  assert.deepEqual([off.ready, off.mine.mismatch, off.status], [false, [1], "Synced"]);
+  assert.equal(tripCardCheck(seat, card, { ...ok, pending: true }).status, "Saved locally · Pending sync");
+  assert.equal(tripCardCheck(seat, card, { ...ok, connected: false }).ready, false);
+  assert.equal(tripCardCheck(seat, card, { ...ok, conflict: true }).status, "Conflict");
+  assert.equal(tripCardCheck({ ...(seat as object), submitted: true } as never, card, ok).status, "Submitted");
+});

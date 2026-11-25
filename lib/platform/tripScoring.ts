@@ -216,3 +216,31 @@ export function cardFromEntries(own: HoleEntryInput[], attest: HoleEntryInput[])
   for (const e of attest) card.opponentHoles[e.hole - 1] = e.strokes;
   return card;
 }
+
+/** One column's check against the other phone: holes that disagree, and holes I've entered that the other side hasn't yet. */
+function compareColumn(mine: (number | null)[], theirs: (number | null)[]) {
+  const mismatch: number[] = [], waiting: number[] = [];
+  mine.forEach((value, i) => {
+    if (value === null) return;
+    if (theirs[i] === null || theirs[i] === undefined) waiting.push(i + 1);
+    else if (theirs[i] !== value) mismatch.push(i + 1);
+  });
+  return { mismatch, waiting, matches: mismatch.length === 0 && waiting.length === 0 };
+}
+
+/**
+ * The card's check against the other phones (website and app, Player & Attest): my strokes vs what my attester entered
+ * for me (this one must match before I can submit), and the column I keep vs my attestee's own strokes (shown, never
+ * blocks me). Par is reference only, so an untouched hole is never filled in. `status` is the one line the sheet shows;
+ * "Verified" only once everything of mine is synced, the phone is connected and my attester agrees on every hole.
+ */
+export function tripCardCheck(seat: NonNullable<ReturnType<typeof myScoringSeat>>, card: { holes: (number | null)[]; opponentHoles: (number | null)[] },
+  sync: { connected: boolean; pending: boolean; conflict: boolean; complete: boolean }) {
+  const mine = compareColumn(card.holes, seat.attestedForMe);
+  const theirs = compareColumn(card.opponentHoles, seat.attesteeOwn);
+  const verified = sync.connected && !sync.pending && !sync.conflict;
+  const ready = !seat.submitted && verified && sync.complete && card.holes.every((h) => h !== null) && mine.mismatch.length === 0 && seat.attestedForMe.every((h, i) => h === card.holes[i]);
+  const status = seat.submitted ? "Submitted" : sync.conflict ? "Conflict" : sync.pending ? "Saved locally · Pending sync" : !sync.connected ? "Waiting for connection"
+    : ready ? "Verified" : "Synced";
+  return { mine, theirs, verified, ready, status };
+}

@@ -1,6 +1,7 @@
 import { matchDraftTimeError } from "./draftSchedule";
 import { homeDraftHasSchedule, homeDraftTeamsReady, homeMatchRounds, homeRoundRobinSides, homeTeamGroupsReady } from "./homeDraft";
-import { homeMatchSelection, matchDraftRounds, type MatchDraftPlayer } from "./matchDraft";
+import { homeMatchSelection, matchDraftRounds, type MatchDraftPlayer, type MatchDraftRound } from "./matchDraft";
+import type { RoundRobinSide } from "./roundRobin";
 import type { MomRound } from "./momNotifications";
 import { draftBoard, draftWhenLabel, type TeamDraft } from "./teamDraft";
 
@@ -16,8 +17,11 @@ export type HomeTeamDraftCard =
   | { kind: "status"; text: "Teams complete" | "Set up team selection"; action: "View teams" | "Set up teams" };
 export type HomeMatchCard = {
   noRounds: boolean;
-  robin: null | { ready: true; sides: { name: string }[]; courses: string[] } | { ready: false; message: "Complete team assignments first." | "Add at least two players first." };
-  next: null | { round: number; course: string; format: string; countdown: DraftCountdown; selected: boolean; blocked: string | null };
+  /** roster: the lineup the saved results belong to (the website's exact key, so results entered on either side line up). */
+  robin: null | { ready: true; sides: RoundRobinSide[]; courses: string[]; roster: string } | { ready: false; message: "Complete team assignments first." | "Add at least two players first." };
+  next: null | { key: string; round: number; course: string; format: string; countdown: DraftCountdown; selected: boolean; blocked: string | null };
+  /** Every round that uses Match Selection (the Selection Room's round picker). */
+  rounds: MatchDraftRound[];
   status: null | { text: "Match selection complete" | "Complete team assignments first." | "Set up match selection" };
 };
 export type HomeDrafts = { team: HomeTeamDraftCard | null; match: HomeMatchCard | null; noDrafts: boolean };
@@ -69,8 +73,10 @@ export function homeDrafts(input: {
     : { kind: "status", text: allTeamsReady ? "Teams complete" : "Set up team selection", action: allTeamsReady ? "View teams" : "Set up teams" };
   const matchCard: HomeMatchCard | null = !showMatch ? null : {
     noRounds: !rounds.length,
-    robin: robinRounds.length ? sides.length >= 2 ? { ready: true, sides, courses: robinRounds.map((r) => r.course) } : { ready: false, message: teamType ? "Complete team assignments first." : "Add at least two players first." } : null,
-    next: next && teamType === "2 Teams" ? { round: next.number, course: next.course.replace(/\s*·\s*/g, " "), format: next.format, selected: !!next.locked, blocked,
+    robin: robinRounds.length ? sides.length >= 2 ? { ready: true, sides, courses: robinRounds.map((r) => r.course),
+      roster: JSON.stringify([teamType, players.map((player) => player.id ?? player.name), groups, robinRounds.map((round) => [round.key, round.settings])]) } : { ready: false, message: teamType ? "Complete team assignments first." : "Add at least two players first." } : null,
+    rounds: matchRounds,
+    next: next && teamType === "2 Teams" ? { key: next.key, round: next.number, course: next.course.replace(/\s*·\s*/g, " "), format: next.format, selected: !!next.locked, blocked,
       countdown: countdown(next.date ?? "", next.time ?? "", { when: next.when, target: next.date ? `${next.date}T${next.time || "00:00"}` : null }) } : null,
     status: next && teamType === "2 Teams" ? null : applicable.some((round) => round.method !== "Round Robin")
       ? { text: applicable.every((round) => round.number <= playedThrough || (Array.isArray(setup.completedMatchDrafts) && setup.completedMatchDrafts.includes(round.key))) ? "Match selection complete"

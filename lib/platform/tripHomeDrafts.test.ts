@@ -43,3 +43,18 @@ test("Match Play with no rounds yet: add match-play rounds", () => {
   assert.equal(drafts.match?.noRounds, true);
   assert.equal(drafts.noDrafts, false);
 });
+
+test("round robin lineup key matches the website's exactly, so results entered on either side line up", async () => {
+  const { homeDrafts } = await import("./tripHomeDrafts");
+  const setup = { localCompetitionType: { individual: null, team: null }, matchPerRound: false, allRoundsMatch: { method: "Round Robin" } };
+  const players = [{ name: "Al" }, { name: "Bo" }, { name: "Cy" }];
+  const rounds = [{ number: 1, date: "2027-04-23", course: "No. 2" }, { number: 2, date: "2027-04-24", course: "No. 4" }];
+  const drafts = homeDrafts({ setup, competitionTypes: { individual: "Stroke Play", team: null }, team: undefined, players, rounds, playedThrough: 0, teamNames: [], now: "2027-04-01T09:00" });
+  const robin = drafts.match?.robin;
+  assert.ok(robin && robin.ready, "this setup uses round robin");
+  const parsed = JSON.parse(robin.roster) as unknown[];
+  assert.equal(parsed.length, 4);
+  assert.equal(parsed[0], null);
+  assert.deepEqual(parsed[1], ["Al", "Bo", "Cy"]);
+  assert.deepEqual(robin.sides.map((s) => s.id), ["side-0", "side-1", "side-2"]);
+});
