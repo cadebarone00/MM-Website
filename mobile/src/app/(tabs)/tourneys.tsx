@@ -4,6 +4,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
+import { TournamentHistory } from "~/components/tourneys/TournamentHistory.tsx";
 import { TournamentInvite } from "~/components/tourneys/TournamentInvite.tsx";
 import { CreateTournament } from "~/components/tourneys/CreateTournament.tsx";
 import { PublicTournaments } from "~/components/tourneys/PublicTournaments.tsx";
@@ -21,12 +22,16 @@ export default function Tourneys() {
   useLightStatusBar();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [sheet, setSheet] = useState<{ visible: boolean; id: string | null }>({ visible: false, id: null });
+  const [history, setHistory] = useState<PastTournament | null>(null);
+  const [playing, setPlaying] = useState<History | null>(null);
   const [inviting, setInviting] = useState(false);
   const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const fetchHome = useCallback(async () => {
     const result = await apiGet<Home>("/api/app/tourneys?view=join");
     setLoad(result.ok ? { status: "ok", data: result.data } : { status: "error", message: result.error });
+    const mine = await apiGet<History>("/api/app/tourneys?view=mine");
+    setPlaying(mine.ok ? mine.data : { signedIn: true, ok: false });
   }, []);
   useFocusEffect(useCallback(() => { void fetchHome(); }, [fetchHome]));
   const refresh = async () => { setRefreshing(true); await fetchHome(); setRefreshing(false); };
@@ -41,17 +46,18 @@ export default function Tourneys() {
       <PublicTournaments />
       {load.status !== "ok" ? <View style={styles.card}><StateSlot height={80} state={load.status === "loading" ? { kind: "loading" } : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchHome(); } }} /></View> : <>
         <Text style={styles.heading}>CURRENT</Text>
-        <View style={styles.card}>{current.length ? current.map(t => <Row onPress={() => setSheet({ visible: true, id: t.id })} key={t.id} name={t.name} detail={[t.course, t.firstDate].filter(Boolean).join(" · ")} />) : <Text style={styles.empty}>No current tournaments.</Text>}</View>
+        <View style={styles.card}>{current.map(t => <Row onPress={() => setSheet({ visible: true, id: t.id })} key={t.id} name={t.name} detail={[t.course, t.firstDate].filter(Boolean).join(" ? ")} />)}{playing?.signedIn && playing.ok && playing.tournaments.map(t => <Row key={`${t.href}-${t.year}`} name={`${t.name} ${t.year}`} detail={[t.destination, t.startDate].filter(Boolean).join(" ? ")} onPress={() => setHistory(t)} />)}{playing?.signedIn && !playing.ok && <Text style={styles.empty}>Could not load your current tournaments. Pull down to retry.</Text>}{!current.length && playing?.signedIn && playing.ok && !playing.tournaments.length && <Text style={styles.empty}>No current tournaments.</Text>}</View>
         <Text style={styles.heading}>PAST TOURNAMENTS</Text>
         <View style={styles.card}>
           {ended.map(t => <Row onPress={() => setSheet({ visible: true, id: t.id })} key={t.id} name={t.name} detail={[t.course, t.firstDate].filter(Boolean).join(" · ")} />)}
           {!load.data.past.signedIn ? <Text style={styles.empty}>Sign in to see your past tournaments.</Text> : !load.data.past.ok ? <Text style={styles.empty}>We couldn't load your past tournaments. Pull down to try again.</Text> : <>
-            {load.data.past.tournaments.map(t => <Row key={`${t.href}-${t.year}`} name={`${t.name} ${t.year}`} detail={[t.destination, t.startDate].filter(Boolean).join(" · ")} />)}
+            {load.data.past.tournaments.map(t => <Row key={`${t.href}-${t.year}`} name={`${t.name} ${t.year}`} detail={[t.destination, t.startDate].filter(Boolean).join(" · ")} onPress={() => setHistory(t)} />)}
             {!ended.length && !load.data.past.tournaments.length && <Text style={styles.empty}>No past tournaments yet.</Text>}
           </>}
         </View>
       </>}
     </ScrollView>
+    <TournamentHistory item={history} close={() => setHistory(null)} />
     <TournamentInvite visible={inviting} close={() => { setInviting(false); void fetchHome(); }} onOpen={id => setSheet({ visible: true, id })} />
     <CreateTournament visible={creating} close={() => { setCreating(false); void fetchHome(); }} onOpen={id => setSheet({ visible: true, id })} />
     <TournamentSheet visible={sheet.visible} selectedId={sheet.id} onClose={() => { setSheet({ visible: false, id: null }); void fetchHome(); }} />

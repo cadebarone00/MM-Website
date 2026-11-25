@@ -1,5 +1,6 @@
-﻿import { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { router } from "expo-router";
+import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { CodeTournament, CodeTournamentLookup } from "@/lib/platform/codeTournaments";
 import { TournamentSettings } from "~/components/tourneys/TournamentSettings.tsx";
 import { TournamentScoring } from "~/components/tourneys/TournamentScoring.tsx";
@@ -17,17 +18,28 @@ export function TournamentSheet({ visible, onClose, selectedId }: { visible: boo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const requestVersion = useRef(0);
+  const activeReads = useRef(0);
 
-  async function open(id: string) {
-    const version = ++requestVersion.current;
-    setBusy(true); setError("");
-    const reply = await apiJson<{ tournament: CodeTournament }>(`/api/app/code-tournaments/${encodeURIComponent(id)}`);
-    if (version !== requestVersion.current) return;
+  const open = useCallback(async (id: string, silent = false) => {
+    const version = ++requestVersion.current; activeReads.current++;
+    if (!silent) setBusy(true);
+    const reply = await apiJson<{ tournament: CodeTournament }>(`/api/app/code-tournaments/${encodeURIComponent(id)}`)
+      .catch(() => ({ ok: false as const, error: "Could not reach the server.", code: null }));
+    activeReads.current--;
+    if (version !== requestVersion.current) return false;
     setBusy(false);
-    if (reply.ok && reply.body.tournament) setScreen({ kind: "detail", tournament: reply.body.tournament });
-    else setError(reply.ok ? "Couldn't load this tournament." : reply.error);
-  }
-  useEffect(() => { if (visible && selectedId) void open(selectedId); }, [visible, selectedId]);
+    if (reply.ok && reply.body.tournament) { setError(""); setScreen({ kind: "detail", tournament: reply.body.tournament }); return true; }
+    else { if (!reply.ok && (reply.code === "not_member" || reply.code === "signed_out")) setScreen({ kind: "code" }); setError(!reply.ok && reply.code === "not_member" ? "You no longer have access to this tournament." : silent ? "Could not refresh scores. Try again when connected." : reply.ok ? "Could not load this tournament." : reply.error); return false; }
+  }, []);
+  useEffect(() => { if (visible && selectedId) void open(selectedId); }, [visible, selectedId, open]);
+  const detailId = screen.kind === "detail" ? screen.tournament.id : null;
+  useEffect(() => {
+    if (!visible || !detailId) return;
+    const refresh = () => { if (AppState.currentState === "active" && activeReads.current === 0) void open(detailId, true); };
+    const timer = setInterval(refresh, 5000);
+    const listener = AppState.addEventListener("change", state => { if (state === "active") refresh(); });
+    return () => { clearInterval(timer); listener.remove(); };
+  }, [visible, detailId, open]);
   async function lookup() {
     if (code.length !== 6) { setError("Enter the 6-character tournament code."); return; }
     const version = ++requestVersion.current;
@@ -63,7 +75,7 @@ export function TournamentSheet({ visible, onClose, selectedId }: { visible: boo
             {screen.tournament.scoring === "Net" && <><Text style={styles.text}>Your handicap index</Text><TextInput accessibilityLabel="Handicap index" value={handicap} onChangeText={setHandicap} keyboardType="numbers-and-punctuation" placeholder="e.g. 12.3" style={styles.input} /></>}
             <Button label="Join tournament" disabled={busy} onPress={() => void join(screen.tournament)} /></>}
           <Button label="Try another code" disabled={busy} onPress={() => { setScreen({ kind: "code" }); setError(""); }} /></>}
-        {screen.kind === "detail" && <><TournamentDetail tournament={screen.tournament} busy={busy} refresh={() => void open(screen.tournament.id)} /><TournamentScoring tournament={screen.tournament} reload={() => open(screen.tournament.id)} /><TournamentSettings tournament={screen.tournament} reload={() => open(screen.tournament.id)} /></>}
+        {screen.kind === "detail" && <><TournamentDetail tournament={screen.tournament} busy={busy} refresh={() => void open(screen.tournament.id)} onOpenProfile={username => { close(); setTimeout(() => router.push({ pathname: "/profile/[username]", params: { username } }), 500); }} /><TournamentScoring tournament={screen.tournament} reload={() => open(screen.tournament.id)} /><TournamentSettings tournament={screen.tournament} reload={async () => { await open(screen.tournament.id); }} onDeleted={close} /></>}
       </ScrollView>
     </View>
   </Modal>;

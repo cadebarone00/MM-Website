@@ -6906,6 +6906,34 @@ Signed-in players can paste first-party tournament invitation links, inspect the
 - [ ] Blocked accounts (under 13 / being reviewed / closed) → their message + Sign out.
 - Claude's calls: Set a new password uses the reset code's login directly on the phone (the website's `/api/auth/reset-password` only reads website cookies), same steps: set the password, clear the "no password yet" flag via Create a password when needed, sign every device out. No separate "Email confirmed" screen: the code goes straight to Create a password. Profile Created's M grows in instead of the hand-drawn line (screenshot pass). Google / Apple on Log in wait until they're switched on and checked for the app.
 
+**2026-11-25 Expo tournament PDF management continuation**
+**Side:** App + Server
+Organizers select, upload, replace or remove Info and round pin-sheet PDFs via the existing server-authorized handler and existing public storage. Device picker, MIME/size limits, storage and authorization need real-phone verification. New app endpoint requires deployment; remaining tournament parity is outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament add-round continuation**
+**Side:** App + Server
+Organizers of a live code tournament can search existing course sources, choose a scorecard and tee and add a dated round after the last existing round, up to the existing limit of ten. Uses existing app course and tournament handlers. Full parity, deployment and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo platform tournament overview continuation**
+**Side:** App + Server
+Active and past platform and legacy tournament rows open read-only native summaries using existing roster-checked play and public-site data routes. Overview, standings, matches, players and schedule show available data; detailed event actions and parity remain outstanding. No new API routes. Device checks and deployment verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scorecard comparison continuation**
+**Side:** App
+The code tournament scoring view shows saved player and attester entries for each hole, highlights missing/mismatched scores and supports tapping a hole to edit. Existing server rules and online-only saves are unchanged. Full scoring parity, deployment and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament leaderboard scorecard continuation**
+**Side:** App
+Selecting a player in the code-tournament leaderboard displays the selected round?s saved strokes and pars and shared gross/net summary. Uses existing member or sanitized public data; no new writes. Player profile parity, device checks and deployment verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament golfer profile link continuation**
+**Side:** App
+A code-tournament member or signed-in public spectator can open a golfer?s native profile from the scorecard when a username is available; existing profile privacy checks apply. The tournament sheet closes before navigating. Modal, back behavior and privacy require phone verification; complete tournament parity remains outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament live refresh continuation**
+**Side:** App
+Open code-tournament member and public views refresh through existing endpoints every five seconds while the app is active and on foreground return; network errors preserve last data, explicit access loss removes it. Manual refresh and server-acknowledged scoring remain. Concurrent edits, visibility changes, lifecycle and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
 ## Feature: Expo app Step 5 — Leagues (owner request 2026-11-25) — FAST MODE
 
 **Side:** App (uses the existing `/api/leagues*` routes, which accept the app's Bearer login; shared rules stay in `lib/platform/leagues.ts`; no SQL).
@@ -6932,3 +6960,31 @@ Signed-in players can paste first-party tournament invitation links, inspect the
 - [ ] Pairs: on/off, format (+ blurb), Gross/Net, winners segments, how pairs are drawn (+ blurb), Draw / Re-draw, Lock, Unlock to re-draw (before scores), the pairs list, late-joiner note.
 - [ ] Copy this league (new date) → opens the copy; End league (asks; scores lock); Delete league (asks) → back to Leagues.
 - Claude's call: emailing the code stays on the website (Share covers the phone).
+
+**2026-11-25 Expo tournament player invitations continuation**
+**Side:** App + Server
+Organizers can enter and validate player names, emails and net handicaps, then explicitly send individual invitations through the existing organizer-authorized service. The screen reports email delivery and permits copying or sharing returned individual links. CSV/Excel import, provider configuration, deployment and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament invitation file preview continuation**
+**Side:** App + Server
+Organizers can choose a CSV or Excel file up to 5 MB, send it to an organizer-authorized in-memory preview using existing spreadsheet and invitation validation, review row problems and add valid rows to the invitation list. Sending remains a separate action; the preview intentionally stores no file. Server deployment, file-picker and privacy checks on a phone and full tournament parity remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament tee-sheet presets continuation**
+**Side:** App
+Organizers can apply first tee/interval and start patterns, randomize or pair by prior scores using existing shared rules. These are drafts until saved; changed player lists block saving until the round is reopened. Existing attestation assignments follow tee groups. Concurrent-edit handling and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament deletion continuation**
+**Side:** App + Server
+Organizers can confirm deletion of a code tournament via the existing organizer-authorized handler; related database records are removed and existing server code attempts PDF cleanup. Accounts remain. PDF cleanup failures, phone confirmation and deployment remain unverified. No tournament was deleted in testing. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament live and TV sharing continuation**
+**Side:** App
+Organizer settings show permitted existing live and TV links for public or link-only code tournaments, with open/copy/share and TV board selection. Private events do not show links; server visibility enforcement remains authoritative. Deployment, device checks, automatic app links and full tournament parity remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scoring refresh safeguards**
+**Side:** App
+Bind unsaved scores to tournament, round, hole and player; reject a draft after a refreshed assignment changes. Block tee-sheet drafts when a refreshed saved sheet changed and require reopening. These checks are not atomic server-side concurrency protection; verify on a phone with simultaneous edits. No API or database changes. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament score save recovery**
+**Side:** App
+After an uncertain score write or failed follow-up read, scoring writes are blocked until an explicit successful refresh; the uncertain entry remains visible for review. A confirmed write clears the entry. Online-only, server-side atomic conflict handling and real-phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.

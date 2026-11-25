@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInpu
 import * as Clipboard from "expo-clipboard";
 import type { CodeRoundSetup } from "@/lib/platform/codeTournaments";
 import type { ScoringCourse } from "@/lib/platform/personalRound";
+import { TournamentInvites } from "~/components/tourneys/TournamentInvites.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { apiJson } from "~/lib/api.ts";
 import { courseLine, type CourseResult } from "~/lib/courses.ts";
@@ -56,7 +57,7 @@ export function CreateTournament({ visible, close, onOpen }: { visible: boolean;
   return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={finish}><View style={styles.page}>
     <View style={styles.header}><Text style={styles.title}>{made ? "Tournament created" : "Create a Tournament"}</Text><SheetClose onPress={finish} /></View>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {made ? <><Text style={styles.text}>{name}</Text><Text style={styles.title}>{shownJoinCode(made.code)}</Text><Button label="Copy code" disabled={busy} onPress={() => { void Clipboard.setStringAsync(shownJoinCode(made.code)).then(() => setCopyMessage("Code copied."), () => setCopyMessage("Couldn't copy code.")); }} /><Button label="Share code" disabled={busy} onPress={() => { void Share.share({ message: `Join ${name} on The Maroon: open Tourneys and enter code ${shownJoinCode(made.code)}` }).catch(() => setCopyMessage("Couldn't share code.")); }} />{copyMessage ? <Text style={styles.text}>{copyMessage}</Text> : null}<Button label="Open tournament" disabled={busy} onPress={() => { const id = made.id; finish(); onOpen(id); }} /></> : <>
+      {made ? <><Text style={styles.text}>{name}</Text><Text style={styles.title}>{shownJoinCode(made.code)}</Text><Button label="Copy code" disabled={busy} onPress={() => { void Clipboard.setStringAsync(shownJoinCode(made.code)).then(() => setCopyMessage("Code copied."), () => setCopyMessage("Couldn't copy code.")); }} /><Button label="Share code" disabled={busy} onPress={() => { void Share.share({ message: `Join ${name} on The Maroon: open Tourneys and enter code ${shownJoinCode(made.code)}` }).catch(() => setCopyMessage("Couldn't share code.")); }} />{copyMessage ? <Text style={styles.text}>{copyMessage}</Text> : null}<TournamentInvites tournamentId={made.id} net={scoring === "Net"} /><Button label="Open tournament" disabled={busy} onPress={() => { const id = made.id; finish(); onOpen(id); }} /></> : <>
         <Text style={styles.text}>Tournament name</Text><TextInput accessibilityLabel="Tournament name" value={name} onChangeText={setName} maxLength={60} placeholder="Tournament name" style={styles.input} />
         <Text style={styles.text}>Scoring</Text><View style={styles.buttons}>{(["Gross", "Net"] as const).map(value => <Button key={value} label={value} selected={scoring === value} disabled={busy} onPress={() => setScoring(value)} />)}</View>
         <View style={styles.switch}><Text style={styles.text}>I'm playing</Text><Switch accessibilityLabel="I'm playing" value={plays} onValueChange={setPlays} /></View>

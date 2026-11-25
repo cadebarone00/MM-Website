@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { publicSection, type CodeTournament, type PublicCodeTournament } from "@/lib/platform/codeTournaments";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { TournamentDetail } from "~/components/tourneys/TournamentDetail.tsx";
@@ -17,6 +18,7 @@ export function PublicTournaments() {
   const [detailError, setDetailError] = useState("");
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
+  const activeReads = useRef(0);
   const validDate = !date || (/^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`)) && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date);
   useEffect(() => {
     if (!validDate) return;
@@ -28,14 +30,22 @@ export function PublicTournaments() {
     }); }, query ? 300 : 0);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [query, date, retry, validDate]);
-  const open = useCallback(async (id: string) => {
-    const version = ++request.current; setBusy(true); setDetailError("");
+  const open = useCallback(async (id: string, silent = false) => {
+    const version = ++request.current; activeReads.current++; if (!silent) setBusy(true);
     const reply = await apiJson<{ tournament: CodeTournament }>(`/api/app/code-tournaments/public/${encodeURIComponent(id)}`);
+    activeReads.current--;
     if (version !== request.current) return;
     setBusy(false);
-    if (reply.ok && reply.body.tournament) setDetail(reply.body.tournament);
-    else setDetailError(reply.ok ? "Couldn't load this tournament." : reply.error);
+    if (reply.ok && reply.body.tournament) { setDetailError(""); setDetail(reply.body.tournament); }
+    else { if (!reply.ok && (reply.code === "missing" || reply.code === "signed_out")) setDetail(null); setDetailError(!reply.ok && reply.code === "missing" ? "This tournament is no longer available." : silent ? "Could not refresh scores. Try again when connected." : reply.ok ? "Could not load this tournament." : reply.error); }
   }, []);
+  useEffect(() => {
+    if (!selected || !detail) return;
+    const refresh = () => { if (AppState.currentState === "active" && activeReads.current === 0) void open(selected, true); };
+    const timer = setInterval(refresh, 5000);
+    const listener = AppState.addEventListener("change", state => { if (state === "active") refresh(); });
+    return () => { clearInterval(timer); listener.remove(); };
+  }, [selected, detail?.id, open]);
   function close() { request.current++; setSelected(null); setDetail(null); setDetailError(""); setBusy(false); }
   const today = new Date().toLocaleDateString("en-CA");
   return <View style={styles.content}>
@@ -46,7 +56,7 @@ export function PublicTournaments() {
       const items = results.kind === "ready" ? results.items.filter(t => publicSection(t, today) === section) : [];
       return <View key={section} style={styles.group}><Text style={styles.subheading}>{section} Tournaments</Text>{results.kind === "loading" ? <Text style={styles.text}>Loading…</Text> : !items.length ? <Text style={styles.text}>No {section.toLowerCase()} public tournaments found.</Text> : items.map(t => <Pressable accessibilityRole="button" key={t.id} onPress={() => { setSelected(t.id); void open(t.id); }} style={styles.row}><Text style={styles.name}>{t.name}</Text><Text style={styles.meta}>{[t.course, t.place, t.firstDate, `${t.playerCount} players`, t.scoring].filter(Boolean).join(" · ")}</Text></Pressable>)}</View>;
     })}
-    <Modal visible={selected !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}><View style={styles.sheet}><View style={styles.header}><Text style={styles.title}>{detail?.name ?? "Tournament"}</Text><SheetClose onPress={close} /></View><ScrollView contentContainerStyle={styles.sheetContent}>{busy && <Text style={styles.text}>Loading…</Text>}{detailError ? <><Text style={styles.text}>{detailError}</Text>{selected && <Pressable accessibilityRole="button" onPress={() => void open(selected)}><Text style={styles.link}>Try again</Text></Pressable>}</> : null}{detail && selected && <TournamentDetail tournament={detail} spectator busy={busy} refresh={() => void open(selected)} />}</ScrollView></View></Modal>
+    <Modal visible={selected !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}><View style={styles.sheet}><View style={styles.header}><Text style={styles.title}>{detail?.name ?? "Tournament"}</Text><SheetClose onPress={close} /></View><ScrollView contentContainerStyle={styles.sheetContent}>{busy && <Text style={styles.text}>Loading…</Text>}{detailError ? <><Text style={styles.text}>{detailError}</Text>{selected && <Pressable accessibilityRole="button" onPress={() => void open(selected)}><Text style={styles.link}>Try again</Text></Pressable>}</> : null}{detail && selected && <TournamentDetail tournament={detail} spectator busy={busy} refresh={() => void open(selected)} onOpenProfile={username => { close(); setTimeout(() => router.push({ pathname: "/profile/[username]", params: { username } }), 500); }} />}</ScrollView></View></Modal>
   </View>;
 }
 const styles = StyleSheet.create({

@@ -1,1 +1,1 @@
-﻿export { GET, POST } from "@/app/api/code-tournaments/[id]/route";
+﻿export { GET, POST, DELETE } from "@/app/api/code-tournaments/[id]/route";
