@@ -6807,3 +6807,17 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 - [ ] Test shared calculations and both phones: no competition / each competition type, no seat, before / during / after a round, each simulator conditional, mismatches, offline edits, reconnect, stale versions, conflicts, wrong account, submission, corrections and denied access. Check every line on Cade's iPhone alongside the current app; run mobile `npm test`, `npx tsc --noEmit`, `npx expo export --platform ios`, relevant website tests and workflow checks. Commit only our files; never commit `mobile/.env`.
 
 **Questions for Cade:** Should the scoring sheet keep two players across, or put one player on each row? The current website's Predict book is device-only; this checklist retains that behavior subject to review. OK?
+
+## Feature: Expo app Step 3 — Profile (owner request 2026-11-25) — FAST MODE (owner: build without stopping; checklists are the record; look fixed later with screenshots)
+
+**Side:** App (`mobile/`). Server unchanged (every route already takes the app login). Cam builds Golf Trips in parallel: this step stays out of `mobile/src/app/trips/`, `mobile/src/components/trips/`, `mobile/src/lib/trip*`.
+
+**Parts (each committed on its own):** 3a My profile · 3b Edit profile + photo · 3c Friends, Find golfers, someone else's profile, their friends, Compare · 3d Settings, Delete account, Content team.
+
+### 3a checklist — My profile (from `ProfileView`, `ProfileHistory`, `PlayerRoundsList`, `ProfileRoundSheet`, `ProfileStats`; data `GET /api/app/profile`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Maroon top: pencil (Edit, top left, when allowed), search with the friend-request badge, gear (Settings); photo or gold-ring initials; name, @username; Friends (tap → Friends) · Rounds · Handicap; bio; up to 4 socials (2 × 2, open in the browser).
+- [ ] Tabs Overview · Rounds · Stats on the cream body.
+- [ ] Overview: Tournaments (year · name, team, Captain; legacy years) and Golf trips (name, destination · dates · Past), each with its empty / can't-load line.
+- [ ] Rounds: newest first; the P / T / L / C letter; course; date (+ the trip / league / tourney name); score; the differential, "9+9", "Waiting for 9" or "Not counted" (shared `nineHolePairs`). Tap → the round sheet: scorecard (OUT / IN / TOT, birdie circles, bogey boxes), Round to par, Score, Handicap differential.
+- [ ] Stats (shared `roundStats`): Handicap · Scoring Avg. · Low Score; Scoring by par; Tee to green meters (Fairways, GIR, Scrambling), putting; Most played. Empty: "Stats will show here once you finish rounds."
+- [ ] Codex/Claude's calls: the old Maroon handicap history (legacy `HandicapHome`) and the dev-only "sample stats" stay website-only; Compare comes with 3c.

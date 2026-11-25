@@ -1,82 +1,72 @@
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Avatar } from "~/components/Avatar.tsx";
-import { Button } from "~/components/Button.tsx";
-import { apiGet } from "~/lib/api.ts";
-import { supabase } from "~/lib/supabase.ts";
+import { ProfileHero, type ProfileTab } from "~/components/profile/ProfileHero.tsx";
+import { OverviewTab, RoundsTab, StatsTab } from "~/components/profile/ProfileTabs.tsx";
+import { StateSlot } from "~/components/StateSlot.tsx";
+import { apiGet, apiJson } from "~/lib/api.ts";
+import type { MyProfileReply, ProfileModel } from "~/lib/profileTypes.ts";
+import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
 
-/** What /api/app/profile (view=profile) sends back — only the parts this screen uses. */
-type ProfileReply = {
-  page?: { status: "ok"; profile: { identity: { displayName: string; username: string; initials: string } } }
-    | { status: "no-profile"; displayName: string } | { status: "signed-out" };
-};
+type Load = { status: "loading" } | { status: "ok"; profile: ProfileModel; friends: number | null } | { status: "setup"; name: string } | { status: "error"; message: string };
 
-type State =
-  | { kind: "loading" }
-  | { kind: "error"; message: string }
-  | { kind: "ok"; name: string; username: string | null; initials: string };
-
-/** Step 1 proof: loads your real profile from the server with the app's own login. */
+/**
+ * My profile (website ProfileView; project_specs.md "Expo app Step 3 — Profile", part 3a): the maroon top, then
+ * Overview · Rounds · Stats. Loads again whenever the tab is shown; pull down to refresh.
+ */
 export default function Profile() {
-  const [state, setState] = useState<State>({ kind: "loading" });
+  useLightStatusBar();
+  const [load, setLoad] = useState<Load>({ status: "loading" });
+  const [requests, setRequests] = useState(0);
+  const [tab, setTab] = useState<ProfileTab>("overview");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    setState({ kind: "loading" });
-    const reply = await apiGet<ProfileReply>("/api/app/profile");
-    if (!reply.ok) return setState({ kind: "error", message: reply.error });
+  const fetchProfile = useCallback(async () => {
+    const [reply, friendReqs] = await Promise.all([apiGet<MyProfileReply>("/api/app/profile"), apiJson<{ count?: number }>("/api/profile/friends")]);
+    if (friendReqs.ok) setRequests(Number(friendReqs.body.count) || 0);
+    if (!reply.ok) { setLoad({ status: "error", message: reply.error }); return; }
     const page = reply.data?.page;
-    if (page?.status === "ok" && page.profile?.identity) {
-      const { displayName, username, initials } = page.profile.identity;
-      return setState({ kind: "ok", name: displayName, username, initials });
-    }
-    if (page?.status === "no-profile") {
-      return setState({ kind: "ok", name: page.displayName || "Finish setting up your profile", username: null, initials: "?" });
-    }
-    setState({ kind: "error", message: "You're signed out. Sign in again." });
+    if (page?.status === "ok") setLoad({ status: "ok", profile: page.profile, friends: reply.data.friends ?? null });
+    else if (page?.status === "no-profile") setLoad({ status: "setup", name: page.displayName });
+    else setLoad({ status: "error", message: "You're signed out. Sign in again." });
   }, []);
+  useFocusEffect(useCallback(() => { void fetchProfile(); }, [fetchProfile]));
+  const refresh = async () => { setRefreshing(true); await fetchProfile(); setRefreshing(false); };
 
-  useEffect(() => { load(); }, [load]);
+  if (load.status !== "ok") {
+    return (
+      <SafeAreaView style={styles.plain} edges={["top"]}>
+        <StateSlot height={240} tone="dark" state={load.status === "loading" ? { kind: "loading" }
+          : load.status === "setup" ? { kind: "empty", message: "Finish setting up your profile on the website to see it here." }
+          : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchProfile(); } }} />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.page} edges={["top"]}>
-      <Text style={styles.heading}>Profile</Text>
-      {/* Fixed height so the card doesn't jump between loading, error and loaded. */}
-      <View style={styles.card}>
-        {state.kind === "loading" && <ActivityIndicator color={colors.maroon700} />}
-        {state.kind === "error" && (
-          <>
-            <Text style={styles.error}>{state.message}</Text>
-            <Pressable onPress={load} style={styles.retry}><Text style={styles.retryText}>Try again</Text></Pressable>
-          </>
-        )}
-        {state.kind === "ok" && (
-          <>
-            <Avatar name={state.name} size={72} onLight />
-            <Text style={styles.name}>{state.name}</Text>
-            {state.username && <Text style={styles.username}>@{state.username}</Text>}
-          </>
-        )}
-      </View>
-      <View style={styles.actions}>
-        <Button label="Sign out" variant="dark" onPress={() => { supabase.auth.signOut(); }} />
-        {__DEV__ && <Button label="Building blocks (dev)" variant="secondary" onPress={() => router.push("/dev/blocks")} />}
-      </View>
-    </SafeAreaView>
+    <View style={styles.page}>
+      <SafeAreaView edges={["top"]} style={styles.top} />
+      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
+        <ProfileHero profile={load.profile} friends={load.friends} requests={requests} tab={tab} onTab={setTab}
+          onFriends={() => router.push({ pathname: "/profile/search", params: { tab: "friends" } })} />
+        <View style={styles.body}>
+          {tab === "overview" && <OverviewTab profile={load.profile} />}
+          {tab === "rounds" && <RoundsTab profile={load.profile} />}
+          {tab === "stats" && <StatsTab profile={load.profile} />}
+        </View>
+        {__DEV__ && <Text style={styles.dev} onPress={() => router.push("/dev/blocks")}>Building blocks (dev)</Text>}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.cream, paddingHorizontal: gutter },
-  heading: { fontFamily: fonts.bold, fontSize: 30, color: colors.ink, marginTop: 12, marginBottom: 16 },
-  card: { height: 200, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line,
-    alignItems: "center", justifyContent: "center", padding: gutter, gap: 6 },
-  name: { fontFamily: fonts.bold, fontSize: 22, color: colors.ink, marginTop: 6 },
-  username: { fontFamily: fonts.regular, fontSize: 16, color: colors.inkMuted },
-  error: { fontFamily: fonts.regular, fontSize: 16, color: colors.error, textAlign: "center" },
-  retry: { paddingVertical: 8, paddingHorizontal: 16 },
-  retryText: { fontFamily: fonts.semibold, fontSize: 16, color: colors.maroon700 },
-  actions: { marginTop: 24, gap: 10 },
+  page: { flex: 1, backgroundColor: colors.cream },
+  top: { backgroundColor: colors.maroon900 },
+  plain: { flex: 1, backgroundColor: colors.maroon900, justifyContent: "center", paddingHorizontal: gutter },
+  content: { paddingBottom: 48 },
+  body: { paddingHorizontal: gutter, paddingTop: 16 },
+  dev: { marginTop: 24, textAlign: "center", fontFamily: fonts.semibold, fontSize: 14, color: colors.maroon700, textDecorationLine: "underline" },
 });

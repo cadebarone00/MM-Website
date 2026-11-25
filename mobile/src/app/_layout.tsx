@@ -35,6 +35,10 @@ function Screens() {
           <Stack.Screen name="range" />
           <Stack.Screen name="range/trip" options={sheetOptions} />
           <Stack.Screen name="range/post/[id]" />
+          {/* Profile (project_specs.md "Expo app Step 3 — Profile"). */}
+          <Stack.Screen name="profile/edit" />
+          <Stack.Screen name="profile/search" />
+          <Stack.Screen name="settings" />
           {/* Golf Trips (project_specs.md "Expo app Step 2", part 2a). */}
           <Stack.Screen name="trips/join" />
           <Stack.Screen name="trips/invite" />
