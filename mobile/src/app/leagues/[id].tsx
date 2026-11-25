@@ -5,11 +5,13 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import { cardOf, groupOrder, type League, type LeagueGroup } from "@/lib/platform/leagues";
 import type { HoleInput } from "@/lib/platform/roundGames";
+import { LeagueSettings } from "~/components/leagues/LeagueSettings.tsx";
 import { GroupGameView, groupGame, LeaderboardView, PairsView, SkinsView, TeeTimesView } from "~/components/leagues/LeagueViews.tsx";
 import { ScoringSheet } from "~/components/round/ScoringSheet.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { firstName } from "~/lib/leaguesUi.ts";
-import { useLeague, type Act } from "~/lib/useLeague.ts";
+import { apiJson } from "~/lib/api.ts";
+import { postLeague, useLeague, type Act } from "~/lib/useLeague.ts";
 import { emptyStats } from "~/lib/useRoundScoring.ts";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
@@ -24,7 +26,8 @@ type Section = "Leaderboard" | "Skins" | "Pairs" | "Group" | "Tee Times";
 export default function LeagueScreen() {
   useLightStatusBar();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { league, meId, problem, load, act } = useLeague(id);
+  const { league, meId, problem, setProblem, load, act } = useLeague(id);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [section, setSection] = useState<Section>("Leaderboard");
   const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
@@ -48,7 +51,7 @@ export default function LeagueScreen() {
 
   return (
     <View style={styles.page}>
-      <SafeAreaView edges={["top"]}><TopBar /></SafeAreaView>
+      <SafeAreaView edges={["top"]}><TopBar onSettings={isOrganizer ? () => setSettingsOpen(true) : undefined} /></SafeAreaView>
       <ScrollView contentContainerStyle={[styles.content, scorer && styles.roomForSheet]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
         <Text style={styles.name} accessibilityRole="header">{league.name}</Text>
         <Text style={styles.course}>{`${league.course.name}${live ? "" : " · Ended"}`}</Text>
@@ -71,16 +74,43 @@ export default function LeagueScreen() {
         )}
       </ScrollView>
       {scorer && <GroupScoring key={scorer.number} league={league} group={scorer} act={act} />}
+      {isOrganizer && (
+        <LeagueSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} league={league} problem={problem} onSettings={settings} act={act}
+          onLive={async (next) => {
+            const reply = await postLeague(id, { action: "visibility", ...next });
+            setProblem(reply.ok ? null : reply.message ?? "Couldn't change who can watch. Try again.");
+            void load(); return reply;
+          }}
+          onCopy={async (date) => {
+            const reply = await postLeague(id, { action: "copy", date });
+            if (!reply.ok || typeof reply.id !== "string") return reply.message ?? "Couldn't copy the league. Try again.";
+            setSettingsOpen(false);
+            router.replace({ pathname: "/leagues/[id]", params: { id: reply.id } });
+            return null;
+          }}
+          onDelete={async () => {
+            const reply = await apiJson(`/api/leagues/${encodeURIComponent(id)}`, { method: "DELETE" });
+            if (!reply.ok) return reply.error || "Couldn't delete the league. Try again.";
+            setSettingsOpen(false);
+            router.back();
+            return null;
+          }} />
+      )}
     </View>
   );
 }
 
-function TopBar() {
+function TopBar({ onSettings }: { onSettings?: () => void }) {
   return (
     <View style={styles.topBar}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back to Leagues" onPress={() => router.back()} style={styles.icon}>
         <SymbolView name="chevron.left" size={22} tintColor={colors.cream} />
       </Pressable>
+      {onSettings && (
+        <Pressable accessibilityRole="button" accessibilityLabel="League settings" onPress={onSettings} style={styles.icon}>
+          <SymbolView name="gearshape" size={22} tintColor={colors.cream} />
+        </Pressable>
+      )}
     </View>
   );
 }

@@ -49,3 +49,25 @@ export function leagueCourseFrom(course: ScoringCourse, tee: number): LeagueCour
   const picked = course.tees[tee] ?? null;
   return { ref: course.ref, name: course.name, place: course.place || null, par: course.par, strokeIndex, tee: picked && { name: picked.name, rating: picked.rating, slope: picked.slope } };
 }
+
+/** "08:30" → that time today (for the time wheel). Bad text → 8:00. */
+export function timeDate(text: string): Date {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(text);
+  const day = new Date();
+  day.setHours(match ? Number(match[1]) : 8, match ? Number(match[2]) : 0, 0, 0);
+  return day;
+}
+/** A picked time as the tee sheet stores it ("08:30"). */
+export const timeText = (date: Date) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+type DraftGroup = { time: string; hole: number; scorer: string; players: string[] };
+/** Tee Times editor: move a player to group `to` (an index; groups.length = a new group), empty groups dropped and
+ *  each group's scorer kept only while they're still in it (website TeeTimesEditor.move + save). */
+export function movePlayer(groups: DraftGroup[], id: string, to: number, firstTime: string): DraftGroup[] {
+  const next = groups.map((g) => ({ ...g, players: g.players.filter((x) => x !== id) }));
+  if (to >= next.length) next.push({ time: next.at(-1)?.time ?? firstTime, hole: 1, scorer: id, players: [id] });
+  else next[to] = { ...next[to], players: [...next[to].players, id] };
+  return cleanGroups(next);
+}
+export const cleanGroups = (groups: DraftGroup[]): DraftGroup[] =>
+  groups.filter((g) => g.players.length).map((g) => ({ ...g, scorer: g.players.includes(g.scorer) ? g.scorer : g.players[0] }));

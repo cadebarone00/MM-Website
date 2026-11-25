@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import assert from "node:assert/strict";
 import test from "node:test";
-import { changeKey, dayLabel, firstName, groupProgress, handicapOk, handicapValue, leagueCourseFrom, placeLabel, playersText } from "./leaguesUi.ts";
+import { changeKey, dayLabel, firstName, groupProgress, handicapOk, handicapValue, leagueCourseFrom, movePlayer, placeLabel, playersText, timeDate, timeText } from "./leaguesUi.ts";
 
 test("handicaps: -10 to 54, blank is fine", () => {
   assert.equal(handicapValue("8.4"), 8.4);
@@ -42,4 +42,16 @@ test("league course: 18 holes only, tee kept, stroke index only when complete", 
   assert.equal(leagueCourseFrom({ ...course, strokeIndex: [null, ...par.slice(1)] }, 0)?.strokeIndex, null);
   assert.equal(leagueCourseFrom({ ...course, tees: [] }, 0)?.tee, null);
   assert.equal(leagueCourseFrom({ ...course, par: par.slice(0, 9) }, 0), null);
+});
+
+test("tee sheet times", () => {
+  assert.equal(timeText(timeDate("07:05")), "07:05");
+  assert.equal(timeText(timeDate("junk")), "08:00");
+});
+
+test("moving players keeps groups tidy", () => {
+  const groups = [{ time: "08:00", hole: 1, scorer: "a", players: ["a", "b"] }, { time: "08:10", hole: 1, scorer: "c", players: ["c"] }];
+  assert.deepEqual(movePlayer(groups, "c", 0, "08:00"), [{ time: "08:00", hole: 1, scorer: "a", players: ["a", "b", "c"] }]);
+  assert.deepEqual(movePlayer(groups, "a", 1, "08:00"), [{ time: "08:00", hole: 1, scorer: "b", players: ["b"] }, { time: "08:10", hole: 1, scorer: "c", players: ["c", "a"] }]);
+  assert.deepEqual(movePlayer(groups, "d", 2, "08:00").at(-1), { time: "08:10", hole: 1, scorer: "d", players: ["d"] });
 });
