@@ -9,6 +9,7 @@ import { Card } from "~/components/Card.tsx";
 import { PageHeader } from "~/components/PageHeader.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { TripHome } from "~/components/trips/TripHome.tsx";
+import { TripGolf } from "~/components/trips/TripGolf.tsx";
 import { TripChat } from "~/components/trips/TripChat.tsx";
 import { RatePlaces, TripTips } from "~/components/trips/TripExtras.tsx";
 import { TripFeed } from "~/components/trips/TripFeed.tsx";
@@ -20,8 +21,7 @@ import { useInviteLink, useTripMomentum, useTripPage } from "~/lib/tripPage.ts";
 type Tab = (typeof GOLF_TRIP_TABS)[number];
 
 /** Where a later Golf Trips part picks up (a placeholder until then, so nothing goes nowhere). */
-const LATER: Record<Exclude<Tab, "Home">, { part: string; note: string }> = {
-  Golf: { part: "2d", note: "The Golf tab (Overview, Board, matches, games, stats, Predict) and trip scoring." },
+const LATER: Record<Exclude<Tab, "Home" | "Golf">, { part: string; note: string }> = {
   Venue: { part: "2f", note: "The Venue tab (places nearby, add to the itinerary)." },
   Itinerary: { part: "2f", note: "The day-by-day Itinerary, adding travel and plans." },
 };
@@ -76,6 +76,10 @@ export default function TripScreen() {
             onRoom={(which) => openPart(which === "selection" ? "Selection Room" : which === "robin" ? "Round robin" : "Draft Room", title, "2e",
               which === "selection" ? "Match Selection (picking each round's matches)." : which === "robin" ? "Entering round-robin results." : "The Team Draft room.")} />
         </ScrollView>
+      ) : tab === "Golf" ? (
+        <TripGolf match={view.match} schedule={view.draft} structure={view.structure} viewerName={view.viewerName} roundLive={view.roundLive}
+          playerStats={live!.setupSnapshot.values.playerStats === true}
+          predictOn={(live!.setupSnapshot.values.predict as { on?: boolean } | undefined)?.on !== false} />
       ) : (
         <View style={styles.gutter}>
           <Card tone="dark" style={{ marginTop: 16 }}>

@@ -11,6 +11,9 @@ import { homeRosterFull } from "./tapIn";
 import type { MomRound } from "./momNotifications";
 import type { RoundCompSettings } from "./roundCompetition";
 import { savedTripPresentation } from "./savedTripPresentation";
+import { skinsRoundsFrom } from "./tripSkins";
+import type { GolfMatchPreview } from "./golfTripPreviewFixture";
+import type { CompetitionStructure } from "./golfTripNavigation";
 import type { TripSetupSnapshot } from "./savedTripSetup";
 import type { SavedTravelSnapshot } from "./savedTripTravel";
 import { tapInPath } from "./tapIn";
@@ -95,6 +98,8 @@ export type TripHomeView = {
   /** "How was yesterday?": my recent going plans at Venue places, to rate (the server drops ones already rated or skipped). */
   rateVisits: { placeId: string; name: string; when: string; visitedOn: string }[];
   draft: GolfTripDraft; rounds: MomRound[];
+  /** The Golf tab (part 2d): the trip's scores and matches, which competition it has, who I am, and whether today's round is live. */
+  match: GolfMatchPreview; structure: CompetitionStructure; viewerName: string | null; roundLive: boolean;
 };
 
 /** Everything on Home, from the trip page data. `now` = "YYYY-MM-DDTHH:mm" (device local, read once when Home opens). */
@@ -106,7 +111,8 @@ export function tripHomeView(data: TripHomeData, now: string, momentum: Momentum
   const accepted = savedTrip.members.filter((m) => m.profileId && m.invitationStatus === "accepted");
   const tripRoundNumbers = savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber }));
   const match = { ...savedTripPresentation(savedTrip, live), roundScoring: roundScoringFrom(tripRoundNumbers, setup.compFormats as Record<string, RoundCompSettings> | undefined,
-    setup.compRounds as Record<string, boolean> | undefined, Number(setup.playerTotal) || accepted.length) };
+    setup.compRounds as Record<string, boolean> | undefined, Number(setup.playerTotal) || accepted.length),
+    skins: skinsRoundsFrom(tripRoundNumbers, setup, accepted.map((m) => m.displayName)) };
   const types = setup.localCompetitionType as { individual: string | null; team: string | null } | undefined;
   const competitive = draft.includesTournament === "yes";
   const scoringMethod = match.formatDef?.scoringMethod;
@@ -169,6 +175,6 @@ export function tripHomeView(data: TripHomeData, now: string, momentum: Momentum
       .map((item) => ({ placeId: item.details.placeId!, name: item.details.name || "Plan", startsAt: item.startsAt,
         when: `${itineraryWeekday(item.startsAt)} · ${itineraryTime(item.startsAt)}`, visitedOn: item.startsAt.slice(0, 10) })), now.slice(0, 10), [], RATE_WITHIN_DAYS) : [],
     competition, competitionNote: competitive ? "Team drafts, matches and skins will show here." : "No competition",
-    draft, rounds,
+    draft, rounds, match, structure, viewerName, roundLive,
   };
 }

@@ -7163,7 +7163,7 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Questions for Cade:** The current saved-trip page does not show the four expandable sections and has no weather source; feed and chat do not actually send or save anything. Is the proposed treatment above OK for 2c?
 
-### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; APPROVED by Cam 2026-11-25 (Cade not on 2d; scoring sheet stays two across; Predict moves to the account: see "Predict follows the account" below, its own approval). Built in slices: 1 Golf tab views, 2 Games / Stats / Predict, 3 scoring, 4 corrections
+### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; APPROVED by Cam 2026-11-25 (Cade not on 2d; scoring sheet stays two across; Predict moves to the account: see "Predict follows the account" below, its own approval). Built in slices: 1a Golf tab views BUILT 2026-11-25, awaiting phone check (golf-day board with collapse remembered, Board · Games · Stats · Predict pill, Team / Indi, round pills + course / format, standings-after notice, leaderboard with Gross / Net + skins, tee sheet, team points + TO WIN, the round's matches with status; shared rules in lib/platform/golfTab.ts, used by the website too; Games / Stats / Predict show a next-step note); 1b BUILT 2026-11-25, awaiting phone check: match detail (status, hole-by-hole match scorecard, chance to win after each hole as bars, stats when on), player card from the leaderboard (photo, POS / TOT / THRU, this round's card; the website's round-by-round history and trip stats come with Stats in slice 2), team points box opens points by player (shared playerPoints); 2 Games / Stats / Predict (+ Predict on the account); 3 scoring; 4 corrections
 **Side:** App + Server + shared `lib/` where needed. Cade requested starting 2d now; 2c remains incomplete and both parts still need phone checks.
 
 **Codex's call:** Keep the existing two-across scoring layout for now. Keep Predict's existing device-local behavior, subject to its outstanding compliance review, and do not expose unfinished scoring as complete.
@@ -7197,7 +7197,7 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Questions for Cade:** Should the scoring sheet keep two players across, or put one player on each row? The current website's Predict book is device-only; this checklist retains that behavior subject to review. OK?
 
-### Predict follows the account (owner request 2026-11-25) — SPEC, AWAITING APPROVAL (nothing built)
+### Predict follows the account (owner request 2026-11-25) — APPROVED 2026-11-25 (built in 2d slice 2)
 
 **Side:** Server + App + Website (+ one new Supabase table the owner runs).
 

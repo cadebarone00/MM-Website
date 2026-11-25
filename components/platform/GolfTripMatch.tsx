@@ -1,4 +1,6 @@
 import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
+import { holesDone, pairingStatus, playerPoints, parColor, parLabel, roundDay, sideScore, teeSheet } from "@/lib/platform/golfTab";
+export { roundDay };
 import { SheetClose } from "@/components/ui/SheetClose";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { nonIndividualRound } from "@/lib/platform/nonIndividualRound";
@@ -90,30 +92,8 @@ export function GolfTripMatch({ match: fullMatch, viewRound: shownRound, roundSt
   </div>;
 }
 
-/**
- * The match score a side shows at the inner middle of its half (its lead fill): the leader's "2 UP" while playing or its
- * result ("4&3", "1 UP") once over; "AS" on both sides when neither leads. Nothing before the match starts.
- */
-function sideScore(status: ReturnType<typeof matchStatus>, standing: GolfMatchStanding, side: "left" | "right"): string {
-  if (status.kind === "tee" || (status.kind === "thru" && status.holes === 0)) return "";
-  if (status.kind === "final") return status.text === "AS" ? "AS" : standing?.leader === side ? status.text : "";
-  return standing?.leader === null ? "AS" : standing?.leader === side ? `${standing.up} UP` : "";
-}
 
-/** A "Thru 12" / "F" as holes done (F = 18; anything else = 0). */
-function holesDone(thru: string | undefined): number {
-  return thru === "F" ? 18 : Number(/^Thru (\d+)$/.exec(thru ?? "")?.[1]) || 0;
-}
 
-/**
- * A match's status for its middle: the last hole every player in it has finished (so THRU only moves once both sides
- * have the hole), the left side's tee time before it starts, THRU once `started` even with no hole done.
- */
-function pairingStatus(left: GolfMatchCompetitor, right: GolfMatchCompetitor | undefined, standing: GolfMatchStanding, result: string | undefined, started: boolean) {
-  const players = [left, right].flatMap(side => !side ? [] : side.thru ? [side.thru] : side.golfers.map(golfer => golfer.thru));
-  const holes = players.length ? Math.min(...players.map(holesDone)) : 0;
-  return matchStatus({ thru: holes >= 18 ? "F" : holes ? `Thru ${holes}` : "", teeTime: left.teeTime || left.golfers[0]?.teeTime, standing, result, started });
-}
 
 /** One competitor side's half of a match row: player(s) against its edge of the screen, the match score toward center. */
 function MatchSide({ competitor, side, standing, score }: { competitor: GolfMatchCompetitor | GolfMatchGolfer; side: "left" | "right"; standing: GolfMatchStanding; score: string }) {
@@ -435,18 +415,7 @@ function PlayerTripStats({ name, stats }: { name: string; stats?: TripStatsView 
   </section>;
 }
 
-function parLabel(score: string): string {
-  const value = score.trim() === "E" ? 0 : Number(score);
-  if (!score.trim() || !Number.isFinite(value)) return score;
-  return value === 0 ? "E" : value > 0 ? `+${value}` : String(value);
-}
 
-function parColor(score: string): string | undefined {
-  if (score === "E") return "even";
-  if (score.startsWith("-")) return "under";
-  if (score.startsWith("+")) return "over";
-  return undefined;
-}
 
 /**
  * Above the Golf slide tabs: the Match box for the featured matchup (first pair).
@@ -621,27 +590,6 @@ export function GolfTournamentSummary({ match, tripStats }: { match: GolfMatchPr
 /** 4.5 → "4½", 0.5 → "½", 4 → "4". */
 const halves = (n: number) => n % 1 ? `${Math.floor(n) || ""}½` : String(n);
 
-function playerPoints(match: GolfMatchPreview): { name: string; side: "left" | "right"; points: number }[] {
-  const totals = new Map<string, { name: string; side: "left" | "right"; points: number }>();
-  const net = matchScoring(match) === "Net";
-  for (const pairing of match.matches) {
-    const sides = [normalizeCompetitor(pairing.left), pairing.right ? normalizeCompetitor(pairing.right) : null] as const;
-    const standing = net ? pairing.net : pairing.gross;
-    const status = matchStatus({ thru: sides[0].thru ?? sides[0].golfers[0]?.thru, standing, result: pairing.result });
-    sides.forEach((side, i) => {
-      if (!side) return;
-      const key = i ? "right" : "left";
-      const earned = side.points ?? side.golfers[0]?.points ?? (status.kind !== "final" ? 0
-        : standing?.leader == null ? 0.5 : standing.leader === key ? 1 : 0);
-      for (const golfer of side.golfers) {
-        const row = totals.get(golfer.name) ?? { name: golfer.name, side: key, points: 0 };
-        row.points += earned;
-        totals.set(golfer.name, row);
-      }
-    });
-  }
-  return [...totals.values()].sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
-}
 
 /**
  * A team name in its fill: one line as large as fits the fill's width (20px down to 15px); if even 15px can't hold it,
@@ -670,11 +618,6 @@ function FitName({ name }: { name: string }) {
 }
 
 /** A "8:30 AM"-style time as minutes after midnight, for ordering tee times (unknown times go last). */
-function teeMinutes(time: string): number {
-  const found = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i.exec(time.trim());
-  if (!found) return Number.MAX_SAFE_INTEGER;
-  return (Number(found[1]) % 12 + (found[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(found[2]);
-}
 
 /**
  * Top box on Overview with no competition: just the day's round — the course, then each tee time with who's in it.
@@ -721,15 +664,6 @@ export function GolfRoundInfo({ match, sittingOut, topFive = false }: { match: G
 }
 
 /** The round's tee times in order, each with its players (no one who chose Sit out); no tee time yet → "Tee time TBD". */
-function teeSheet(match: GolfMatchPreview, sittingOut?: ReadonlySet<string>): [string, GolfMatchGolfer[]][] {
-  const groups = new Map<string, GolfMatchGolfer[]>();
-  for (const { golfer } of match.leaderboard) {
-    if (sittingOut?.has(golfer.name)) continue;
-    const time = golfer.teeTime || "Tee time TBD";
-    groups.set(time, [...(groups.get(time) ?? []), golfer]);
-  }
-  return [...groups].sort(([a], [b]) => teeMinutes(a) - teeMinutes(b));
-}
 
 /** Under Overview (team only): the tee sheet — each tee time, then its players one per line with their handicaps. */
 export function GolfTeeSheet({ match, sittingOut, groups, showHcp = true }: { match: GolfMatchPreview; sittingOut?: ReadonlySet<string>;
@@ -762,10 +696,6 @@ export function GolfGamesSummary() {
   </div>;
 }
 
-export function roundDay(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
-}
 
 /** Status box between competitors on the Match slide, or bare cream text at the top of the Match box. */
 function MatchStatus({ status, plain = false }: { status: ReturnType<typeof matchStatus>; plain?: boolean }) {
