@@ -63,10 +63,10 @@ A red X on GitHub means stop and fix before merging. Optional (owner's call): Gi
 | 0 | **Building blocks** | Buttons, cards, avatars, slide-up sheet, search, page headers, tab bar | ✅ Done 2026-11-24 (look tuned as screens arrive) |
 | 1 | **Play** | Play home, start / join a round, scoring, live leaderboard | ✅ Done 2026-11-24 (look tuned later) |
 | 2 | **Golf Trips** | List, join, create wizard, trip page (all tabs), scoring, drafts, settings, flights, import | |
-| 3 | **Profile** | Profile, edit, friends, search golfers, other profiles, settings, delete account | |
-| 4 | **Sign up + onboarding** | Sign up, forgot password, Google / Apple sign-in, onboarding | |
+| 3 | **Profile** | Profile, edit, friends, search golfers, other profiles, settings, delete account | ✅ Built 2026-11-25 (3a–3d); Delete account phone-checked |
+| 4 | **Sign up + onboarding** | Sign up, forgot password, Google / Apple sign-in, onboarding | ✅ Built 2026-11-25, sign-up phone-checked (Google / Apple wait until switched on for the app) |
 | 5 | **Tourneys** | Join, create, Studio, live, invites, request access, My Tournaments | |
-| 6 | **Leagues** | List, join, create, league page | |
+| 6 | **Leagues** | List, join, create, league page | ✅ Built 2026-11-25 (5a + 5b), not phone-checked |
 | 7 | **Review existing code** | Pick'ems, Fantasy, Wagers, Watch Live, Schedule, Contact are not needed in the Expo rebuild; review existing code and possible removal | |
 | 8 | **Swap it in** | EAS Build → TestFlight replaces the Capacitor app, then Android / Google Play | |
 | — | **Apple Watch** | Swift watch app, designed first in the /dev simulator. Any time after Play | |
@@ -93,7 +93,7 @@ Update the Status column when an area is done.
 
 ## Where we are + to-do list
 
-- **Built, not phone-checked yet:** Golf Trips 2b (Trip Builder). Parts 2c and 2d are still being built and are not complete.
+- **Built, not phone-checked yet:** Golf Trips 2b (Trip Builder); Profile 3a–3c and Settings; Leagues 5a–5b (needs `supabase/leagues.sql` in production; not confirmed it was run). Parts 2c and 2d are still being built and are not complete.
 - **2026-11-24 owner instruction for this push:** Write each part's checklist, record routine choices as “Codex's call”, and build without pausing for an approval between parts. Ask before running SQL, deleting or renaming important files, pushing to GitHub, or making a decision that changes real data or website behavior. Phone checks remain outstanding until performed.
 - **Next:** Golf Trips 2c (the trip page + Home tab), then 2d (the Golf tab + trip scoring with Player & Attest), 2e (Team Draft + Match Selection), 2f (Venue, Itinerary, My Travel, Flights), and 2g (Trip Settings, Import past trip). Then Profile → Sign-up/onboarding → Tourneys → Leagues → EAS Build to TestFlight → Android. Part 2c is in progress locally and is not complete.
 - **Owner decision 2026-11-24:** Skip Pick'ems, Fantasy, Wagers, Watch Live, Schedule and Contact in the native rebuild. Their existing code remains in the repository; review its use and dependencies and consider removal later. Do not delete or rename important files without Cade's approval.
