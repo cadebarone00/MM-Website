@@ -23,7 +23,7 @@ import { Avatar } from "~/components/Avatar.tsx";
 import { TripGames, type TripGamesContext } from "./TripGames.tsx";
 import { TripMatchDetail } from "./TripMatchDetail.tsx";
 import { TripPredict } from "./TripPredict.tsx";
-import { TripStats } from "./TripStats.tsx";
+import { TripStats, type TripStatsView } from "./TripStats.tsx";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 const COLLAPSED_KEY = "golfDayBoardCollapsed";
@@ -38,19 +38,21 @@ type Slot = GolfTripSection | "Predict";
  * Everything is worked out by the website's shared lib/ code. Match details, player and team cards: slice 1b; Games,
  * Stats and Predict (Predict's wallet on the account): slice 2.
  */
-export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predict, games, notice }: {
+export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predict, games, notice, spectator = false, tripStats }: {
   match: GolfMatchPreview; schedule: GolfTripDraft; structure: CompetitionStructure; viewerName: string | null; roundLive: boolean;
-  playerStats: boolean; predict: { on: boolean; off: string[] }; games: TripGamesContext;
+  playerStats: boolean; predict: { on: boolean; off: string[] }; games: TripGamesContext | null;
   /** Why today's scoring sheet isn't open yet (no confirmed pars, no attestee), or null. */
   notice?: string | null;
+  /** Read only (an imported past trip): no Games or Predict; Stats shows the trip's recorded stats. */
+  spectator?: boolean; tripStats?: TripStatsView;
 }) {
-  const predictOn = predict.on;
+  const predictOn = predict.on && !spectator && !!games;
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed((value) => { storeCollapsed(!value); return !value; });
   const noComp = !structure.individual && !structure.team;
   const teamOnly = structure.team && !structure.individual;
   const both = structure.individual && structure.team;
-  const sections = golfSections(structure, playerStats).filter((s) => !(teamOnly && s.id === "Overview")).map((s) => s.id === "Competition" ? { ...s, label: "Board" } : s);
+  const sections = golfSections(structure, playerStats || spectator).filter((s) => !(teamOnly && s.id === "Overview") && !(spectator && s.id === "Games")).map((s) => s.id === "Competition" ? { ...s, label: "Board" } : s);
   const slots: { id: Slot; label: string }[] = [...sections, ...(predictOn && !noComp ? [{ id: "Predict" as const, label: "Predict" }] : [])];
   const pillTabs = slots.filter(({ id }) => !(both && id === "Competition"));
   // Which section is open (Board / Games / Stats / Predict) and, on Board, which leaderboard (Team or Indi) are kept apart:
@@ -121,11 +123,11 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
 
       {active === "Overview" && (teamOnly ? <TeeSheet match={match} /> : <Leaderboard match={leaderboardMatch} byToday={noComp} />)}
       {active === "Competition" && <Matches full={source} match={match} roundStarted={roundLive && match.round === source.round} showStats={playerStats} />}
-      {active === "Games" && <View style={styles.section}><TripGames match={source} saved={games}
+      {active === "Games" && games && <View style={styles.section}><TripGames match={source} saved={games}
         rounds={rounds.map((r) => ({ number: r.number, date: r.date, course: schedule[`round${r.number}Course`] || undefined }))} /></View>}
       {/* Live trips have no recorded-round stats yet (same as the website); imported trips bring theirs in part 2g. */}
-      {active === "Stats" && <View style={styles.section}><TripStats stats={undefined} /></View>}
-      {active === "Predict" && <View style={styles.section}><TripPredict tripId={games.tripId} match={source} structure={structure} off={predict.off} /></View>}
+      {active === "Stats" && <View style={styles.section}><TripStats stats={tripStats} spectator={spectator} /></View>}
+      {active === "Predict" && games && <View style={styles.section}><TripPredict tripId={games.tripId} match={source} structure={structure} off={predict.off} /></View>}
     </ScrollView>
   );
 }

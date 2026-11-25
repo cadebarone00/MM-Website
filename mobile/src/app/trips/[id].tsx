@@ -13,6 +13,7 @@ import { PageHeader } from "~/components/PageHeader.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { TripHome } from "~/components/trips/TripHome.tsx";
 import { TripDraftRoom } from "~/components/trips/TripDraftRoom.tsx";
+import { ImportedTrip } from "~/components/trips/ImportedTrip.tsx";
 import { TripFlights } from "~/components/trips/TripFlights.tsx";
 import { TripGolf } from "~/components/trips/TripGolf.tsx";
 import { TripItinerary } from "~/components/trips/TripItinerary.tsx";
@@ -33,7 +34,6 @@ import { useTripPlans } from "~/lib/useTripPlans.ts";
 
 type Tab = (typeof GOLF_TRIP_TABS)[number];
 
-const openPart = (title: string, heading: string, part: string, note: string) => router.push({ pathname: "/trips/part", params: { title, heading, part, note } });
 
 /**
  * The trip page (project_specs.md Golf Trips part 2c): header (← · name · gear), the Home · Golf · Venue · Itinerary tabs and
@@ -62,7 +62,8 @@ export default function TripScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settings = () => setSettingsOpen(true);
 
-  if (state.kind === "imported") { router.replace({ pathname: "/trips/part", params: { title: "Golf trip", heading: state.name, part: "2g", note: "The imported past trip page." } }); return null; }
+  // Part 2g slice 3: an imported past trip shows its results, read only.
+  if (state.kind === "imported") return <SafeAreaView style={styles.page} edges={["top"]}><ImportedTrip data={state.data} onBack={() => router.back()} /></SafeAreaView>;
 
   return (
     <SafeAreaView style={styles.page} edges={["top"]}>
@@ -111,7 +112,7 @@ export default function TripScreen() {
         <TripTips profileId={live.viewer.profileId} isOrganizer={live.viewer.isOrganizer} />
         <RatePlaces tripId={id} visits={view.rateVisits} />
         {settingsOpen && <TripSettings trip={live.savedTrip} draft={view.draft} viewer={{ profileId: live.viewer.profileId, memberId: live.savedTrip.members.find((m) => m.profileId === live.viewer.profileId)?.id ?? "", isOrganizer: live.viewer.isOrganizer }}
-          setupValues={live.setupSnapshot.values as Record<string, unknown>} onChanged={() => void reload(true)}
+          setupValues={live.setupSnapshot.values as Record<string, unknown>} basis={live.setupSnapshot.basis} onChanged={() => void reload(true)}
           onClose={() => { setSettingsOpen(false); void reload(true); }} onLeft={() => { setSettingsOpen(false); router.replace("/(tabs)/golf-trips"); }} />}
         {flightsOpen && <TripFlights tripId={id} onClose={() => setFlightsOpen(false)} />}
         {addingPlace && <TripTravelForm kind="other" initial={{ name: addingPlace.place.name, place: addingPlace.place.address, placeId: addingPlace.place.id }} onClose={() => setAddingPlace(null)}

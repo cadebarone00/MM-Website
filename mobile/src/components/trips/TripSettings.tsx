@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import * as SecureStore from "expo-secure-store";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
@@ -14,13 +13,16 @@ import { tripCorrectionListFromJson, type TripCorrectionList } from "@/lib/platf
 import { predictSettingsFrom } from "@/lib/platform/tripHome";
 import { GENERAL_CARDS, ORGANIZER_SECTIONS } from "@/lib/platform/tripSettingsSections";
 import { clearSeen, TIPS_SEEN_KEY } from "@/lib/platform/tripTour";
-import { SheetClose } from "~/components/SheetClose.tsx";
+import type { SetupBasis } from "@/lib/platform/savedTripSetup";
+import { Competition, GeneralEditor, GolfSchedule, Games, MatchSelection, Skins } from "./TripSetupEditors.tsx";
 import { apiRaw, shareUrl } from "~/lib/api.ts";
 import { useTripSetup } from "~/lib/useTripSetup.ts";
+import { FullScreenPage } from "~/components/FullScreenPage.tsx";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 type Member = SavedGolfTrip["members"][number];
-type Page = "home" | "General Settings" | "Players" | "Notifications" | "Scorecard View" | "Player Scoring" | "Predict" | "Delete Trip" | { later: string };
+const EDITORS = ["Golf Schedule", "Games", "Individual Competition", "Team Competition", "Skins", "Match Selection"] as const;
+type Page = "home" | "General Settings" | "Players" | "Notifications" | "Scorecard View" | "Player Scoring" | "Predict" | "Delete Trip" | "History" | (typeof EDITORS)[number] | { later: string };
 const BADGE: Record<MemberState, string> = { organizer: "Organizer", accepted: "Member", pending: "Invited", declined: "Declined" };
 const SCORING_FIELDS = ["Opponent's score", "Putts", "Fairway", "Greens in regulation"];
 const tipsStore = { getItem: (k: string) => { try { return SecureStore.getItem(k); } catch { return null; } }, setItem: (k: string, v: string) => { try { SecureStore.setItem(k, v); } catch { /* this visit only */ } } };
@@ -34,8 +36,8 @@ const setOf = (value: unknown): string[] => Array.isArray(value) ? value.filter(
  * trip's corrections), Predict, Delete Trip. Golf Schedule, Games, competitions, Skins, Match Selection and History come in
  * slices 2-3. Organizer-only changes; players see read only.
  */
-export function TripSettings({ trip, draft, viewer, setupValues, onClose, onChanged, onLeft }: {
-  trip: SavedGolfTrip; draft: GolfTripDraft; viewer: { profileId: string; memberId: string; isOrganizer: boolean }; setupValues: Record<string, unknown>;
+export function TripSettings({ trip, draft, viewer, setupValues, basis, onClose, onChanged, onLeft }: {
+  trip: SavedGolfTrip; draft: GolfTripDraft; viewer: { profileId: string; memberId: string; isOrganizer: boolean }; setupValues: Record<string, unknown>; basis: SetupBasis;
   onClose: () => void; onChanged: () => void; onLeft: () => void;
 }) {
   const [page, setPage] = useState<Page>("home");
@@ -43,11 +45,12 @@ export function TripSettings({ trip, draft, viewer, setupValues, onClose, onChan
   const back = () => setPage("home");
   const title = typeof page === "string" ? (page === "home" ? "Trip Settings" : page) : page.later;
   const organizer = viewer.isOrganizer;
+  const editorProps = { values: setup.values, write: setup.write, basis, trip, readOnly: !organizer };
 
   const card = (name: string) => {
     const open = () => {
       if (name === "Show tips again") { clearSeen(TIPS_SEEN_KEY, viewer.profileId, tipsStore); Alert.alert("Tips are back", "They'll show the next time you open the trip page."); return; }
-      if (["General Settings", "Players", "Notifications", "Scorecard View", "Player Scoring", "Predict", "Delete Trip"].includes(name)) setPage(name as Page);
+      if (["General Settings", "Players", "Notifications", "Scorecard View", "Player Scoring", "Predict", "Delete Trip", "History", ...EDITORS].includes(name)) setPage(name as Page);
       else setPage({ later: name });
     };
     if (name === "Watch the Golf Trips tour") return null;
@@ -56,7 +59,7 @@ export function TripSettings({ trip, draft, viewer, setupValues, onClose, onChan
 
   return (
     <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
+      <FullScreenPage style={styles.page}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel={page === "home" ? "Close settings" : "Back to settings"} onPress={page === "home" ? onClose : back} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>
           <Text style={styles.title} accessibilityRole="header">{title}</Text>
@@ -72,16 +75,23 @@ export function TripSettings({ trip, draft, viewer, setupValues, onClose, onChan
               <View style={styles.grid}>{group.cards.map(card)}</View>
             </View>)}
           </>}
-          {page === "General Settings" && <General trip={trip} draft={draft} values={setup.values} />}
+          {page === "General Settings" && (organizer ? <GeneralEditor {...editorProps} draft={draft} onChanged={onChanged} /> : <General trip={trip} draft={draft} values={setup.values} />)}
+          {page === "Golf Schedule" && <GolfSchedule {...editorProps} />}
+          {page === "Games" && <Games {...editorProps} />}
+          {page === "Individual Competition" && <Competition {...editorProps} kind="individual" />}
+          {page === "Team Competition" && <Competition {...editorProps} kind="team" />}
+          {page === "Skins" && <Skins {...editorProps} />}
+          {page === "Match Selection" && <MatchSelection {...editorProps} />}
           {page === "Players" && <Players trip={trip} viewer={viewer} onChanged={onChanged} onLeft={onLeft} />}
           {page === "Notifications" && <Note text="Push notifications aren't in the new app yet. Trip news shows in the trip's Feed, and the current Maroon app still sends reminders." />}
           {page === "Scorecard View" && <Note text={`In the app, scoring opens from the bar at the bottom of the trip page on the day of a round. ${setup.values.playerStats === true ? "Your organizer requires stats: putts, fairways and greens on every hole." : "Stats (putts, fairways and greens) are asked for when your organizer turns Player Stats on."}`} />}
           {page === "Player Scoring" && <PlayerScoring tripId={trip.trip.id} profileId={viewer.profileId} values={setup.values} write={setup.write} />}
           {page === "Predict" && <PredictSettings values={setup.values} write={setup.write} teamEvent={Boolean((setup.values.localCompetitionType as { team?: string | null } | undefined)?.team)} />}
+          {page === "History" && <History values={setup.values} write={setup.write} readOnly={!organizer} />}
           {page === "Delete Trip" && <DeleteTrip tripId={trip.trip.id} name={trip.trip.name} onDeleted={onLeft} />}
           {typeof page === "object" && <Note text={`${page.later} comes to the app in the next part of Golf Trips 2g. Until then, change it on the website's Trip Settings (or the current Maroon app).`} />}
         </ScrollView>
-      </SafeAreaView>
+      </FullScreenPage>
     </Modal>
   );
 }
@@ -259,6 +269,25 @@ function PredictSettings({ values, write, teamEvent }: { values: Record<string, 
           onChange={() => save({ ...settings, off: on ? [...settings.off, b.id] : settings.off.filter((id) => id !== b.id) })} />;
       })}
     </Section>)}
+  </>;
+}
+
+type PastTrip = { id: string; name: string; place: string; arrival: string; departure: string; players: string[]; rounds: { id: string; number: number; course: { name: string } }[] };
+/** Organizer → History: the past trips saved with this trip (name, place, dates, players, rounds). Remove asks first. */
+function History({ values, write, readOnly }: { values: Record<string, unknown>; write: (field: string, value: unknown) => void; readOnly: boolean }) {
+  const trips = Array.isArray(values.pastTrips) ? values.pastTrips as PastTrip[] : [];
+  return <>
+    {trips.length === 0 && <Note text="No past trips yet. Bring one in from Golf Trips → Import past trip." />}
+    {trips.map((t) => <Section key={t.id} title={t.name}>
+      <Row label="Where" value={t.place || "—"} />
+      <Row label="Dates" value={`${t.arrival} – ${t.departure}`} />
+      <Row label="Players" value={String(t.players.length)} />
+      <Row label="Rounds" value={t.rounds.map((r) => `${r.number}. ${r.course.name}`).join(", ") || "—"} />
+      {!readOnly && <Pressable accessibilityRole="button" onPress={() => Alert.alert(`Remove ${t.name}?`, "It comes off this trip's history.", [{ text: "Keep", style: "cancel" },
+        { text: "Remove", style: "destructive", onPress: () => write("pastTrips", trips.filter((x) => x.id !== t.id)) }])} style={[styles.small, { borderColor: colors.errorOnMaroon, alignSelf: "flex-start" }]}>
+        <Text style={[styles.smallText, styles.bad]}>Remove</Text></Pressable>}
+    </Section>)}
+    <Note text="Adding a past trip's rounds and scores here is on the website for now; Golf Trips → Import past trip works in the app." />
   </>;
 }
 

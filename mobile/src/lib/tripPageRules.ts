@@ -1,16 +1,26 @@
 import type { JoinLink } from "@/lib/platform/golfTripJoinLinks";
+import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
+import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
+import type { TripStatsView } from "~/components/trips/TripStats.tsx";
 import type { TripHomeData } from "@/lib/platform/tripHome";
 
 // The trip page's rules (project_specs.md Golf Trips part 2c), with no phone code so they can be tested.
 
 /** The server's trip page data (lib/platform/tripPageData.ts, which is server-only, so the shape is restated here). */
-export type TripPageData = { status: "signed-out" } | { status: "not-found" } | { status: "imported"; savedTrip: { trip: { name: string } } } | ({ status: "live" } & TripHomeData);
+/** The imported trip's results (lib/platform/importedTripPresentation.ts ImportedTripView, restated: the parts the app shows). */
+export type ImportedTripView = {
+  previewMatch: GolfMatchPreview; roundFormats: Record<string, string>; competitionType: { individual: string | null; team: string | null };
+  teamNames: [string, string] | null; tripStats: TripStatsView | null; headline: { team: string | null; champion: string | null };
+};
+/** imported: a past trip brought in with Import past trip — its results (worked out on the server), read only. */
+export type ImportedTripData = { status: "imported"; savedTrip: SavedGolfTrip; view?: ImportedTripView };
+export type TripPageData = { status: "signed-out" } | { status: "not-found" } | ImportedTripData | ({ status: "live" } & TripHomeData);
 
 /** What the trip page shows (project_specs.md Golf Trips part 2c): loading, the trip, an imported trip, or a problem. */
 export type TripPageState =
   | { kind: "loading" }
   | { kind: "live"; data: Extract<TripPageData, { status: "live" }> }
-  | { kind: "imported"; name: string }
+  | { kind: "imported"; name: string; data: ImportedTripData }
   | { kind: "not-found" }
   | { kind: "signed-out" }
   | { kind: "error"; message: string };
@@ -27,7 +37,7 @@ export function tripPageState(result: { ok: true; data: TripPageData } | { ok: f
   }
   const data = result.data;
   if (data.status === "live") return { kind: "live", data };
-  if (data.status === "imported") return { kind: "imported", name: data.savedTrip.trip.name };
+  if (data.status === "imported") return { kind: "imported", name: data.savedTrip.trip.name, data };
   if (data.status === "signed-out") return { kind: "signed-out" };
   return { kind: "not-found" };
 }

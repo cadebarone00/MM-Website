@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { teeTimeLabel } from "@/lib/platform/codeTournaments";
 import type { MatchDraftRound } from "@/lib/platform/matchDraft";
 import { mayActFor, type MatchSelectionResponse, type SelectionMember, type Side, type VisibleSpot } from "@/lib/platform/matchSelection";
 import { Avatar } from "~/components/Avatar.tsx";
+import { FullScreenPage } from "~/components/FullScreenPage.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { useAppMatchSelection } from "~/lib/useAppMatchSelection.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
@@ -101,7 +101,7 @@ export function TripSelectionRoom({ tripId, rounds, initialRound, onClose, onSet
 
   return (
     <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
+      <FullScreenPage style={styles.page}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onClose} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>
           <Text style={styles.title} accessibilityRole="header">Selection Room</Text>
@@ -183,7 +183,7 @@ export function TripSelectionRoom({ tripId, rounds, initialRound, onClose, onSet
             </View>
           </Pressable>
         </Modal>}
-      </SafeAreaView>
+      </FullScreenPage>
     </Modal>
   );
 }

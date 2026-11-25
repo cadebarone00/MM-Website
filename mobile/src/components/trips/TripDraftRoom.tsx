@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { teamDraftSize, teamLetter } from "@/lib/platform/teamDraft";
 import { teamDraftRoomState } from "@/lib/platform/teamDraftPicks";
 import { Avatar } from "~/components/Avatar.tsx";
+import { FullScreenPage } from "~/components/FullScreenPage.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { useAppTeamDraft } from "~/lib/useAppTeamDraft.ts";
 import { clockText, useDraftClock } from "~/lib/useDraftClock.ts";
@@ -43,7 +43,7 @@ export function TripDraftRoom({ tripId, when, target, onClose, onSettings }: { t
 
   return (
     <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
+      <FullScreenPage style={styles.page}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onClose} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>
           <Text style={styles.title} accessibilityRole="header">Team Draft Room</Text>
@@ -119,7 +119,7 @@ export function TripDraftRoom({ tripId, when, target, onClose, onSettings }: { t
             </View>
           </Pressable>
         </Modal>}
-      </SafeAreaView>
+      </FullScreenPage>
     </Modal>
   );
 }

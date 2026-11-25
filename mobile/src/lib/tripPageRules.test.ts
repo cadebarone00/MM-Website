@@ -7,7 +7,8 @@ test("trip page: not found, signed out, other errors, imported and live", () => 
   assert.deepEqual(tripPageState({ ok: false, error: "Sign in to see this trip." }), { kind: "signed-out" });
   assert.deepEqual(tripPageState({ ok: false, error: "You're signed out. Sign in again." }), { kind: "signed-out" });
   assert.deepEqual(tripPageState({ ok: false, error: "Couldn't load this trip. Try again." }), { kind: "error", message: "Couldn't load this trip. Try again." });
-  assert.deepEqual(tripPageState({ ok: true, data: { status: "imported", savedTrip: { trip: { name: "Pinehurst 2024" } } } }), { kind: "imported", name: "Pinehurst 2024" });
+  const imported = { status: "imported", savedTrip: { trip: { name: "Pinehurst 2024" } } } as never;
+  assert.deepEqual(tripPageState({ ok: true, data: imported }), { kind: "imported", name: "Pinehurst 2024", data: imported });
   assert.deepEqual(tripPageState({ ok: true, data: { status: "not-found" } }), { kind: "not-found" });
   const live = { status: "live" } as never;
   assert.equal(tripPageState({ ok: true, data: live }).kind, "live");
