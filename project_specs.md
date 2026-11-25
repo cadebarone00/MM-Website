@@ -6905,3 +6905,30 @@ Signed-in players can paste first-party tournament invitation links, inspect the
 - [ ] Profile Created!: the M grows in with buzzes, then Let's go → Play.
 - [ ] Blocked accounts (under 13 / being reviewed / closed) → their message + Sign out.
 - Claude's calls: Set a new password uses the reset code's login directly on the phone (the website's `/api/auth/reset-password` only reads website cookies), same steps: set the password, clear the "no password yet" flag via Create a password when needed, sign every device out. No separate "Email confirmed" screen: the code goes straight to Create a password. Profile Created's M grows in instead of the hand-drawn line (screenshot pass). Google / Apple on Log in wait until they're switched on and checked for the app.
+
+## Feature: Expo app Step 5 — Leagues (owner request 2026-11-25) — FAST MODE
+
+**Side:** App (uses the existing `/api/leagues*` routes, which accept the app's Bearer login; shared rules stay in `lib/platform/leagues.ts`; no SQL).
+
+**Parts (each committed on its own):** 5a Leagues tab, Create, Join, the league (Leaderboard · Skins · Pairs · Group · Tee Times) + the scorer's group card · 5b League Settings (organizer).
+
+### 5a checklist (from `components/platform/Leagues.tsx` + `LeagueHome.tsx`)
+- [ ] Leagues tab: Create a league, Join with a code (the same code card as Play / Golf Trips), my leagues under Live · Upcoming · Past (name, course · day · N players); empty "No leagues yet…"; loading / error; pull to refresh.
+- [ ] Create a league: course search (the Play course search) → tees → date; 18-hole courses only; name, Leaderboard Gross / Net, I'm playing (+ handicap index, -10 to 54) → `POST /api/leagues` → League created: the invite code card (Copy, Share) → Open league.
+- [ ] Join (`/leagues/join?code=`): lookup (name, course · day · organizer · players), already in → Open league, ended → says so, no league → "No league has the code…", handicap (optional) → Join league → the league.
+- [ ] The league: name, course, the problem line, tabs Leaderboard · Skins (when on) · Pairs (when on) · Group (when I'm in one) · Tee Times; refreshes every 5 seconds while open; a change shows at once and is sent in order (a refresh never undoes it).
+- [ ] Leaderboard: Pos (T2 ties) · Player · To par · Thru (F) · Gross/Net total; my row marked.
+- [ ] Skins: totals, then each hole (winner / Tie / ×value); the organizer's Carryover switch.
+- [ ] Pairs: not drawn yet message; format · Net/Gross · winners; each segment's standings (points or to par), Final + winners.
+- [ ] Group: my group's game (the scorer picks it with the Play game picker; teams, Net, Birdies double; "needs N players"); everyone sees the standings; no game → "{scorer} can pick one."
+- [ ] Tee Times: each group (time or TBD, hole, Card in / Not started / Thru N / Finished), players + handicaps, Scorer tag, not-in-a-group list; none yet message.
+- [ ] Scorer: the Play tuck-in scoring sheet for the whole group (par is reference only), group game taps per hole, Submit card (then locked); everyone else: "{scorer} keeps your group's card."
+- Claude's calls: the Tap-in invite card and TV link stay on the website for now (The Maroon Live is a website screen); the sample league preview isn't in the app.
+
+### 5b checklist — League Settings (organizer, gear on the league)
+- [ ] The invite code (Copy, Share). Who can watch (Public / Link only / Private + players can share), saved straight away.
+- [ ] Tee Times editor: first time, every N min, Off 1 / 1 & 10 / Shotgun → Make / Re-make (asks first); each group's time, hole, scorer; move a player to another group or a new one; add someone who joined later.
+- [ ] Leaderboard Gross / Net. Skins on/off, Gross/Net, ties carry over / no skin.
+- [ ] Pairs: on/off, format (+ blurb), Gross/Net, winners segments, how pairs are drawn (+ blurb), Draw / Re-draw, Lock, Unlock to re-draw (before scores), the pairs list, late-joiner note.
+- [ ] Copy this league (new date) → opens the copy; End league (asks; scores lock); Delete league (asks) → back to Leagues.
+- Claude's call: emailing the code stays on the website (Share covers the phone).

@@ -52,6 +52,10 @@ function Screens() {
           <Stack.Screen name="trips/[id]" />
           <Stack.Screen name="trips/new" />
           <Stack.Screen name="trips/import" />
+          {/* Leagues (project_specs.md "Expo app Step 5"). */}
+          <Stack.Screen name="leagues/new" />
+          <Stack.Screen name="leagues/join" />
+          <Stack.Screen name="leagues/[id]" />
           {/* Dev only: the Building blocks gallery (Profile → Building blocks) and its sample slide-up. */}
           <Stack.Protected guard={__DEV__}>
             <Stack.Screen name="dev/blocks" />

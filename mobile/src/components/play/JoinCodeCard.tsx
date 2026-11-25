@@ -4,11 +4,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { JOIN_CODE_HINT, shownJoinCode, typedJoinCode } from "~/lib/play.ts";
 import { colors, fonts, minTap, radius } from "~/lib/theme.ts";
 
-const TITLE = { round: "Join a Round", trip: "Join a Trip" } as const;
-const SCREEN = { round: "/rounds/join", trip: "/trips/join" } as const;
+const TITLE = { round: "Join a Round", trip: "Join a Trip", league: "Join a League" } as const;
+const SCREEN = { round: "/rounds/join", trip: "/trips/join", league: "/leagues/join" } as const;
 
 /** The "Join a Round" / "Join a Trip" card (website JoinCodeCard): a 6-character code, any case, dash optional → that kind's Join screen. */
-export function JoinCodeCard({ kind = "round", onJoin }: { kind?: "round" | "trip"; onJoin?: () => void }) {
+export function JoinCodeCard({ kind = "round", onJoin }: { kind?: "round" | "trip" | "league"; onJoin?: () => void }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
