@@ -4,6 +4,8 @@
 
 Owner decision 2026-11-24: Pick'ems, Fantasy, Wagers (MM Coins), Watch Live, Schedule and Contact are **not** rebuilt in the Expo app. This is the map of their code and what still depends on it, so removal can be planned safely. **Nothing here is approved for deletion** — every removal needs Cade's OK (Claude.md: ask before deleting important files), and anything touching SQL is run by Cade.
 
+**Wagers is retired for good (owner, 2026-11-25).** Its replacement is **Predict**: a trip-only, just-for-fun feature that works out odds from players' stats and the course with our own model. It isn't betting. Predict's code is separate (`lib/platform/predict*.ts`, `components/platform/GolfTripPredict.tsx`) and uses none of `lib/wagers`, `lib/odds` or the MM Coins tables, so removing Wagers can't break it. In the app, Predict comes with the Golf Trips Golf tab (part 2d).
+
 ## Headline
 
 Every website **page** for these six areas is already retired: each `page.tsx` is a few-line `redirect()` ("Retired V1 URL"). Removing pages is cheap. The risk is in the **backend** (lib, API routes, database tables), because kept features still lean on parts of it.
