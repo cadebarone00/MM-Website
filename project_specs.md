@@ -6821,3 +6821,10 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 - [ ] Rounds: newest first; the P / T / L / C letter; course; date (+ the trip / league / tourney name); score; the differential, "9+9", "Waiting for 9" or "Not counted" (shared `nineHolePairs`). Tap → the round sheet: scorecard (OUT / IN / TOT, birdie circles, bogey boxes), Round to par, Score, Handicap differential.
 - [ ] Stats (shared `roundStats`): Handicap · Scoring Avg. · Low Score; Scoring by par; Tee to green meters (Fairways, GIR, Scrambling), putting; Most played. Empty: "Stats will show here once you finish rounds."
 - [ ] Codex/Claude's calls: the old Maroon handicap history (legacy `HandicapHome`) and the dev-only "sample stats" stay website-only; Compare comes with 3c.
+
+### 3b checklist — Edit profile + photo (from `EditProfileScreen`; data `GET /api/app/profile?view=edit`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Back (asks "Discard changes?" when something changed) · Edit profile · Save (dim until something changes; saves Name / Username / Bio / Gender together with `PATCH /api/account/profile`, rules from the shared `profileEdit.ts`).
+- [ ] Photo + gold-ring avatar side by side; "Edit picture or avatar" → Change / Add a photo (the iPhone photo picker with its square crop, under 3 MB, `POST /api/account/photo`) or Remove photo; "Profile photos are coming soon" when not switched on.
+- [ ] Name, Username (shows the username rule once changed), Bio (150 max, count), Socials "N of 4" → list, remove, + Add social → pick an app → type → Save (shared `socialFromInput`, `PUT /api/account/links`), Gender → Man / Woman / Prefer not to say (private; saves with Save).
+- [ ] Private profile switch with the shared explanation (`lib/profile/privacyExplain.ts`, moved out of the website's PrivacySetting), saves at once (`PUT /api/account/privacy`), goes back on failure.
+- [ ] Claude's calls: the website's move-and-scale cropper → the iPhone's own square crop.
