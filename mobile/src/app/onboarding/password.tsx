@@ -18,7 +18,7 @@ async function recordTerms() {
 
 /** Create a password (website PasswordScreen kind "create"), right after the email code → POST /api/auth/create-password. */
 export default function CreatePassword() {
-  const { refreshStep } = useAuth();
+  const { refreshStep, session, setNotice } = useAuth();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,6 +32,17 @@ export default function CreatePassword() {
     if (!r.ok && r.code === "signed_out") { await supabase.auth.signOut({ scope: "local" }); return; }
     // Already set (e.g. saved on another device): carry on anyway.
     if (!r.ok && r.code !== "already_set") { setServerError(r.error); setBusy(false); return; }
+    if (r.ok) {
+      // Saving the password on the server ends every login, this phone's too (found 2026-11-25: the next step check
+      // failed with "We couldn't check your account"). Log straight back in with the password just chosen.
+      const email = session?.user.email ?? "";
+      const again = email ? await supabase.auth.signInWithPassword({ email, password }).catch(() => null) : null;
+      if (!again || again.error) {
+        setNotice("password-saved");
+        await supabase.auth.signOut({ scope: "local" });
+        return;
+      }
+    }
     await recordTerms();
     const next = screenForStep(await refreshStep());
     setBusy(false);

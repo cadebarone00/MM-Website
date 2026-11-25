@@ -20,7 +20,11 @@ const AuthContext = createContext<AuthState>({ loading: true, session: null, ste
 
 async function askStep(): Promise<AccountStep> {
   const r = await apiJson<{ next?: unknown }>("/api/account/onboarding");
-  return r.ok ? stepFromReply(r.body) : "error";
+  if (r.ok) return stepFromReply(r.body);
+  // The server no longer accepts this login (ended elsewhere, password changed): forget it → Welcome / Log in,
+  // instead of leaving the person stuck on "We couldn't check your account".
+  if (r.code === "signed_out") await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  return "error";
 }
 
 /**
