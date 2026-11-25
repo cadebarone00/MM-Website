@@ -6988,3 +6988,19 @@ Bind unsaved scores to tournament, round, hole and player; reject a draft after 
 **2026-11-25 Expo tournament score save recovery**
 **Side:** App
 After an uncertain score write or failed follow-up read, scoring writes are blocked until an explicit successful refresh; the uncertain entry remains visible for review. A confirmed write clears the entry. Online-only, server-side atomic conflict handling and real-phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+## Feature: Expo app Step 6 — Phone notifications (owner request 2026-11-25) — FAST MODE
+
+**Side:** App + Server. Real lock-screen notifications for the iPhone / Android app through Expo's free push service, built on the existing master list (`lib/notifications/catalog.ts`: types, approved V1–V3 wording, Settings switches).
+
+### 6a checklist — the foundation + the first real notification — BUILT 2026-11-25, committed, NOT live yet
+- [ ] Database: `supabase/push_devices.sql` (NOT run): `push_devices` (Expo push address, whose phone, ios/android; one account per phone) + `notification_wording_last` (never the same wording twice in a row); both removed when an account is closed; service role only.
+- [ ] Server: `lib/notifications/expoPush.ts` (pure, tested: message, batches of 100, Expo's answers; a removed phone is forgotten) + `lib/notifications/pushServer.ts` (`sendPush`: Settings → Notifications → Push switch per type, picks a wording, sends to every phone the person signed up). Nothing is sent before the SQL is run.
+- [ ] Routes: `POST / DELETE /api/app/push-devices` (turn this phone on / off), `POST /api/app/push-test` (send myself a test); both in `lib/account/accessPolicy.ts`.
+- [ ] First real type: **Friend request** (sent when someone sends you one), next to the existing email.
+- [ ] App: `expo-notifications` + `expo-device`; the "Allow notifications?" prompt right after Finish when the Last step's Notifications switch is on; Settings → Notifications → Phone notifications (On / Off / Off in iPhone Settings / Not on this device / Coming soon) + Send a test notification; Sign out stops this phone's notifications first; tapping a notification opens the matching screen (`mobile/src/lib/pushRoutes.ts`, tested); a notification that arrives while the app is open shows as a banner.
+- **Cade's steps before it works (no code):** 1. run `supabase/push_devices.sql`; 2. `cd mobile` → `npx eas init` (makes the app's Expo project id in app.json); 3. an EAS development build on the iPhone (Expo Go can't receive real notifications on Android, and Apple needs the push key, which EAS sets up from the Apple Developer account); 4. deploy + promote the website.
+- Claude's calls: Expo's push service (free, one API for iPhone + Android) instead of Apple / Firebase directly; Highlights-sheet types (big moments, travel, announcements) aren't sent from here yet; the Live Activity and home-screen widget stay later (native Swift).
+
+### 6b (next) — hook up the other types
+Trip invite, join request + accepted / declined, add past rounds, tee time soon, opponent submitted, card mismatch, round final, draft starting, your pick, chat, then the Highlights-sheet types. Each where its change already saves on the server.

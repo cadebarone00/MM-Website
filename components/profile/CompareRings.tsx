@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Search, X } from "lucide-react";
 import styles from "./CompareRings.module.css";
 import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
-import { COMPARE_DEFAULT, COMPARE_METRICS } from "@/lib/profile/compareMetrics";
+import { COMPARE_DEFAULT, COMPARE_METRICS, type CompareMetric as Metric } from "@/lib/profile/compareMetrics";
 import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
 import { SAMPLE_GOLFERS, sampleGolfer } from "@/lib/dev/sampleProfile";
 import { useSimulator } from "@/components/dev/SimulatorBridge";

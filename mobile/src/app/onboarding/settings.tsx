@@ -8,12 +8,13 @@ import { PillToggle } from "~/components/PillToggle.tsx";
 import { apiJson, apiRaw } from "~/lib/api.ts";
 import { NETWORK_ERROR } from "~/lib/apiReply.ts";
 import { useAuth } from "~/lib/auth.tsx";
+import { turnOnPush } from "~/lib/push.ts";
 
 /**
  * Last step! (website SettingsScreen) → Finish: saves Public / Private, records the Terms when they still need accepting,
  * then POST /api/account/finish. One Finish at a time. Profile Created only after the server says the account is Active;
  * any failure keeps the person here with the message, nothing saved is lost. Notifications: shown like the website,
- * nothing to save yet (the phone's own permission prompt comes with push notifications).
+ * on = the phone asks "Allow notifications?" right after Finish (Expo app Step 6).
  */
 export default function LastStep() {
   const { step } = useAuth();
@@ -41,6 +42,8 @@ export default function LastStep() {
     const done = await apiRaw<{ ok?: boolean; activated?: boolean; code?: string; error?: string; missing?: string[] }>("/api/account/finish", { method: "POST" });
     if (done.status === 0) return fail(NETWORK_ERROR);
     if (done.body?.ok !== true || done.body.activated !== true) return fail(finishProblem(done.body?.code, done.body?.error, done.body?.missing));
+    // Notifications on: the phone asks "Allow notifications?" now (a no or a phone that can't is fine; Settings can turn it on later).
+    if (notifications) await turnOnPush(true);
     router.replace("/onboarding/created");
   }
 

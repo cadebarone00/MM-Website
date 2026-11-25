@@ -34,6 +34,12 @@
           "photosPermission": "The Maroon uses your photos so you can pick a profile picture.",
           "cameraPermission": false
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#500001"
+        }
       ]
     ],
     "scheme": "themaroon",

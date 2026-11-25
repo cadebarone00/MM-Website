@@ -4,6 +4,7 @@ import { profilePhotoUrl } from "./profilePhoto";
 import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email/sendEmail";
 import { friendIds, tripFriendIds } from "./friendsServer";
 import { wantsNotification } from "./preferencesServer";
+import { sendPush } from "@/lib/notifications/pushServer";
 
 /**
  * Find Golfers and friend requests (supabase/profile_friends.sql). The signed-in profile id always comes from the
@@ -61,7 +62,14 @@ export async function suggestGolfers(me: string): Promise<FriendsResult<GolferRe
 export async function sendFriendRequest(me: string, to: string, origin: string): Promise<FriendsResult<Relation>> {
   const result = await rpc<Relation>("send_friend_request", { p_from: me, p_to: to });
   if (result.ok && result.value === "requested" && emailConfigured()) void emailFriendRequest(me, to, origin).catch(() => {});
+  if (result.ok && result.value === "requested") void pushFriendRequest(me, to).catch(() => {});
   return result;
+}
+
+/** The phone notification (Settings → Notifications → Friend requests → Push; nothing until push_devices.sql is run). */
+async function pushFriendRequest(me: string, to: string) {
+  const { data: from } = await db().from("profiles").select("display_name").eq("id", me).maybeSingle();
+  await sendPush({ to: [to], kind: "friendRequest", values: { Player: (from?.display_name as string | null) ?? "A golfer" } });
 }
 
 async function emailFriendRequest(me: string, to: string, origin: string) {

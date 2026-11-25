@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from "react-native";
 import { sheetOptions } from "~/components/SheetClose.tsx";
 import { AuthProvider, useAuth } from "~/lib/auth.tsx";
 import { PlayDataProvider } from "~/lib/playData.tsx";
+import { usePush } from "~/lib/push.ts";
 import { TabBadgesProvider } from "~/lib/tabBadges.tsx";
 import { colors } from "~/lib/theme.ts";
 
@@ -16,6 +17,8 @@ import { colors } from "~/lib/theme.ts";
 function Screens() {
   const { loading, session, step } = useAuth();
   const playing = !!session && step === "play";
+  // Phone notifications: keep this phone signed up and open the right screen on a tap (project_specs.md "Expo app Step 6").
+  usePush(playing);
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.maroon900 }}>

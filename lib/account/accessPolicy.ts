@@ -48,6 +48,7 @@ export const API_RULES: readonly AccessRule[] = [
   // the same Active-only rule as those pages.
   { pattern: /^\/api\/app\/(play|golf-trips|profile|tourneys|tournament)(\/|$)/, category: "active", why: "the app's Play, Golf Trips, Profile and Tourneys screens" },
   { pattern: /^\/api\/app\/version$/, category: "public", why: "the oldest app build the server still supports, checked before sign-in" },
+  { pattern: /^\/api\/app\/(push-devices|push-test)$/, category: "active", why: "the app turns phone notifications on / off and sends itself a test (Expo app Step 6)" },
 ];
 
 // Page rules, first match wins (paths without query strings).

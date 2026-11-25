@@ -11,11 +11,13 @@ import { PageHeader } from "~/components/PageHeader.tsx";
 import { PillToggle } from "~/components/PillToggle.tsx";
 import { SelectField } from "~/components/SelectField.tsx";
 import { ChangePassword, Devices } from "~/components/settings/AccountParts.tsx";
+import { PhoneNotifications } from "~/components/settings/PhoneNotifications.tsx";
 import { SettingsError, SettingsNote, SettingsRow, SettingsSection, SettingsText } from "~/components/settings/SettingsParts.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { apiGet, apiJson, shareUrl } from "~/lib/api.ts";
 import { useAuth } from "~/lib/auth.tsx";
 import { answeredOffer, type OrganizerOffer } from "~/lib/settingsUi.ts";
+import { turnOffPush } from "~/lib/push.ts";
 import { supabase } from "~/lib/supabase.ts";
 import { loadSeenStore, seenStore } from "~/lib/tripDraft.ts";
 import { useLightStatusBar } from "~/lib/statusBar.ts";
@@ -25,6 +27,8 @@ type SettingsData = { signedIn: boolean; email: string | null; preferences: Pref
 type Load = { status: "loading" } | { status: "error"; message: string } | { status: "ok"; data: SettingsData };
 
 const NO_TEES = "none";
+/** Sign out: this phone stops getting that person's notifications first. */
+const signOut = async () => { await turnOffPush(); await supabase.auth.signOut(); };
 const openSite = (path: string) => { void Linking.openURL(shareUrl(path)); };
 
 /**
@@ -84,7 +88,7 @@ export default function Settings() {
         <View style={styles.gutter}>
           <StateSlot height={240} tone="dark" state={load.status === "loading" ? { kind: "loading" }
             : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchSettings(); } }} />
-          <Button label="Sign out" variant="secondaryOnDark" onPress={() => { void supabase.auth.signOut(); }} />
+          <Button label="Sign out" variant="secondaryOnDark" onPress={() => { void signOut(); }} />
         </View>
       </SafeAreaView>
     );
@@ -104,6 +108,7 @@ export default function Settings() {
         </SettingsSection>
 
         <SettingsSection title="Notifications">
+          <PhoneNotifications />
           {!prefs ? <SettingsNote>Notification settings are coming soon.</SettingsNote> : NOTIFICATION_TYPES.map((type) => (
             <View key={type.id} style={styles.notification}>
               <SettingsText>{type.label}</SettingsText>
@@ -154,7 +159,7 @@ export default function Settings() {
           <SettingsRow label="App version" detail={Constants.expoConfig?.version ?? "—"} last />
         </SettingsSection>
 
-        <Button label="Sign out" variant="secondaryOnDark" onPress={() => { void supabase.auth.signOut(); }} />
+        <Button label="Sign out" variant="secondaryOnDark" onPress={() => { void signOut(); }} />
       </ScrollView>
     </SafeAreaView>
   );
