@@ -4,6 +4,9 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
 import type { PastTournament } from "@/lib/platform/pastTournaments";
+import { TournamentInvite } from "~/components/tourneys/TournamentInvite.tsx";
+import { CreateTournament } from "~/components/tourneys/CreateTournament.tsx";
+import { PublicTournaments } from "~/components/tourneys/PublicTournaments.tsx";
 import { TournamentSheet } from "~/components/tourneys/TournamentSheet.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { apiGet } from "~/lib/api.ts";
@@ -18,6 +21,8 @@ export default function Tourneys() {
   useLightStatusBar();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [sheet, setSheet] = useState<{ visible: boolean; id: string | null }>({ visible: false, id: null });
+  const [inviting, setInviting] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const fetchHome = useCallback(async () => {
     const result = await apiGet<Home>("/api/app/tourneys?view=join");
@@ -30,7 +35,10 @@ export default function Tourneys() {
   return <SafeAreaView style={styles.page} edges={["top"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
       <Text accessibilityRole="header" style={styles.title}>Tourneys</Text>
+      <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.join}><Text style={styles.joinText}>Create a Tournament</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={() => setSheet({ visible: true, id: null })} style={styles.join}><Text style={styles.joinText}>Join with code</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => setInviting(true)} style={styles.join}><Text style={styles.joinText}>Open invitation link</Text></Pressable>
+      <PublicTournaments />
       {load.status !== "ok" ? <View style={styles.card}><StateSlot height={80} state={load.status === "loading" ? { kind: "loading" } : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchHome(); } }} /></View> : <>
         <Text style={styles.heading}>CURRENT</Text>
         <View style={styles.card}>{current.length ? current.map(t => <Row onPress={() => setSheet({ visible: true, id: t.id })} key={t.id} name={t.name} detail={[t.course, t.firstDate].filter(Boolean).join(" · ")} />) : <Text style={styles.empty}>No current tournaments.</Text>}</View>
@@ -44,6 +52,8 @@ export default function Tourneys() {
         </View>
       </>}
     </ScrollView>
+    <TournamentInvite visible={inviting} close={() => { setInviting(false); void fetchHome(); }} onOpen={id => setSheet({ visible: true, id })} />
+    <CreateTournament visible={creating} close={() => { setCreating(false); void fetchHome(); }} onOpen={id => setSheet({ visible: true, id })} />
     <TournamentSheet visible={sheet.visible} selectedId={sheet.id} onClose={() => { setSheet({ visible: false, id: null }); void fetchHome(); }} />
   </SafeAreaView>;
 }

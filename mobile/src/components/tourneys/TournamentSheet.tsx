@@ -1,6 +1,9 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { CodeTournament, CodeTournamentLookup } from "@/lib/platform/codeTournaments";
+import { TournamentSettings } from "~/components/tourneys/TournamentSettings.tsx";
+import { TournamentScoring } from "~/components/tourneys/TournamentScoring.tsx";
+import { TournamentDetail } from "~/components/tourneys/TournamentDetail.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { apiJson } from "~/lib/api.ts";
 import { shownJoinCode, typedJoinCode } from "~/lib/play.ts";
@@ -60,10 +63,7 @@ export function TournamentSheet({ visible, onClose, selectedId }: { visible: boo
             {screen.tournament.scoring === "Net" && <><Text style={styles.text}>Your handicap index</Text><TextInput accessibilityLabel="Handicap index" value={handicap} onChangeText={setHandicap} keyboardType="numbers-and-punctuation" placeholder="e.g. 12.3" style={styles.input} /></>}
             <Button label="Join tournament" disabled={busy} onPress={() => void join(screen.tournament)} /></>}
           <Button label="Try another code" disabled={busy} onPress={() => { setScreen({ kind: "code" }); setError(""); }} /></>}
-        {screen.kind === "detail" && <><Text style={styles.text}>{screen.tournament.scoring} · {screen.tournament.status === "ended" ? "Ended" : "Current"} · {screen.tournament.players.length} players</Text>
-          {screen.tournament.rounds.map(r => <Text key={r.number} style={styles.text}>Round {r.number} · {r.setup.course.name} · {r.date}</Text>)}
-          <Text style={styles.subheading}>Players</Text>{screen.tournament.players.map(p => <Text key={p.profileId} style={styles.text}>{p.name}</Text>)}
-        </>}
+        {screen.kind === "detail" && <><TournamentDetail tournament={screen.tournament} busy={busy} refresh={() => void open(screen.tournament.id)} /><TournamentScoring tournament={screen.tournament} reload={() => open(screen.tournament.id)} /><TournamentSettings tournament={screen.tournament} reload={() => open(screen.tournament.id)} /></>}
       </ScrollView>
     </View>
   </Modal>;

@@ -6860,6 +6860,32 @@ Codex's call: the first list remains read-only until native detail screens exist
 
 **2026-11-25 Tourneys continuation (App + Server):** Native Join with code uses the existing lookup and join handlers via `/api/app/code-tournaments/*`, accepts a net handicap and opens a member-only overview; current and ended code rows open the same overview. Existing members and ended events follow the existing handler behavior. Platform-history detail, creation, search, full event controls, scoring, complete parity inventory and phone checks remain outstanding. App routes require deployment. Review: `docs/expo-tourneys-review.md`, review_required.
 
+**2026-11-25 Tourneys leaderboard continuation ? Side: App:** Code tournament details now use the shared leaderboard ranking, net/gross and tee-sheet rules, round selection, cut summary and manual refresh. The event page, score entry, automatic updates, full parity and phone checks remain outstanding; `docs/expo-tourneys-review.md` remains review_required.
+
+**2026-11-25 Tourneys public discovery continuation**
+**Side:** App + Server
+Native Tourneys searches public events by name/location and optional date, groups Live, Upcoming and Past with shared rules and opens the sanitized spectator leaderboard. Spectators do not see member tee sheets. Existing public access rules remain in force. App endpoints require deployment; phone verification, creation, scoring and remaining parity are outstanding. Review: `docs/expo-tourneys-review.md`, review_required.
+
+**2026-11-25 Expo tournament creation continuation**
+**Side:** App + Server
+Native creation uses existing tournament and course handlers for name, gross/net, organizer participation, handicap, one or more courses, tees and dates. It offers copy/share of the join code and an entry to the member overview. Course/provider attribution is displayed. Organizer settings, invitations, scoring, full parity inventory and phone checks remain outstanding. New app endpoints require server deployment. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scoring continuation**
+**Side:** App + Server
+Eligible code tournament members can enter or clear a hole, attest the assigned player and submit a completed matching card using existing shared rules and server handlers. Entries await acknowledgement and are not queued offline. Full scoring UX, tournament organizer settings, invitations, platform tournament history, parity and phone checks remain outstanding. App route changes require server deployment. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo organizer controls continuation**
+**Side:** App + Server
+Code tournament organizers can copy/share the code, change spectator visibility and player link sharing, set or remove a cut and confirm ending the event using existing server rules. Tee-sheet editing, adding rounds, PDFs, deletion, invitations, platform tournament paths, full parity and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required; deployment unverified.
+
+**2026-11-25 Expo tournament tee-sheet continuation**
+**Side:** App + Server
+Organizers select a round, move players, edit tee times and starting holes, and save through existing server authorization. Automatic grouping/timing presets, further organizer settings, invitations, historical platform tournament paths, scoring parity and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required. Deployment unverified.
+
+**2026-11-25 Expo tournament invitation and document continuation**
+**Side:** App + Server
+Signed-in players can paste first-party tournament invitation links, inspect the existing preview and join with a handicap when required; members can open the existing Info PDF and viewers can open an available round pin sheet. Automatic app links, organizer document uploads/removals, remaining event paths and parity and real-phone checks remain outstanding. Existing public storage behavior is unchanged. Review: docs/expo-tourneys-review.md, review_required. New app invitation endpoint requires deployment.
+
 ## Feature: Expo app Step 4 — Sign up + onboarding (owner request 2026-11-25) — FAST MODE
 
 **Side:** App (uses the existing website routes; no new server routes, no SQL). The live flow is V2 (MAROON_V2_ONBOARDING=on in production): email → code → password → name → birthday → photo → Last step → Profile Created.
