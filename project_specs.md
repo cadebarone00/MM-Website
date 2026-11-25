@@ -7163,7 +7163,7 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Questions for Cade:** The current saved-trip page does not show the four expandable sections and has no weather source; feed and chat do not actually send or save anything. Is the proposed treatment above OK for 2c?
 
-### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; implementation in progress
+### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; APPROVED by Cam 2026-11-25 (Cade not on 2d; scoring sheet stays two across; Predict moves to the account: see "Predict follows the account" below, its own approval). Built in slices: 1 Golf tab views, 2 Games / Stats / Predict, 3 scoring, 4 corrections
 **Side:** App + Server + shared `lib/` where needed. Cade requested starting 2d now; 2c remains incomplete and both parts still need phone checks.
 
 **Codex's call:** Keep the existing two-across scoring layout for now. Keep Predict's existing device-local behavior, subject to its outstanding compliance review, and do not expose unfinished scoring as complete.
@@ -7196,3 +7196,37 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 - [ ] Test shared calculations and both phones: no competition / each competition type, no seat, before / during / after a round, each simulator conditional, mismatches, offline edits, reconnect, stale versions, conflicts, wrong account, submission, corrections and denied access. Check every line on Cade's iPhone alongside the current app; run mobile `npm test`, `npx tsc --noEmit`, `npx expo export --platform ios`, relevant website tests and workflow checks. Commit only our files; never commit `mobile/.env`.
 
 **Questions for Cade:** Should the scoring sheet keep two players across, or put one player on each row? The current website's Predict book is device-only; this checklist retains that behavior subject to review. OK?
+
+### Predict follows the account (owner request 2026-11-25) — SPEC, AWAITING APPROVAL (nothing built)
+
+**Side:** Server + App + Website (+ one new Supabase table the owner runs).
+
+**What changes and why.** Today Predict (play-only Maroon Coins, never real money) is kept only on the device:
+- **The coin wallet** (`golfTripPredictBook`) is one per phone or browser, shared by every trip.
+- **The organizer's Predict on / off and bet switches** (`golfTripPredict`) are also one per device. Another phone always sees the default (on).
+
+The owner wants Predict to follow the account. Sign in anywhere, see the same coins and picks.
+
+**How (my calls, correct me).**
+- **One wallet per player per trip**, starting at 1,000 coins. Each trip starts fresh, so coins from one trip don't carry into the next.
+- **New table `golf_trip_predict_books`.** It holds: trip, player, balance, positions (what you bought: market, outcome, shares, coins paid) and a version number.
+  - **Who can see it:** only the player themselves. The server reads and writes it.
+  - **Delete:** removing a trip or a player removes their wallet.
+  - **SQL file:** `supabase/golf_trip_predict_books.sql`. The owner runs it in Supabase. Its comments explain what it does.
+- **Server route `/api/golf-trips/<id>/predict-book`:**
+  - **GET** gives back your wallet, or a fresh 1,000-coin one.
+  - **PUT** saves a buy or sell.
+  - **Members only.** It works with the website login and the app login.
+  - **Two phones can't overwrite each other.** Each save says which version it started from. If the other phone saved in between, the server answers "changed elsewhere" and the screen reloads your wallet.
+  - **The server checks the maths:** never spending more coins than you have, and only selling what you own.
+- **The organizer's Predict on / off and bet switches** move into the trip's saved settings (Trip Settings). Every member and every device then sees the same thing. Editing them stays in Settings (part 2g on the app; the website's existing Settings screen saves there too).
+- **Moving over:** if the database table isn't installed yet, Predict keeps working on the device exactly as today and says nothing. Once the table is there, the first time you open Predict, any coins on this device for this trip are copied to your account once, then the account copy is used.
+- **Same brain:** the buy / sell maths moves into shared `lib/` code, so the website and the app give the same results.
+- **Still play-only:** no money, no prizes, no cash-out. The wallet says "Maroon Coins — play only".
+
+**Done when:**
+- Buying on the website, then opening the same trip on the phone, shows the same coins and positions, and the reverse.
+- Two phones buying at once never lose a trade.
+- The organizer turning Predict off hides it for everyone.
+- Tests cover the maths, the version conflict, members-only access and not installed / offline.
+- Website tests, app tests and type checks pass.
