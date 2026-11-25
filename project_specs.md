@@ -6828,3 +6828,25 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 - [ ] Name, Username (shows the username rule once changed), Bio (150 max, count), Socials "N of 4" → list, remove, + Add social → pick an app → type → Save (shared `socialFromInput`, `PUT /api/account/links`), Gender → Man / Woman / Prefer not to say (private; saves with Save).
 - [ ] Private profile switch with the shared explanation (`lib/profile/privacyExplain.ts`, moved out of the website's PrivacySetting), saves at once (`PUT /api/account/privacy`), goes back on failure.
 - [ ] Claude's calls: the website's move-and-scale cropper → the iPhone's own square crop.
+
+## Feature: Expo Tourneys migration (2026-11-25, in progress)
+**Side:** App + Server
+
+Owner requested a faster area-by-area native migration while Profile is being built separately. Reuse existing app APIs, business rules and components; build functional slices before visual polish. The first slice lists the signed-in player's current code tournaments and past code and platform tournaments using `/api/app/tourneys?view=join`, with loading, empty, error and refresh states. Rows are currently read-only. No data mutation is introduced.
+
+Nothing-missing checklist (in progress; compare website and simulator before completing):
+- [x] Native Tourneys landing and account-scoped current / past list, loading, error, empty and refresh.
+- [ ] Create a tournament and organizer access, including all setup and error states.
+- [ ] Join by code and invitations, including invalid, ended, existing-member and signed-out states.
+- [ ] Search public events and Live / Upcoming / Past, and open eligible events.
+- [ ] Open current and historic tournaments, My Tournaments and organizer Studio; preserve permissions.
+- [ ] Player scoring, attestation, leaderboard and tournament-specific settings and states.
+- [ ] Inventory all existing buttons, screens, simulator conditionals and permissions; verify parity and side-by-side on a real phone.
+
+Codex's call: the first list remains read-only until native detail screens exist; do not route private tournament links through a browser session that may not be signed in. All later items and real-phone verification remain outstanding. Compliance review: `docs/expo-tourneys-review.md`; review_required.
+
+### 3c checklist — Friends, Find golfers, someone's profile, their friends, Compare (from `ProfileSearch`, `FriendToggle`, `UserFriendsList`, `CompareRings`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Search golfers: Search · Friends · Suggested tabs; Search = friend requests (Accept / ✕) + Recent (on the phone, Clear all, ✕) before typing, results after 2+ letters (🔒 on Private); Friends = mine, typing narrows, "N friends"; Suggested = mutual friends / "Suggested for you"; typing there jumps to Search. Row buttons: ✓ Friends · Requested · Accept · Add.
+- [ ] Someone's profile (`?view=user`): Back, @username (lock when Private), Rounds · Friends · Handicap, name, bio, socials, Add friend toggle (Friends · Trip can't switch off), Compare (→ my Stats with them picked); Private = top only + "Private Profile"; my own username → my profile; not found.
+- [ ] Their friends (`?view=user-friends`): search, "N friends", You / Friends / Requested / Accept / Add; Private → "Their friends list is hidden."
+- [ ] Compare (my Stats): pick a friend / someone I've played with, or search every player; the 8 shared stats (`lib/profile/compareMetrics.ts`, moved out of the website's CompareRings), lower-is-better marked, numbers always written; private / not found / error. Claude's call: two bars per stat instead of rings for now.

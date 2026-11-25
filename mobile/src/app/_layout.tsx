@@ -38,6 +38,8 @@ function Screens() {
           {/* Profile (project_specs.md "Expo app Step 3 — Profile"). */}
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/search" />
+          <Stack.Screen name="profile/[username]/index" />
+          <Stack.Screen name="profile/[username]/friends" />
           <Stack.Screen name="settings" />
           {/* Golf Trips (project_specs.md "Expo app Step 2", part 2a). */}
           <Stack.Screen name="trips/join" />

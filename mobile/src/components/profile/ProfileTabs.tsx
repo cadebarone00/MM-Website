@@ -6,6 +6,7 @@ import { nineHolePairs } from "@/lib/platform/playerRounds";
 import { scoreMark } from "@/lib/platform/roundBoard";
 import { roundStats } from "@/lib/profile/roundStats";
 import { SheetClose } from "~/components/SheetClose.tsx";
+import { Compare } from "./Compare.tsx";
 import type { ProfileHistoryRound, ProfileModel, ProfileTrip } from "~/lib/profileTypes.ts";
 import { NAMED_SOURCES, profileDay, ROUND_LETTER, roundsLabel, roundToPar, sheetDifferential, underScore } from "~/lib/profileUi.ts";
 import { colors, fonts, gutter, radius } from "~/lib/theme.ts";
@@ -161,8 +162,8 @@ function Snap({ title, items }: { title: string; items: [string, string][] }) {
   );
 }
 
-/** Profile → Stats (website ProfileStats, numbers from the shared roundStats). */
-export function StatsTab({ profile }: { profile: ProfileModel }) {
+/** Profile → Stats (website ProfileStats, numbers from the shared roundStats). Mine also gets Compare (`compareWith` = start with them). */
+export function StatsTab({ profile, compareWith = null }: { profile: ProfileModel; compareWith?: string | null }) {
   const rounds = profile.rounds.status === "ok" ? profile.rounds.value : [];
   const stats = useMemo(() => { try { return roundStats(rounds); } catch { return null; } }, [rounds]);
   if (!stats) return <View style={styles.darkSection}><Text style={styles.muted}>{profile.isOwner ? "Stats will show here once you finish rounds." : "No stats to show yet."}</Text></View>;
@@ -174,6 +175,7 @@ export function StatsTab({ profile }: { profile: ProfileModel }) {
         <View style={styles.divider} />
         <StatRow items={([3, 4, 5] as const).map((par) => { const p = stats.byPar.find((e) => e.par === par); return [`Par ${par}s`, p ? p.average.toFixed(2) : "—"] as [string, string]; })} />
       </View>
+      {profile.isOwner && <Compare mine={stats} initial={compareWith} />}
       {holeStats && (
         <View style={styles.whiteCard}>
           <Text style={styles.cardHeading}>TEE TO GREEN</Text>

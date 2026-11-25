@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileHero, type ProfileTab } from "~/components/profile/ProfileHero.tsx";
@@ -20,7 +20,9 @@ export default function Profile() {
   useLightStatusBar();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [requests, setRequests] = useState(0);
-  const [tab, setTab] = useState<ProfileTab>("overview");
+  // Someone's Compare button lands here with ?compare=<username>: open my Stats with them picked.
+  const { compare } = useLocalSearchParams<{ compare?: string }>();
+  const [tab, setTab] = useState<ProfileTab>(compare ? "stats" : "overview");
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchProfile = useCallback(async () => {
@@ -54,7 +56,7 @@ export default function Profile() {
         <View style={styles.body}>
           {tab === "overview" && <OverviewTab profile={load.profile} />}
           {tab === "rounds" && <RoundsTab profile={load.profile} />}
-          {tab === "stats" && <StatsTab profile={load.profile} />}
+          {tab === "stats" && <StatsTab profile={load.profile} compareWith={compare ?? null} />}
         </View>
         {__DEV__ && <Text style={styles.dev} onPress={() => router.push("/dev/blocks")}>Building blocks (dev)</Text>}
       </ScrollView>
