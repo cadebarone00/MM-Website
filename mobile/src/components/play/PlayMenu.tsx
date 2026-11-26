@@ -82,7 +82,7 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.maroon950 },
+  page: { flex: 1, backgroundColor: colors.darkBackground },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 64, paddingHorizontal: gutter },
   close: { position: "absolute", left: gutter, width: 44, height: 44, alignItems: "center", justifyContent: "center", zIndex: 1 },
   closeText: { color: colors.cream, fontSize: 32 },

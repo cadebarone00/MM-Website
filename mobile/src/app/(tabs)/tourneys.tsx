@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { MyCodeTournament } from "@/lib/platform/codeTournaments";
 import { tournamentPathFromLink, type PastTournament } from "@/lib/platform/pastTournaments";
 import { TournamentHistory } from "~/components/tourneys/TournamentHistory.tsx";
+import { AppHeader } from "~/components/AppHeader.tsx";
 import { TournamentInvite } from "~/components/tourneys/TournamentInvite.tsx";
 import { CreateTournament } from "~/components/tourneys/CreateTournament.tsx";
 import { PublicTournaments } from "~/components/tourneys/PublicTournaments.tsx";
@@ -47,6 +48,7 @@ export default function Tourneys() {
   const current = load.status === "ok" ? load.data.codeTournaments.filter(t => t.status === "live") : [];
   const ended = load.status === "ok" ? load.data.codeTournaments.filter(t => t.status === "ended") : [];
   return <SafeAreaView style={styles.page} edges={["top"]}>
+    <AppHeader />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
       <Text accessibilityRole="header" style={styles.title}>Tourneys</Text>
       <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.join}><Text style={styles.joinText}>Create a Tournament</Text></Pressable>
@@ -85,7 +87,7 @@ const styles = StyleSheet.create({
   linkLabel: { fontFamily: fonts.regular, fontSize: 15, color: colors.cream },
   linkInput: { backgroundColor: colors.white, color: colors.maroon900, borderRadius: 12, padding: 12 },
   linkError: { color: colors.errorOnMaroon, fontFamily: fonts.regular, fontSize: 15 },
-  page: { flex: 1, backgroundColor: colors.maroon900 },
+  page: { flex: 1, backgroundColor: colors.darkBackground },
   content: { paddingHorizontal: gutter, paddingTop: 12, paddingBottom: 48, gap: 12 },
   title: { marginBottom: 8, textAlign: "center", fontFamily: fonts.regular, fontSize: 36, letterSpacing: -1, color: colors.cream },
   heading: { marginTop: 18, paddingHorizontal: 4, fontFamily: fonts.capsBold, fontSize: 12, letterSpacing: 1, color: colors.cream },

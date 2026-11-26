@@ -32,6 +32,9 @@ export default function BuildingBlocks() {
     <SafeAreaView style={styles.page} edges={["top"]}>
       <View style={styles.gutter}><PageHeader title="Building blocks" back /></View>
       <ScrollView contentContainerStyle={styles.content}>
+        <Section title="Dark Mode Background">
+          <View style={styles.darkBackground}><Text style={styles.bodyOnDark}>Dark Mode Background</Text></View>
+        </Section>
         <Section title="Buttons">
           <Button label="Primary" onPress={() => {}} />
           <Button label="Secondary" variant="secondary" onPress={() => {}} />
@@ -135,6 +138,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.cream },
+  darkBackground: { backgroundColor: colors.darkBackground, borderRadius: 16, padding: gutter, minHeight: 80, justifyContent: "center" },
   gutter: { paddingHorizontal: gutter },
   content: { paddingHorizontal: gutter, paddingBottom: 48, gap: 28 },
   section: { gap: 10 },

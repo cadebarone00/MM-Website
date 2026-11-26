@@ -5,6 +5,7 @@ import { Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text
 import { SafeAreaView } from "react-native-safe-area-context";
 import { splitGolfTrips, tripDateRange, type GolfTripSummary } from "@/lib/platform/golfTripCreate";
 import { JoinCodeCard } from "~/components/play/JoinCodeCard.tsx";
+import { AppHeader } from "~/components/AppHeader.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { apiJson, shareUrl } from "~/lib/api.ts";
@@ -36,6 +37,7 @@ export default function GolfTrips() {
 
   return (
     <SafeAreaView style={styles.page} edges={["top"]}>
+      <AppHeader />
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
         <Text style={styles.title} accessibilityRole="header">Golf Trips</Text>
         <View style={styles.actions}>
@@ -129,14 +131,14 @@ function playerCount(trip: GolfTripSummary): string {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.maroon900 },
+  page: { flex: 1, backgroundColor: colors.darkBackground },
   content: { paddingHorizontal: gutter, paddingTop: 12, paddingBottom: 48, gap: 12 },
   title: { marginBottom: 8, textAlign: "center", fontFamily: fonts.regular, fontSize: 36, letterSpacing: -1, color: colors.cream },
   actions: { flexDirection: "row", gap: 12 },
   action: { flex: 1, minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: "rgba(201,168,110,0.53)", borderRadius: 16 },
   actionText: { fontFamily: fonts.bold, fontSize: 17, color: colors.avatarGold },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  live: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, paddingVertical: 21, paddingHorizontal: 20, borderWidth: 1, borderColor: "rgba(201,168,110,0.53)", borderRadius: 20, backgroundColor: colors.maroon900 },
+  live: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, paddingVertical: 21, paddingHorizontal: 20, borderWidth: 1, borderColor: "rgba(201,168,110,0.53)", borderRadius: 20, backgroundColor: colors.darkBackground },
   liveText: { flex: 1, gap: 7 },
   liveTitle: { fontFamily: fonts.semibold, fontSize: 25, color: colors.avatarGold },
   liveDescription: { fontFamily: fonts.regular, fontSize: 14, color: colors.cream },
