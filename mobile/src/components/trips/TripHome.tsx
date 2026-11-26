@@ -20,9 +20,11 @@ import { TripHomeDrafts } from "./TripHomeDrafts.tsx";
  * Trip Home (project_specs.md Golf Trips part 2c), drawn from the shared lib/platform/tripHome.ts view: the maroon head
  * (Your trip to … + dates, the Big Board), The Maroon Live, Players / Teams with the invite link, Competition.
  */
-export function TripHome({ view, invite, onOpenItinerary, onOpenFlights, onSettings, onRoom }: {
+export function TripHome({ view, invite, onOpenItinerary, onOpenFlights, onSettings, onRoom, onOpenLive }: {
   view: TripHomeView; invite: { state: InviteLinkState; fresh: () => Promise<{ url: string } | null> };
   onOpenItinerary: () => void; onOpenFlights: () => void; onSettings: () => void; onRoom: (which: "draft" | "selection" | "robin") => void;
+  /** The Maroon Live → View: the trip's live board in the app (the Golf tab), not the website. */
+  onOpenLive: () => void;
 }) {
   return (
     <View>
@@ -35,7 +37,7 @@ export function TripHome({ view, invite, onOpenItinerary, onOpenFlights, onSetti
       </View>
       <BigBoard score={view.score} highlights={view.highlights} mom={view.mom} slides={view.slides}
         onOpen={(slide) => slide.opens === "flights" ? onOpenFlights() : onOpenItinerary()} />
-      <LiveCard path={view.livePath} tripName={view.tripName} />
+      <LiveCard path={view.livePath} tripName={view.tripName} onView={onOpenLive} />
       {view.drafts && <TripHomeDrafts drafts={view.drafts} hasTeams={!!view.roster.teams} isOrganizer={view.isOrganizer} onSettings={onSettings} onRoom={onRoom} />}
       <Roster players={view.roster.players} teams={view.roster.teams} allotted={view.roster.allotted}
         invite={view.roster.showInvite ? <InviteBox state={invite.state} fresh={invite.fresh} /> : null} />
@@ -214,7 +216,7 @@ function MomSection({ travel, arrivalDay, plans, rounds, afterRound }: TripHomeV
 
 // ——— The Maroon Live ———
 
-function LiveCard({ path, tripName }: { path: string | null; tripName: string }) {
+function LiveCard({ path, tripName, onView }: { path: string | null; tripName: string; onView: () => void }) {
   const [copied, setCopied] = useState(false);
   const [note, setNote] = useState("");
   const url = path ? shareUrl(path) : null;
@@ -227,7 +229,8 @@ function LiveCard({ path, tripName }: { path: string | null; tripName: string })
     <View style={styles.liveCard} accessibilityLabel="The Maroon Live invite">
       <View style={styles.liveTop}>
         <Text style={styles.liveTitle}>The Maroon Live</Text>
-        <Pressable accessibilityRole="link" accessibilityLabel="View The Maroon Live" disabled={!url} onPress={() => { if (url) Linking.openURL(url).catch(() => {}); }} style={!url && { opacity: 0.45 }}>
+        {/* View stays in the app: the live leaderboard, matches and stats are the Golf tab. Copy / Share send the web link for people without the app. */}
+        <Pressable accessibilityRole="button" accessibilityLabel="View The Maroon Live" onPress={onView}>
           <Text style={styles.liveView}>View</Text>
         </Pressable>
       </View>

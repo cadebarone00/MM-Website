@@ -90,7 +90,7 @@ export default function TripScreen() {
           <TripHome view={view} invite={invite}
             onOpenItinerary={() => setTab("Itinerary")}
             onOpenFlights={() => setFlightsOpen(true)} onSettings={settings}
-            onRoom={setRoom} />
+            onRoom={setRoom} onOpenLive={() => setTab("Golf")} />
         </ScrollView>
       ) : tab === "Golf" ? (
         <TripGolf match={view.match} schedule={view.draft} structure={view.structure} viewerName={view.viewerName} roundLive={view.roundLive}
