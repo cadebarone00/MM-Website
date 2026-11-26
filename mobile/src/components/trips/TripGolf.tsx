@@ -26,6 +26,7 @@ import { TripGames, type TripGamesContext } from "./TripGames.tsx";
 import { TripMatchDetail } from "./TripMatchDetail.tsx";
 import { TripPredict } from "./TripPredict.tsx";
 import { TripStats, type TripStatsView } from "./TripStats.tsx";
+import { useTripScroll } from "~/lib/tripScroll.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 const COLLAPSED_KEY = "golfDayBoardCollapsed";
@@ -51,6 +52,7 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
   setup?: Record<string, unknown>;
 }) {
   const predictOn = predict.on && !spectator && !!games;
+  const tripScroll = useTripScroll(); // tucks the trip header away while scrolling down
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed((value) => { storeCollapsed(!value); return !value; });
   const noComp = !structure.individual && !structure.team;
@@ -88,7 +90,7 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
     ? { ...source, round: standingsRound, format: schedule[`round${standingsRound}Format`] ?? source.format, formatDef: undefined } : source;
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
+    <ScrollView onScroll={tripScroll} scrollEventThrottle={16} contentContainerStyle={styles.scroll}>
       <View style={styles.tray}>
         <LinearGradient pointerEvents="none" colors={["transparent", "rgba(201,168,110,0.08)"]} style={StyleSheet.absoluteFill} />
         <DayBoard match={source} schedule={schedule} structure={structure} viewerName={viewerName} collapsed={collapsed} />

@@ -7593,3 +7593,10 @@ Signed-in players can paste a first-party tournament page link or path and open 
 3. **Groups:** the type ("Tee time") as a section heading (Spectral bold) with a line under it.
 4. **Tee time box:** dark box with a light border (not cream); "Tee time TBD" bold on the left, **Sit out** (rose outline) and **Play** (green fill when picked) pills on the right; a line; "Course TBD" big bold, "Round 1" (Barlow) under it; **Playing** in green (Spectral bold) bottom right.
 
+
+### Trip page: tuck-away header on scroll (owner request 2026-11-26) — BUILT 2026-11-26, not phone-checked
+**Side:** App
+- Scroll down on any trip tab (Home, Golf incl. Games / Stats / Predict, Venue, Itinerary): the top row (☰ · feed · chat · trip name · gear) slides up and fades away; the Home · Golf · Venue · Itinerary tabs move up right under the Dynamic Island and get slightly smaller (44 → 36 tall, words 15 → 13).
+- Scroll back up (or reach the top / pull to refresh): the top row slides back down and the tabs return to full size. Switching tabs brings it back too.
+- Small jitters (under 6 points) and the bounce at the bottom of a list are ignored. Reduce Motion: it snaps instead of sliding.
+- Built in `mobile/src/lib/tripScroll.ts` (one shared scroll listener each tab's main list uses) + `mobile/src/app/trips/[id].tsx`.

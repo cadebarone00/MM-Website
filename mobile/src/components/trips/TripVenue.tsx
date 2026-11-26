@@ -7,6 +7,7 @@ import { PLACES_CREDIT } from "@/lib/platform/placeAreas";
 import { distanceLabel, distanceMiles, mapsLink, PLACE_CATEGORIES, placeBadge, rankPlaces, type Place, type PlaceCategory } from "@/lib/platform/venuePlaces";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { apiRaw } from "~/lib/api.ts";
+import { useTripScroll } from "~/lib/tripScroll.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 type Center = { latitude: number; longitude: number };
@@ -26,6 +27,7 @@ export function TripVenue({ tripId, destination, center, onAddToItinerary }: {
   tripId: string; destination: string; center: Center | null; onAddToItinerary?: (place: Place, done: () => void) => void;
 }) {
   const [live, setLive] = useState<Live>({ status: "loading" });
+  const tripScroll = useTripScroll(); // tucks the trip header away while scrolling down
   const [saved, setSaved] = useState<string[]>([]);
   const [added, setAdded] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -112,7 +114,7 @@ export function TripVenue({ tripId, destination, center, onAddToItinerary }: {
     });
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled"
+    <ScrollView onScroll={tripScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.goldBright} />}>
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>

@@ -8,6 +8,7 @@ import { itineraryByDay, itineraryCategory, itineraryLongDate, itineraryTime, it
 import { itineraryFor, type TravelItem, type TravelKind } from "@/lib/platform/tripTravel";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import type { useTripPlans } from "~/lib/useTripPlans.ts";
+import { useTripScroll } from "~/lib/tripScroll.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 import { AddChoices, InvitePeople, TripTravelForm } from "./TripTravelForm.tsx";
 
@@ -30,6 +31,7 @@ export function TripItinerary({ tripId, plans, rounds, tripDays, activeRound, re
   tripId: string; plans: Plans; rounds: { number: number; date: string; course: string }[]; tripDays: string[]; activeRound?: number; refreshing: boolean; onRefresh: () => void;
 }) {
   const { travel, change, status } = plans;
+  const tripScroll = useTripScroll(); // tucks the trip header away while scrolling down
   const items = useMemo(() => withGolfRounds(itineraryFor(travel), rounds), [travel, rounds]);
   const days = itineraryByDay(items, tripDays);
   const [now] = useState(() => localNow(new Date()));
@@ -47,7 +49,7 @@ export function TripItinerary({ tripId, plans, rounds, tripDays, activeRound, re
   const setRsvp = (round: number, choice: Rsvp) => { writeRsvp(tripId, round, choice); setRsvps((r) => ({ ...r, [round]: choice })); };
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 48 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldBright} />}>
+    <ScrollView onScroll={tripScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: 48 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldBright} />}>
       {day ? <View style={styles.dayHead} accessibilityLabel={`${itineraryWeekday(day.day)}, ${itineraryLongDate(day.day)}`}>
         <Pressable accessibilityRole="button" accessibilityLabel="Previous day" disabled={index === 0} onPress={() => setPicked(index - 1)} style={styles.step}><SymbolView name="chevron.left" size={20} weight="semibold" tintColor={colors.cream} style={index === 0 ? styles.hidden : undefined} /></Pressable>
         <View style={{ alignItems: "center" }}><Text style={styles.weekday}>{itineraryWeekday(day.day)}</Text><Text style={styles.date}>{itineraryLongDate(day.day)}</Text></View>
