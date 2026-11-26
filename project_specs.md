@@ -7520,9 +7520,15 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] **Your turn to pick** (Team Draft start + every pick): the captain now on the clock (not when they just picked themselves).
 - [ ] **Opponent submitted** (Submit & Save): everyone in that group who hasn't submitted yet.
 - [ ] **Round final**: when the last card of the round is submitted, everyone on the trip.
-- [ ] **Card mismatch**: a card refused for not matching → the attester hears which hole (Claude's call: not the golfer too; they already see it on screen and retries would buzz them).
+- [ ] **Card mismatch**: a card refused for not matching → both players hear which hole (owner decision 2026-11-26).
 - All in `lib/notifications/tripPushes.ts`, sent without waiting; they never change what the screen answers.
 - **Not hooked up, nothing to hook into yet:** trip join requests + accepted / declined and trip chat (no server feature yet); add past rounds (no single save point found). **Needs a timer:** tee time soon, draft starting (Vercel Hobby runs timers once a day; needs a paid plan or an outside timer). **Highlights-sheet types** (big moments, travel, announcements) bring their own wording: separate step.
+### 6c checklist — timed reminders (owner choices 2026-11-26: the organizer picks the trip's time zone; Supabase Cron runs the timer) — BUILT, committed, not live yet
+- [ ] `supabase/push_reminders.sql` (NOT run): `golf_trips.time_zone` + `push_reminders_sent` (each reminder sent once; rows older than 30 days removed by the timer).
+- [ ] Trip Settings → General → **Time zone** (organizer, app; `mobile/src/components/trips/TripTimeZone.tsx`, list in `lib/platform/tripTimeZones.ts`; the phone's own zone suggested first). Not set = Central. `GET / PUT /api/golf-trips/<id>/time-zone`.
+- [ ] Timer route `GET /api/internal/push-reminders` (`Authorization: Bearer <CRON_SECRET>`), every 5 minutes from Supabase Cron: **Tee time in 30 minutes** (sent 20–35 minutes before, to that group's players: placed in the group + the players of its matches) and **The draft starts in 15 minutes** (8–20 minutes before, to everyone joined). Rules in `lib/notifications/reminders.ts` (tested); work in `remindersServer.ts`.
+- Claude's calls: the website's General Settings doesn't show Time zone yet (app first); tee-group player numbers are read as places in the trip's members in join order (the setup editors' order). If that's wrong for some trip, the reminder goes to the wrong group, so it needs a real-trip check.
+- **Cade's steps:** run the SQL; Supabase → Integrations → Cron → a job every 5 minutes calling the route with the CRON_SECRET from Vercel; push + deploy.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

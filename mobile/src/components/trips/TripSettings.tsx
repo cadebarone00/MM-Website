@@ -15,6 +15,7 @@ import { GENERAL_CARDS, ORGANIZER_SECTIONS } from "@/lib/platform/tripSettingsSe
 import { clearSeen, TIPS_SEEN_KEY } from "@/lib/platform/tripTour";
 import type { SetupBasis } from "@/lib/platform/savedTripSetup";
 import { Competition, GeneralEditor, GolfSchedule, Games, MatchSelection, Skins } from "./TripSetupEditors.tsx";
+import { TripTimeZone } from "./TripTimeZone.tsx";
 import { apiRaw, shareUrl } from "~/lib/api.ts";
 import { useTripSetup } from "~/lib/useTripSetup.ts";
 import { FullScreenPage } from "~/components/FullScreenPage.tsx";
@@ -76,6 +77,7 @@ export function TripSettings({ trip, draft, viewer, setupValues, basis, onClose,
             </View>)}
           </>}
           {page === "General Settings" && (organizer ? <GeneralEditor {...editorProps} draft={draft} onChanged={onChanged} /> : <General trip={trip} draft={draft} values={setup.values} />)}
+          {page === "General Settings" && organizer && <TripTimeZone tripId={trip.trip.id} />}
           {page === "Golf Schedule" && <GolfSchedule {...editorProps} />}
           {page === "Games" && <Games {...editorProps} />}
           {page === "Individual Competition" && <Competition {...editorProps} kind="individual" />}
