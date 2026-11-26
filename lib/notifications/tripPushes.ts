@@ -76,8 +76,8 @@ export function pushCardSubmitted(groupId: string, golferId: string) {
   });
 }
 
-/** A card was refused because it doesn't match the attester's: the attester hears which hole to look at (the golfer
- *  already sees it on their own screen, and a retry doesn't buzz them again). */
+/** A card was refused because it doesn't match the attester's: BOTH players hear which hole to look at (owner decision
+ *  2026-11-26), each named the other. */
 export function pushCardMismatch(groupId: string, golferId: string, holes: number[]) {
   if (!holes.length) return;
   quietly(async () => {
@@ -89,6 +89,9 @@ export function pushCardMismatch(groupId: string, golferId: string, holes: numbe
     const who = await names([golferId, attester]);
     const hole = Math.min(...holes);
     const values = (other: string) => ({ Hole: hole, Player: who.get(other) ?? "Your partner", Round: round.number, "Trip ID": round.tripId });
-    await sendPush({ to: [attester], kind: "cardMismatch", values: values(golferId), groupId: round.tripId });
+    await Promise.all([
+      sendPush({ to: [golferId], kind: "cardMismatch", values: values(attester), groupId: round.tripId }),
+      sendPush({ to: [attester], kind: "cardMismatch", values: values(golferId), groupId: round.tripId }),
+    ]);
   });
 }
