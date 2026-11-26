@@ -1,10 +1,12 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import * as SecureStore from "expo-secure-store";
 import { SymbolView } from "expo-symbols";
+import { LinearGradient } from "expo-linear-gradient";
 import { halves } from "@/lib/platform/bigBoard";
+import { matchDraftCountdown, matchDraftStatus } from "@/lib/platform/matchDraftStatus";
 import { competitionMatchOffset } from "@/lib/platform/competitionMatchNumber";
 import { courseOverviewName } from "@/lib/platform/courseShortName";
 import { resolveGolfFormat } from "@/lib/platform/formats";
@@ -38,13 +40,15 @@ type Slot = GolfTripSection | "Predict";
  * Everything is worked out by the website's shared lib/ code. Match details, player and team cards: slice 1b; Games,
  * Stats and Predict (Predict's wallet on the account): slice 2.
  */
-export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predict, games, notice, spectator = false, tripStats }: {
+export function TripGolf({ match: source, schedule, structure, viewerName, roundLive, playerStats, predict, games, notice, spectator = false, tripStats, setup }: {
   match: GolfMatchPreview; schedule: GolfTripDraft; structure: CompetitionStructure; viewerName: string | null; roundLive: boolean;
   playerStats: boolean; predict: { on: boolean; off: string[] }; games: TripGamesContext | null;
   /** Why today's scoring sheet isn't open yet (no confirmed pars, no attestee), or null. */
   notice?: string | null;
   /** Read only (an imported past trip): no Games or Predict; Stats shows the trip's recorded stats. */
   spectator?: boolean; tripStats?: TripStatsView;
+  /** The trip's saved settings: a round with no matches shows its Match Draft (or "No Match Draft has been set"). */
+  setup?: Record<string, unknown>;
 }) {
   const predictOn = predict.on && !spectator && !!games;
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -85,9 +89,9 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
-      <DayBoard match={source} schedule={schedule} structure={structure} viewerName={viewerName} collapsed={collapsed} />
-      {notice && <View style={styles.notice} accessibilityRole="summary"><Text style={styles.noticeText}>{notice}</Text></View>}
-      <View style={styles.navRow}>
+      <View style={styles.tray}>
+        <LinearGradient pointerEvents="none" colors={["transparent", "rgba(201,168,110,0.08)"]} style={StyleSheet.absoluteFill} />
+        <DayBoard match={source} schedule={schedule} structure={structure} viewerName={viewerName} collapsed={collapsed} />
         <View style={styles.pill} accessibilityRole="tablist" accessibilityLabel="Golf sections">
           {pillTabs.map(({ id, label }) => {
             const on = id === "Overview" || id === "Competition" ? boardActive : id === area;
@@ -96,19 +100,20 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
             </Pressable>;
           })}
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={collapsed ? "Expand golf overview" : "Collapse golf overview"} accessibilityState={{ expanded: !collapsed }} onPress={toggle} style={styles.handle}>
-          <View style={styles.handleBar} />
-        </Pressable>
       </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={collapsed ? "Expand golf overview" : "Collapse golf overview"} accessibilityState={{ expanded: !collapsed }} onPress={toggle} hitSlop={12} style={styles.handle}>
+        <View style={styles.handleBar} />
+      </Pressable>
+      {notice && <View style={styles.notice} accessibilityRole="summary"><Text style={styles.noticeText}>{notice}</Text></View>}
 
       {both && boardActive && <View style={styles.switch} accessibilityRole="radiogroup" accessibilityLabel="Leaderboard type">
         {(["Competition", "Overview"] as const).map((id) => <Pressable key={id} accessibilityRole="radio" accessibilityState={{ checked: active === id }} onPress={() => setBoard(id)} style={[styles.switchTab, active === id && styles.switchOn]}>
           <Text style={[styles.switchText, active === id && styles.switchTextOn]}>{id === "Competition" ? "Team" : "Indi"}</Text></Pressable>)}
       </View>}
 
-      {active === "Competition" && structure.team && <TeamSummary match={match} />}
+      {active === "Competition" && structure.team && <TeamSummary match={match} predictOn={predictOn} showStats={playerStats} />}
       {active === "Competition" && rounds.length > 0 && <View style={styles.rounds}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: gutter }} accessibilityRole="tablist" accessibilityLabel="Rounds">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: gutter }} accessibilityRole="tablist" accessibilityLabel="Rounds">
           {rounds.map((r) => <Pressable key={r.number} accessibilityRole="tab" accessibilityState={{ selected: r.number === match.round }} onPress={() => setChosenRound(r.number)}
             style={[styles.roundPill, r.number === match.round && styles.roundPillOn]}><Text style={[styles.roundText, r.number === match.round && styles.roundTextOn]}>Round {r.number}</Text></Pressable>)}
         </ScrollView>
@@ -122,7 +127,7 @@ export function TripGolf({ match: source, schedule, structure, viewerName, round
       </View>}
 
       {active === "Overview" && (teamOnly ? <TeeSheet match={match} /> : <Leaderboard match={leaderboardMatch} byToday={noComp} />)}
-      {active === "Competition" && <Matches full={source} match={match} roundStarted={roundLive && match.round === source.round} showStats={playerStats} />}
+      {active === "Competition" && <Matches full={source} match={match} roundStarted={roundLive && match.round === source.round} showStats={playerStats} setup={setup} />}
       {active === "Games" && games && <View style={styles.section}><TripGames match={source} saved={games}
         rounds={rounds.map((r) => ({ number: r.number, date: r.date, course: schedule[`round${r.number}Course`] || undefined }))} /></View>}
       {/* Live trips have no recorded-round stats yet (same as the website); imported trips bring theirs in part 2g. */}
@@ -271,30 +276,57 @@ function TeeSheet({ match }: { match: GolfMatchPreview }) {
 }
 
 /** The two teams, their points (from the organizer's round settings) and TO WIN between them. */
-function TeamSummary({ match }: { match: GolfMatchPreview }) {
+function TeamSummary({ match, predictOn, showStats }: { match: GolfMatchPreview; predictOn: boolean; showStats: boolean }) {
   const [left, right] = match.sides;
   const team = teamPoints(match);
   // Tapping the box drops down every player's match points, best first.
   const [open, setOpen] = useState(false);
   const ranking = open ? playerPoints(withHoleStandings(match)) : [];
+  const labels = ["PPG", "FWY", "GIR"];
   return (
     <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel="Points by player">
+    {/* TestFlight look: gold outline, team colors glowing from the top corners, TO WIN between the names, big scores. */}
     <View style={styles.teamBox} accessibilityLabel="Tournament standings">
-      <View style={styles.teamSide}><Text style={styles.teamName} numberOfLines={1}>{left.name}</Text><Text style={styles.teamScore}>{team ? halves(team.points[0]) : left.score || "—"}</Text></View>
-      <View style={{ alignItems: "center" }} accessibilityLabel="Points to win"><Text style={styles.colLabel}>TO WIN</Text><Text style={styles.toWin}>{team ? halves(team.available / 2 + 0.5) : "—"}</Text></View>
-      <View style={styles.teamSide}><Text style={styles.teamName} numberOfLines={1}>{right.name}</Text><Text style={styles.teamScore}>{team ? halves(team.points[1]) : right.score || "—"}</Text></View>
+      <LinearGradient pointerEvents="none" colors={["rgba(220,196,149,0.42)", "transparent"]} start={{ x: 0, y: 0 }} end={{ x: 0.55, y: 0.75 }} style={StyleSheet.absoluteFill} />
+      <LinearGradient pointerEvents="none" colors={["rgba(232,154,154,0.5)", "transparent"]} start={{ x: 1, y: 0 }} end={{ x: 0.45, y: 0.75 }} style={StyleSheet.absoluteFill} />
+      <View style={styles.teamTop}>
+        <View style={styles.teamSide}><Text style={styles.teamName} numberOfLines={2}>{left.name}</Text><Text style={styles.teamScore}>{team ? halves(team.points[0]) : left.score || "—"}</Text></View>
+        <View style={styles.toWinBox} accessibilityLabel="Points to win"><Text style={styles.toWinLabel}>TO WIN</Text><Text style={styles.toWin}>{team ? halves(team.available / 2 + 0.5) : "—"}</Text></View>
+        <View style={styles.teamSide}><Text style={styles.teamName} numberOfLines={2}>{right.name}</Text><Text style={styles.teamScore}>{team ? halves(team.points[1]) : right.score || "—"}</Text></View>
+      </View>
+      {open && <View style={styles.pointsOpen}>
+        {(["left", "right"] as const).map((side) => <View key={side} style={{ flex: 1 }} accessibilityLabel={`${side === "left" ? left.name : right.name} points by player`}>
+          {ranking.filter((r) => r.side === side).map((r) => <View key={r.name} style={styles.teePlayer}><Text style={styles.playerName} numberOfLines={1}>{r.name}</Text><Text style={styles.statValue}>{halves(r.points)}</Text></View>)}
+        </View>)}
+      </View>}
+      {predictOn && <WinBar left={left.winPct ?? 50} right={right.winPct ?? 50} />}
+      {showStats && <View style={styles.teamStats}>
+        {(["left", "right"] as const).map((side) => <View key={side} style={[styles.teamStatsSide, side === "left" && styles.teamStatsLeft]}>
+          {(side === "right" ? [...labels].reverse() : labels).map((label) => <Text key={label} style={styles.teamStatLabel}>{label}</Text>)}
+        </View>)}
+      </View>}
     </View>
-    {open && <View style={[styles.board, { flexDirection: "row", gap: 12 }]}>
-      {(["left", "right"] as const).map((side) => <View key={side} style={{ flex: 1 }} accessibilityLabel={`${side === "left" ? left.name : right.name} points by player`}>
-        {ranking.filter((r) => r.side === side).map((r) => <View key={r.name} style={styles.teePlayer}><Text style={styles.playerName} numberOfLines={1}>{r.name}</Text><Text style={styles.statValue}>{halves(r.points)}</Text></View>)}
-      </View>)}
-    </View>}
     </Pressable>
   );
 }
 
+/** Win chance (Predict on): the leader's % and a thin bar filling out from the middle (website WinBar). */
+function WinBar({ left, right }: { left: number; right: number }) {
+  const fill = (pct: number) => `${Math.min(Math.max((pct - 50) * 2, 0), 100)}%` as const;
+  const leader = left > right ? "left" : right > left ? "right" : null;
+  return (
+    <View style={styles.win} accessibilityRole="image" accessibilityLabel={`Win probability ${left}% to ${right}%`}>
+      <Text style={[styles.winPct, leader === "left" && { color: colors.avatarGold }, leader === "right" && { color: "#e89a9a" }]}>{leader === "left" ? "‹ " : ""}{leader === "right" ? right : left}%{leader === "right" ? " ›" : ""}</Text>
+      <View style={styles.winBar}>
+        <View style={{ flex: 1, alignItems: "flex-end" }}><View style={{ width: fill(left), height: "100%", backgroundColor: colors.avatarGold }} /></View>
+        <View style={{ flex: 1 }}><View style={{ width: fill(right), height: "100%", backgroundColor: "#e89a9a" }} /></View>
+      </View>
+    </View>
+  );
+}
+
 /** The round's matches: Match n, each side and its score, the status (tee time / THRU / final) in the middle. */
-function Matches({ full, match, roundStarted, showStats }: { full: GolfMatchPreview; match: GolfMatchPreview; roundStarted: boolean; showStats: boolean }) {
+function Matches({ full, match, roundStarted, showStats, setup }: { full: GolfMatchPreview; match: GolfMatchPreview; roundStarted: boolean; showStats: boolean; setup?: Record<string, unknown> }) {
   const [net, setNet] = useState(false);
   const [opened, setOpened] = useState<number | null>(null);
   const scoring = matchScoring(match);
@@ -307,7 +339,7 @@ function Matches({ full, match, roundStarted, showStats }: { full: GolfMatchPrev
   const sideNames = pairings.map((m) => [normalizeCompetitor(m.left).name, m.right ? normalizeCompetitor(m.right).name : undefined]);
   const same = sideNames.length > 0 && !!sideNames[0][0] && !!sideNames[0][1] && sideNames.every(([l, r]) => l === sideNames[0][0] && r === sideNames[0][1]);
   const teamNames: [string, string] = same ? [sideNames[0][0]!, sideNames[0][1]!] : [match.sides[0]?.name ?? "Team A", match.sides[1]?.name ?? "Team B"];
-  if (!pairings.length) return <Empty text="Your matchups will show here" />;
+  if (!pairings.length) return setup ? <MatchDraftLine setup={setup} round={match.round} /> : <Empty text="Your matchups will show here" />;
   return (
     <View style={{ gap: 10, marginTop: 12 }}>
       {scoring === "Both" && <View style={[styles.switch, { alignSelf: "flex-end", width: 160 }]} accessibilityRole="radiogroup" accessibilityLabel="Scoring">
@@ -345,6 +377,22 @@ function MatchSide({ names, team, score, leading, align = "left" }: { names: str
   );
 }
 
+/** No matches in this round yet (website MatchDraftStatus): its Match Draft and a countdown, or "No Match Draft has been set." */
+function MatchDraftLine({ setup, round }: { setup: Record<string, unknown>; round: number }) {
+  const draft = matchDraftStatus(setup, round);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { if (!draft) return; const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, [draft]);
+  return (
+    <View style={styles.draftLine}>
+      <Text style={styles.draftTitle}>{draft ? "Match Draft" : "No Match Draft has been set."}</Text>
+      {draft ? <>
+        <Text style={styles.draftSub}>{draft.date} · {draft.time}</Text>
+        <Text style={styles.draftSub} accessibilityRole="timer">{matchDraftCountdown(draft.target, now)}</Text>
+      </> : <Text style={styles.draftSub}>Ask Your Organizer</Text>}
+    </View>
+  );
+}
+
 function Empty({ text }: { text: string }) {
   return <View style={[styles.board, { alignItems: "center", paddingVertical: 28 }]}><Text style={styles.muted}>{text}</Text></View>;
 }
@@ -352,7 +400,7 @@ function Empty({ text }: { text: string }) {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: 48 },
   section: { marginTop: 14 },
-  day: { marginHorizontal: gutter, marginTop: 12, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop },
+  day: { marginTop: 6, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop },
   profile: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   identity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 },
   name: { fontFamily: fonts.bold, fontSize: 16, color: colors.cream },
@@ -364,25 +412,25 @@ const styles = StyleSheet.create({
   dayCourse: { fontFamily: fonts.semibold, fontSize: 15, color: colors.cream },
   dayMatch: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
   navRow: { flexDirection: "row", alignItems: "center", marginTop: 12, marginHorizontal: gutter, gap: 8 },
-  pill: { flex: 1, flexDirection: "row", padding: 4, borderRadius: 999, backgroundColor: colors.inputOnMaroon, borderWidth: 1, borderColor: colors.avatarRing },
-  pillTab: { flex: 1, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center" },
-  pillTabOn: { backgroundColor: colors.cream },
-  pillText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.boardInk },
-  pillTextOn: { color: colors.maroon900 },
-  handle: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  handleBar: { width: 28, height: 5, borderRadius: 3, backgroundColor: colors.boardBorder },
+  pill: { flexDirection: "row", marginTop: 4 },
+  pillTab: { flex: 1, height: 34, marginHorizontal: 2, borderRadius: radius.control, borderWidth: 1.5, borderColor: "transparent", alignItems: "center", justifyContent: "center" },
+  pillTabOn: { borderColor: colors.avatarGold, backgroundColor: "rgba(220,196,149,0.08)" },
+  pillText: { fontFamily: fonts.capsBold, fontSize: 15, color: "rgba(251,248,241,0.6)" },
+  pillTextOn: { color: colors.avatarGold },
+  handle: { alignSelf: "center", width: 44, height: 18, marginTop: -1, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, borderWidth: 1, borderTopWidth: 0, borderColor: "rgba(201,168,110,0.45)", backgroundColor: colors.maroon900, alignItems: "center", justifyContent: "center" },
+  handleBar: { width: 16, height: 2, borderRadius: 1, backgroundColor: "rgba(251,248,241,0.6)" },
   switch: { flexDirection: "row", marginHorizontal: gutter, marginTop: 10, padding: 3, borderRadius: 999, borderWidth: 1, borderColor: colors.avatarRing },
   switchTab: { flex: 1, height: 30, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   switchOn: { backgroundColor: colors.goldBright },
   switchText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.boardInk },
   switchTextOn: { color: colors.maroon900 },
-  rounds: { marginTop: 12, alignItems: "center", gap: 4 },
-  roundPill: { minHeight: 36, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.avatarRing, justifyContent: "center" },
-  roundPillOn: { backgroundColor: colors.cream, borderColor: colors.cream },
-  roundText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.boardInk },
-  roundTextOn: { color: colors.maroon900 },
-  roundCourse: { marginTop: 6, fontFamily: fonts.bold, fontSize: 16, color: colors.cream, textAlign: "center", paddingHorizontal: gutter },
-  roundFormat: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
+  rounds: { marginTop: 14, alignItems: "center", gap: 2 },
+  roundPill: { minHeight: minTap, paddingHorizontal: 22, justifyContent: "center" },
+  roundPillOn: {},
+  roundText: { fontFamily: fonts.capsBold, fontSize: 15, color: "rgba(251,248,241,0.6)" },
+  roundTextOn: { color: colors.avatarGold, textShadowColor: "rgba(220,196,149,0.25)", textShadowRadius: 8, textShadowOffset: { width: 0, height: 0 } },
+  roundCourse: { marginTop: 6, fontFamily: fonts.semibold, fontSize: 15, color: colors.cream, textAlign: "center", paddingHorizontal: gutter },
+  roundFormat: { fontFamily: fonts.regular, fontSize: 13, color: colors.avatarGold },
   notice: { marginHorizontal: gutter, marginTop: 12, padding: 12, borderRadius: radius.control, backgroundColor: colors.inviteFill, borderWidth: 1, borderColor: colors.avatarRing },
   noticeTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.cream },
   noticeText: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
@@ -401,11 +449,11 @@ const styles = StyleSheet.create({
   teeRow: { flexDirection: "row", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" },
   teeTime: { width: 84, fontFamily: fonts.bold, fontSize: 14, color: colors.avatarGold },
   teePlayer: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 2 },
-  teamBox: { marginHorizontal: gutter, marginTop: 12, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop, flexDirection: "row", alignItems: "center" },
+  teamBox: { marginHorizontal: gutter, marginTop: 12, borderRadius: radius.card, borderWidth: 1, borderColor: colors.tripBorder, backgroundColor: colors.maroon900, overflow: "hidden" },
   teamSide: { flex: 1, alignItems: "center" },
-  teamName: { fontFamily: fonts.semibold, fontSize: 14, color: colors.boardInk },
-  teamScore: { fontFamily: fonts.bold, fontSize: 32, color: colors.cream },
-  toWin: { fontFamily: fonts.bold, fontSize: 20, color: colors.goldBright },
+  teamName: { fontFamily: fonts.bold, fontSize: 18, lineHeight: 21, color: colors.cream, textAlign: "center", textShadowColor: "rgba(0,0,0,0.35)", textShadowRadius: 4, textShadowOffset: { width: 0, height: 1 } },
+  teamScore: { marginTop: 17, fontFamily: fonts.bold, fontSize: 28, color: colors.cream, fontVariant: ["tabular-nums"] },
+  toWin: { fontFamily: fonts.bold, fontSize: 16, color: colors.tripGold },
   matchCard: { marginHorizontal: gutter, flexDirection: "row", alignItems: "stretch", borderRadius: radius.card, borderWidth: 1, borderColor: colors.avatarRing, backgroundColor: colors.boardBottom, overflow: "hidden" },
   matchSide: { flex: 1, padding: 10, gap: 2, minWidth: 0 },
   matchLead: { backgroundColor: "rgba(201,168,110,0.14)" },
@@ -419,4 +467,19 @@ const styles = StyleSheet.create({
   cardPar: { fontFamily: fonts.regular, fontSize: 12, color: colors.boardInk },
   cardScore: { fontFamily: fonts.bold, fontSize: 15, color: colors.cream, minHeight: 20 },
   matchResult: { fontFamily: fonts.bold, fontSize: 14, color: colors.goldBright },
+  tray: { paddingTop: 6, paddingBottom: 12, paddingHorizontal: gutter, borderBottomLeftRadius: 36, borderBottomRightRadius: 36, borderWidth: 1, borderTopWidth: 0, borderColor: "rgba(201,168,110,0.45)", overflow: "hidden" },
+  teamTop: { flexDirection: "row", alignItems: "flex-start", paddingTop: 8, paddingHorizontal: 14, paddingBottom: 6 },
+  toWinBox: { width: 80, alignItems: "center", marginTop: 4 },
+  toWinLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, color: colors.tripLabel },
+  pointsOpen: { flexDirection: "row", gap: 12, paddingHorizontal: 14, paddingBottom: 8 },
+  win: { alignItems: "center", gap: 6, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "rgba(201,168,110,0.35)", marginHorizontal: 14 },
+  winPct: { fontFamily: fonts.bold, fontSize: 13, color: colors.white },
+  winBar: { width: "100%", height: 5, borderRadius: 5, flexDirection: "row", overflow: "hidden", backgroundColor: "rgba(255,255,255,0.12)" },
+  teamStats: { flexDirection: "row", paddingVertical: 14, paddingHorizontal: 14 },
+  teamStatsSide: { flex: 1, flexDirection: "row", justifyContent: "space-around" },
+  teamStatsLeft: { borderRightWidth: 1, borderRightColor: "rgba(201,168,110,0.35)" },
+  teamStatLabel: { fontFamily: fonts.capsBold, fontSize: 11, letterSpacing: 1.4, color: "rgba(255,255,255,0.6)" },
+  draftLine: { marginHorizontal: gutter, marginTop: 14, paddingVertical: 24, gap: 8, alignItems: "center", borderTopWidth: 1, borderTopColor: "rgba(220,196,149,0.33)" },
+  draftTitle: { fontFamily: fonts.bold, fontSize: 18, color: colors.cream, textAlign: "center" },
+  draftSub: { fontFamily: fonts.capsSemibold, fontSize: 14, color: colors.avatarGold, textAlign: "center" },
 });

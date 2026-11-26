@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFonts, Spectral_500Medium_Italic } from "@expo-google-fonts/spectral";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { halves, type BigBoardScore } from "@/lib/platform/bigBoard";
 import type { HomeCompetitionSummary } from "@/lib/platform/homeCompetition";
@@ -15,6 +17,7 @@ import { shareUrl } from "~/lib/api.ts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 import type { InviteLinkState } from "~/lib/tripPage.ts";
 import { TripHomeDrafts } from "./TripHomeDrafts.tsx";
+import { FadeLine, GoldBox } from "./GoldBox.tsx";
 
 /**
  * Trip Home (project_specs.md Golf Trips part 2c), drawn from the shared lib/platform/tripHome.ts view: the maroon head
@@ -50,8 +53,8 @@ export function TripHome({ view, invite, onOpenItinerary, onOpenFlights, onSetti
 
 // ——— Big Board ———
 
-const BOARD_TOP = 112;
-const BOARD_BOTTOM = 96;
+const BOARD_TOP = 92;
+const BOARD_BOTTOM = 110;
 
 /** One gold-outlined box: scores (or Momentum / the Mom section) on top, upcoming plans one at a time below. Same height always. */
 function BigBoard({ score, highlights, mom, slides, onOpen }: {
@@ -73,21 +76,26 @@ function BigBoard({ score, highlights, mom, slides, onOpen }: {
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => setShown({ listKey, index: Math.round(e.nativeEvent.contentOffset.x / pageWidth) });
   return (
     <View style={styles.boardWrap}>
-      <View style={styles.board} accessibilityLabel="Big Board">
+      <GoldBox accessibilityLabel="Big Board">
         <View style={styles.boardTop}>{score ? <ScoreTop score={score} highlights={highlights} /> : highlights.length ? <Highlights events={highlights} /> : <MomSection {...mom} />}</View>
-        <View style={styles.divider} />
+        <FadeLine style={styles.divider} />
         <View style={styles.boardBottom}>
           <ScrollView ref={track} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} accessibilityLabel="Upcoming">
             {slides.map((slide, position) => (
-              <Pressable key={slide.key} style={[styles.slide, { width: pageWidth }]} accessibilityRole="button" accessibilityLabel={slide.ariaLabel}
+              <Pressable key={slide.key} style={{ width: pageWidth }} accessibilityRole="button" accessibilityLabel={slide.ariaLabel}
                 accessibilityElementsHidden={position !== index} onPress={() => onOpen(slide)}>
-                <View style={styles.slideHead}>
-                  <SymbolView name={slideIcon(slide)} size={13} tintColor={colors.boardGold} />
-                  <Text style={styles.slideKind}>{slide.kind}</Text>
-                  {slide.status && <Text style={[styles.slideStatus, slide.live && styles.slideLive]}>{slide.status}</Text>}
+                {/* The plan: kind + status, when, details; then its title centered on the arrow row. */}
+                <View style={styles.slide}>
+                  <View style={styles.slideHead}>
+                    <View style={styles.slideKindRow}>
+                      <SymbolView name={slideIcon(slide)} size={14} tintColor={colors.tripLabel} />
+                      <Text style={styles.slideKind} numberOfLines={1}>{slide.kind}</Text>
+                    </View>
+                    {slide.status && <Text style={[styles.slideStatus, slide.live && styles.slideLive]}>{slide.status}</Text>}
+                  </View>
+                  <Text style={styles.slideWhen} numberOfLines={1}>{slide.when}</Text>
+                  {!!slide.detail && <Text style={styles.slideDetail} numberOfLines={1}>{slide.detail}</Text>}
                 </View>
-                <Text style={styles.slideWhen} numberOfLines={1}>{slide.when}</Text>
-                {!!slide.detail && <Text style={styles.slideDetail} numberOfLines={1}>{slide.detail}</Text>}
                 <Text style={styles.slideTitle} numberOfLines={1}>{slide.title}</Text>
               </Pressable>
             ))}
@@ -95,27 +103,28 @@ function BigBoard({ score, highlights, mom, slides, onOpen }: {
           <Arrow side="left" disabled={index === 0} onPress={() => goTo(index - 1)} />
           <Arrow side="right" disabled={index >= slides.length - 1} onPress={() => goTo(index + 1)} />
         </View>
-      </View>
-      {/* One dot per plan; the row keeps its height even with one plan. */}
+      </GoldBox>
+      {/* One dot per plan (the current one long and gold); the row keeps its height even with one plan. */}
       <View style={styles.dots} accessibilityRole="tablist">
         {slides.map((slide, position) => (
           <Pressable key={slide.key} accessibilityRole="tab" accessibilityState={{ selected: position === index }} accessibilityLabel={`Plan ${position + 1}: ${slide.title}`}
-            hitSlop={8} onPress={() => goTo(position)} style={[styles.dot, position === index && styles.dotOn]} />
+            hitSlop={8} onPress={() => goTo(position)} style={[styles.dot, position === index && slides.length > 1 && styles.dotOn]} />
         ))}
       </View>
     </View>
   );
 }
 
-const ICONS: Partial<Record<string, SFSymbol>> = { flights: "airplane", itinerary: "calendar", teeTime: "flag.fill", flight: "airplane", dinner: "fork.knife",
-  lodging: "bed.double.fill", transportation: "car.fill", ride: "car.fill", activity: "star.fill" };
+// Outline icons, like TestFlight (the live round keeps a filled flag).
+const ICONS: Partial<Record<string, SFSymbol>> = { flights: "airplane", itinerary: "calendar", teeTime: "flag", flight: "airplane", dinner: "fork.knife",
+  lodging: "bed.double", transportation: "car", ride: "car", activity: "star" };
 const slideIcon = (slide: HomeSlide): SFSymbol => slide.live ? "flag.fill" : ICONS[slide.icon] ?? "calendar";
 
 function Arrow({ side, disabled, onPress }: { side: "left" | "right"; disabled: boolean; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={side === "left" ? "Previous plan" : "Next plan"} disabled={disabled} onPress={onPress}
-      style={[styles.arrow, side === "left" ? { left: 0 } : { right: 0 }, disabled && { opacity: 0.3 }]}>
-      <SymbolView name={side === "left" ? "chevron.left" : "chevron.right"} size={16} tintColor={colors.boardGold} />
+    <Pressable accessibilityRole="button" accessibilityLabel={side === "left" ? "Previous plan" : "Next plan"} disabled={disabled} onPress={onPress} hitSlop={6}
+      style={[styles.arrow, side === "left" ? { left: 6 } : { right: 6 }, disabled && { opacity: 0.3 }]}>
+      <SymbolView name={side === "left" ? "chevron.left" : "chevron.right"} size={15} weight="semibold" tintColor={colors.tripGold} />
     </Pressable>
   );
 }
@@ -205,10 +214,16 @@ function MomSection({ travel, arrivalDay, plans, rounds, afterRound }: TripHomeV
     return <View style={styles.center}><Text style={styles.momLine}>{reminder.line}</Text>{!!reminder.sub && <Text style={styles.momSub}>{reminder.sub}</Text>}</View>;
   }
   const units = [["Days", parts.days], ["Hrs", parts.hours], ["Min", parts.minutes], ["Sec", parts.seconds]] as const;
+  // Labels above four flip-clock tiles (cream numbers split across the middle), in the middle 70% of the board.
   return (
-    <View style={[styles.center, styles.countdown]} accessibilityRole="timer" accessibilityLabel={`${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the trip`}>
+    <View style={styles.countdown} accessibilityRole="timer" accessibilityLabel={`${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes until the trip`}>
       {units.map(([label, value]) => <View key={label} style={styles.unit}>
-        <Text style={styles.tile}>{pad(value)}</Text><Text style={styles.unitLabel}>{label}</Text>
+        <Text style={styles.unitLabel}>{label}</Text>
+        <View style={styles.tile}>
+          <LinearGradient colors={[colors.tripTileTop, colors.tripTileMid, colors.tripTileLow, colors.tripTileMid]} locations={[0, 0.5, 0.5, 1]} style={StyleSheet.absoluteFill} />
+          <Text style={styles.tileText}>{pad(value)}</Text>
+          <View style={styles.tileSplit} />
+        </View>
       </View>)}
     </View>
   );
@@ -230,15 +245,15 @@ function LiveCard({ path, tripName, onView }: { path: string | null; tripName: s
       <View style={styles.liveTop}>
         <Text style={styles.liveTitle}>Balata Live</Text>
         {/* View stays in the app: the live leaderboard, matches and stats are the Golf tab. Copy / Share send the web link for people without the app. */}
-        <Pressable accessibilityRole="button" accessibilityLabel="View Balata Live" onPress={onView}>
+        <Pressable accessibilityRole="button" accessibilityLabel="View Balata Live" onPress={onView} hitSlop={6} style={({ pressed }) => [styles.livePill, pressed && { opacity: 0.8 }]}>
           <Text style={styles.liveView}>View</Text>
         </Pressable>
       </View>
       <Text style={styles.liveText}>Invite your peers to follow along.</Text>
-      <View style={styles.inviteRow}>
+      <View style={[styles.inviteRow, styles.inviteBox]}>
         <Text style={styles.inviteLink} numberOfLines={1} selectable>{path ?? "Balata Live link unavailable"}</Text>
         <CopyButton label={copied ? "Copied" : "Copy link"} icon={copied ? "checkmark" : "doc.on.doc"} disabled={!url} onPress={() => void copy()} />
-        <CopyButton icon="square.and.arrow.up" accessibilityLabel="Share Balata Live link" disabled={!url}
+        <CopyButton icon="point.3.connected.trianglepath.dotted" accessibilityLabel="Share Balata Live link" disabled={!url}
           onPress={() => { if (url) Share.share({ message: `Follow ${tripName} on Balata Live: ${url}` }).catch(() => setNote("Couldn't share. Use Copy link.")); }} />
       </View>
       {!!note && <Text style={styles.srNote} accessibilityLiveRegion="polite">{note}</Text>}
@@ -249,8 +264,8 @@ function LiveCard({ path, tripName, onView }: { path: string | null; tripName: s
 function CopyButton({ label, icon, disabled, onPress, accessibilityLabel }: { label?: string; icon: SFSymbol; disabled?: boolean; onPress: () => void; accessibilityLabel?: string }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} disabled={disabled} onPress={onPress}
-      style={({ pressed }) => [styles.copy, disabled && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
-      <SymbolView name={icon} size={14} tintColor={colors.maroon900} />
+      style={({ pressed }) => [styles.copy, !label && styles.copySquare, disabled && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
+      <SymbolView name={icon} size={15} tintColor={colors.maroon900} />
       {label && <Text style={styles.copyText}>{label}</Text>}
     </Pressable>
   );
@@ -321,25 +336,28 @@ function CompetitionCard({ summary }: { summary: HomeCompetitionSummary }) {
     ["Rounds", String(summary.rounds.length)],
     ...(summary.recordStandings ? [["Round robin standings", "W-L-T / winning percentage"]] as [string, string][] : []),
   ];
+  // TestFlight look: no box; small letter-spaced caps labels, values on the right, fading lines, two points tiles.
+  const [italicReady] = useFonts({ Spectral_500Medium_Italic });
+  const italic = italicReady ? { fontFamily: fonts.italic } : null;
   return (
     <View style={styles.compCard} accessibilityLabel="Competition details">
-      {facts.map(([label, value]) => <View key={label} style={styles.fact}><Text style={styles.factLabel}>{label}</Text><Text style={styles.factValue}>{value}</Text></View>)}
+      {facts.map(([label, value]) => <View key={label} style={styles.fact}><Text style={styles.factLabel}>{label}</Text><Text style={styles.factValue} numberOfLines={1}>{value}</Text></View>)}
       {summary.rounds.length > 0 && <>
-        <View style={styles.compDivider} />
+        <FadeLine style={styles.compDivider} />
         <Text style={styles.subhead}>Formats</Text>
-        {summary.rounds.map((round) => <View key={round.number} style={styles.fact}>
+        {summary.rounds.map((round) => <View key={round.number} style={styles.round}>
           <Text style={styles.factLabel}>Round {round.number}</Text>
           <View style={{ flex: 1, alignItems: "flex-end" }}>
-            <Text style={[styles.factValue, round.format === "Format not set" && styles.unset]}>{round.format}</Text>
-            <Text style={[styles.roundCourse, round.course === "Course TBD" && styles.unset]}>{round.course}</Text>
+            <Text style={[styles.roundFormat, round.format === "Format not set" && [styles.unsetFormat, italic]]} numberOfLines={1}>{round.format}</Text>
+            <Text style={[styles.roundCourse, round.course === "Course TBD" && italic]} numberOfLines={1}>{round.course}</Text>
           </View>
         </View>)}
       </>}
       {summary.totalPoints !== null && summary.toWin !== null && <>
-        <View style={styles.compDivider} />
+        <FadeLine style={styles.compDivider} />
         <View style={styles.pointsRow}>
-          <View style={{ alignItems: "center" }}><Text style={styles.toWinLabel}>TOTAL POINTS</Text><Text style={styles.pointsBig}>{halves(summary.totalPoints)}</Text></View>
-          <View style={{ alignItems: "center" }}><Text style={styles.toWinLabel}>TO WIN</Text><Text style={[styles.pointsBig, { color: colors.goldBright }]}>{halves(summary.toWin)}</Text></View>
+          <View style={styles.pointsCell}><Text style={styles.factLabel}>Total points</Text><Text style={styles.pointsBig}>{halves(summary.totalPoints)}</Text></View>
+          <View style={styles.pointsCell}><Text style={styles.factLabel}>To win</Text><Text style={[styles.pointsBig, { color: colors.tripGold }]}>{halves(summary.toWin)}</Text></View>
         </View>
       </>}
     </View>
@@ -360,33 +378,32 @@ const styles = StyleSheet.create({
   label: { fontFamily: fonts.bold, fontSize: 28, lineHeight: 31, color: colors.cream },
   destination: {},
   dates: { marginTop: 8, fontFamily: fonts.semibold, fontSize: 15, color: colors.avatarGold },
-  boardWrap: { paddingHorizontal: gutter, marginTop: 16 },
-  board: { borderWidth: 1, borderColor: colors.boardBorder, borderRadius: radius.card, backgroundColor: colors.boardTop, overflow: "hidden" },
-  boardTop: { height: BOARD_TOP, paddingHorizontal: 14, justifyContent: "center" },
-  divider: { height: 1, backgroundColor: colors.boardBorderSoft, marginHorizontal: 14 },
-  boardBottom: { height: BOARD_BOTTOM, backgroundColor: colors.boardBottom },
-  slide: { paddingHorizontal: minTap, paddingVertical: 10, justifyContent: "center" },
-  slideHead: { flexDirection: "row", alignItems: "center", gap: 6 },
-  slideKind: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: colors.boardGold },
-  slideStatus: { fontFamily: fonts.capsBold, fontSize: 11, letterSpacing: 0.8, color: colors.boardGold },
-  slideLive: { color: colors.errorOnMaroon },
-  slideWhen: { marginTop: 4, fontFamily: fonts.bold, fontSize: 16, color: colors.cream },
-  slideDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
-  slideTitle: { marginTop: 2, fontFamily: fonts.regular, fontSize: 12, color: colors.boardInk, textAlign: "center" },
-  arrow: { position: "absolute", top: 0, bottom: 0, width: minTap, alignItems: "center", justifyContent: "center" },
-  dots: { height: 22, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.boardBorderSoft },
-  dotOn: { backgroundColor: colors.goldBright },
+  boardWrap: { paddingHorizontal: gutter, marginTop: 23 },
+  boardTop: { height: BOARD_TOP, justifyContent: "center", overflow: "hidden" },
+  divider: { marginHorizontal: 14 },
+  boardBottom: { height: BOARD_BOTTOM },
+  slide: { height: 74, paddingHorizontal: 14, justifyContent: "center", gap: 4 },
+  slideHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  slideKind: { flexShrink: 1, fontFamily: fonts.capsBold, fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", color: colors.tripLabel },
+  slideStatus: { fontFamily: fonts.capsBold, fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", color: colors.tripGold },
+  slideLive: { color: colors.tripLive },
+  slideWhen: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 19, color: colors.cream },
+  slideDetail: { fontFamily: fonts.regular, fontSize: 12, color: "rgba(251,248,241,0.65)" },
+  slideTitle: { height: 36, paddingHorizontal: 48, paddingBottom: 4, textAlign: "center", textAlignVertical: "center", lineHeight: 32, fontFamily: fonts.bold, fontSize: 15, color: colors.tripInk },
+  arrow: { position: "absolute", bottom: 6, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.tripFillStrong, alignItems: "center", justifyContent: "center" },
+  dots: { height: 16, marginTop: 8, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.tripDotOff },
+  dotOn: { width: 18, backgroundColor: colors.tripGold },
   center: { alignItems: "center", justifyContent: "center" },
   bold: { fontFamily: fonts.bold },
   momLine: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 21, color: colors.cream, textAlign: "center" },
   momSub: { marginTop: 4, fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk, textAlign: "center" },
   momAction: { marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.boardBorder },
   momActionText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.boardLink },
-  countdown: { flexDirection: "row", gap: 10 },
-  unit: { alignItems: "center", gap: 4 },
-  tile: { minWidth: 48, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.maroon950, borderWidth: 1, borderColor: colors.boardBorderSoft, fontFamily: fonts.bold, fontSize: 26, color: colors.cream, textAlign: "center", fontVariant: ["tabular-nums"] },
-  unitLabel: { fontFamily: fonts.capsSemibold, fontSize: 10, letterSpacing: 0.8, color: colors.boardGold, textTransform: "uppercase" },
+  countdown: { flexDirection: "row", gap: 8, width: "70%", alignSelf: "center" },
+  unit: { flex: 1, alignItems: "center", gap: 5 },
+  tile: { width: "100%", height: 44, borderRadius: 8, overflow: "hidden", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  unitLabel: { fontFamily: fonts.capsBold, fontSize: 13, letterSpacing: 1.5, color: colors.avatarGold, textTransform: "uppercase" },
   scoreLine: { marginTop: 6, fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk, textAlign: "center" },
   teams: { flexDirection: "row", alignItems: "center", gap: 10 },
   team: { flex: 1, alignItems: "center" },
@@ -406,15 +423,15 @@ const styles = StyleSheet.create({
   topPlace: { width: 22, fontFamily: fonts.bold, fontSize: 12, color: colors.boardGold },
   topName: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: colors.cream },
   topTotal: { fontFamily: fonts.bold, fontSize: 13, color: colors.cream },
-  liveCard: { marginTop: 18, marginHorizontal: gutter, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.avatarRing, backgroundColor: colors.inviteFill },
+  liveCard: { marginTop: 6, marginBottom: 0, marginHorizontal: gutter, paddingVertical: 18, paddingHorizontal: 16, borderRadius: radius.card, borderWidth: 1, borderColor: colors.tripLineFaint, backgroundColor: colors.maroon900 },
   liveTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  liveTitle: { fontFamily: fonts.bold, fontSize: 18, color: colors.cream },
-  liveView: { fontFamily: fonts.semibold, fontSize: 14, color: colors.boardLink, padding: 6 },
-  liveText: { marginTop: 2, fontFamily: fonts.regular, fontSize: 14, color: colors.boardInk },
+  liveTitle: { fontFamily: fonts.semibold, fontSize: 22, color: colors.avatarGold },
+  liveView: { fontFamily: fonts.capsSemibold, fontSize: 13, color: colors.avatarGold },
+  liveText: { marginTop: 6, fontFamily: fonts.regular, fontSize: 14, lineHeight: 21, color: colors.cream },
   inviteRow: { marginTop: 10, flexDirection: "row", alignItems: "center", gap: 8 },
-  inviteBox: { padding: 8, paddingLeft: 12, borderRadius: radius.control, borderWidth: 1, borderColor: colors.avatarRing, backgroundColor: colors.inputOnMaroon },
-  inviteLink: { flex: 1, minWidth: 0, fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
-  copy: { height: 34, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.cream, flexDirection: "row", alignItems: "center", gap: 6 },
+  inviteBox: { height: 42, paddingLeft: 12, paddingRight: 4, borderRadius: radius.control, borderWidth: 1, borderColor: "rgba(220,196,149,0.35)", backgroundColor: colors.tripFill },
+  inviteLink: { flex: 1, minWidth: 0, fontFamily: fonts.semibold, fontSize: 13, color: "rgba(251,248,241,0.8)" },
+  copy: { height: 34, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.cream, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   copyText: { fontFamily: fonts.bold, fontSize: 13, color: colors.maroon900 },
   srNote: { marginTop: 6, fontFamily: fonts.regular, fontSize: 12, color: colors.boardInk },
   section: { paddingHorizontal: gutter, marginTop: 28 },
@@ -427,14 +444,22 @@ const styles = StyleSheet.create({
   playerNumber: { width: 18, fontFamily: fonts.bold, fontSize: 13, color: colors.avatarGold, fontVariant: ["tabular-nums"] },
   playerName: { fontFamily: fonts.bold, fontSize: 15, color: colors.white },
   playerUsername: { fontFamily: fonts.regular, fontSize: 12, color: "rgba(255,255,255,0.6)" },
-  compCard: { marginTop: 10, padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop, gap: 8 },
-  fact: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
-  factLabel: { fontFamily: fonts.regular, fontSize: 14, color: colors.boardInk },
-  factValue: { flexShrink: 1, textAlign: "right", fontFamily: fonts.semibold, fontSize: 14, color: colors.cream },
-  roundCourse: { fontFamily: fonts.regular, fontSize: 12, color: colors.boardInk, textAlign: "right" },
-  unset: { opacity: 0.55 },
-  compDivider: { height: 1, backgroundColor: colors.boardBorderSoft, marginVertical: 4 },
-  subhead: { fontFamily: fonts.bold, fontSize: 15, color: colors.cream },
-  pointsRow: { flexDirection: "row", justifyContent: "space-around" },
-  pointsBig: { fontFamily: fonts.bold, fontSize: 24, color: colors.cream },
+  compCard: { marginTop: 12, gap: 8 },
+  fact: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 12 },
+  factLabel: { fontFamily: fonts.capsBold, fontSize: 12, lineHeight: 16, letterSpacing: 1.4, textTransform: "uppercase", color: colors.tripLabel },
+  factValue: { flexShrink: 1, textAlign: "right", fontFamily: fonts.bold, fontSize: 12, lineHeight: 16, color: colors.tripInk },
+  roundCourse: { textAlign: "right", fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: "rgba(251,248,241,0.65)" },
+  compDivider: { marginVertical: 4 },
+  subhead: { fontFamily: fonts.capsBold, fontSize: 12, lineHeight: 16, letterSpacing: 1.4, textTransform: "uppercase", color: colors.tripGold },
+  pointsRow: { flexDirection: "row", gap: 10 },
+  pointsBig: { fontFamily: fonts.bold, fontSize: 30, color: colors.tripInk },
+  slideKindRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 },
+  tileText: { fontFamily: fonts.bold, fontSize: 24, color: colors.cream, fontVariant: ["tabular-nums"] },
+  tileSplit: { position: "absolute", left: 0, right: 0, top: "50%", height: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+  livePill: { minHeight: 32, paddingHorizontal: 13, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.tripPillLine, backgroundColor: "rgba(220,196,149,0.08)", justifyContent: "center" },
+  copySquare: { width: 40, paddingHorizontal: 0 },
+  round: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  roundFormat: { textAlign: "right", fontFamily: fonts.semibold, fontSize: 12, lineHeight: 16, color: colors.cream },
+  unsetFormat: { color: "rgba(251,248,241,0.5)" },
+  pointsCell: { flex: 1, alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 6, borderRadius: radius.control, backgroundColor: "rgba(251,248,241,0.06)" },
 });

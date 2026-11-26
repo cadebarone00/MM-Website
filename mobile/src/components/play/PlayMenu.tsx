@@ -12,7 +12,8 @@ import Settings from "~/app/settings.tsx";
 type Identity = { displayName: string; username: string; avatarSrc: string | null };
 type Reply = { page?: { status: string; profile?: { identity: Identity } } };
 
-export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+/** The ☰ app menu. `exit` adds a first row that leaves the current screen (a trip page's Exit trip, owner 2026-11-26). */
+export function PlayMenu({ visible, onClose, exit }: { visible: boolean; onClose: () => void; exit?: { label: string; onPress: () => void } }) {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +68,7 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
         </View>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.list}>
+            {exit && <Pressable accessibilityRole="button" onPress={exit.onPress} style={styles.item}><Text style={styles.itemText}>{exit.label}</Text><Text style={styles.chevron}>›</Text></Pressable>}
             {items.map(({ label, action }) => <Pressable key={label} accessibilityRole="button" accessibilityState={{ disabled: !action }} disabled={!action} onPress={action} style={styles.item}>
               <Text style={[styles.itemText, !action && styles.disabled]}>{label}</Text><Text style={styles.chevron}>{action ? "›" : "Coming Soon"}</Text>
             </Pressable>)}

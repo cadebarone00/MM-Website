@@ -11,6 +11,7 @@ import { apiRaw } from "~/lib/api.ts";
 import { HoleGame } from "~/components/round/HoleGame.tsx";
 import { PillToggle } from "~/components/PillToggle.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
+import { SymbolView } from "expo-symbols";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 /**
@@ -74,17 +75,20 @@ export function TripGames({ match, rounds, saved }: { match: GolfMatchPreview; r
 
   return (
     <View style={{ gap: 14 }}>
-      <View style={styles.switch} accessibilityRole="tablist" accessibilityLabel="Game status">
-        {(["Active", "Settled"] as const).map((s) => <Pressable key={s} accessibilityRole="tab" accessibilityState={{ selected: view === s }} onPress={() => setView(s)} style={[styles.switchItem, view === s && styles.on]}>
-          <Text style={[styles.switchText, view === s && styles.onText]}>{s}</Text>
+      {/* TestFlight look: two plain words (the picked one gold with a soft glow), a big heading, a gold outlined New game pill. */}
+      <View style={styles.statusTabs} accessibilityRole="tablist" accessibilityLabel="Game status">
+        {(["Active", "Settled"] as const).map((s) => <Pressable key={s} accessibilityRole="tab" accessibilityState={{ selected: view === s }} onPress={() => setView(s)} style={styles.statusTab}>
+          <Text style={[styles.statusText, view === s && styles.statusTextOn]}>{s}</Text>
         </Pressable>)}
       </View>
       <View style={styles.head}>
-        <Text style={styles.title}>Your Games</Text>
-        <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.newButton}><Text style={styles.newText}>+ New game</Text></Pressable>
+        <Text style={styles.heading} accessibilityRole="header">Your Games</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="New game" onPress={() => setCreating(true)} hitSlop={6} style={({ pressed }) => [styles.newButton, pressed && { opacity: 0.8 }]}>
+          <SymbolView name="plus" size={14} weight="semibold" tintColor={colors.avatarGold} /><Text style={styles.newText}>New game</Text>
+        </Pressable>
       </View>
       {!loaded && !error && <Text style={styles.empty}>Loading games…</Text>}
-      {loaded && !visible.length && <Text style={styles.empty}>{view === "Settled" ? "No settled games yet. Completed games will appear here." : "No active games. Tap New game to start one."}</Text>}
+      {loaded && !visible.length && <Text style={styles.emptyLine}>{view === "Settled" ? "No settled games yet. Completed games will appear here." : "No active games. Tap New game to start one."}</Text>}
       {visible.map((game) => {
         const remove = game.mine !== false ? () => void send({ action: "delete", gameId: game.key }) : undefined;
         const pick = (hole: number, next: HoleInput) => {
@@ -252,10 +256,10 @@ const styles = StyleSheet.create({
   switchText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.boardInk },
   on: { backgroundColor: colors.goldBright, borderColor: colors.goldBright },
   onText: { color: colors.maroon900, fontFamily: fonts.bold },
-  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: gutter },
+  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginHorizontal: gutter },
   title: { fontFamily: fonts.bold, fontSize: 20, color: colors.cream },
-  newButton: { minHeight: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.goldBright, justifyContent: "center" },
-  newText: { fontFamily: fonts.bold, fontSize: 14, color: colors.maroon900 },
+  newButton: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 34, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.avatarGold },
+  newText: { fontFamily: fonts.capsBold, fontSize: 14, color: colors.avatarGold },
   empty: { marginHorizontal: gutter, fontFamily: fonts.regular, fontSize: 14, color: colors.boardInk, textAlign: "center", paddingVertical: 12 },
   error: { marginHorizontal: gutter, fontFamily: fonts.semibold, fontSize: 13, color: colors.errorOnMaroon },
   card: { marginHorizontal: gutter, padding: 14, gap: 8, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorderSoft, backgroundColor: colors.boardBottom },
@@ -282,4 +286,10 @@ const styles = StyleSheet.create({
   primaryText: { fontFamily: fonts.bold, fontSize: 16, color: colors.maroon900 },
   playerRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: minTap },
   box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, borderColor: colors.boardBorder, alignItems: "center", justifyContent: "center" },
+  statusTabs: { flexDirection: "row", marginHorizontal: gutter },
+  statusTab: { flex: 1, minHeight: minTap, alignItems: "center", justifyContent: "center" },
+  statusText: { fontFamily: fonts.capsBold, fontSize: 15, color: "rgba(251,248,241,0.6)" },
+  statusTextOn: { color: colors.avatarGold, textShadowColor: "rgba(220,196,149,0.45)", textShadowRadius: 10, textShadowOffset: { width: 0, height: 0 } },
+  heading: { flexShrink: 1, fontFamily: fonts.bold, fontSize: 28, color: colors.white },
+  emptyLine: { marginHorizontal: gutter, fontFamily: fonts.capsSemibold, fontSize: 14, lineHeight: 20, color: colors.cream },
 });

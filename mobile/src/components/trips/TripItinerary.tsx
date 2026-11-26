@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
+import { LinearGradient } from "expo-linear-gradient";
+import { SymbolView } from "expo-symbols";
 import { itineraryByDay, itineraryCategory, itineraryLongDate, itineraryTime, itineraryWeekday, localNow, withGolfRounds, type ItineraryItem } from "@/lib/platform/golfTripItinerary";
 import { itineraryFor, type TravelItem, type TravelKind } from "@/lib/platform/tripTravel";
 import { SheetClose } from "~/components/SheetClose.tsx";
@@ -47,14 +49,16 @@ export function TripItinerary({ tripId, plans, rounds, tripDays, activeRound, re
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 48 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldBright} />}>
       {day ? <View style={styles.dayHead} accessibilityLabel={`${itineraryWeekday(day.day)}, ${itineraryLongDate(day.day)}`}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Previous day" disabled={index === 0} onPress={() => setPicked(index - 1)} style={styles.step}><Text style={[styles.arrow, index === 0 && styles.hidden]}>‹</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Previous day" disabled={index === 0} onPress={() => setPicked(index - 1)} style={styles.step}><SymbolView name="chevron.left" size={20} weight="semibold" tintColor={colors.cream} style={index === 0 ? styles.hidden : undefined} /></Pressable>
         <View style={{ alignItems: "center" }}><Text style={styles.weekday}>{itineraryWeekday(day.day)}</Text><Text style={styles.date}>{itineraryLongDate(day.day)}</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Next day" disabled={index >= days.length - 1} onPress={() => setPicked(index + 1)} style={styles.step}><Text style={[styles.arrow, index >= days.length - 1 && styles.hidden]}>›</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Next day" disabled={index >= days.length - 1} onPress={() => setPicked(index + 1)} style={styles.step}><SymbolView name="chevron.right" size={20} weight="semibold" tintColor={colors.cream} style={index >= days.length - 1 ? styles.hidden : undefined} /></Pressable>
       </View> : <View style={styles.card}><Text style={styles.cardTitle}>Itinerary</Text><Text style={styles.muted}>Nothing on the itinerary yet</Text></View>}
 
       <View style={styles.addRow}>
-        <Pressable accessibilityRole="button" onPress={() => setChoosing(true)} style={styles.add}><Text style={styles.addText}>+ Add</Text></Pressable>
-        {status && <Text style={[styles.muted, status.failed && styles.bad]} accessibilityLiveRegion="polite">{status.text}</Text>}
+        {status && <Text style={[styles.muted, { flex: 1 }, status.failed && styles.bad]} accessibilityLiveRegion="polite">{status.text}</Text>}
+        <Pressable accessibilityRole="button" accessibilityLabel="Add a plan" onPress={() => setChoosing(true)} hitSlop={8} style={({ pressed }) => [styles.add, pressed && { opacity: 0.8 }]}>
+          <SymbolView name="plus" size={13} weight="semibold" tintColor={colors.avatarGold} /><Text style={styles.addText}>Add</Text>
+        </Pressable>
       </View>
 
       {day && day.items.length === 0 && <Text style={[styles.muted, { marginHorizontal: gutter }]}>Nothing planned for today.</Text>}
@@ -67,28 +71,29 @@ export function TripItinerary({ tripId, plans, rounds, tripDays, activeRound, re
         return <View key={item.id} style={styles.entry}>
           {showType && <Text style={styles.type}>{itineraryCategory(item)}</Text>}
           <Pressable accessibilityRole="button" accessibilityLabel={`${itineraryCategory(item)}: ${item.title}, ${item.timeTbd ? "tee time TBD" : itineraryTime(item.startsAt)}`}
-            onPress={() => setOpen(item)} style={[styles.box, round !== undefined && styles.golfBox]}>
-            <View style={styles.boxTop}>
-              <Text style={styles.time}>{item.timeTbd ? "Tee time TBD" : itineraryTime(item.startsAt)}</Text>
+            onPress={() => setOpen(item)} style={styles.box}>
+            <LinearGradient pointerEvents="none" colors={["rgba(251,248,241,0.12)", "transparent"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 0.6 }} style={StyleSheet.absoluteFill} />
+            <View style={[styles.boxTop, choice !== "out" && styles.boxTopLine]}>
+              <Text style={styles.boxTime}>{item.timeTbd ? "Tee time TBD" : itineraryTime(item.startsAt)}</Text>
               {round !== undefined && <View style={styles.rsvp} accessibilityLabel={`Round ${round}: play or sit out`}>
                 <Pressable accessibilityRole="button" accessibilityState={{ selected: choice === "out", disabled: locked }} disabled={locked}
                   onPress={() => { if (choice !== "out") Alert.alert(`Sit out Round ${round}?`, "You'll be taken out of any individual competition for this round. You can change your mind until the tee time.", [
                     { text: "Cancel", style: "cancel" }, { text: "Sit out", style: "destructive", onPress: () => setRsvp(round, "out") }]); }}
-                  style={[styles.rsvpButton, choice === "out" && styles.sitOn, locked && styles.dim]}><Text style={styles.rsvpText}>Sit out</Text></Pressable>
+                  style={[styles.rsvpButton, styles.sit, choice === "out" && styles.sitOn, locked && styles.dim]}><Text style={[styles.rsvpText, styles.sitText, choice === "out" && styles.rsvpTextOn]}>Sit out</Text></Pressable>
                 <Pressable accessibilityRole="button" accessibilityState={{ selected: choice === "in", disabled: locked }} disabled={locked} onPress={() => setRsvp(round, "in")}
-                  style={[styles.rsvpButton, choice === "in" && styles.playOn, locked && styles.dim]}><Text style={styles.rsvpText}>Play</Text></Pressable>
+                  style={[styles.rsvpButton, styles.play, choice === "in" && styles.playOn, locked && styles.dim]}><Text style={[styles.rsvpText, styles.playText, choice === "in" && styles.rsvpTextOn]}>Play</Text></Pressable>
               </View>}
               {invite && <View style={styles.rsvp} accessibilityLabel={`Invite from ${invite.from || "a trip member"}: accept or decline`}>
                 <Pressable accessibilityRole="button" accessibilityState={{ selected: choice === "out" }}
                   onPress={() => { if (choice !== "out") Alert.alert("Decline this invite?", "You can still accept it later.", [{ text: "Cancel", style: "cancel" }, { text: "Decline", style: "destructive", onPress: () => change({ type: "respond", id: invite.itemId, answer: "decline" }) }]); }}
-                  style={[styles.rsvpButton, choice === "out" && styles.sitOn]}><Text style={styles.rsvpText}>Decline</Text></Pressable>
+                  style={[styles.rsvpButton, styles.sit, choice === "out" && styles.sitOn]}><Text style={[styles.rsvpText, styles.sitText, choice === "out" && styles.rsvpTextOn]}>Decline</Text></Pressable>
                 <Pressable accessibilityRole="button" accessibilityState={{ selected: choice === "in" }} onPress={() => change({ type: "respond", id: invite.itemId, answer: "accept" })}
-                  style={[styles.rsvpButton, choice === "in" && styles.playOn]}><Text style={styles.rsvpText}>Accept</Text></Pressable>
+                  style={[styles.rsvpButton, styles.play, choice === "in" && styles.playOn]}><Text style={[styles.rsvpText, styles.playText, choice === "in" && styles.rsvpTextOn]}>Accept</Text></Pressable>
               </View>}
             </View>
             {choice !== "out" && <>
               <Text style={styles.boxTitle}>{item.title}</Text>
-              {item.detail && <Text style={styles.time}>{item.detail}</Text>}
+              {item.detail && <Text style={styles.boxDetail}>{item.detail}</Text>}
               {invite && <Text style={styles.muted}>Invited by {invite.from || "a trip member"}</Text>}
             </>}
             {choice === "in" && <Text style={[styles.tag, isLive && styles.live]}>{isLive ? "Live" : invite ? "Going" : "Playing"}</Text>}
@@ -142,33 +147,30 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 const styles = StyleSheet.create({
-  dayHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: gutter, marginTop: 14, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: colors.boardBorderSoft },
+  dayHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: gutter, marginTop: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "rgba(214,184,121,0.35)" },
   step: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  arrow: { fontFamily: fonts.bold, fontSize: 30, color: colors.goldBright },
   hidden: { opacity: 0 },
-  weekday: { fontFamily: fonts.bold, fontSize: 20, color: colors.cream },
-  date: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
-  addRow: { flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: gutter, marginVertical: 12 },
-  add: { minHeight: 36, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.goldBright, justifyContent: "center" },
-  addText: { fontFamily: fonts.bold, fontSize: 14, color: colors.maroon900 },
+  weekday: { fontFamily: fonts.bold, fontSize: 22, color: colors.cream },
+  date: { marginTop: 3, fontFamily: fonts.capsSemibold, fontSize: 13, letterSpacing: 0.3, color: colors.avatarGold },
+  addRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 12, marginHorizontal: gutter, marginTop: 12, marginBottom: 4 },
+  add: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5, paddingHorizontal: 11, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.avatarGold },
+  addText: { fontFamily: fonts.capsBold, fontSize: 12, color: colors.avatarGold },
   muted: { fontFamily: fonts.regular, fontSize: 13, color: colors.boardInk },
   bad: { color: colors.errorOnMaroon },
   card: { marginHorizontal: gutter, marginTop: 16, padding: 14, gap: 6, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorderSoft, backgroundColor: colors.boardBottom },
   cardTitle: { fontFamily: fonts.bold, fontSize: 17, color: colors.cream },
-  entry: { marginHorizontal: gutter, marginBottom: 10 },
-  type: { marginBottom: 6, paddingBottom: 4, fontFamily: fonts.semibold, fontSize: 13, color: colors.cream, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.1)" },
-  box: { padding: 12, gap: 4, borderRadius: radius.card, backgroundColor: colors.homeCream },
-  golfBox: { borderLeftWidth: 4, borderLeftColor: colors.gold },
-  boxTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  time: { fontFamily: fonts.regular, fontSize: 13, color: colors.inkMuted },
-  boxTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink },
-  tag: { alignSelf: "flex-end", fontFamily: fonts.bold, fontSize: 12, color: colors.money.up },
-  live: { color: colors.error },
+  entry: { marginHorizontal: gutter, marginTop: 12 },
+  type: { marginTop: 6, marginBottom: 12, paddingBottom: 6, fontFamily: fonts.bold, fontSize: 18, color: colors.cream, borderBottomWidth: 1, borderBottomColor: "rgba(251,248,241,0.35)" },
+  box: { gap: 4, paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.card, borderWidth: 1, borderColor: "rgba(251,248,241,0.6)", backgroundColor: colors.maroon900, overflow: "hidden" },
+  boxTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 24 },
+  boxTitle: { fontFamily: fonts.bold, fontSize: 17, color: colors.cream },
+  tag: { alignSelf: "flex-end", fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.5, color: colors.tripPlayInk },
+  live: { color: colors.tripLive },
   rsvp: { flexDirection: "row", gap: 6 },
-  rsvpButton: { minHeight: 32, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, justifyContent: "center" },
-  sitOn: { backgroundColor: "#f6d4d0", borderColor: colors.error },
-  playOn: { backgroundColor: "#d3ecdc", borderColor: colors.money.up },
-  rsvpText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
+  rsvpButton: { height: 24, paddingHorizontal: 10, borderRadius: radius.pill, borderWidth: 1.5, justifyContent: "center" },
+  sitOn: { backgroundColor: "#c62828", borderColor: "#c62828" },
+  playOn: { backgroundColor: colors.tripPlay, borderColor: colors.tripPlay },
+  rsvpText: { fontFamily: fonts.bold, fontSize: 13 },
   dim: { opacity: 0.45 },
   page: { flex: 1, backgroundColor: colors.maroon900 },
   sheetTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: gutter, paddingTop: 14, minHeight: 56 },
@@ -179,4 +181,12 @@ const styles = StyleSheet.create({
   tileValue: { fontFamily: fonts.semibold, fontSize: 16, color: colors.cream },
   sheetButton: { minHeight: 48, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.boardBorder, alignItems: "center", justifyContent: "center" },
   sheetButtonText: { fontFamily: fonts.bold, fontSize: 15, color: colors.cream },
+  boxTopLine: { paddingBottom: 6, marginBottom: 2, borderBottomWidth: 1, borderBottomColor: "rgba(251,248,241,0.22)" },
+  boxTime: { flexShrink: 1, fontFamily: fonts.bold, fontSize: 16, color: colors.cream },
+  boxDetail: { fontFamily: fonts.capsSemibold, fontSize: 13, color: colors.tripLabel },
+  sit: { borderColor: colors.tripSit },
+  play: { borderColor: colors.tripPlayInk },
+  sitText: { color: colors.tripSit },
+  playText: { color: colors.tripPlayInk },
+  rsvpTextOn: { color: colors.white },
 });

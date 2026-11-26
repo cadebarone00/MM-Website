@@ -7541,3 +7541,55 @@ Show available team rosters and points, player team and explicitly public handic
 **2026-11-25 Expo tournament page links**
 **Side:** App
 Signed-in players can paste a first-party tournament page link or path and open the existing public summary without enrolling. Shared parsing rejects other origins; existing server access rules apply. Automatic app links, device and access checks, remaining parity and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+## Feature: Expo app — match the TestFlight look, Golf Trip page (owner request 2026-11-26) — APPROVED 2026-11-26 (answers A–C below; owner sent Home, Golf → Board, Golf → Games, Venue, Itinerary)
+**Side:** App
+
+**Why:** the first Expo production build replaces the TestFlight (Capacitor) app (same app id `site.themaroon.app`), so every Expo screen has to look like its TestFlight screen before the swap. Behavior doesn't change, only the look. Source of truth: the owner's TestFlight screenshots, plus the website styles TestFlight shows (`GolfTripHome.module.css`, `TripTapIn.module.css`).
+
+**Done =** Expo Home and TestFlight Home look the same side by side on the owner's iPhone, `npm test` + `npx tsc --noEmit` pass in `mobile/`. Files: `mobile/src/app/trips/[id].tsx` and `mobile/src/components/trips/` (TripHome, TripHomeDrafts, TripItinerary, TripVenue, TripGolf, TripGames) only. **Font note:** TestFlight uses Barlow (not only tiny caps) for the trip tabs, the Golf section words, round words, Add / New game / venue buttons and address lines; matching TestFlight means using Barlow in exactly those spots.
+
+### Trip Home checklist (TestFlight → what Expo changes)
+1. **Header:** ☰ menu button, feed and chat icons on the left, trip name centered (bigger, two lines max), gear on the right. The ☰ menu is always tappable and holds **Exit trip** (back to Golf Trips); the back arrow goes away (answer A).
+2. **Home · Golf · Venue · Itinerary tabs:** plain words, chosen one cream with a soft glow and a gold line under it, a faint line running edge to edge under all four. Replaces the cream pill switch.
+3. **"Your trip to Pinehurst, NC":** one bold heading that wraps naturally (not two fixed lines with the place cut off); dates in gold under it.
+4. **Countdown:** DAYS / HRS / MIN / SEC labels **above** the numbers; the number tiles are maroon flip-clock tiles (soft gradient + thin middle line), bigger numbers.
+5. **Upcoming slide:** flag icon + **TEE TIME** in small caps on the left, **NEXT** in gold caps on the right; "Tue, Dec 15 · 7:00 AM" big and bold; "Round 1" small under it; the course ("Course TBD") bold and centered on the arrow row; the arrows sit in round dark buttons.
+6. **Dots under the board:** the chosen dot is a longer gold pill, others small grey dots.
+7. **Live card:** title **Balata Live** (answer B) in gold (22, regular weight), **View** is a gold outlined pill button, description in cream; the link sits in a bordered box with a cream **Copy link** button and a cream square **share** button using the three-dot share icon (not the iPhone box-arrow).
+8. **Team Draft / Match Selection:** big section heading, then a card with the message centered in gold ("Set up team selection", "Complete team assignments first.") and a centered gold outlined pill button ("Set up teams", "Match settings").
+9. **Section headings** (Team Draft, Match Selection, Players, Competition): bigger, matching TestFlight.
+10. **Players:** count (1/12) in gold on the right; invite link in a full-width bordered box with the cream Copy link button; rows = gold number, gold-ring avatar, bold name, grey @username.
+11. **Competition:** no box around it. Labels in small letter-spaced caps (TYPE, TEAM FORMAT, YOUR TEAM, DAYS, ROUNDS) on the left, bold values on the right; a thin line; **FORMATS** in gold caps; ROUND 1–4 in caps with "Format not set" / "Course TBD" in grey italics on the right.
+12. **Total points / To win:** two separate dark filled tiles side by side (no border), caps label on top, big number under it (To win in gold).
+13. **Bottom tab bar:** keep Apple's real iOS tab bar on every tab (answer C).
+
+### Answers (owner 2026-11-26)
+- **A.** The back arrow becomes a ☰ menu button that can always be tapped; Exit lives inside that menu.
+- **B.** The name is Balata now (Balata Live). Ignore "The Maroon" in the screenshots.
+- **C.** Keep Apple's tab bar on every tab. A–C apply to every trip tab.
+
+### Golf → Board checklist
+1. **Section switch** (Board · Games · Stats · Predict): sits in a dark tray with rounded bottom corners that runs edge to edge; the words are Barlow; the chosen one gets a gold outlined pill (gold text), the others grey. A small handle tab hangs under the tray's middle (it still collapses / opens the golf-day board). Replaces the cream pill switch.
+2. **Team board:** one box, gold border, gold glow on the left team's side and rose glow on the right; team names (Spectral bold, cream) top left and right, **TO WIN** (small caps) + 12½ (gold) in the middle, big scores (0 / 0) under the names, the win chance (50%) centered with a thin bar under it, then a line and a stats row: PPG · FWY · GIR on each side (small letter-spaced caps).
+3. **Rounds:** plain words "Round 1 … Round 4" in Barlow, the chosen one gold, others grey (no pills); under them the course (Spectral, cream, centered) and the format in gold; then a thin line.
+4. **No matches yet:** "No Match Draft has been set." (Spectral bold, centered) and "Ask Your Organizer" (gold, Barlow) under it.
+
+### Golf → Games checklist
+1. Same section switch as Board, with Games picked.
+2. **Active / Settled:** two plain words (Barlow), chosen one gold with a soft glow, no filled tab.
+3. **"Your Games"** big bold heading on the left; **+ New game** gold outlined pill on the right (not a filled gold button).
+4. Empty: "No active games. Tap New game to start one." left-aligned, Barlow, cream.
+
+### Venue checklist
+1. **Search:** one rounded bar with a dark fill and gold border, magnifier icon, "Search places in <destination>" placeholder, a gold **📍 Pinehurst** chip inside the bar on the right; the filter button is a gold outlined circle beside it.
+2. **Categories:** gold outlined circles (bigger, with gold icons) with cream Barlow labels under them (Food, Bars & Breweries, Golf, Coffee, Things to do); a line under the row.
+3. **Place card:** picture area with a maroon-to-rust gradient and the category icon; a cream **Right here** / distance chip bottom left; heart in a cream circle top right; under it the name (big Spectral bold), a pin icon + address (Barlow), the type (Barlow); a **Balata Rating** box on the right (gold border, gold label, 5 outline stars, "?").
+4. **Buttons:** **+ Add to itinerary** and **Open in Maps** (arrow icon) side by side, both outlined (gold text, Barlow), not a filled gold button; a line between places.
+
+### Itinerary checklist
+1. **Day header:** weekday big (Spectral bold) centered, the date under it in gold (Barlow); the arrow (›) on the right in cream, no left arrow on the first day; a line under it.
+2. **+ Add:** gold outlined pill on the right (not a filled gold button).
+3. **Groups:** the type ("Tee time") as a section heading (Spectral bold) with a line under it.
+4. **Tee time box:** dark box with a light border (not cream); "Tee time TBD" bold on the left, **Sit out** (rose outline) and **Play** (green fill when picked) pills on the right; a line; "Course TBD" big bold, "Round 1" (Barlow) under it; **Playing** in green (Spectral bold) bottom right.
+

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { countdownParts } from "@/lib/platform/momNotifications";
 import type { DraftCountdown, HomeDrafts } from "@/lib/platform/tripHomeDrafts";
 import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
+import { GoldBox } from "./GoldBox.tsx";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const localStamp = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -46,12 +47,15 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return <View style={styles.block}><Text style={styles.blockTitle} accessibilityRole="header">{title}</Text><View style={{ gap: 10, marginTop: 10 }}>{children}</View></View>;
 }
 
+/** TestFlight look: the gold box with the message centered in gold and a gold outlined pill under it. */
 function Status({ text, action, onPress }: { text: string; action?: string; onPress: () => void }) {
   return (
-    <View style={[styles.card, styles.statusRow]}>
-      <Text style={[styles.line, { flex: 1 }]}>{text}</Text>
-      {action && <Pressable accessibilityRole="button" onPress={onPress} style={styles.action}><Text style={styles.actionText}>{action}</Text></Pressable>}
-    </View>
+    <GoldBox>
+      <View style={styles.status}>
+        <Text style={styles.statusText}>{text}</Text>
+        {action && <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={({ pressed }) => [styles.statusPill, pressed && { opacity: 0.8 }]}><Text style={styles.statusPillText}>{action}</Text></Pressable>}
+      </View>
+    </GoldBox>
   );
 }
 
@@ -102,7 +106,10 @@ const styles = StyleSheet.create({
   block: { paddingHorizontal: gutter, marginTop: 28 },
   blockTitle: { fontFamily: fonts.bold, fontSize: 18, color: colors.cream },
   card: { padding: 14, borderRadius: radius.card, borderWidth: 1, borderColor: colors.boardBorder, backgroundColor: colors.boardTop, gap: 6 },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  status: { alignItems: "center", gap: 10, paddingTop: 18, paddingBottom: 18, paddingHorizontal: 14 },
+  statusText: { textAlign: "center", fontFamily: fonts.semibold, fontSize: 14, lineHeight: 21, color: colors.tripGold },
+  statusPill: { minHeight: 30, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.tripPillLine, backgroundColor: colors.tripPillFill, justifyContent: "center" },
+  statusPillText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.tripGold },
   heading: { fontFamily: fonts.bold, fontSize: 16, color: colors.cream },
   line: { fontFamily: fonts.semibold, fontSize: 15, color: colors.cream },
   muted: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.boardInk },

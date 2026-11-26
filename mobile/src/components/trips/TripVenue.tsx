@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SymbolView } from "expo-symbols";
+import { LinearGradient } from "expo-linear-gradient";
 import { PLACES_CREDIT } from "@/lib/platform/placeAreas";
 import { distanceLabel, distanceMiles, mapsLink, PLACE_CATEGORIES, placeBadge, rankPlaces, type Place, type PlaceCategory } from "@/lib/platform/venuePlaces";
 import { SheetClose } from "~/components/SheetClose.tsx";
@@ -10,7 +11,7 @@ import { colors, fonts, gutter, minTap, radius } from "~/lib/theme.ts";
 
 type Center = { latitude: number; longitude: number };
 type Live = { status: "loading" } | { status: "no-destination" } | { status: "off" } | { status: "error" } | { status: "ok"; places: (Place & { savedByMe?: boolean })[]; pending: PlaceCategory[] };
-const ICONS: Record<PlaceCategory, "fork.knife" | "mug.fill" | "flag.fill" | "cup.and.saucer.fill" | "ticket.fill"> = { food: "fork.knife", bars: "mug.fill", golf: "flag.fill", coffee: "cup.and.saucer.fill", todo: "ticket.fill" };
+const ICONS: Record<PlaceCategory, "fork.knife" | "mug" | "flag" | "cup.and.saucer" | "ticket"> = { food: "fork.knife", bars: "mug", golf: "flag", coffee: "cup.and.saucer", todo: "ticket" };
 const DEFAULT_FILTERS = { location: "", miles: "", minimum: "", savedOnly: false, sort: "recommended" as "recommended" | "nearest" | "rating" };
 const toggle = (list: string[], id: string) => list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 const centerOf = (places: Place[]): Center | null => places.length ? { latitude: places.reduce((s, p) => s + p.latitude, 0) / places.length, longitude: places.reduce((s, p) => s + p.longitude, 0) / places.length } : null;
@@ -81,25 +82,31 @@ export function TripVenue({ tripId, destination, center, onAddToItinerary }: {
       const rating = (p.ratingCount ?? 0) > 0 && Number.isFinite(p.ratingAverage) ? Math.round(Math.max(0, Math.min(5, p.ratingAverage! / 2)) * 10) / 10 : null;
       return <View key={p.id} style={styles.card} accessibilityLabel={p.name}>
         <View style={styles.picture}>
-          <SymbolView name={ICONS[p.category]} size={40} tintColor={colors.boardGold} />
+          <LinearGradient pointerEvents="none" colors={["#7a2a3e", "#4a1525", "#2b0a14"]} locations={[0, 0.6, 1]} start={{ x: 0.3, y: 0 }} end={{ x: 0.7, y: 1 }} style={StyleSheet.absoluteFill} />
+          <SymbolView name={ICONS[p.category]} size={40} tintColor="rgba(251,248,241,0.55)" />
           <Text style={styles.distance}>{distanceLabel(distanceMiles(origin, p))}</Text>
-          <Pressable accessibilityRole="button" accessibilityState={{ selected: isSaved }} accessibilityLabel={isSaved ? `Unsave ${p.name}` : `Save ${p.name}`} onPress={() => save(p)} style={styles.heart}>
-            <SymbolView name={isSaved ? "heart.fill" : "heart"} size={20} tintColor={isSaved ? colors.errorOnMaroon : colors.cream} />
+          <Pressable accessibilityRole="button" accessibilityState={{ selected: isSaved }} accessibilityLabel={isSaved ? `Unsave ${p.name}` : `Save ${p.name}`} onPress={() => save(p)} hitSlop={4} style={styles.heart}>
+            <SymbolView name={isSaved ? "heart.fill" : "heart"} size={18} tintColor="#7a2a3e" />
           </Pressable>
         </View>
-        <View style={{ padding: 12, gap: 4 }}>
-          <Text style={styles.name}>{p.name}</Text>
-          {p.address && <Text style={styles.line}>{p.address}</Text>}
-          {p.detail && <Text style={styles.line}>{p.detail}</Text>}
-          {badge && badge !== "Ranked highly by Maroon users" && <Text style={styles.badge}>{badge}</Text>}
-          <Text style={styles.line} accessibilityLabel={rating === null ? "Maroon Rating: not yet rated" : `Maroon Rating: ${rating.toFixed(1)} out of 5 stars`}>
-            Maroon Rating <Text style={styles.stars}>{[0, 1, 2, 3, 4].map((i) => (rating ?? 0) - i >= 0.5 ? "★" : "☆").join("")}</Text> {rating === null ? "?" : rating.toFixed(1)}
-          </Text>
-          <View style={styles.actions}>
-            {onAddToItinerary && <Pressable accessibilityRole="button" accessibilityState={{ selected: isAdded }} onPress={() => add(p)} style={[styles.addButton, isAdded && styles.added]}>
-              <Text style={styles.addText}>{isAdded ? "✓ Added" : "+ Add to itinerary"}</Text></Pressable>}
-            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(mapsLink(p, Platform.OS === "ios"))} style={styles.mapsButton}><Text style={styles.mapsText}>Open in Maps</Text></Pressable>
+        <View style={styles.details}>
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <Text style={styles.name}>{p.name}</Text>
+            {p.address && <View style={styles.lineRow}><SymbolView name="mappin.and.ellipse" size={14} tintColor="rgba(251,248,241,0.7)" /><Text style={[styles.line, { flex: 1 }]}>{p.address}</Text></View>}
+            {p.detail && <Text style={styles.line}>{p.detail}</Text>}
+            {badge && badge !== "Ranked highly by Maroon users" && <Text style={styles.badge}>{badge}</Text>}
           </View>
+          <View style={styles.rating} accessibilityLabel={rating === null ? "Balata Rating: not yet rated" : `Balata Rating: ${rating.toFixed(1)} out of 5 stars`}>
+            <Text style={styles.ratingLabel}>Balata Rating</Text>
+            <View style={styles.stars}>{[0, 1, 2, 3, 4].map((i) => <SymbolView key={i} name={(rating ?? 0) - i >= 0.5 ? "star.fill" : "star"} size={15} tintColor={(rating ?? 0) - i >= 0.5 ? colors.avatarGold : "rgba(220,196,149,0.45)"} />)}</View>
+            <Text style={styles.ratingValue}>{rating === null ? "?" : rating.toFixed(1)}</Text>
+          </View>
+        </View>
+        <View style={styles.actions}>
+          {onAddToItinerary && <Pressable accessibilityRole="button" accessibilityState={{ selected: isAdded }} onPress={() => add(p)} style={({ pressed }) => [styles.addButton, isAdded && styles.added, pressed && { opacity: 0.8 }]}>
+            <SymbolView name={isAdded ? "checkmark" : "plus"} size={15} weight="semibold" tintColor={colors.avatarGold} /><Text style={styles.addText}>{isAdded ? "Added" : "Add to itinerary"}</Text></Pressable>}
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(mapsLink(p, Platform.OS === "ios"))} style={({ pressed }) => [styles.mapsButton, pressed && { opacity: 0.8 }]}>
+            <SymbolView name="location" size={15} tintColor={colors.avatarGold} /><Text style={styles.mapsText}>Open in Maps</Text></Pressable>
         </View>
       </View>;
     });
@@ -108,18 +115,22 @@ export function TripVenue({ tripId, destination, center, onAddToItinerary }: {
     <ScrollView contentContainerStyle={{ paddingBottom: 48, gap: 12 }} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.goldBright} />}>
       <View style={styles.searchRow}>
-        <TextInput value={query} onChangeText={setQuery} placeholder={`Search places in ${placeName}`} placeholderTextColor={colors.searchFaint} style={styles.search} accessibilityLabel={`Search places in ${placeName}`} />
+        <View style={styles.searchBar}>
+          <SymbolView name="magnifyingglass" size={18} tintColor={colors.avatarGold} />
+          <TextInput value={query} onChangeText={setQuery} placeholder={`Search places in ${placeName}`} placeholderTextColor="rgba(251,248,241,0.55)" style={styles.search} accessibilityLabel={`Search places in ${placeName}`} />
+          <View style={styles.searchPlace}><SymbolView name="mappin.and.ellipse" size={12} tintColor={colors.maroon900} /><Text style={styles.searchPlaceText} numberOfLines={1}>{placeName.split(",")[0]}</Text></View>
+        </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Filter places" onPress={() => setFiltering(true)} style={[styles.filter, active && styles.filterOn]}>
-          <SymbolView name="slider.horizontal.3" size={20} tintColor={active ? colors.maroon900 : colors.cream} />
+          <SymbolView name="slider.horizontal.3" size={20} tintColor={active ? colors.maroon900 : colors.avatarGold} />
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingHorizontal: gutter }} accessibilityLabel="Categories">
         {PLACE_CATEGORIES.map(({ key, label }) => <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: category === key }} onPress={() => setCategory(category === key ? null : key)} style={styles.category}>
-          <View style={[styles.circle, category === key && styles.circleOn]}><SymbolView name={ICONS[key]} size={22} tintColor={category === key ? colors.maroon900 : colors.cream} /></View>
+          <View style={[styles.circle, category === key && styles.circleOn]}><SymbolView name={ICONS[key]} size={22} tintColor={colors.avatarGold} /></View>
           <Text style={styles.categoryLabel} numberOfLines={2}>{label}</Text>
         </Pressable>)}
       </ScrollView>
-      <View style={{ paddingHorizontal: gutter, gap: 12 }}>{body}</View>
+      <View>{body}</View>
       <Text style={styles.credit}>{PLACES_CREDIT}</Text>
       {filtering && <Filters places={places} placeName={placeName} filters={filters} category={category} onClose={() => setFiltering(false)}
         onApply={(f, c) => { setFilters(f); setCategory(c); setFiltering(false); }} />}
@@ -166,29 +177,29 @@ function Message({ title, text }: { title: string; text: string }) {
 }
 
 const styles = StyleSheet.create({
-  searchRow: { flexDirection: "row", gap: 10, paddingHorizontal: gutter, marginTop: 14 },
-  search: { flex: 1, minHeight: 44, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.searchField, color: colors.searchInk, fontFamily: fonts.regular, fontSize: 15 },
-  filter: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.boardBorderSoft, alignItems: "center", justifyContent: "center" },
-  filterOn: { backgroundColor: colors.goldBright, borderColor: colors.goldBright },
-  category: { width: 72, alignItems: "center", gap: 6 },
-  circle: { width: 54, height: 54, borderRadius: 27, borderWidth: 1, borderColor: colors.boardBorder, alignItems: "center", justifyContent: "center" },
-  circleOn: { backgroundColor: colors.goldBright, borderColor: colors.goldBright },
-  categoryLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.boardInk, textAlign: "center" },
-  card: { borderRadius: radius.card, overflow: "hidden", borderWidth: 1, borderColor: colors.boardBorderSoft, backgroundColor: colors.boardBottom },
-  picture: { height: 120, alignItems: "center", justifyContent: "center", backgroundColor: colors.boardTop },
-  distance: { position: "absolute", left: 10, bottom: 8, fontFamily: fonts.semibold, fontSize: 12, color: colors.cream },
-  heart: { position: "absolute", right: 6, top: 6, width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  name: { fontFamily: fonts.bold, fontSize: 17, color: colors.cream },
-  line: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.boardInk },
-  badge: { fontFamily: fonts.semibold, fontSize: 12, color: colors.goldBright },
-  stars: { color: colors.goldBright, letterSpacing: 1 },
-  actions: { flexDirection: "row", gap: 8, marginTop: 6 },
-  addButton: { flex: 1, minHeight: 40, borderRadius: radius.pill, backgroundColor: colors.goldBright, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: gutter, marginTop: 14 },
+  search: { flex: 1, minWidth: 0, minHeight: 44, color: colors.cream, fontFamily: fonts.capsSemibold, fontSize: 15 },
+  filter: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.avatarGold, alignItems: "center", justifyContent: "center" },
+  filterOn: { backgroundColor: colors.avatarGold, borderColor: colors.avatarGold },
+  category: { width: 64, alignItems: "center", gap: 5 },
+  circle: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.avatarGold, alignItems: "center", justifyContent: "center" },
+  circleOn: { borderWidth: 3 },
+  categoryLabel: { fontFamily: fonts.capsSemibold, fontSize: 11, lineHeight: 13, color: "rgba(251,248,241,0.85)", textAlign: "center" },
+  card: { paddingHorizontal: gutter, paddingVertical: 14, borderTopWidth: 2, borderTopColor: "rgba(251,248,241,0.18)" },
+  picture: { height: 90, borderRadius: 14, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  distance: { position: "absolute", left: 10, bottom: 10, paddingVertical: 5, paddingHorizontal: 10, borderRadius: radius.pill, overflow: "hidden", backgroundColor: "rgba(251,248,241,0.92)", fontFamily: fonts.capsBold, fontSize: 12, color: colors.maroon900 },
+  heart: { position: "absolute", right: 10, top: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(251,248,241,0.92)", alignItems: "center", justifyContent: "center" },
+  name: { fontFamily: fonts.bold, fontSize: 18, color: colors.cream },
+  line: { fontFamily: fonts.capsSemibold, fontSize: 13, lineHeight: 17, color: "rgba(251,248,241,0.7)" },
+  badge: { marginTop: 2, fontFamily: fonts.capsBold, fontSize: 11, letterSpacing: 0.3, color: colors.avatarGold },
+  stars: { flexDirection: "row", gap: 2 },
+  actions: { flexDirection: "row", gap: 8, marginTop: 5 },
+  addButton: { flex: 1, minHeight: 42, flexDirection: "row", gap: 6, borderRadius: radius.control, borderWidth: 1, borderColor: "rgba(220,196,149,0.5)", backgroundColor: colors.maroon900, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
   added: { opacity: 0.75 },
-  addText: { fontFamily: fonts.bold, fontSize: 14, color: colors.maroon900 },
-  mapsButton: { flex: 1, minHeight: 40, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.boardBorder, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
-  mapsText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.cream },
-  message: { alignItems: "center", gap: 6, paddingVertical: 32 },
+  addText: { fontFamily: fonts.capsBold, fontSize: 14, color: colors.avatarGold },
+  mapsButton: { flex: 1, minHeight: 42, flexDirection: "row", gap: 6, borderRadius: radius.control, borderWidth: 1, borderColor: colors.avatarGold, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  mapsText: { fontFamily: fonts.capsBold, fontSize: 14, color: colors.avatarGold },
+  message: { alignItems: "center", gap: 6, paddingVertical: 32, paddingHorizontal: gutter },
   credit: { textAlign: "center", fontFamily: fonts.regular, fontSize: 11, color: colors.boardInk },
   page: { flex: 1, backgroundColor: colors.maroon900 },
   sheetTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: gutter, paddingTop: 14, minHeight: 56 },
@@ -202,4 +213,12 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   switchLabel: { fontFamily: fonts.semibold, fontSize: 15, color: colors.cream },
   footer: { flexDirection: "row", gap: 10, padding: gutter },
+  searchBar: { flex: 1, minHeight: 46, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 14, paddingRight: 6, borderRadius: radius.pill, borderWidth: 1, borderColor: "rgba(201,168,110,0.35)", backgroundColor: colors.tripFillStrong },
+  searchPlace: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: 120, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: colors.avatarGold },
+  searchPlaceText: { flexShrink: 1, fontFamily: fonts.capsBold, fontSize: 12, color: colors.maroon900 },
+  details: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingTop: 8 },
+  lineRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  rating: { alignItems: "flex-end", gap: 3, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "rgba(220,196,149,0.35)", backgroundColor: colors.maroon900 },
+  ratingLabel: { fontFamily: fonts.capsBold, fontSize: 11, color: colors.avatarGold },
+  ratingValue: { fontFamily: fonts.capsBold, fontSize: 14, color: colors.avatarGold, fontVariant: ["tabular-nums"] },
 });
