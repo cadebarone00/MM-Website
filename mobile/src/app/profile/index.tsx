@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileHero, type ProfileTab } from "~/components/profile/ProfileHero.tsx";
 import { OverviewTab, RoundsTab, StatsTab } from "~/components/profile/ProfileTabs.tsx";
@@ -36,10 +36,12 @@ export default function Profile() {
   }, []);
   useFocusEffect(useCallback(() => { void fetchProfile(); }, [fetchProfile]));
   const refresh = async () => { setRefreshing(true); await fetchProfile(); setRefreshing(false); };
+  const back = <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.canGoBack() ? router.back() : router.replace("/")} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>;
 
   if (load.status !== "ok") {
     return (
       <SafeAreaView style={styles.plain} edges={["top"]}>
+        {back}
         <StateSlot height={240} tone="dark" state={load.status === "loading" ? { kind: "loading" }
           : load.status === "setup" ? { kind: "empty", message: "Finish setting up your profile on the website to see it here." }
           : { kind: "error", message: load.message, onRetry: () => { setLoad({ status: "loading" }); void fetchProfile(); } }} />
@@ -50,6 +52,7 @@ export default function Profile() {
   return (
     <View style={styles.page}>
       <SafeAreaView edges={["top"]} style={styles.top} />
+      <View style={styles.backBar}>{back}</View>
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
         <ProfileHero profile={load.profile} friends={load.friends} requests={requests} tab={tab} onTab={setTab}
           onFriends={() => router.push({ pathname: "/profile/search", params: { tab: "friends" } })} />
@@ -67,7 +70,10 @@ export default function Profile() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.cream },
   top: { backgroundColor: colors.maroon900 },
-  plain: { flex: 1, backgroundColor: colors.maroon900, justifyContent: "center", paddingHorizontal: gutter },
+  backBar: { backgroundColor: colors.maroon900, paddingHorizontal: gutter },
+  back: { width: 44, height: 44, justifyContent: "center" },
+  backText: { color: colors.cream, fontSize: 36 },
+  plain: { flex: 1, backgroundColor: colors.maroon900, paddingHorizontal: gutter },
   content: { paddingBottom: 48 },
   body: { paddingHorizontal: gutter, paddingTop: 16 },
   dev: { marginTop: 24, textAlign: "center", fontFamily: fonts.semibold, fontSize: 14, color: colors.maroon700, textDecorationLine: "underline" },

@@ -1,12 +1,13 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "~/components/Avatar.tsx";
 import { apiGet } from "~/lib/api.ts";
 import { turnOffPush } from "~/lib/push.ts";
 import { supabase } from "~/lib/supabase.ts";
 import { colors, fonts, gutter } from "~/lib/theme.ts";
+import Settings from "~/app/settings.tsx";
 
 type Identity = { displayName: string; username: string; avatarSrc: string | null };
 type Reply = { page?: { status: string; profile?: { identity: Identity } } };
@@ -15,6 +16,9 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const progress = useRef(new Animated.Value(0)).current;
+  const { width } = useWindowDimensions();
   useFocusEffect(useCallback(() => {
     if (!visible) return;
     let active = true;
@@ -24,7 +28,13 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
     return () => { active = false; };
   }, [visible]));
 
-  const open = (destination: "/settings" | "/profile") => { onClose(); router.navigate(destination); };
+  const open = (destination: "/settings" | "/profile") => {
+    if (destination === "/profile") { onClose(); router.navigate(destination); return; }
+    progress.setValue(0);
+    setShowSettings(true);
+    Animated.timing(progress, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+  };
+  const backToMenu = () => Animated.timing(progress, { toValue: 0, duration: 250, useNativeDriver: true }).start(({ finished }) => { if (finished) setShowSettings(false); });
   async function logOut() {
     setBusy(true); setError("");
     try {
@@ -45,14 +55,17 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
     { label: "Reviews" },
   ];
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={showSettings ? backToMenu : onClose}>
+      <SafeAreaProvider>
       <SafeAreaView style={styles.page}>
-        <View style={styles.top}><Pressable accessibilityRole="button" accessibilityLabel="Close Menu" onPress={onClose} style={styles.close}><Text style={styles.closeText}>×</Text></Pressable></View>
-        <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.top}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close Menu" onPress={onClose} style={styles.close}><Text style={styles.closeText}>×</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Open Your Profile" onPress={() => open("/profile")} style={styles.identity}>
             <Avatar name={identity?.displayName ?? "You"} photoUrl={identity?.avatarSrc ?? null} size={48} />
-            <Text style={styles.username} numberOfLines={1}>{identity?.username ? `@${identity.username}` : "Your Profile"}</Text>
+            <Text style={styles.username} numberOfLines={1}>{identity?.username || "Your Profile"}</Text>
           </Pressable>
+        </View>
+        <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.list}>
             {items.map(({ label, action }) => <Pressable key={label} accessibilityRole="button" accessibilityState={{ disabled: !action }} disabled={!action} onPress={action} style={styles.item}>
               <Text style={[styles.itemText, !action && styles.disabled]}>{label}</Text><Text style={styles.chevron}>{action ? "›" : "Coming Soon"}</Text>
@@ -62,17 +75,19 @@ export function PlayMenu({ visible, onClose }: { visible: boolean; onClose: () =
           </View>
         </ScrollView>
       </SafeAreaView>
+      {showSettings && <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [width, 0] }) }] }]}><Settings onBack={backToMenu} /></Animated.View>}
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.maroon950 },
-  top: { alignItems: "flex-end", paddingHorizontal: gutter },
-  close: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "center", minHeight: 64, paddingHorizontal: gutter },
+  close: { position: "absolute", left: gutter, width: 44, height: 44, alignItems: "center", justifyContent: "center", zIndex: 1 },
   closeText: { color: colors.cream, fontSize: 32 },
   content: { paddingHorizontal: gutter, paddingBottom: 32 },
-  identity: { flexDirection: "row", alignSelf: "center", alignItems: "center", gap: 12, paddingVertical: 24, maxWidth: "100%" },
+  identity: { flexDirection: "row", alignItems: "center", gap: 12, maxWidth: "65%" },
   username: { color: colors.cream, fontFamily: fonts.semibold, fontSize: 20, flexShrink: 1 },
   list: { marginTop: 12 },
   item: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.wizardLine },

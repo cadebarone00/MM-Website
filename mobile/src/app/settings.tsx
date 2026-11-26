@@ -35,7 +35,7 @@ const openSite = (path: string) => { void Linking.openURL(shareUrl(path)); };
  * Settings (website SettingsView; project_specs.md "Expo app Step 3", part 3d): Account, Notifications, Golf
  * preferences, Organizer, Tutorials, Help & legal, Sign out. Claude's call: Appearance (dark mode) waits for the look pass.
  */
-export default function Settings() {
+export default function Settings({ onBack }: { onBack?: () => void } = {}) {
   useLightStatusBar();
   const { session } = useAuth();
   const [load, setLoad] = useState<Load>({ status: "loading" });
@@ -80,7 +80,7 @@ export default function Settings() {
     router.push("/trips/new");
   }
 
-  const header = <View style={styles.gutter}><PageHeader title="Settings" back onBack={() => router.back()} tone="dark" /></View>;
+  const header = <View style={styles.gutter}><PageHeader title="Settings" back onBack={onBack ?? (() => router.back())} tone="dark" /></View>;
   if (load.status !== "ok") {
     return (
       <SafeAreaView style={styles.page} edges={["top"]}>

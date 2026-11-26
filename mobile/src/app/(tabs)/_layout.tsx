@@ -20,10 +20,6 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf="airplane" md="flight" />
         <NativeTabs.Trigger.Label>Golf Trips</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Icon sf={{ default: "person", selected: "person.fill" }} md="person" />
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tourneys">
         <NativeTabs.Trigger.Icon sf={{ default: "trophy", selected: "trophy.fill" }} md="emoji_events" />
         <NativeTabs.Trigger.Label>Tourneys</NativeTabs.Trigger.Label>
