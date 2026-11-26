@@ -5,6 +5,7 @@ import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { leagueSection, type MyLeague } from "@/lib/platform/leagues";
 import { JoinCodeCard } from "~/components/play/JoinCodeCard.tsx";
+import { AppHeader } from "~/components/AppHeader.tsx";
 import { SheetClose } from "~/components/SheetClose.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
 import { apiJson } from "~/lib/api.ts";
@@ -36,6 +37,7 @@ export default function Leagues() {
 
   return (
     <SafeAreaView style={styles.page} edges={["top"]}>
+      <AppHeader />
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.goldBright} />}>
         <Text style={styles.title} accessibilityRole="header">Leagues</Text>
         <View style={styles.actions}>
@@ -103,7 +105,7 @@ function Action({ icon, label, onPress }: { icon: SymbolViewProps["name"]; label
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.maroon900 },
+  page: { flex: 1, backgroundColor: colors.darkBackground },
   content: { paddingHorizontal: gutter, paddingTop: 12, paddingBottom: 48, gap: 12 },
   title: { marginBottom: 8, textAlign: "center", fontFamily: fonts.regular, fontSize: 36, letterSpacing: -1, color: colors.cream },
   actions: { flexDirection: "row", gap: 12 },

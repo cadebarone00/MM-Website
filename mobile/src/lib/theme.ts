@@ -1,5 +1,6 @@
 /** Balata's colors and fonts (same values as the website's globals.css). Use these, never hard-coded colors. */
 export const colors = {
+  darkBackground: "#1d0b11",
   maroon900: "#240001",
   maroon700: "#500001",
   cream: "#fbf8f1",

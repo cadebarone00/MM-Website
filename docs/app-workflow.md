@@ -6,6 +6,10 @@ Open **app-workflow.html** for the interactive version. Select a workflow box to
 
 ## What changed
 
+**2026-11-25 - Expo dark background color (implemented locally; deployment not verified).** Golf Trips, Tourneys and Leagues previously used a different maroon from the shared header, creating a visible strip. The four main tabs, shared header and account menu now use the same dark background token, shown in the Building Blocks gallery. Other existing surfaces retain their current colors; a light mode has not been implemented. Updated section 22 and the flowchart annotation; phone verification remains outstanding.
+
+**2026-11-25 - Shared Expo tab header (implemented locally; deployment not verified).** The Balata logo and account menu previously appeared only on Play. The same fixed header now appears on Play, Golf Trips, Tourneys and Leagues, above the scrollable content. It opens the existing account menu; data and permissions are unchanged. Updated section 22 and the flowchart annotation; phone verification remains outstanding.
+
 **2026-11-25 - Expo profile navigation (implemented locally; deployment not verified).** Profile previously appeared in the bottom tab bar. It is now a separate screen with a back control, opened from the Play profile snapshot or the menu username and existing profile links. The menu username no longer includes an @ prefix. Profile data and account permissions are unchanged; phone verification remains outstanding. Updated section 22 and the flowchart annotation; overview mapping is unchanged.
 
 **2026-11-25 - Expo menu settings transition (implemented locally; deployment not verified).** Settings entries in the Play menu previously dismissed the menu and opened Settings. They now slide the existing Settings screen in from the right; its back button slides back to the menu. Your Activity continues to open Profile, while Resources and Reviews remain unavailable. Updated section 22 and the flowchart annotation; phone verification remains outstanding.
@@ -900,7 +904,7 @@ V1, V2, marketing and Player Dashboard inherit the same locally hosted brand fam
 
 ```mermaid
 flowchart TD
-    %% Expo Play snapshot and menu username open the separate Profile screen; the bottom tab bar excludes Profile.
+    %% Expo main tabs and shared header use the same dark background token; the Building Blocks gallery displays it.
     %% Expo startup shows the Balata logo while fonts and session load, then follows existing account routing; server and legacy website remain unchanged.
     %% Expo Tourneys opens pasted first-party tournament page links through the existing public summary.
     %% Expo platform tournament summaries show available teams, public handicaps, schedule courses and tied positions.
@@ -1510,6 +1514,10 @@ The separate test-season controls operate on a designated database season. This 
 ## 22. Legacy integrations and unfinished pages
 
 **Expo profile navigation:** The Play profile snapshot and menu username open the separate Profile screen, which has a back control. The bottom navigation no longer includes Profile; existing profile links continue to use the same route.
+
+**Expo dark background:** The four main tabs, shared header and account menu use the dark background token, also displayed in Building Blocks. Other surfaces keep their existing colors; light mode is not implemented.
+
+**Expo tab header:** Play, Golf Trips, Tourneys and Leagues show the same fixed Balata logo and account menu above their scrollable content.
 
 **Expo Play header:** A menu beside the Balata logo opens a full-screen account menu with the profile avatar and username. App Settings, Account & Security, Notifications and Help slide existing Settings in from the right and its back button returns to the menu; Your Activity opens Profile; Resources and Reviews are unavailable. Log Out follows the existing notification cleanup and sign-out flow. The profile snapshot and its existing data appear below the header.
 
