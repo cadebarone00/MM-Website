@@ -18,12 +18,12 @@ import { TripHomeDrafts } from "./TripHomeDrafts.tsx";
 
 /**
  * Trip Home (project_specs.md Golf Trips part 2c), drawn from the shared lib/platform/tripHome.ts view: the maroon head
- * (Your trip to … + dates, the Big Board), The Maroon Live, Players / Teams with the invite link, Competition.
+ * (Your trip to … + dates, the Big Board), Balata Live, Players / Teams with the invite link, Competition.
  */
 export function TripHome({ view, invite, onOpenItinerary, onOpenFlights, onSettings, onRoom, onOpenLive }: {
   view: TripHomeView; invite: { state: InviteLinkState; fresh: () => Promise<{ url: string } | null> };
   onOpenItinerary: () => void; onOpenFlights: () => void; onSettings: () => void; onRoom: (which: "draft" | "selection" | "robin") => void;
-  /** The Maroon Live → View: the trip's live board in the app (the Golf tab), not the website. */
+  /** Balata Live → View: the trip's live board in the app (the Golf tab), not the website. */
   onOpenLive: () => void;
 }) {
   return (
@@ -214,7 +214,7 @@ function MomSection({ travel, arrivalDay, plans, rounds, afterRound }: TripHomeV
   );
 }
 
-// ——— The Maroon Live ———
+// ——— Balata Live ———
 
 function LiveCard({ path, tripName, onView }: { path: string | null; tripName: string; onView: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -222,24 +222,24 @@ function LiveCard({ path, tripName, onView }: { path: string | null; tripName: s
   const url = path ? shareUrl(path) : null;
   const copy = async () => {
     if (!url) return;
-    try { await Clipboard.setStringAsync(url); setCopied(true); setNote("The Maroon Live link copied"); }
-    catch { setNote("Couldn't copy. Open The Maroon Live link and copy its address."); }
+    try { await Clipboard.setStringAsync(url); setCopied(true); setNote("Balata Live link copied"); }
+    catch { setNote("Couldn't copy. Open Balata Live link and copy its address."); }
   };
   return (
-    <View style={styles.liveCard} accessibilityLabel="The Maroon Live invite">
+    <View style={styles.liveCard} accessibilityLabel="Balata Live invite">
       <View style={styles.liveTop}>
-        <Text style={styles.liveTitle}>The Maroon Live</Text>
+        <Text style={styles.liveTitle}>Balata Live</Text>
         {/* View stays in the app: the live leaderboard, matches and stats are the Golf tab. Copy / Share send the web link for people without the app. */}
-        <Pressable accessibilityRole="button" accessibilityLabel="View The Maroon Live" onPress={onView}>
+        <Pressable accessibilityRole="button" accessibilityLabel="View Balata Live" onPress={onView}>
           <Text style={styles.liveView}>View</Text>
         </Pressable>
       </View>
       <Text style={styles.liveText}>Invite your peers to follow along.</Text>
       <View style={styles.inviteRow}>
-        <Text style={styles.inviteLink} numberOfLines={1} selectable>{path ?? "The Maroon Live link unavailable"}</Text>
+        <Text style={styles.inviteLink} numberOfLines={1} selectable>{path ?? "Balata Live link unavailable"}</Text>
         <CopyButton label={copied ? "Copied" : "Copy link"} icon={copied ? "checkmark" : "doc.on.doc"} disabled={!url} onPress={() => void copy()} />
-        <CopyButton icon="square.and.arrow.up" accessibilityLabel="Share The Maroon Live link" disabled={!url}
-          onPress={() => { if (url) Share.share({ message: `Follow ${tripName} on The Maroon Live: ${url}` }).catch(() => setNote("Couldn't share. Use Copy link.")); }} />
+        <CopyButton icon="square.and.arrow.up" accessibilityLabel="Share Balata Live link" disabled={!url}
+          onPress={() => { if (url) Share.share({ message: `Follow ${tripName} on Balata Live: ${url}` }).catch(() => setNote("Couldn't share. Use Copy link.")); }} />
       </View>
       {!!note && <Text style={styles.srNote} accessibilityLiveRegion="polite">{note}</Text>}
     </View>

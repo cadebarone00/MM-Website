@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { Info, X } from "lucide-react";
 import type { RoundsVisibility } from "@/lib/platform/playerRoundsPrivacy";
+import { PRIVACY_EXPLAIN } from "@/lib/profile/privacyExplain";
 import styles from "./Settings.module.css";
 
 const OPTIONS: { value: RoundsVisibility; label: string }[] = [{ value: "public", label: "Public" }, { value: "private", label: "Private" }];
-export const PRIVACY_EXPLAIN: Record<RoundsVisibility, string> = {
-  public: "Anyone can see your profile: your bio, rounds and public tournaments. Your golf trips stay private.",
-  private: "Others see just your name. Your friends (anyone you've been on a golf trip with) can still see and compare your stats, and people you play with see your handicap index.",
-};
+export { PRIVACY_EXPLAIN };
 
 /**
  * Settings → Privacy: a compact Public / Private switch for my profile and Rounds (Profile V1 rules,

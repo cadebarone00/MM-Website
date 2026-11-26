@@ -7309,3 +7309,223 @@ The owner wants Predict to follow the account. Sign in anywhere, see the same co
 - The organizer turning Predict off hides it for everyone.
 - Tests cover the maths, the version conflict, members-only access and not installed / offline.
 - Website tests, app tests and type checks pass.
+## Feature: Expo app Step 3 — Profile (owner request 2026-11-25) — FAST MODE (owner: build without stopping; checklists are the record; look fixed later with screenshots)
+
+**Side:** App (`mobile/`). Server unchanged (every route already takes the app login). Cam builds Golf Trips in parallel: this step stays out of `mobile/src/app/trips/`, `mobile/src/components/trips/`, `mobile/src/lib/trip*`.
+
+**Parts (each committed on its own):** 3a My profile · 3b Edit profile + photo · 3c Friends, Find golfers, someone else's profile, their friends, Compare · 3d Settings, Delete account, Content team.
+
+### 3a checklist — My profile (from `ProfileView`, `ProfileHistory`, `PlayerRoundsList`, `ProfileRoundSheet`, `ProfileStats`; data `GET /api/app/profile`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Maroon top: pencil (Edit, top left, when allowed), search with the friend-request badge, gear (Settings); photo or gold-ring initials; name, @username; Friends (tap → Friends) · Rounds · Handicap; bio; up to 4 socials (2 × 2, open in the browser).
+- [ ] Tabs Overview · Rounds · Stats on the cream body.
+- [ ] Overview: Tournaments (year · name, team, Captain; legacy years) and Golf trips (name, destination · dates · Past), each with its empty / can't-load line.
+- [ ] Rounds: newest first; the P / T / L / C letter; course; date (+ the trip / league / tourney name); score; the differential, "9+9", "Waiting for 9" or "Not counted" (shared `nineHolePairs`). Tap → the round sheet: scorecard (OUT / IN / TOT, birdie circles, bogey boxes), Round to par, Score, Handicap differential.
+- [ ] Stats (shared `roundStats`): Handicap · Scoring Avg. · Low Score; Scoring by par; Tee to green meters (Fairways, GIR, Scrambling), putting; Most played. Empty: "Stats will show here once you finish rounds."
+- [ ] Codex/Claude's calls: the old Maroon handicap history (legacy `HandicapHome`) and the dev-only "sample stats" stay website-only; Compare comes with 3c.
+
+### 3b checklist — Edit profile + photo (from `EditProfileScreen`; data `GET /api/app/profile?view=edit`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Back (asks "Discard changes?" when something changed) · Edit profile · Save (dim until something changes; saves Name / Username / Bio / Gender together with `PATCH /api/account/profile`, rules from the shared `profileEdit.ts`).
+- [ ] Photo + gold-ring avatar side by side; "Edit picture or avatar" → Change / Add a photo (the iPhone photo picker with its square crop, under 3 MB, `POST /api/account/photo`) or Remove photo; "Profile photos are coming soon" when not switched on.
+- [ ] Name, Username (shows the username rule once changed), Bio (150 max, count), Socials "N of 4" → list, remove, + Add social → pick an app → type → Save (shared `socialFromInput`, `PUT /api/account/links`), Gender → Man / Woman / Prefer not to say (private; saves with Save).
+- [ ] Private profile switch with the shared explanation (`lib/profile/privacyExplain.ts`, moved out of the website's PrivacySetting), saves at once (`PUT /api/account/privacy`), goes back on failure.
+- [ ] Claude's calls: the website's move-and-scale cropper → the iPhone's own square crop.
+
+## Feature: Expo Tourneys migration (2026-11-25, in progress)
+**Side:** App + Server
+
+Owner requested a faster area-by-area native migration while Profile is being built separately. Reuse existing app APIs, business rules and components; build functional slices before visual polish. The first slice lists the signed-in player's current code tournaments and past code and platform tournaments using `/api/app/tourneys?view=join`, with loading, empty, error and refresh states. Rows are currently read-only. No data mutation is introduced.
+
+Nothing-missing checklist (in progress; compare website and simulator before completing):
+- [x] Native Tourneys landing and account-scoped current / past list, loading, error, empty and refresh.
+- [ ] Create a tournament and organizer access, including all setup and error states.
+- [ ] Join by code and invitations, including invalid, ended, existing-member and signed-out states.
+- [ ] Search public events and Live / Upcoming / Past, and open eligible events.
+- [ ] Open current and historic tournaments, My Tournaments and organizer Studio; preserve permissions.
+- [ ] Player scoring, attestation, leaderboard and tournament-specific settings and states.
+- [ ] Inventory all existing buttons, screens, simulator conditionals and permissions; verify parity and side-by-side on a real phone.
+
+Codex's call: the first list remains read-only until native detail screens exist; do not route private tournament links through a browser session that may not be signed in. All later items and real-phone verification remain outstanding. Compliance review: `docs/expo-tourneys-review.md`; review_required.
+
+### 3c checklist — Friends, Find golfers, someone's profile, their friends, Compare (from `ProfileSearch`, `FriendToggle`, `UserFriendsList`, `CompareRings`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Search golfers: Search · Friends · Suggested tabs; Search = friend requests (Accept / ✕) + Recent (on the phone, Clear all, ✕) before typing, results after 2+ letters (🔒 on Private); Friends = mine, typing narrows, "N friends"; Suggested = mutual friends / "Suggested for you"; typing there jumps to Search. Row buttons: ✓ Friends · Requested · Accept · Add.
+- [ ] Someone's profile (`?view=user`): Back, @username (lock when Private), Rounds · Friends · Handicap, name, bio, socials, Add friend toggle (Friends · Trip can't switch off), Compare (→ my Stats with them picked); Private = top only + "Private Profile"; my own username → my profile; not found.
+- [ ] Their friends (`?view=user-friends`): search, "N friends", You / Friends / Requested / Accept / Add; Private → "Their friends list is hidden."
+- [ ] Compare (my Stats): pick a friend / someone I've played with, or search every player; the 8 shared stats (`lib/profile/compareMetrics.ts`, moved out of the website's CompareRings), lower-is-better marked, numbers always written; private / not found / error. Claude's call: two bars per stat instead of rings for now.
+### 3d checklist — Settings + Delete account (from `SettingsView`, `ChangePasswordSetting`, `DevicesSetting`, `PreferenceSettings`, `OrganizerOffers`, `DeleteAccountFlow`; data `GET /api/app/profile?view=settings` / `?view=delete`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] Account: email; Change password (current, new, again, the shared password rule, "Forgot it?" opens the website reset page; the phone keeps the fresh login the server hands back); Devices: Sign out of other devices (phone keeps its new login) / Sign out everywhere (this phone goes back to Sign in), both need the password; Delete account row.
+- [ ] Notifications: Push + Email switch for every type in the shared master list; each change saves straight away, a failed save puts the switch back. Golf preferences: Distance, Usual tees (incl. Not set), Score entry. Not set up on the server yet → "coming soon".
+- [ ] Organizer: intro line; Organizer offers (Accept / Decline, "You accepted" / "You declined") or "No offers right now"; Content team (admins only) opens the website. Claude's call: Content team stays on the website (desktop admin tool).
+- [ ] Tutorials: Golf Trips → replays the Trip Builder Learn + tour. Help & legal: Contact us (website), Terms + Privacy "Coming soon", App version. Sign out.
+- [ ] Delete account: Deleted / Kept-without-your-name lists (shared `lib/account/deletionCopy.ts`), each trip you organize (outcome text, ask a member to take over, Withdraw request), password + type DELETE; "closed" vs "deleted" result from the server, then Done signs this phone out.
+- Claude's call: Appearance (dark mode) left out until the screenshot look pass.
+
+**2026-11-25 Tourneys continuation (App + Server):** Native Join with code uses the existing lookup and join handlers via `/api/app/code-tournaments/*`, accepts a net handicap and opens a member-only overview; current and ended code rows open the same overview. Existing members and ended events follow the existing handler behavior. Platform-history detail, creation, search, full event controls, scoring, complete parity inventory and phone checks remain outstanding. App routes require deployment. Review: `docs/expo-tourneys-review.md`, review_required.
+
+**2026-11-25 Tourneys leaderboard continuation ? Side: App:** Code tournament details now use the shared leaderboard ranking, net/gross and tee-sheet rules, round selection, cut summary and manual refresh. The event page, score entry, automatic updates, full parity and phone checks remain outstanding; `docs/expo-tourneys-review.md` remains review_required.
+
+**2026-11-25 Tourneys public discovery continuation**
+**Side:** App + Server
+Native Tourneys searches public events by name/location and optional date, groups Live, Upcoming and Past with shared rules and opens the sanitized spectator leaderboard. Spectators do not see member tee sheets. Existing public access rules remain in force. App endpoints require deployment; phone verification, creation, scoring and remaining parity are outstanding. Review: `docs/expo-tourneys-review.md`, review_required.
+
+**2026-11-25 Expo tournament creation continuation**
+**Side:** App + Server
+Native creation uses existing tournament and course handlers for name, gross/net, organizer participation, handicap, one or more courses, tees and dates. It offers copy/share of the join code and an entry to the member overview. Course/provider attribution is displayed. Organizer settings, invitations, scoring, full parity inventory and phone checks remain outstanding. New app endpoints require server deployment. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scoring continuation**
+**Side:** App + Server
+Eligible code tournament members can enter or clear a hole, attest the assigned player and submit a completed matching card using existing shared rules and server handlers. Entries await acknowledgement and are not queued offline. Full scoring UX, tournament organizer settings, invitations, platform tournament history, parity and phone checks remain outstanding. App route changes require server deployment. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo organizer controls continuation**
+**Side:** App + Server
+Code tournament organizers can copy/share the code, change spectator visibility and player link sharing, set or remove a cut and confirm ending the event using existing server rules. Tee-sheet editing, adding rounds, PDFs, deletion, invitations, platform tournament paths, full parity and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required; deployment unverified.
+
+**2026-11-25 Expo tournament tee-sheet continuation**
+**Side:** App + Server
+Organizers select a round, move players, edit tee times and starting holes, and save through existing server authorization. Automatic grouping/timing presets, further organizer settings, invitations, historical platform tournament paths, scoring parity and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required. Deployment unverified.
+
+**2026-11-25 Expo tournament invitation and document continuation**
+**Side:** App + Server
+Signed-in players can paste first-party tournament invitation links, inspect the existing preview and join with a handicap when required; members can open the existing Info PDF and viewers can open an available round pin sheet. Automatic app links, organizer document uploads/removals, remaining event paths and parity and real-phone checks remain outstanding. Existing public storage behavior is unchanged. Review: docs/expo-tourneys-review.md, review_required. New app invitation endpoint requires deployment.
+
+## Feature: Expo app Step 4 — Sign up + onboarding (owner request 2026-11-25) — FAST MODE
+
+**Side:** App (uses the existing website routes; no new server routes, no SQL). The live flow is V2 (MAROON_V2_ONBOARDING=on in production): email → code → password → name → birthday → photo → Last step → Profile Created.
+
+### Checklist (from `components/onboarding/*`, `lib/account/onboardingRoutes.ts`, `lib/account/onboardingClient.ts`) — BUILT 2026-11-25, committed, not phone-checked
+- [ ] The app follows the server's step (`GET /api/account/onboarding`): signed out → Welcome / Sign up / Log in; signed in but not finished → the first unfinished step; Active → the tabs. Asked once per account (a login refresh doesn't ask again); a failed check → "We couldn't check your account" + Try again + Sign out, never the tabs.
+- [ ] Welcome: the M, Sign up, Log in (+ the under-13 message after a Birthday that closed the account).
+- [ ] Sign up: email → `POST /api/auth/signup` → Email Verification; an email that already has an account → the message and Log in (email filled in). "By continuing, you agree…". No Google / Apple on Sign up (beta decision 2026-10-30).
+- [ ] Email Verification / Enter Code To Reset: 6 boxes (paste / auto-fill works, verifies on the 6th digit), Resend code, help email. `POST /api/auth/verify-code` with `client: "app"`: sign-up keeps the login on the phone; reset only holds it in memory for the next screen.
+- [ ] Log in: email or username + password (eye) through `POST /api/auth/login` (`client: "app"`); not verified → a fresh code + the code screen; "Password saved" notice after a reset; Forgot password?.
+- [ ] Forgot password → code → Set a new password (same password rules) → every device signed out → Log in.
+- [ ] Create a password (right after the code, `POST /api/auth/create-password`, "already set" carries on) and the Terms / Privacy versions recorded then (not fatal).
+- [ ] What's your name? (first, last, username filled from the name until edited; `suggestUsername` moved to `lib/profile/profileEdit.ts`, shared) → `POST /api/account/profile`.
+- [ ] What's your birthday? (date wheel, saved once) → 13+ → Photo, or Play for an older account that only needed it; under 13 → the server closes it, the phone signs out, Welcome says why.
+- [ ] Add a profile image (optional, square crop) → `POST /api/account/photo`; Skip for now.
+- [ ] Last step!: Public profile (off = Private), Notifications (shown, nothing to save yet, like the website), Terms line when still needed → privacy, terms, `POST /api/account/finish`; failures say which step is missing; one Finish at a time.
+- [ ] Profile Created!: the M grows in with buzzes, then Let's go → Play.
+- [ ] Blocked accounts (under 13 / being reviewed / closed) → their message + Sign out.
+- Claude's calls: Set a new password uses the reset code's login directly on the phone (the website's `/api/auth/reset-password` only reads website cookies), same steps: set the password, clear the "no password yet" flag via Create a password when needed, sign every device out. No separate "Email confirmed" screen: the code goes straight to Create a password. Profile Created's M grows in instead of the hand-drawn line (screenshot pass). Google / Apple on Log in wait until they're switched on and checked for the app.
+
+**2026-11-25 Expo tournament PDF management continuation**
+**Side:** App + Server
+Organizers select, upload, replace or remove Info and round pin-sheet PDFs via the existing server-authorized handler and existing public storage. Device picker, MIME/size limits, storage and authorization need real-phone verification. New app endpoint requires deployment; remaining tournament parity is outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament add-round continuation**
+**Side:** App + Server
+Organizers of a live code tournament can search existing course sources, choose a scorecard and tee and add a dated round after the last existing round, up to the existing limit of ten. Uses existing app course and tournament handlers. Full parity, deployment and phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo platform tournament overview continuation**
+**Side:** App + Server
+Active and past platform and legacy tournament rows open read-only native summaries using existing roster-checked play and public-site data routes. Overview, standings, matches, players and schedule show available data; detailed event actions and parity remain outstanding. No new API routes. Device checks and deployment verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scorecard comparison continuation**
+**Side:** App
+The code tournament scoring view shows saved player and attester entries for each hole, highlights missing/mismatched scores and supports tapping a hole to edit. Existing server rules and online-only saves are unchanged. Full scoring parity, deployment and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament leaderboard scorecard continuation**
+**Side:** App
+Selecting a player in the code-tournament leaderboard displays the selected round?s saved strokes and pars and shared gross/net summary. Uses existing member or sanitized public data; no new writes. Player profile parity, device checks and deployment verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament golfer profile link continuation**
+**Side:** App
+A code-tournament member or signed-in public spectator can open a golfer?s native profile from the scorecard when a username is available; existing profile privacy checks apply. The tournament sheet closes before navigating. Modal, back behavior and privacy require phone verification; complete tournament parity remains outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament live refresh continuation**
+**Side:** App
+Open code-tournament member and public views refresh through existing endpoints every five seconds while the app is active and on foreground return; network errors preserve last data, explicit access loss removes it. Manual refresh and server-acknowledged scoring remain. Concurrent edits, visibility changes, lifecycle and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+## Feature: Expo app Step 5 — Leagues (owner request 2026-11-25) — FAST MODE
+
+**Side:** App (uses the existing `/api/leagues*` routes, which accept the app's Bearer login; shared rules stay in `lib/platform/leagues.ts`; no SQL).
+
+**Parts (each committed on its own):** 5a Leagues tab, Create, Join, the league (Leaderboard · Skins · Pairs · Group · Tee Times) + the scorer's group card · 5b League Settings (organizer).
+
+### 5a checklist (from `components/platform/Leagues.tsx` + `LeagueHome.tsx`)
+- [ ] Leagues tab: Create a league, Join with a code (the same code card as Play / Golf Trips), my leagues under Live · Upcoming · Past (name, course · day · N players); empty "No leagues yet…"; loading / error; pull to refresh.
+- [ ] Create a league: course search (the Play course search) → tees → date; 18-hole courses only; name, Leaderboard Gross / Net, I'm playing (+ handicap index, -10 to 54) → `POST /api/leagues` → League created: the invite code card (Copy, Share) → Open league.
+- [ ] Join (`/leagues/join?code=`): lookup (name, course · day · organizer · players), already in → Open league, ended → says so, no league → "No league has the code…", handicap (optional) → Join league → the league.
+- [ ] The league: name, course, the problem line, tabs Leaderboard · Skins (when on) · Pairs (when on) · Group (when I'm in one) · Tee Times; refreshes every 5 seconds while open; a change shows at once and is sent in order (a refresh never undoes it).
+- [ ] Leaderboard: Pos (T2 ties) · Player · To par · Thru (F) · Gross/Net total; my row marked.
+- [ ] Skins: totals, then each hole (winner / Tie / ×value); the organizer's Carryover switch.
+- [ ] Pairs: not drawn yet message; format · Net/Gross · winners; each segment's standings (points or to par), Final + winners.
+- [ ] Group: my group's game (the scorer picks it with the Play game picker; teams, Net, Birdies double; "needs N players"); everyone sees the standings; no game → "{scorer} can pick one."
+- [ ] Tee Times: each group (time or TBD, hole, Card in / Not started / Thru N / Finished), players + handicaps, Scorer tag, not-in-a-group list; none yet message.
+- [ ] Scorer: the Play tuck-in scoring sheet for the whole group (par is reference only), group game taps per hole, Submit card (then locked); everyone else: "{scorer} keeps your group's card."
+- Claude's calls: the Tap-in invite card and TV link stay on the website for now (The Maroon Live is a website screen); the sample league preview isn't in the app.
+
+### 5b checklist — League Settings (organizer, gear on the league)
+- [ ] The invite code (Copy, Share). Who can watch (Public / Link only / Private + players can share), saved straight away.
+- [ ] Tee Times editor: first time, every N min, Off 1 / 1 & 10 / Shotgun → Make / Re-make (asks first); each group's time, hole, scorer; move a player to another group or a new one; add someone who joined later.
+- [ ] Leaderboard Gross / Net. Skins on/off, Gross/Net, ties carry over / no skin.
+- [ ] Pairs: on/off, format (+ blurb), Gross/Net, winners segments, how pairs are drawn (+ blurb), Draw / Re-draw, Lock, Unlock to re-draw (before scores), the pairs list, late-joiner note.
+- [ ] Copy this league (new date) → opens the copy; End league (asks; scores lock); Delete league (asks) → back to Leagues.
+- Claude's call: emailing the code stays on the website (Share covers the phone).
+
+**2026-11-25 Expo tournament player invitations continuation**
+**Side:** App + Server
+Organizers can enter and validate player names, emails and net handicaps, then explicitly send individual invitations through the existing organizer-authorized service. The screen reports email delivery and permits copying or sharing returned individual links. CSV/Excel import, provider configuration, deployment and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament invitation file preview continuation**
+**Side:** App + Server
+Organizers can choose a CSV or Excel file up to 5 MB, send it to an organizer-authorized in-memory preview using existing spreadsheet and invitation validation, review row problems and add valid rows to the invitation list. Sending remains a separate action; the preview intentionally stores no file. Server deployment, file-picker and privacy checks on a phone and full tournament parity remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament tee-sheet presets continuation**
+**Side:** App
+Organizers can apply first tee/interval and start patterns, randomize or pair by prior scores using existing shared rules. These are drafts until saved; changed player lists block saving until the round is reopened. Existing attestation assignments follow tee groups. Concurrent-edit handling and real-phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament deletion continuation**
+**Side:** App + Server
+Organizers can confirm deletion of a code tournament via the existing organizer-authorized handler; related database records are removed and existing server code attempts PDF cleanup. Accounts remain. PDF cleanup failures, phone confirmation and deployment remain unverified. No tournament was deleted in testing. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament live and TV sharing continuation**
+**Side:** App
+Organizer settings show permitted existing live and TV links for public or link-only code tournaments, with open/copy/share and TV board selection. Private events do not show links; server visibility enforcement remains authoritative. Deployment, device checks, automatic app links and full tournament parity remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament scoring refresh safeguards**
+**Side:** App
+Bind unsaved scores to tournament, round, hole and player; reject a draft after a refreshed assignment changes. Block tee-sheet drafts when a refreshed saved sheet changed and require reopening. These checks are not atomic server-side concurrency protection; verify on a phone with simultaneous edits. No API or database changes. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament score save recovery**
+**Side:** App
+After an uncertain score write or failed follow-up read, scoring writes are blocked until an explicit successful refresh; the uncertain entry remains visible for review. A confirmed write clears the entry. Online-only, server-side atomic conflict handling and real-phone checks remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament tee-sheet save recovery**
+**Side:** App
+An uncertain tee-sheet write or failed follow-up read blocks further saves until a successful refresh and explicit round selection; the draft remains visible until that selection. This does not provide atomic server-side conflict protection. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament add-round recovery**
+**Side:** App
+An uncertain round write or failed follow-up read blocks another add until a successful refresh and explicit review of the current rounds; the draft remains visible. There is no automatic retry or atomic server idempotency. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament organizer settings recovery**
+**Side:** App
+Uncertain settings or deletion responses and unsuccessful post-save reads require refresh before further settings changes; live links are hidden until refresh succeeds. Changed or uncertain cut drafts require loading the saved cut. This is not atomic server conflict protection. Deployment and phone verification remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+## Feature: Expo app Step 6 — Phone notifications (owner request 2026-11-25) — FAST MODE
+
+**Side:** App + Server. Real lock-screen notifications for the iPhone / Android app through Expo's free push service, built on the existing master list (`lib/notifications/catalog.ts`: types, approved V1–V3 wording, Settings switches).
+
+### 6a checklist — the foundation + the first real notification — BUILT 2026-11-25, committed, NOT live yet
+- [ ] Database: `supabase/push_devices.sql` (NOT run): `push_devices` (Expo push address, whose phone, ios/android; one account per phone) + `notification_wording_last` (never the same wording twice in a row); both removed when an account is closed; service role only.
+- [ ] Server: `lib/notifications/expoPush.ts` (pure, tested: message, batches of 100, Expo's answers; a removed phone is forgotten) + `lib/notifications/pushServer.ts` (`sendPush`: Settings → Notifications → Push switch per type, picks a wording, sends to every phone the person signed up). Nothing is sent before the SQL is run.
+- [ ] Routes: `POST / DELETE /api/app/push-devices` (turn this phone on / off), `POST /api/app/push-test` (send myself a test); both in `lib/account/accessPolicy.ts`.
+- [ ] First real type: **Friend request** (sent when someone sends you one), next to the existing email.
+- [ ] App: `expo-notifications` + `expo-device`; the "Allow notifications?" prompt right after Finish when the Last step's Notifications switch is on; Settings → Notifications → Phone notifications (On / Off / Off in iPhone Settings / Not on this device / Coming soon) + Send a test notification; Sign out stops this phone's notifications first; tapping a notification opens the matching screen (`mobile/src/lib/pushRoutes.ts`, tested); a notification that arrives while the app is open shows as a banner.
+- **Cade's steps before it works (no code):** 1. run `supabase/push_devices.sql`; 2. `cd mobile` → `npx eas init` (makes the app's Expo project id in app.json); 3. an EAS development build on the iPhone (Expo Go can't receive real notifications on Android, and Apple needs the push key, which EAS sets up from the Apple Developer account); 4. deploy + promote the website.
+- Claude's calls: Expo's push service (free, one API for iPhone + Android) instead of Apple / Firebase directly; Highlights-sheet types (big moments, travel, announcements) aren't sent from here yet; the Live Activity and home-screen widget stay later (native Swift).
+
+### 6b (next) — hook up the other types
+Trip invite, join request + accepted / declined, add past rounds, tee time soon, opponent submitted, card mismatch, round final, draft starting, your pick, chat, then the Highlights-sheet types. Each where its change already saves on the server.
+
+**2026-11-25 Expo platform tournament overview**
+**Side:** App
+Display available announcements, activity, the viewer's match, courses and tournament information from the existing access-controlled tournament response. Public summaries only use the public projection. Detailed event actions, phone and access verification and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo platform tournament team and standings details**
+**Side:** App
+Show available team rosters and points, player team and explicitly public handicap, schedule courses and shared tied-place labels from existing tournament responses. Detailed actions, access and phone verification and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.
+
+**2026-11-25 Expo tournament page links**
+**Side:** App
+Signed-in players can paste a first-party tournament page link or path and open the existing public summary without enrolling. Shared parsing rejects other origins; existing server access rules apply. Automatic app links, device and access checks, remaining parity and deployment remain outstanding. Review: docs/expo-tourneys-review.md, review_required.

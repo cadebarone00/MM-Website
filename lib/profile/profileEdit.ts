@@ -92,3 +92,9 @@ export function profileEditFromBody(body: unknown): { ok: true; input: ProfileEd
 export function profileHref(username: string | null | undefined): string | null {
   return username && username.trim() ? `/profile/${encodeURIComponent(username.trim())}` : null;
 }
+
+/** "Alex" + "Smith" → "alexsmith": letters and numbers only, 30 max (the username rules above). Sign-up's Name step
+ *  fills the username with this until the person edits it (website onboarding + the phone app). */
+export function suggestUsername(first: string, last: string) {
+  return (first + last).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
+}

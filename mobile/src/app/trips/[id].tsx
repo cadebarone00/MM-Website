@@ -83,7 +83,7 @@ export default function TripScreen() {
       {live && <TabBar tab={tab} onChange={setTab} />}
       {state.kind === "loading" && <StateSlot state={{ kind: "loading" }} height={240} tone="dark" />}
       {state.kind === "not-found" && <Problem text="Trip not found. It may have been deleted, or you're not on it." action="Back to Golf Trips" onPress={() => router.back()} />}
-      {state.kind === "signed-out" && <Problem text="You're signed out. Sign in again to see this trip." action="Sign in" onPress={() => router.replace("/sign-in")} />}
+      {state.kind === "signed-out" && <Problem text="You're signed out. Sign in again to see this trip." action="Sign in" onPress={() => router.replace("/start/log-in")} />}
       {state.kind === "error" && <Problem text={state.message} action="Try again" onPress={() => void reload(true)} />}
       {view && (tab === "Home" ? (
         <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reload(true)} tintColor={colors.goldBright} />}>

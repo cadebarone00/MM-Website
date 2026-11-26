@@ -16,6 +16,7 @@ import { clampRoundsToDates, nextStep, previousStep, TRIP_BUILDER_STEPS, type Tr
 import { presetById } from "@/lib/platform/tripFormatPresets";
 import { markSeen, QUICK_SWIPES, TOUR_SEEN_KEY, TOUR_SLIDES, hasSeen } from "@/lib/platform/tripTour";
 import { Button } from "~/components/Button.tsx";
+import { BalataLogo } from "~/components/BalataLogo.tsx";
 import { SelectField } from "~/components/SelectField.tsx";
 import { Wizard, WizardField, WizardNote } from "~/components/setup/Wizard.tsx";
 import { Counter, DateRangeCalendar, DestinationField, TripChoice } from "~/components/trips/BuilderFields.tsx";
@@ -269,7 +270,7 @@ export default function NewTrip() {
   );
 }
 
-/** Formats (website TripFormatsStep): The Maroon Style, then Both · Individual · Team · Create Your Own. */
+/** Formats (website TripFormatsStep): Balata Style, then Both · Individual · Team · Create Your Own. */
 function Formats({ values, set, roundCount }: { values: GolfTripDraft; set: (part: GolfTripDraft) => void; roundCount: number }) {
   const maroon = presetById("maroon")!;
   const individual = presetById("individual")!;
@@ -284,8 +285,8 @@ function Formats({ values, set, roundCount }: { values: GolfTripDraft; set: (par
   );
   return (
     <>
-      <View style={styles.maroonPhoto}><Text style={styles.maroonMark}>M</Text><Text style={styles.maroonTitle}>The Maroon</Text></View>
-      <Text style={styles.question}>The Maroon Style</Text>
+      <View style={styles.maroonPhoto}><BalataLogo light /></View>
+      <Text style={styles.question}>Balata Style</Text>
       {maroon.tag ? <WizardNote>{maroon.tag}</WizardNote> : null}
       {card("maroon", maroon.label, maroon.blurb)}
       <View style={styles.pair}>
@@ -359,7 +360,7 @@ function InviteCrew({ tripId, tripName, onDone }: { tripId: string; tripName: st
       </View>
       <View style={styles.introActions}>
         <Button label="Copy" disabled={!text} onPress={async () => { try { await Clipboard.setStringAsync(off ? tripId : text); setNote("Copied"); } catch { setNote("Couldn't copy."); } }} />
-        <Button label="Share" variant="secondaryOnDark" disabled={!text} onPress={() => { Share.share({ message: `Join ${tripName} on The Maroon: ${text}` }).catch(() => {}); }} />
+        <Button label="Share" variant="secondaryOnDark" disabled={!text} onPress={() => { Share.share({ message: `Join ${tripName} on Balata: ${text}` }).catch(() => {}); }} />
         <Pressable accessibilityRole="button" onPress={onDone} style={styles.skip}><Text style={styles.skipText}>Done</Text></Pressable>
       </View>
     </SafeAreaView>

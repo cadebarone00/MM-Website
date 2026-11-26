@@ -1,7 +1,7 @@
 /** One shape for every server reply, so screens never crash on a bad or unexpected answer. */
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
-export const NETWORK_ERROR = "Couldn't reach The Maroon. Check your connection and try again.";
+export const NETWORK_ERROR = "Couldn't reach Balata. Check your connection and try again.";
 
 /** The server's `/api/app/*` routes answer `{ ok: true, data }` or `{ ok: false, error }`. Anything else is an error. */
 export function parseApiReply<T>(status: number, text: string): ApiResult<T> {

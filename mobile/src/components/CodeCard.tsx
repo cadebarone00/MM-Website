@@ -28,7 +28,7 @@ export function CodeCard({ kind, code, name }: { kind: InviteKind; code: string;
     try { await Clipboard.setStringAsync(shown); flash("Code copied"); } catch { flash("Couldn't copy. Write the code down instead."); }
   }
   async function share() {
-    try { await Share.share({ message: `Join my ${KIND_NAME[kind]} "${name}" on The Maroon with code ${shown}: ${link}` }); }
+    try { await Share.share({ message: `Join my ${KIND_NAME[kind]} "${name}" on Balata with code ${shown}: ${link}` }); }
     catch { flash("Couldn't open sharing. Copy the code instead."); }
   }
 

@@ -19,7 +19,7 @@ async function token(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-async function send(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH"; body?: unknown }, auth: string, signal?: AbortSignal) {
+async function send(path: string, init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown }, auth: string, signal?: AbortSignal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const onAbort = () => controller.abort();
@@ -55,7 +55,7 @@ export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
  * /api/courses/*, as the signed-in person. `messages` turns a reply code into what the screen should say. Never throws;
  * an aborted call (a newer search replaced it) comes back as `{ ok: false, code: "aborted" }`.
  */
-export async function apiJson<T>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown; signal?: AbortSignal; messages?: Partial<Record<string, string>> } = {}): Promise<JsonResult<T>> {
+export async function apiJson<T>(path: string, init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown; signal?: AbortSignal; messages?: Partial<Record<string, string>> } = {}): Promise<JsonResult<T>> {
   const auth = await token();
   if (!auth) return { ok: false, error: SIGNED_OUT, code: "signed_out" };
   try {
@@ -71,7 +71,7 @@ export async function apiJson<T>(path: string, init: { method?: "GET" | "POST" |
  * Call a website route whose reply has no `ok` field (e.g. POST /api/golf-trips/join/<code> answers `{ status, tripId }`).
  * Gives back the HTTP status and the parsed JSON (null when it isn't JSON). Never throws; no connection = status 0.
  */
-export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH"; body?: unknown } = {}): Promise<{ status: number; body: T | null }> {
+export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown } = {}): Promise<{ status: number; body: T | null }> {
   const auth = await token();
   if (!auth) return { status: 401, body: null };
   try {
@@ -79,5 +79,27 @@ export async function apiRaw<T>(path: string, init: { method?: "GET" | "POST" | 
     try { return { status, body: JSON.parse(text) as T }; } catch { return { status, body: null }; }
   } catch {
     return { status: 0, body: null };
+  }
+}
+
+/**
+ * Upload a photo picked on the phone (multipart form, field `photo`), e.g. POST /api/account/photo. Same reply
+ * handling as apiJson. Never throws.
+ */
+export async function apiUpload<T>(path: string, photo: { uri: string; name: string; type: string }): Promise<JsonResult<T>> {
+  const auth = await token();
+  if (!auth) return { ok: false, error: SIGNED_OUT, code: "signed_out" };
+  const form = new FormData();
+  // React Native's FormData takes a { uri, name, type } file.
+  form.append("photo", photo as unknown as Blob);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetch(`${apiUrl}${path}`, { method: "POST", headers: { Authorization: `Bearer ${auth}`, Accept: "application/json" }, body: form, signal: controller.signal });
+    return parseJsonReply<T>(response.status, await response.text());
+  } catch {
+    return { ok: false, error: NETWORK_ERROR, code: null };
+  } finally {
+    clearTimeout(timer);
   }
 }

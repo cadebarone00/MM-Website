@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Search, X } from "lucide-react";
 import styles from "./CompareRings.module.css";
 import { roundStats, type RoundStats } from "@/lib/profile/roundStats";
+import { COMPARE_DEFAULT, COMPARE_METRICS, type CompareMetric as Metric } from "@/lib/profile/compareMetrics";
 import { sampleProfileRounds } from "@/lib/dev/sampleProfileRounds";
 import { SAMPLE_GOLFERS, sampleGolfer } from "@/lib/dev/sampleProfile";
 import { useSimulator } from "@/components/dev/SimulatorBridge";
@@ -17,18 +18,8 @@ import { useSimulator } from "@/components/dev/SimulatorBridge";
 const ME = "#9e2a44";
 const THEM = "#c07d1a";
 type Person = { username: string; name: string; friend?: boolean };
-type Metric = { key: string; label: string; lowerIsBetter?: boolean; value: (s: RoundStats) => number | null };
-const METRICS: Metric[] = [
-  { key: "fairways", label: "Fairways", value: (s) => s.driving?.fairwayPct ?? null },
-  { key: "gir", label: "Greens (GIR)", value: (s) => s.approach?.girPct ?? null },
-  { key: "birdie", label: "Birdie or better", value: (s) => s.scoring?.birdiePct ?? null },
-  { key: "parPlus", label: "Par or better", value: (s) => s.scoring?.parOrBetterPct ?? null },
-  { key: "scrambling", label: "Scrambling", value: (s) => s.scrambling?.pct ?? null },
-  { key: "onePutt", label: "1-putts", value: (s) => s.putting?.onePuttPct ?? null },
-  { key: "threePutt", label: "3-putts", lowerIsBetter: true, value: (s) => s.putting?.threePuttPct ?? null },
-  { key: "doubles", label: "Double or worse", lowerIsBetter: true, value: (s) => s.scoring?.doublePct ?? null },
-];
-const DEFAULT = ["fairways", "gir", "birdie", "scrambling"];
+const METRICS = COMPARE_METRICS;
+const DEFAULT = COMPARE_DEFAULT;
 /** DEV ONLY: only offered when the app simulator's Profile condition "Sample stats data" is on. */
 const SAMPLE: Person = { username: "__sample__", name: "Sample golfer" };
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;

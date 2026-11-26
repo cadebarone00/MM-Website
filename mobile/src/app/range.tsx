@@ -58,7 +58,7 @@ export default function OnTheRange() {
           )}
           {tab === "Courses" && (
             <View style={styles.coursePanel}>
-              <Text style={styles.caps}>THE MAROON · COURSES</Text>
+              <Text style={styles.caps}>BALATA · COURSES</Text>
               <Text style={styles.courseTitle}>Find a course.</Text>
               <Pressable accessibilityRole="button" accessibilityLabel="Search golf courses" onPress={() => router.push({ pathname: "/courses/search", params: { for: "explore" } })} style={styles.courseSearch}>
                 <SymbolView name="magnifyingglass" size={17} tintColor={colors.inkMuted} />

@@ -14,7 +14,7 @@ import { colors, fonts, gutter, radius } from "~/lib/theme.ts";
 type Load = { status: "loading" } | { status: "ok"; trips: GolfTripSummary[] } | { status: "signed-out" } | { status: "error" };
 
 /**
- * Golf Trips (website GolfTripsView; project_specs.md "Expo app Step 2", part 2a): Create · Join, The Maroon Live,
+ * Golf Trips (website GolfTripsView; project_specs.md "Expo app Step 2", part 2a): Create · Join, Balata Live,
  * then Upcoming and Past Trips (split by today in Chicago time with the shared splitGolfTrips). Pull down to refresh.
  */
 export default function GolfTrips() {
@@ -43,10 +43,10 @@ export default function GolfTrips() {
           <Action icon="link" label="Join" onPress={() => setJoining(true)} />
         </View>
 
-        <Pressable accessibilityRole="link" accessibilityLabel="The Maroon Live. Check out other trips happening now" onPress={() => { Linking.openURL(shareUrl("/golf-trips/live")).catch(() => {}); }}
+        <Pressable accessibilityRole="link" accessibilityLabel="Balata Live. Check out other trips happening now" onPress={() => { Linking.openURL(shareUrl("/golf-trips/live")).catch(() => {}); }}
           style={({ pressed }) => [styles.live, pressed && styles.pressed]}>
           <View style={styles.liveText}>
-            <Text style={styles.liveTitle}>The Maroon Live</Text>
+            <Text style={styles.liveTitle}>Balata Live</Text>
             <Text style={styles.liveDescription}>Check out other trips happening now</Text>
           </View>
           <SymbolView name="chevron.right" size={18} tintColor={colors.avatarGold} />

@@ -31,7 +31,7 @@ const setOf = (value: unknown): string[] => Array.isArray(value) ? value.filter(
 
 /**
  * Trip Settings in the app (project_specs.md Golf Trips part 2g, slice 1): the website's General / Organizer card grid.
- * Built here: Players (The Maroon Live, invite code, members, invite / renew / cancel / remove, leave), General Settings
+ * Built here: Players (Balata Live, invite code, members, invite / renew / cancel / remove, leave), General Settings
  * (shown), Notifications and Scorecard View (what the app does), Show tips again, Player Scoring (stats + fields + the
  * trip's corrections), Predict, Delete Trip. Golf Schedule, Games, competitions, Skins, Match Selection and History come in
  * slices 2-3. Organizer-only changes; players see read only.
@@ -159,7 +159,7 @@ function Players({ trip, viewer, onChanged, onLeft }: { trip: SavedGolfTrip; vie
   const players = acceptedMembers(members).length, invited = members.filter((m) => memberState(m) === "pending").length;
 
   return <>
-    <Section title="The Maroon Live">
+    <Section title="Balata Live">
       {manage && <>
         <Text style={styles.muted}>Who can watch: <Text style={styles.strong}>{LIVE_VISIBILITY_COPY[live.visibility].label}</Text></Text>
         {LIVE_VISIBILITIES.map((v) => <Pressable key={v} accessibilityRole="radio" accessibilityState={{ checked: live.visibility === v }} onPress={() => void saveLive({ ...live, visibility: v })} style={[styles.option, live.visibility === v && styles.optionOn]}>

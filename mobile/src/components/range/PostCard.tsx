@@ -7,7 +7,7 @@ import { assetUrl } from "~/lib/api.ts";
 import { cardAction } from "~/lib/range.ts";
 import { colors, fonts, radius } from "~/lib/theme.ts";
 
-/** One post in the Featured trip card style (website RibbonPostCard): cover photo, "The Maroon · Tab", headline, summary. */
+/** One post in the Featured trip card style (website RibbonPostCard): cover photo, "Balata · Tab", headline, summary. */
 export function PostCard({ post, onOpen }: { post: RibbonPost; onOpen: () => void }) {
   const quick = post.format === "quick";
   return (
@@ -16,7 +16,7 @@ export function PostCard({ post, onOpen }: { post: RibbonPost; onOpen: () => voi
         : post.coverVideo ? <View style={[StyleSheet.absoluteFill, styles.videoTile]}><SymbolView name="play.circle.fill" size={44} tintColor={colors.cream} /></View> : null}
       <LinearGradient colors={["transparent", "rgba(29,11,17,0.85)"]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0.3 }} end={{ x: 0, y: 1 }} />
       <View style={styles.text}>
-        <Text style={styles.kicker}>THE MAROON · {post.tab.toUpperCase()}</Text>
+        <Text style={styles.kicker}>BALATA · {post.tab.toUpperCase()}</Text>
         <Text style={quick ? styles.quick : styles.title} numberOfLines={3}>{post.title}</Text>
         {!quick && post.summary ? <Text style={styles.summary} numberOfLines={2}>{post.summary}</Text> : null}
       </View>
