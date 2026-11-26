@@ -7515,8 +7515,14 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - **Cade's steps before it works (no code):** 1. run `supabase/push_devices.sql`; 2. `cd mobile` → `npx eas init` (makes the app's Expo project id in app.json); 3. an EAS development build on the iPhone (Expo Go can't receive real notifications on Android, and Apple needs the push key, which EAS sets up from the Apple Developer account); 4. deploy + promote the website.
 - Claude's calls: Expo's push service (free, one API for iPhone + Android) instead of Apple / Firebase directly; Highlights-sheet types (big moments, travel, announcements) aren't sent from here yet; the Live Activity and home-screen widget stay later (native Swift).
 
-### 6b (next) — hook up the other types
-Trip invite, join request + accepted / declined, add past rounds, tee time soon, opponent submitted, card mismatch, round final, draft starting, your pick, chat, then the Highlights-sheet types. Each where its change already saves on the server.
+### 6b checklist — the trip notifications that have something to hook into — BUILT 2026-11-26, committed, not phone-checked
+- [ ] **Trip invite** (`inviteGolfTripMember`): when the invited email belongs to a Maroon account, they get "You're invited to {Trip}"; tapping opens the invite's Accept / Decline screen (`/golf-trips/invite/<token>` → app `/trips/invite`).
+- [ ] **Your turn to pick** (Team Draft start + every pick): the captain now on the clock (not when they just picked themselves).
+- [ ] **Opponent submitted** (Submit & Save): everyone in that group who hasn't submitted yet.
+- [ ] **Round final**: when the last card of the round is submitted, everyone on the trip.
+- [ ] **Card mismatch**: a card refused for not matching → the attester hears which hole (Claude's call: not the golfer too; they already see it on screen and retries would buzz them).
+- All in `lib/notifications/tripPushes.ts`, sent without waiting; they never change what the screen answers.
+- **Not hooked up, nothing to hook into yet:** trip join requests + accepted / declined and trip chat (no server feature yet); add past rounds (no single save point found). **Needs a timer:** tee time soon, draft starting (Vercel Hobby runs timers once a day; needs a paid plan or an outside timer). **Highlights-sheet types** (big moments, travel, announcements) bring their own wording: separate step.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

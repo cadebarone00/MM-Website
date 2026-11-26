@@ -7,6 +7,8 @@ test("notification links open the matching app screen", () => {
   assert.deepEqual(pushRoute("/golf-trips/abc-123#golf"), { pathname: "/trips/[id]", params: { id: "abc-123" } });
   assert.deepEqual(pushRoute("/golf-trips/abc/settings"), { pathname: "/trips/[id]", params: { id: "abc" } });
   assert.deepEqual(pushRoute("/golf-trips"), { pathname: "/golf-trips" });
+  assert.deepEqual(pushRoute("/golf-trips/invite/AbC_123-xyz456"), { pathname: "/trips/invite", params: { token: "AbC_123-xyz456" } });
+  assert.deepEqual(pushRoute("/golf-trips/invite/"), { pathname: "/golf-trips" });
   assert.deepEqual(pushRoute("/profile/friends"), { pathname: "/profile/search", params: { tab: "search" } });
   assert.deepEqual(pushRoute("/profile"), { pathname: "/profile" });
   assert.deepEqual(pushRoute("/leagues/L1"), { pathname: "/leagues/[id]", params: { id: "L1" } });

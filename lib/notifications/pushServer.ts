@@ -44,7 +44,8 @@ async function deliver(messages: ExpoMessage[]): Promise<{ sent: number; failed:
 }
 
 /** One type from the master list to some people. `values` fill the wording's {Blanks} and the link's {Trip ID}. */
-export async function sendPush(input: { to: string[]; kind: NotificationKind; values: Record<string, string | number>; groupId?: string | null }): Promise<PushResult> {
+/** `link`: open this instead of the type's usual link (e.g. a trip invite opens its invite page). */
+export async function sendPush(input: { to: string[]; kind: NotificationKind; values: Record<string, string | number>; groupId?: string | null; link?: string }): Promise<PushResult> {
   try {
     const entry = catalogEntry(input.kind);
     const people = [...new Set(input.to)];
@@ -60,7 +61,7 @@ export async function sendPush(input: { to: string[]; kind: NotificationKind; va
     const owners = [...new Set(devices.map((d) => d.profile_id))];
     const { data: last } = await db().from("notification_wording_last").select("profile_id, version").eq("kind", input.kind).in("profile_id", owners);
     const lastOf = new Map(((last ?? []) as { profile_id: string; version: number }[]).map((r) => [r.profile_id, r.version]));
-    const link = fillBlanks(entry.link, input.values);
+    const link = input.link ?? fillBlanks(entry.link, input.values);
     const messages: ExpoMessage[] = [];
     const versions: { profile_id: string; kind: string; version: number; updated_at: string }[] = [];
     for (const owner of owners) {

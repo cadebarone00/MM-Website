@@ -3,6 +3,7 @@ import { getGolfTrip } from "@/lib/platform/golfTripsServer";
 import { loadSavedTripSetup } from "@/lib/platform/savedTripSetupServer";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { draftBoardFor, draftCaptainsFor, draftPickError, draftSetupFrom, draftTeamsAsSetup, savedDraftFromJson, type DraftMember, type TeamDraftResponse } from "@/lib/platform/teamDraftPicks";
+import { pushYourPick } from "@/lib/notifications/tripPushes";
 
 /**
  * The saved Team Draft (project_specs.md "Team Draft: picks are saved and final").
@@ -32,6 +33,13 @@ async function load(tripId: string): Promise<Loaded> {
   const teamCount = draftBoardFor(members, setup.captains, setup.settings, draft.picks).teamCount;
   const captainOf = draftCaptainsFor(setup.captains, members, teamCount).indexOf(view.viewer.profileId);
   return { tripId, members, setup, draft, viewer: { profileId: view.viewer.profileId, isOrganizer: view.viewer.isOrganizer, captainOf: captainOf < 0 ? null : captainOf } };
+}
+
+/** "You're on the clock": a phone notification for the captain whose turn it now is (Expo app Step 6b; never waits). */
+function notifyOnClock(loaded: Exclude<Loaded, { error: NextResponse }>, draft: Exclude<Loaded, { error: NextResponse }>["draft"]) {
+  const board = draftBoardFor(loaded.members, loaded.setup.captains, loaded.setup.settings, draft.picks);
+  if (board.turn === null || draft.completedAt) return;
+  pushYourPick(loaded.tripId, draftCaptainsFor(loaded.setup.captains, loaded.members, board.teamCount)[board.turn] ?? null, loaded.viewer.profileId);
 }
 
 function answer(loaded: Exclude<Loaded, { error: NextResponse }>, draft = loaded.draft): NextResponse {
@@ -70,7 +78,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
     const countError = draftBoardFor(loaded.members, loaded.setup.captains, loaded.setup.settings, loaded.draft.picks).countError;
     if (countError) return NextResponse.json({ error: countError }, { status: 400 });
     const { data, error } = await db.rpc("start_golf_trip_team_draft", { p_profile: loaded.viewer.profileId, p_trip: loaded.tripId });
-    return error ? refused(error) : answer(loaded, savedDraftFromJson(data) ?? loaded.draft);
+    if (error) return refused(error);
+    const started = savedDraftFromJson(data) ?? loaded.draft;
+    notifyOnClock(loaded, started);
+    return answer(loaded, started);
   }
 
   if (body.action !== "pick" || typeof body.player !== "string" || !Number.isInteger(body.pickNumber)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
@@ -84,5 +95,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
     p_player: body.player, p_team: board.turn, p_team_count: board.teamCount });
   if (error) return refused(error);
   const draft = savedDraftFromJson(data) ?? loaded.draft;
+  notifyOnClock(loaded, draft);
   return answer(loaded, draft);
 }

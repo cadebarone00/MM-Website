@@ -3,6 +3,7 @@ import { getCurrentProfileForRequest } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { checkTripScoringWriteScope, submitTripScorecard } from "@/lib/platform/tripScoringServer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pushCardMismatch, pushCardSubmitted } from "@/lib/notifications/tripPushes";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,6 +52,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
       if (submitted.status >= 500) console.error("submit_trip_scorecard failed:", submitted.error);
       return NextResponse.json({ ok: false, error: submitted.error }, { status: submitted.status });
     }
+    // Phone notifications (Expo app Step 6b): sent without waiting; they never change this answer.
+    if (submitted.result.status === "submitted") pushCardSubmitted(groupId, golferProfileId);
+    else if (submitted.result.status === "rejected" && submitted.result.reason === "mismatch") pushCardMismatch(groupId, golferProfileId, submitted.result.holes);
     return NextResponse.json({ ok: true, ...submitted.result });
   } catch {
     return NextResponse.json({ ok: false, error: "Couldn't submit the card. Try again." }, { status: 500 });

@@ -5,6 +5,7 @@
  */
 export type PushRoute =
   | { pathname: "/trips/[id]"; params: { id: string } }
+  | { pathname: "/trips/invite"; params: { token: string } }
   | { pathname: "/leagues/[id]"; params: { id: string } }
   | { pathname: "/profile/search"; params: { tab: "search" | "friends" } }
   | { pathname: "/golf-trips" | "/profile" | "/tourneys" | "/leagues" | "/" };
@@ -15,6 +16,8 @@ export function pushRoute(link: unknown): PushRoute {
   if (typeof link !== "string" || !link.startsWith("/") || link.startsWith("//")) return { pathname: "/" };
   const path = link.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
   const parts = path.split("/").filter(Boolean);
+  // A trip invite opens its Accept / Decline screen (/golf-trips/invite/<token>, website golfTripInvitePath).
+  if (parts[0] === "golf-trips" && parts[1] === "invite") return parts[2] && /^[A-Za-z0-9_-]{8,200}$/.test(parts[2]) ? { pathname: "/trips/invite", params: { token: parts[2] } } : { pathname: "/golf-trips" };
   if (parts[0] === "golf-trips") return parts[1] && ID.test(parts[1]) ? { pathname: "/trips/[id]", params: { id: parts[1] } } : { pathname: "/golf-trips" };
   if (parts[0] === "leagues") return parts[1] && ID.test(parts[1]) && parts[1] !== "join" && parts[1] !== "new" ? { pathname: "/leagues/[id]", params: { id: parts[1] } } : { pathname: "/leagues" };
   if (parts[0] === "profile") return parts[1] === "friends" || parts[1] === "search" ? { pathname: "/profile/search", params: { tab: "search" } } : { pathname: "/profile" };

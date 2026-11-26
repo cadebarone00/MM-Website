@@ -11,6 +11,7 @@ import { flightsFromRows, type GolfTripFlight } from "./golfTripFlights.ts";
 import { profilePhotoUrl } from "@/lib/profile/profilePhoto";
 import { importedTripFromJson, type ImportedTrip } from "./pastTripImport.ts";
 import { canShareLiveLink, liveSettingsFrom } from "./liveVisibility.ts";
+import { pushTripInvite } from "@/lib/notifications/tripPushes";
 
 /**
  * Server-side Golf Trips (supabase/golf_trips.sql, golf_trip_invitations.sql). The golfer is the signed-in
@@ -139,7 +140,10 @@ export async function inviteGolfTripMember(tripId: string, input: InviteInput):
   });
   if (error) throw failure("invite_golf_trip_member", error);
   const memberId = (data as { memberId?: unknown } | null)?.memberId;
-  return typeof memberId === "string" ? { status: "ok", memberId, inviteToken } : { status: "forbidden" };
+  if (typeof memberId !== "string") return { status: "forbidden" };
+  // A phone notification when the email belongs to a Maroon account (Expo app Step 6b; never waits, never fails the invite).
+  pushTripInvite(tripId, current.profile.profileId, input.email, inviteToken);
+  return { status: "ok", memberId, inviteToken };
 }
 
 /** What an invite link shows (signed in or not). Null for an unknown or cancelled invitation. */
