@@ -227,3 +227,20 @@
 .wizToggle input:disabled{opacity:.45;cursor:not-allowed}
 .wizToggle input:focus-visible{outline:2px solid #c9a86e;outline-offset:2px}
 .wolfRow .wolfNameWrap{white-space:normal;line-height:1.1;text-align:center}
+
+/* Delete round (owner 2026-11-22): the only way out of a round — the scorekeeper wipes it for everyone. */
+.deleteRound{min-height:48px;border:1px solid #e0a3a3;border-radius:12px;background:rgba(198,40,40,.18);color:#ffd9d9;font:700 15px var(--font-barlow),sans-serif;cursor:pointer}
+.deleteRound:disabled{opacity:.6;cursor:default}
+
+/* Round complete (owner 2026-11-22): swipe between players' scorecards — one full-width slide each, snapping. */
+.finalTrack{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.finalTrack::-webkit-scrollbar{display:none}
+.finalSlide{flex:0 0 100%;scroll-snap-align:start;min-width:0}
+.finalHead{display:flex;align-items:baseline;gap:12px;padding:4px 2px 8px;border-bottom:1px solid #b99c6b55}
+.finalHead b{flex:1;min-width:0;font:600 22px/1.1 var(--font-spectral),Georgia,serif}
+.finalHead span{font:800 18px var(--font-barlow),sans-serif}
+.finalHead small{font-size:13px;font-weight:600;opacity:.7}
+.finalSlide .playerCard{margin-top:8px}
+.finalDots{display:flex;justify-content:center;gap:8px}
+.finalDots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:rgba(251,248,241,.3);cursor:pointer}
+.finalDots button[aria-selected=true]{width:20px;border-radius:999px;background:#c9a86e}

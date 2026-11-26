@@ -137,3 +137,37 @@ test("a published trip round carries each hole's confirmed par (profile history 
   assert.deepEqual(row.rows[0].r.holes.map((h) => h.strokes), Array(18).fill(4), "strokes unchanged");
   db.close();
 });
+
+test("par 3s need no fairway to submit (golf_trip_par3_fairway.sql); a par 4 still does; no confirmed pars = every hole asks", async () => {
+  {
+    const { db, trip, cade, jake, mike } = await setup();
+    await db.exec(sqlFile("golf_trip_par3_fairway.sql"));
+    await db.exec(sqlFile("golf_trip_par3_fairway.sql")); // safe to run again
+    assert.equal(await confirm(db, cade, trip, PARS), true);
+    const group = tripScoringFromJson(await call(db, "save_trip_scoring_groups", cade, trip, 1, groups(cade, jake, mike)))!.groups[0].id;
+    const holes = (fairwayOnPar3: boolean, missingOn?: number) => Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, strokes: 4, putts: 2, green: "center", penaltyFairway: false, penaltyGreen: false,
+      fairway: (PARS[i] === 3 && !fairwayOnPar3) || missingOn === i + 1 ? null : "center" }));
+    const submit = async () => {
+      const version = (await scoring(db, jake, trip)).entries.filter((e) => e.scoredProfileId === jake).reduce((n, e) => n + e.version, 0);
+      return call<{ status: string; reason?: string; holes?: number[] }>(db, "submit_trip_scorecard", jake, group, jake, version);
+    };
+    await call(db, "save_hole_scores", mike, group, jake, new Date().toISOString(), Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, strokes: 4 })));
+    // Hole 1 is a par 4 with no fairway: refused, and only hole 1 is named (the par 3s are fine).
+    await call(db, "save_hole_scores", jake, group, jake, new Date().toISOString(), holes(false, 1));
+    const refused = await submit();
+    assert.deepEqual([refused.status, refused.reason, refused.holes], ["rejected", "incomplete", [1]]);
+    await call(db, "save_hole_scores", jake, group, jake, new Date().toISOString(), holes(false));
+    assert.equal((await submit()).status, "submitted");
+    db.close();
+  }
+  // No confirmed pars: a hole with no fairway is incomplete, whatever its real par.
+  const { db, trip, cade, jake, mike } = await setup();
+  await db.exec(sqlFile("golf_trip_par3_fairway.sql"));
+  const group = tripScoringFromJson(await call(db, "save_trip_scoring_groups", cade, trip, 1, groups(cade, jake, mike)))!.groups[0].id;
+  await call(db, "save_hole_scores", mike, group, jake, new Date().toISOString(), Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, strokes: 4 })));
+  await call(db, "save_hole_scores", jake, group, jake, new Date().toISOString(), Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, strokes: 4, putts: 2, green: "center", penaltyFairway: false, penaltyGreen: false, fairway: i === 2 ? null : "center" })));
+  const version = (await scoring(db, jake, trip)).entries.filter((e) => e.scoredProfileId === jake).reduce((n, e) => n + e.version, 0);
+  const result = await call<{ status: string; holes?: number[] }>(db, "submit_trip_scorecard", jake, group, jake, version);
+  assert.deepEqual([result.status, result.holes], ["rejected", [3]]);
+  db.close();
+});

@@ -4,8 +4,8 @@ import { DateTimePicker } from "./DateTimePicker";
 
 import { useState, type ReactNode } from "react";
 import { BedDouble, CalendarDays, Car, Check, ChevronLeft, Clock, MapPin, Plane, Plus, Trash2 } from "lucide-react";
-import { ITINERARY_KIND_LABEL, itineraryDay, itineraryTime } from "@/lib/platform/golfTripItinerary";
-import { checkTravelInput, cleanDetails, myItems, travelTitle, type TravelDetails, type TravelItem, type TravelKind, type TripTravel } from "@/lib/platform/tripTravel";
+import { ITINERARY_KIND_LABEL } from "@/lib/platform/golfTripItinerary";
+import { checkTravelInput, cleanDetails, myItems, travelPlaceLabel as placeLabel, travelRowLabel as rowLabel, travelTitle, travelWhenLabel as whenLabel, type TravelDetails, type TravelItem, type TravelKind, type TripTravel } from "@/lib/platform/tripTravel";
 import { GolfTripActionSheet } from "./GolfTripActionSheet";
 import { TRAVEL_KIND_ART, TravelKindIcon } from "./travelKinds";
 import homeStyles from "./GolfTripHome.module.css";
@@ -81,25 +81,6 @@ export function GolfTripMyTravel({ travel, onChange }: { travel: TripTravel; onC
       </div>
     </div>}
   </section>;
-}
-
-function rowLabel(item: TravelItem): string {
-  if (item.kind === "ride") return item.details.rideType === "rental" ? "Rental car" : "Driving";
-  return ITINERARY_KIND_LABEL[item.kind];
-}
-
-/** "Thu, Apr 22 · 6:10 AM – 8:05 AM", or across days "Thu, Apr 22 3:00 PM – Sun, Apr 25 10:00 AM". */
-function whenLabel(item: TravelItem): string {
-  const start = `${itineraryDay(item.startsAt)} · ${itineraryTime(item.startsAt)}`;
-  if (!item.endsAt) return start;
-  return item.endsAt.slice(0, 10) === item.startsAt.slice(0, 10) ? `${start} – ${itineraryTime(item.endsAt)}` : `${start} – ${itineraryDay(item.endsAt)} ${itineraryTime(item.endsAt)}`;
-}
-
-function placeLabel(item: TravelItem): string {
-  const d = item.details;
-  if (item.kind === "flight") return d.airline ?? "";
-  if (item.kind === "ride") return [d.rideType === "rental" ? d.place : d.to && `To ${d.to}`, d.seats !== undefined ? `${d.seats} open seat${d.seats === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  return [d.place, d.note].filter(Boolean).join(" · ");
 }
 
 type FormFields = { airline: string; flightNumber: string; from: string; to: string; rideType: "driving" | "rental"; place: string; seats: string; name: string; note: string; startsAt: string; endsAt: string };

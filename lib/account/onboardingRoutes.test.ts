@@ -55,3 +55,13 @@ test("after Log in only an Active account uses the return page; Pending resumes 
   assert.equal(afterLogInPath("settings", "/tap-in"), "/onboarding/settings");
   for (const s of ["ineligible", "restricted", "closed"] as const) assert.equal(afterLogInPath(s, "/dashboard"), "/account/status");
 });
+
+test("an unfinished signed-in account is sent back to its sign-up step from anywhere in the app, never from sign-up itself", async () => {
+  const { unfinishedRedirect, ONBOARDING, START } = await import("./onboardingRoutes.ts");
+  assert.equal(unfinishedRedirect("name_username", "/golf-trips/new/"), ONBOARDING.name, "Create a trip → finish the name step");
+  assert.equal(unfinishedRedirect("birthday", "/profile"), ONBOARDING.birthday);
+  assert.equal(unfinishedRedirect("password", "/"), START.password);
+  assert.equal(unfinishedRedirect("settings", "/rounds/new"), ONBOARDING.settings);
+  for (const path of ["/onboarding/name/", "/start/password", "/account/status", "/login"]) assert.equal(unfinishedRedirect("name_username", path), null, path);
+  for (const next of ["play", null, undefined, "closed", "verification"] as const) assert.equal(unfinishedRedirect(next, "/golf-trips/new"), null, String(next));
+});

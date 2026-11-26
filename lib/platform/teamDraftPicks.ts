@@ -131,3 +131,25 @@ export function draftRoomPlayersFrom(res: TeamDraftResponse): { id: string; name
     return { id, name: member.name, avatarUrl: member.avatarUrl, username: member.username, ...(teamIndex === undefined ? {} : { teamIndex, captain }) };
   });
 }
+
+/**
+ * A saved draft as the Draft Room shows it (website TripDraftRoom and the app's room): whether it's running, who may pick
+ * for which team, whether this viewer may start it, and the one status line. The server checks every pick again.
+ */
+export function teamDraftRoomState(data: TeamDraftResponse | null) {
+  const captains = data ? Object.fromEntries(data.captains.flatMap((id, team) => id ? [[String(team), id]] : [])) as DraftCaptains : {};
+  const board = data ? draftBoardFor(data.members, captains, data.settings, data.draft.picks) : null;
+  const ready = !!data && !!board && !board.missingCaptains.length && !board.countError;
+  const organizer = !!data?.viewer.isOrganizer;
+  const status = !data ? "Loading the draft…" : data.draft.completedAt ? "Draft complete — the teams are saved."
+    : board?.countError ? board.countError
+    : !ready ? (organizer ? "Every team needs a captain first (Settings → Players)." : "Waiting for the organizer to set captains.")
+    : !data.draft.startedAt ? (organizer ? "Tap Start Draft Now when everyone's ready." : "Waiting for the organizer to start the draft.") : "";
+  return {
+    board, ready, organizer, status,
+    started: !!data?.draft.startedAt && !data.draft.completedAt,
+    completed: !!data?.draft.completedAt,
+    canPick: (team: number) => ready && (organizer || data!.viewer.captainOf === team),
+    canStart: ready && organizer,
+  };
+}

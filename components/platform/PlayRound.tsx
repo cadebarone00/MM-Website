@@ -2,7 +2,7 @@
 
 import { DatePicker } from "@/components/platform/DatePicker";
 
-import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Settings as SettingsIcon, X } from "lucide-react";
@@ -32,6 +32,7 @@ import { AppSelect } from "@/components/platform/AppSelect";
 /** The round in progress, kept on this phone so a refresh or closed app doesn't lose it. `sharedId` = an invite round in the database. */
 const STORAGE_KEY = "maroonPersonalRound";
 type Saved = { setup: PersonalRoundSetup; startedAt: string; card?: SheetCard; inputs?: HoleInput[]; sharedId?: string; openedAt?: string };
+export type SavedRound = Saved;
 /** `members`: the host's submit also saved these joined players' rounds (or couldn't, when a hole wasn't scored). */
 type MemberSave = { name: string; saved: boolean };
 type SaveState = { status: "idle" | "saving" } | { status: "saved"; round: PlayerRound; game: GameResult | null; members?: MemberSave[] } | { status: "error"; message: string };
@@ -41,12 +42,12 @@ const POLL_MS = 4000;
 
 const today = () => new Date().toLocaleDateString("en-CA");
 const parse = (text: string | null): Saved | null => { try { return JSON.parse(text ?? "null"); } catch { return null; } };
-const storedText = () => { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } };
-const read = () => parse(storedText());
+const storedText = (key = STORAGE_KEY) => { try { return localStorage.getItem(key); } catch { return null; } };
+const read = (key = STORAGE_KEY) => parse(storedText(key));
 const subscribeNever = () => () => {};
-const write = (value: Saved | null) => { try { if (value) localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); else localStorage.removeItem(STORAGE_KEY); } catch { /* private mode: keep it in memory */ } };
+const write = (value: Saved | null, key = STORAGE_KEY) => { try { if (value) localStorage.setItem(key, JSON.stringify(value)); else localStorage.removeItem(key); } catch { /* private mode: keep it in memory */ } };
 /** Saves part of the round in progress, keeping whatever else is already saved. */
-const update = (base: Saved, part: Partial<Saved>) => write({ ...(read() ?? base), ...part });
+const update = (base: Saved, part: Partial<Saved>, key = STORAGE_KEY) => write({ ...(read(key) ?? base), ...part }, key);
 type PostResult = { ok: boolean; code?: string; message?: string; id?: string };
 const post = (url: string, body: unknown): Promise<PostResult> => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
   .then(async (r) => ({ ...(await r.json().catch(() => ({}))) as PostResult, ok: r.ok }))
@@ -423,6 +424,26 @@ async function submitCard(setup: PersonalRoundSetup, scored: ScoredCard, started
   }
 }
 
+/** Where a round with friends is read from and saved to: the server, unless the dev simulator swaps in a made-up round
+ *  (components/dev/DevRoundPreview.tsx). `exit` replaces going back to Play; `storageKey` is this phone's copy. */
+export interface SharedRoundSource {
+  load: (id: string) => Promise<{ ok: boolean; round?: SharedRound; me?: string; code?: string; inviteCode?: string | null }>;
+  post: (id: string, body: unknown) => Promise<PostResult>;
+  submit: typeof submitCard;
+  storageKey: string;
+  exit?: () => void;
+}
+const serverSource: SharedRoundSource = {
+  load: (id) => fetch(sharedUrl(id), { cache: "no-store" }).then((r) => r.json()),
+  post: (id, body) => post(sharedUrl(id), body),
+  submit: submitCard,
+  storageKey: STORAGE_KEY,
+};
+const SharedRoundSourceContext = createContext<SharedRoundSource>(serverSource);
+export const SharedRoundSourceProvider = SharedRoundSourceContext.Provider;
+/** The round-with-friends screen, for the dev simulator's sample rounds (wrap it in SharedRoundSourceProvider). */
+export const SharedRoundScreen = (props: { saved: Saved; startSummaryOpen?: boolean }) => <SharedPlayStep {...props} />;
+
 function RoundStatus({ save, onRetry, leave }: { save: SaveState; onRetry: () => void; leave: ReactNode }) {
   if (save.status === "saved") return <div className={styles.saved} role="status">
     <p className={styles.savedTotal}>{save.round.total}</p>
@@ -492,11 +513,14 @@ function PlayStep({ saved, onDiscard }: { saved: Saved; onDiscard: () => void })
  * score for everyone (players who joined and guests); joined players watch the live card and standings, and — when the
  * host turned player stats on — enter only their own putts / fairway / green. The host's Submit & Save saves everyone's.
  */
-function SharedPlayStep({ saved }: { saved: Saved }) {
+function SharedPlayStep({ saved, startSummaryOpen = false }: { saved: Saved; startSummaryOpen?: boolean }) {
   const id = saved.sharedId!;
   const router = useRouter();
+  const source = useContext(SharedRoundSourceContext);
+  const key = source.storageKey;
+  const goHome = source.exit ?? (() => router.replace("/"));
   /** The round is gone (deleted): forget it on this phone and go to the Play home screen. */
-  const exitToPlay = () => { write(null); router.replace("/"); };
+  const exitToPlay = () => { write(null, key); goHome(); };
   const [snap, setSnap] = useState<SharedRound | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -506,6 +530,8 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const [card, setCard] = useState(saved.card);
   const [menu, setMenu] = useState<null | "players" | "game">(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** Round complete (owner 2026-11-22): after the last hole's Next, a summary with Save & exit round. */
+  const [summaryOpen, setSummaryOpen] = useState(startSummaryOpen);
   const [pickingGame, setPickingGame] = useState(false);
   /** Changes sent but not confirmed yet ("profile:hole" / "guest:id:hole" → strokes; "pick:hole" → pick; "stats:hole" → stats), so a poll never undoes them. */
   const [pending, setPending] = useState<Record<string, unknown>>({});
@@ -514,7 +540,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
 
   useEffect(() => {
     let stop = false;
-    const load = () => fetch(sharedUrl(id), { cache: "no-store" }).then((r) => r.json() as Promise<{ ok: boolean; round?: SharedRound; me?: string; code?: string; inviteCode?: string | null }>).then((body) => {
+    const load = () => source.load(id).then((body) => {
       if (stop) return;
       if (body.ok && body.round && body.me) { setSnap(body.round); setMe(body.me); setInviteCode(body.inviteCode ?? null); setProblem(null); return; }
       setProblem(body.code === "not_in_round" ? "deleted" : "Can't reach the round right now. Scores already sent are safe.");
@@ -522,7 +548,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
     load();
     const timer = window.setInterval(load, POLL_MS);
     return () => { stop = true; window.clearInterval(timer); };
-  }, [id]);
+  }, [id, source]);
 
   const setup = snap?.setup ?? saved.setup;
   const range = holeRange(setup.holes);
@@ -543,7 +569,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
 
   async function send(key: string, value: unknown, body: object) {
     setPending((all) => ({ ...all, [key]: value }));
-    const result = await post(sharedUrl(id), body);
+    const result = await source.post(id, body);
     // Keep showing the change until the next poll has it (or drop it if the database refused).
     if (!result.ok) { setPending((all) => { const next = { ...all }; delete next[key]; return next; }); setProblem(result.message ?? "A change didn't send. Try again when you're back online."); }
     else window.setTimeout(() => setPending((all) => { if (all[key] !== value) return all; const next = { ...all }; delete next[key]; return next; }), POLL_MS + 1000);
@@ -552,12 +578,12 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const sendGuestStrokes = (guest: string, hole: number, strokes: number | null) => void send(`guest:${guest}:${hole}`, strokes, { action: "guestStrokes", guest, hole: hole + 1, strokes });
   async function hostAction(body: object, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return;
-    const result = await post(sharedUrl(id), body);
+    const result = await source.post(id, body);
     if (!result.ok) setProblem(result.message ?? "That didn't work. Try again.");
   }
   /** Cancel round → Delete round (host): erased for everyone, then off this phone. */
   async function deleteRound() {
-    const result = await post(sharedUrl(id), { action: "delete" });
+    const result = await source.post(id, { action: "delete" });
     if (!result.ok) { setProblem(result.code === "not_installed" ? "Deleting rounds isn't set up in this database yet." : result.message ?? "Couldn't delete the round. Try again."); return; }
     exitToPlay();
   }
@@ -567,7 +593,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
     if (!window.confirm(dropOut ? "Leave this round? You'll drop out, and it won't be saved to your profile. Scores already in it stay in the host's round."
       : "Leave this round on this phone? Scores already sent stay in the round.")) return;
     if (dropOut) {
-      const result = await post(sharedUrl(id), { action: "leave" });
+      const result = await source.post(id, { action: "leave" });
       // Until shared_round_delete.sql is run there's no drop-out: leave on this phone, as before.
       if (!result.ok && result.code !== "not_installed") { setProblem(result.message ?? "Couldn't leave the round. Try again."); return; }
     }
@@ -591,7 +617,8 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   const { initialHoles, prefill } = restore(startCard, par);
   // Everyone in the game, in the playing order (Round settings), and the game's live view: the shared board
   // (lib/platform/roundBoard.ts), the same one the Expo app uses.
-  const people = roundPeople(snap, me, strokesOf, guestRow);
+  // Everyone by first name, the scorekeeper too (owner 2026-11-22): no "You", so every phone shows the same names.
+  const people = roundPeople(snap, "", strokesOf, guestRow);
   const ordered = orderPeople(people, setup.playerOrder);
   const view = roundGameView(setup, ordered, inputs);
   const { gamePlayers, gameCourse, def, gameFits, result: liveResult, holeMoney, sideMoney, doubled: doubledHoles } = view;
@@ -607,19 +634,31 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
   /** Next hole: every player's score for the hole goes to the round (and the leaderboard) — what the boxes show, par when untouched. */
   function finishHole(hole: number) {
     // What to send comes from the shared rules (lib/platform/roundScoring.ts), the same ones the Expo app uses.
-    const plan = finishHoleSends({ hole, par, myBox: read()?.card?.strokes[hole], myInRound: strokesOf(me!)[hole],
+    const plan = finishHoleSends({ hole, par, myBox: read(key)?.card?.strokes[hole], myInRound: strokesOf(me!)[hole],
       others: [...others.map((p) => ({ key: p.profileId, inRound: strokesOf(p.profileId)[hole] })), ...guests.map((g) => ({ key: `guest:${g.id}`, inRound: guestRow(g.id)[hole] }))] });
     if (plan.mine != null) { (sentMine.current ??= par.map((p, h) => myRemote[h] ?? p))[hole] = plan.mine; sendStrokes(me!, hole, plan.mine); }
     for (const o of plan.others) { if (o.key.startsWith("guest:")) sendGuestStrokes(o.key.slice(6), hole, o.strokes); else sendStrokes(o.key, hole, o.strokes); }
+    if (hole === range[1] - 1) setSummaryOpen(true);
+  }
+  /** Save & exit round: the scorekeeper's card (as entered, par where untouched) saves everyone's rounds, then Play home. */
+  async function saveAndExit() {
+    const card = read(key)?.card;
+    const scored: ScoredCard = {
+      strokes: par.map((p, h) => card?.strokes[h] ?? myRemote[h] ?? p),
+      putts: par.map((_, h) => card?.putts[h] ?? null), fairways: par.map((_, h) => card?.fairways[h] ?? null), greens: par.map((_, h) => card?.greens[h] ?? null),
+      ...(card?.penalties?.length ? { penalties: card.penalties } : {}),
+    };
+    const result = await submit(scored);
+    if (result.ok) { setSummaryOpen(false); goHome(); }
   }
   const setGuests = (next: RoundGuest[]) => { setSnap({ ...snap, setup: { ...setup, guests: next } }); void hostAction({ action: "setup", setup: { ...setup, guests: next } }); };
 
   async function submit(scored: ScoredCard) {
     setSave({ status: "saving" });
-    const result = await submitCard(setup, scored, id);
+    const result = await source.submit(setup, scored, id);
     if ("error" in result) { setSave({ status: "error", message: result.error }); return { ok: false, message: result.error }; }
     const game = setup.game && gameFits ? scoreGame(setup.game, gamePlayers, gameCourse, range, gameStrokes(ordered.map((x) => x.key === me ? scored.strokes : x.strokes), par, 18, () => true), inputs) : null;
-    write(null);
+    write(null, key);
     setSave({ status: "saved", round: result.round, game, members: result.members });
     return { ok: true };
   }
@@ -636,10 +675,13 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
       {save.status !== "saved" && problem !== "deleted" && <Leaderboard range={range} par={par} result={liveResult} rows={boardRows()} holeMoney={holeMoney} doubled={doubledHoles} extraMoney={sideMoney?.total ?? null} />}
       {def && !gameFits && <p className={styles.needs}>{def.name} needs {playersLabel(def.players)}; there are {gamePlayers.length} in the round, so it isn&apos;t scored right now.</p>}
       {/* Saving / saved / a failed save show here; the everyday tip and Leave are in Round settings. */}
-      {isHost && save.status !== "idle" && <RoundStatus save={save} onRetry={() => { setCard(read()?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }} leave={null} />}
+      {isHost && save.status !== "idle" && <RoundStatus save={save} onRetry={() => { setCard(read(key)?.card); setAttempt((n) => n + 1); setSave({ status: "idle" }); }} leave={null} />}
       {!isHost && ended && <><p className={styles.note}>Round finished. When the host scored every hole, it&apos;s saved to your Profile → Rounds.</p>
         <Link href="/profile" className={styles.primary}>See my rounds <ArrowRight size={16} aria-hidden="true" /></Link></>}
     </section>
+    {summaryOpen && isHost && <RoundCompleteSheet title={setup.course.name}
+      board={{ range, par, result: liveResult, rows: boardRows(), holeMoney, doubled: doubledHoles, extraMoney: sideMoney?.total ?? null }}
+      saving={save.status === "saving"} error={save.status === "error" ? save.message : null} onSave={() => void saveAndExit()} onClose={() => setSummaryOpen(false)} />}
     {/* Round settings (owner 2026-11-22): the players and Manage, the tip, and Leave round, behind the gear top right. */}
     {settingsOpen && <GolfTripActionSheet label="Round settings" slideUp onClose={() => { setSettingsOpen(false); setMenu(null); }}>
       <div className={styles.settingsBody}>
@@ -700,7 +742,7 @@ function SharedPlayStep({ saved }: { saved: Saved }) {
       par={par} courseName={setup.course.name} initialHoles={initialHoles} prefill={prefill} onSubmit={submit} remoteHoles={myRemote}
       onParChange={setup.course.custom && !ended ? (hole, value) => { const next = withPar(setup, hole, value); setSnap({ ...snap, setup: next }); saveBuiltPars(next.course.ref, next.course.par); void hostAction({ action: "setup", setup: next }); } : undefined}
       onCardChange={(next) => {
-        update(saved, { card: next });
+        update(saved, { card: next }, key);
         // Send only the holes I changed (compared with what the round already has for me, untouched = par).
         const sent = sentMine.current ??= par.map((p, h) => myRemote[h] ?? p);
         next.strokes.forEach((s, h) => { if (h >= range[0] && h < range[1] && s !== sent[h]) { sent[h] = s; sendStrokes(me, h, s); } });
@@ -783,6 +825,48 @@ function MyStats({ range, par, holes, pending, onChange }: { range: [number, num
     {par[hole] > 3 && choose("Fairway", stats.fairway, [["left", "Left"], ["center", "Hit"], ["right", "Right"]], "fairway")}
     {choose("Green", stats.green, [["center", "Hit"], ["up", "Long"], ["down", "Short"], ["left", "Left"], ["right", "Right"]], "green")}
   </div>;
+}
+
+/** Round complete (owner 2026-11-22): swipe through each player's normal scorecard (front / back nine with Par, Score
+ *  and the $ per hole), their total and money on top, best money first; Save & exit. Few words. Also the simulator's
+ *  sample (/dev/round-complete). */
+export function RoundCompleteSheet({ title, board, saving, error, onSave, onClose }: { title: string; board: Parameters<typeof Leaderboard>[0];
+  saving: boolean; error: string | null; onSave: () => void; onClose: () => void }) {
+  const { rows, par, range, result, extraMoney, holeMoney, doubled = [] } = board;
+  const [at, setAt] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
+  const game = new Map((result?.standings ?? []).map((st) => [st.label, st]));
+  const perPlayer = rows.every((row) => game.has(row.name));
+  const hasMoney = (perPlayer && rows.some((row) => game.get(row.name)?.money !== undefined)) || Boolean(extraMoney);
+  const holes = Array.from({ length: range[1] - range[0] }, (_, i) => range[0] + i);
+  const lines = rows.map((row, i) => {
+    const played = holes.filter((h) => row.strokes[h] != null);
+    return { ...row, total: played.reduce((t, h) => t + row.strokes[h]!, 0), toPar: played.reduce((t, h) => t + row.strokes[h]! - par[h], 0),
+      cash: (perPlayer ? game.get(row.name)?.money ?? 0 : 0) + (extraMoney?.[i] ?? 0), pnl: holeMoney?.[i] ?? null };
+  }).sort((a, b) => (hasMoney ? b.cash - a.cash : 0) || a.total - b.total);
+  const go = (i: number) => { const el = track.current; if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); };
+  return <GolfTripActionSheet label="Round complete" slideUp onClose={onClose}>
+    <div className={styles.settingsBody}>
+      <h2 className={styles.settingsTitle}>{title}</h2>
+      {/* One normal scorecard per player; swipe sideways (best money first). */}
+      <div ref={track} className={styles.finalTrack} onScroll={(event) => { const el = event.currentTarget; setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }}>
+        {lines.map((line) => <section key={line.name} className={styles.finalSlide} aria-label={`${line.name}'s scorecard`}>
+          <div className={styles.finalHead}>
+            <b>{line.name}</b>
+            <span>{line.total || "–"} <small>{line.toPar === 0 ? "E" : line.toPar > 0 ? `+${line.toPar}` : line.toPar}</small></span>
+            {hasMoney && <span className={styles.money} data-sign={Math.sign(line.cash)}>{line.cash ? money(line.cash) : "$0"}</span>}
+          </div>
+          <PlayerCard name={line.name} strokes={line.strokes} par={par} range={range} pnl={hasMoney ? line.pnl : null} doubled={doubled} />
+        </section>)}
+      </div>
+      {lines.length > 1 && <div className={styles.finalDots} role="tablist" aria-label="Players">
+        {lines.map((line, i) => <button key={line.name} type="button" role="tab" aria-selected={at === i} aria-label={line.name} onClick={() => go(i)} />)}
+      </div>}
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      <button type="button" className={wiz.continue} disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save & exit"}</button>
+      <button type="button" className={styles.discard} onClick={onClose}>Back</button>
+    </div>
+  </GolfTripActionSheet>;
 }
 
 /** A side game's winner on this hole (owner 2026-11-22): the group's names in a row, like the Wolf pick; Greenies add
@@ -873,7 +957,7 @@ export function Leaderboard({ rows, par, range, hole, result, compact = false, h
   const columns = `30px minmax(0,1fr) 34px${gameLabel ? " 42px" : ""}${hasMoney ? " 52px" : ""}`;
   const initialsOf = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return <div className={`${trip.match} ${trip.leaderboard} ${styles.board} ${compact ? styles.boardCompact : ""}`} role="region" aria-label="Leaderboard">
-    <p className={styles.boardHead}><b>Hole {board.now + 1}</b>{board.done.length ? ` · thru ${board.done.at(-1)! + 1}` : ""}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
+    <p className={styles.boardHead}>{board.done.length === range[1] - range[0] ? <b>Final</b> : <><b>Hole {board.now + 1}</b>{board.done.length ? ` · thru ${board.done.at(-1)! + 1}` : ""}</>}{result ? ` · ${result.title.split(" · ")[0]}` : ""}</p>
     <div>
       <div className={trip.leaderboardListHeading}>
         <div className={`${trip.single} ${trip.columns}`} style={{ gridTemplateColumns: columns }} aria-hidden>

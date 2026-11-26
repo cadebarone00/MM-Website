@@ -1,6 +1,8 @@
 import { normalizeTripScenario } from "./tripScenario";
 import { TOURNEY_PREVIEWS, type TourneyPreview } from "./sampleTourney";
 import { isLivePreview, isLiveSurface, isTvGroup, isTvKind, isTvTeams, type LivePreview, type LiveSurface, type TvGroup, type TvKind, type TvTeams } from "./livePreviews";
+import { ROUND_MOMENTS, type RoundMoment } from "./sampleRoundGames";
+import { GAMES, type GameId } from "@/lib/platform/roundGames";
 import { isTvPhase, type TvPhase } from "@/lib/platform/liveTv";
 import type { GpsMode } from "@/lib/platform/golfGps/types";
 import { GOLF_TRIP_TABS, GOLF_TRIP_SECTIONS, type GolfTripNavigation } from "@/lib/platform/golfTripNavigation";
@@ -196,6 +198,20 @@ export type SimulatorState = {
   liveStats?: "closed" | "open";
   liveFull?: "off" | "on";
   tvGroup?: TvGroup;
+  /** Play → Games mid round (/dev/round?game=…, lib/dev/sampleRoundGames.ts): group size, moment and options. Unset = ROUND_SAMPLE_DEFAULTS. */
+  roundPlayers?: number;
+  roundThru?: RoundMoment;
+  roundNet?: boolean;
+  roundBirdies?: "off" | "birdies" | "eagles";
+  roundMoney?: boolean;
+  roundDoubled?: boolean;
+  roundCarry?: boolean;
+  roundPress?: boolean;
+  roundSide?: boolean;
+  roundViewer?: "host" | "player";
+  /** Golf Trip → Games sample: just this game (unset = every game) and whether games have started (unset = started). */
+  sampleGame?: GameId;
+  sampleGamesStarted?: boolean;
   /** Mock people group (/dev/people/…): which of the 5 pretend people is "signed in" (lib/dev/mockPeople.ts). Unset = Cade. */
   mockPerson?: MockPersonId;
   /** Home → Team Draft → Mock draft (test run): which setup runs ("off" = none) and who is holding the phone. */
@@ -248,7 +264,8 @@ export function parseGpsState(value: unknown): SimulatorGpsState | null {
 
 export type SimulatorLocation = { path: string; navigation?: GolfTripNavigation };
 export function isSimulatorPath(path: unknown): path is string {
-  return typeof path === "string" && /^\/[a-zA-Z0-9/_-]*$/.test(path) && !path.startsWith("//") && path !== "/dev";
+  // A plain query is allowed too (/dev/round?game=wolf).
+  return typeof path === "string" && /^\/[a-zA-Z0-9/_-]*(\?[a-zA-Z0-9=&_-]*)?$/.test(path) && !path.startsWith("//") && path !== "/dev";
 }
 export function parseSimulatorLocation(value: unknown): SimulatorLocation | null {
   if (!value || typeof value !== "object") return null;
@@ -262,7 +279,8 @@ export function parseSimulatorLocation(value: unknown): SimulatorLocation | null
 
 /** The discovered page descriptors are the mapping in BOTH directions. */
 export function simulatorPageForLocation(pages: SimulatorPage[], location: SimulatorLocation, currentId?: string): SimulatorPage | undefined {
-  const candidates = pages.filter(page => page.path === location.path);
+  // Pages can carry a query (/dev/round?game=wolf); the phone reports only its path, so the current page stays picked.
+  const candidates = pages.filter(page => page.path.split("?")[0] === location.path);
   if (location.navigation) {
     const { tab, golfSection, settingsView } = location.navigation;
     if (settingsView) return candidates.find(page => page.navigation?.settingsView === settingsView);
@@ -330,6 +348,12 @@ export function parseSimulatorConfig(value: unknown): SimulatorConfig | null {
   if (state.liveFull !== undefined && !["off", "on"].includes(String(state.liveFull))) return null;
   if (state.tvGroup !== undefined && !isTvGroup(state.tvGroup)) return null;
   if (state.mockPerson !== undefined && !isMockPersonId(state.mockPerson)) return null;
+  if (state.roundPlayers !== undefined && ![2, 3, 4, 5].includes(state.roundPlayers as number)) return null;
+  if (state.roundThru !== undefined && !ROUND_MOMENTS.some(([thru]) => thru === state.roundThru)) return null;
+  for (const key of ["roundNet", "roundMoney", "roundDoubled", "roundCarry", "roundPress", "roundSide", "sampleGamesStarted"] as const) if (state[key] !== undefined && typeof state[key] !== "boolean") return null;
+  if (state.roundBirdies !== undefined && !["off", "birdies", "eagles"].includes(String(state.roundBirdies))) return null;
+  if (state.roundViewer !== undefined && !["host", "player"].includes(String(state.roundViewer))) return null;
+  if (state.sampleGame !== undefined && !GAMES.some((g) => g.id === state.sampleGame)) return null;
   if (state.ratingStage !== undefined && !["off", "prompt", "one", "done"].includes(String(state.ratingStage))) return null;
   if (state.venueStage !== undefined && !["list", "loading", "category", "saved", "empty", "no-destination"].includes(String(state.venueStage))) return null;
   for (const [key, allowed] of [["homeOverview", HOME_OVERVIEW_STAGES], ["homeMomentum", HOME_MOMENTUM_STAGES], ["homeUpcoming", HOME_UPCOMING_STAGES], ["homeCompetition", HOME_COMPETITION_STAGES], ["homeInvite", HOME_INVITE_STAGES], ["homePlayers", HOME_PLAYERS_STAGES]] as const)

@@ -1,130 +1,202 @@
-import { useCallback, useEffect, useState } from "react";
-import { useFocusEffect, useLocalSearchParams, router } from "expo-router";
-import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { AccessibilityInfo, Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Clipboard from "expo-clipboard";
-import type { SavedGolfTrip, GolfTripViewer } from "@/lib/platform/golfTripCreate";
-import { homeTeamRoster, sortHomeRoster } from "@/lib/platform/homeRoster";
-import { halves, upcomingSlides } from "@/lib/platform/bigBoard";
-import { itineraryDay, itineraryTime, localNow, withGolfRounds } from "@/lib/platform/golfTripItinerary";
-import { goingOnly, itineraryFor } from "@/lib/platform/tripTravel";
-import type { TripTravel } from "@/lib/platform/tripTravel";
-import { homeCompetitionSummary, teamGroups, yourTeam } from "@/lib/platform/homeCompetition";
-import { homeMatchRounds } from "@/lib/platform/homeDraft";
-import { countdownParts, countdownTarget, nextRoundReminder } from "@/lib/platform/momNotifications";
-import { shortTripDate } from "@/lib/platform/golfTripDraft";
-import { roundScoringFrom } from "@/lib/platform/teamPoints";
-import type { RoundCompSettings } from "@/lib/platform/roundCompetition";
-import { homeRosterFull, tapInPath } from "@/lib/platform/tapIn";
-import { Avatar } from "~/components/Avatar.tsx";
+import { localNow } from "@/lib/platform/golfTripItinerary";
+import { GOLF_TRIP_TABS } from "@/lib/platform/golfTripNavigation";
+import { tripDates } from "@/lib/platform/golfTripDraft";
+import type { Place } from "@/lib/platform/venuePlaces";
+import type { RoundRobinResults } from "@/lib/platform/roundRobin";
+import { tripHomeView } from "@/lib/platform/tripHome";
+import { Card } from "~/components/Card.tsx";
 import { PageHeader } from "~/components/PageHeader.tsx";
 import { StateSlot } from "~/components/StateSlot.tsx";
+import { TripHome } from "~/components/trips/TripHome.tsx";
+import { TripDraftRoom } from "~/components/trips/TripDraftRoom.tsx";
+import { ImportedTrip } from "~/components/trips/ImportedTrip.tsx";
+import { TripFlights } from "~/components/trips/TripFlights.tsx";
 import { TripGolf } from "~/components/trips/TripGolf.tsx";
-import { apiJson, apiRaw, shareUrl } from "~/lib/api.ts";
-import { colors, fonts, gutter } from "~/lib/theme.ts";
+import { TripItinerary } from "~/components/trips/TripItinerary.tsx";
+import { InvitePeople, TripTravelForm } from "~/components/trips/TripTravelForm.tsx";
+import { TripSettings } from "~/components/trips/TripSettings.tsx";
+import { TripVenue } from "~/components/trips/TripVenue.tsx";
+import { TripRoundRobin } from "~/components/trips/TripRoundRobin.tsx";
+import { TripSelectionRoom } from "~/components/trips/TripSelectionRoom.tsx";
+import { TripScoringSheet, tripScoringNote } from "~/components/trips/TripScoringSheet.tsx";
+import { TripChat } from "~/components/trips/TripChat.tsx";
+import { RatePlaces, TripTips } from "~/components/trips/TripExtras.tsx";
+import { TripFeed } from "~/components/trips/TripFeed.tsx";
+import { SymbolView } from "expo-symbols";
+import { useLightStatusBar } from "~/lib/statusBar.ts";
+import { colors, fonts, gutter, minTap } from "~/lib/theme.ts";
+import { useInviteLink, useTripMomentum, useTripPage } from "~/lib/tripPage.ts";
+import { useTripPlans } from "~/lib/useTripPlans.ts";
 
-type PageData = { status: "live"; savedTrip: SavedGolfTrip; viewer: GolfTripViewer; setupSnapshot: { values: Record<string, unknown> }; planSnapshot: { travel: TripTravel } } | { status: "imported" };
-type LinkData = { url?: string; expiresAt?: string; error?: string };
-type Momentum = { id: string; title: string; detail?: string };
-const tabs = ["Home", "Golf", "Venue", "Itinerary"] as const;
-type Tab = typeof tabs[number];
+type Tab = (typeof GOLF_TRIP_TABS)[number];
 
+
+/**
+ * The trip page (project_specs.md Golf Trips part 2c): header (← · name · gear), the Home · Golf · Venue · Itinerary tabs and
+ * the Home tab. Data from /api/app/golf-trips/<id>, the same loader the website's trip page uses.
+ */
 export default function TripScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [data, setData] = useState<PageData | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  useLightStatusBar();
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { state, refreshing, reload } = useTripPage(id);
+  const live = state.kind === "live" ? state.data : null;
+  const momentum = useTripMomentum(live ? id : null);
+  const invite = useInviteLink(live ? id : null);
   const [tab, setTab] = useState<Tab>("Home");
-  const [invite, setInvite] = useState<LinkData | null>(null);
-  const [inviteError, setInviteError] = useState("");
-  const [inviteNote, setInviteNote] = useState("");
-  const [events, setEvents] = useState<Momentum[]>([]);
-  const [note, setNote] = useState("");
-  const [slide, setSlide] = useState(0);
-  const [clock, setClock] = useState(() => new Date());
-  useEffect(() => { const timer = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(timer); }, []);
-  const load = useCallback(async () => {
-    if (!id) { setError("Trip not found."); setLoading(false); return; }
-    setLoading(true); setError("");
-    const result = await apiJson<{ ok: true; data: PageData }>(`/api/app/golf-trips/${encodeURIComponent(id)}`);
-    if (result.ok) setData(result.body.data); else { setData(null); setError(result.error); }
-    setLoading(false);
-  }, [id]);
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
-  useFocusEffect(useCallback(() => {
-    if (!id || data?.status !== "live") return;
-    let active = true;
-    const refresh = async () => {
-      const [link, momentum] = await Promise.all([
-        apiRaw<LinkData>(`/api/golf-trips/${encodeURIComponent(id)}/join-link`),
-        apiRaw<{ events?: Momentum[] }>(`/api/golf-trips/${encodeURIComponent(id)}/momentum`),
-      ]);
-      if (!active) return;
-      if (link.status === 200 && link.body?.url) { setInvite(link.body); setInviteError(""); }
-      else { setInvite(null); setInviteError(link.body?.error ?? "Couldn't get the invite link."); }
-      if (momentum.status === 200) setEvents(momentum.body?.events ?? []);
-    };
-    void refresh(); const timer = setInterval(() => void refresh(), 30000);
-    return () => { active = false; clearInterval(timer); };
-  }, [id, data?.status]));
-  const copyInvite = async () => {
-    if (!id) return;
-    const response = await apiRaw<LinkData>(`/api/golf-trips/${encodeURIComponent(id)}/join-link`);
-    if (!response.body?.url || response.status !== 200) { setInviteError(response.body?.error ?? "Couldn't get the invite link."); return; }
-    setInvite(response.body);
-    try { await Clipboard.setStringAsync(response.body.url); setInviteNote("Link copied"); } catch { setInviteNote("Couldn't copy the link."); }
-  };
-  const copyWatch = async (path: string) => {
-    try { await Clipboard.setStringAsync(shareUrl(path)); setNote("Balata Live link copied"); }
-    catch { setNote("Couldn't copy the link. Open it and copy its address."); }
-  };
-  const shareWatch = async (path: string) => {
-    try { await Share.share({ message: `Follow ${trip?.trip.name ?? "this trip"} on Balata Live: ${shareUrl(path)}` }); }
-    catch { setNote("Couldn't share. Use Copy link."); }
-  };
-  const trip = data?.status === "live" ? data.savedTrip : null;
-  const members = sortHomeRoster((trip?.members ?? []).filter(m => m.profileId && m.invitationStatus === "accepted").map(m => ({ name: m.displayName, avatarUrl: m.avatarUrl, username: m.username })));
-  const watch = tapInPath(trip?.trip.watch_code);
-  const setup = data?.status === "live" ? data.setupSnapshot.values : {};
-  const types = setup.localCompetitionType as { individual: string | null; team: string | null } | undefined;
-  const groups = teamGroups(setup.submittedTeams as number[][] | undefined, setup.teamPicks as Record<number, number> | undefined);
-  const names = (trip?.members ?? []).filter(m => m.profileId && m.invitationStatus === "accepted").map(m => m.displayName);
-  const teams = homeTeamRoster({ teamCompetition: !!types?.team, players: members, assignmentNames: names, groups, teamNames: setup.teamNames as string[] | undefined });
-  const rounds = trip?.rounds.map(r => ({ number: r.roundNumber, dayNumber: r.dayNumber, date: r.playDate ?? "", course: r.courseName || "Course TBD" })) ?? [];
-  const formats = setup.compFormats as Record<string, RoundCompSettings> | undefined;
-  const matchRounds = types ? homeMatchRounds(setup, rounds, names.length) : [];
-  const summary = types && trip ? homeCompetitionSummary({ types,
-    scoring: roundScoringFrom(rounds, formats, setup.compRounds as Record<string, boolean> | undefined, Number(setup.playerTotal) || members.length),
-    recordStandings: matchRounds.some(round => round.method === "Round Robin"),
-    rounds: rounds.map(r => ({ ...r, format: formats?.[`${r.dayNumber - 1}-${rounds.filter(other => other.dayNumber === r.dayNumber).findIndex(other => other.number === r.number)}`]?.format })) }) : null;
-  const viewerName = data?.status === "live" ? trip?.members.find(m => m.profileId === data.viewer.profileId)?.displayName : null;
-  const assigned = summary ? yourTeam({ teamFormat: summary.teamFormat, me: viewerName, players: names, groups, teamNames: setup.teamNames as string[] | undefined }) : null;
-  const travel = data?.status === "live" ? data.planSnapshot.travel : null;
-  const itinerary = trip && travel ? goingOnly(withGolfRounds(itineraryFor(travel), trip.rounds.map(r => ({ number: r.roundNumber, date: r.playDate ?? "", course: r.courseName || "Course TBD" })))) : [];
-  const now = localNow(clock);
-  const slides = upcomingSlides(itinerary, now);
-  const currentSlide = slides[Math.min(slide, Math.max(0, slides.length - 1))];
-  const target = countdownTarget(trip?.trip.start_date, itinerary);
-  const countdown = target ? countdownParts(target, `${now}:${String(clock.getSeconds()).padStart(2, "0")}`) : null;
-  const reminder = !countdown ? nextRoundReminder(rounds, now.slice(0, 10), 0, travel?.items.filter(item => item.kind === "teeTime" && travel.participants.some(p => p.itemId === item.id && p.memberId === travel.meId && p.status === "going")).map(item => item.startsAt) ?? []) : null;
-  return <SafeAreaView style={styles.page} edges={["top"]}>
-    <View style={styles.header}><PageHeader title={trip?.trip.name ?? "Golf trip"} back onBack={() => router.back()} onSettings={trip ? () => Alert.alert("Trip Settings", "Trip Settings comes in part 2g.") : undefined} /></View>
-    {loading || error ? <StateSlot height={240} state={loading ? { kind: "loading" } : { kind: "error", message: error, onRetry: () => void load() }} /> : data?.status === "imported" ? <StateSlot height={240} state={{ kind: "empty", message: "Imported trips will be available in part 2g." }} /> : trip && <>
-      <View style={styles.tabs}>{tabs.map(item => <Pressable key={item} accessibilityRole="tab" accessibilityState={{ selected: tab === item }} onPress={() => setTab(item)} style={styles.tab}><Text style={[styles.tabText, tab === item && styles.selected]}>{item}</Text></Pressable>)}</View>
-      {tab === "Golf" ? <TripGolf trip={trip} setup={setup} /> : tab !== "Home" ? <StateSlot height={240} state={{ kind: "empty", message: `${tab} comes in a later part of Golf Trips.` }} /> : <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}><Text style={styles.label}>{trip.trip.destination ? "Your trip to" : "Your trip"}</Text>{trip.trip.destination ? <Text style={styles.destination}>{trip.trip.destination}</Text> : null}{trip.trip.start_date && trip.trip.end_date ? <Text style={styles.gold}>{shortTripDate(trip.trip.start_date)} – {shortTripDate(trip.trip.end_date)}</Text> : null}
-          <View style={styles.board}><Text style={styles.headingLight}>Momentum</Text>{events.length ? events.slice(0, 3).map(event => <View key={event.id}><Text style={styles.light}>{event.title}</Text>{event.detail ? <Text style={styles.mutedLight}>{event.detail}</Text> : null}</View>) : countdown ? <Text style={styles.light}>{countdown.days} days · {countdown.hours} hrs · {countdown.minutes} min · {countdown.seconds} sec</Text> : reminder ? <><Text style={styles.light}>{reminder.line}</Text><Text style={styles.mutedLight}>{reminder.sub}</Text></> : <Text style={styles.mutedLight}>Trip highlights will show here.</Text>}<View style={styles.divider}/><Text style={styles.headingLight}>Upcoming</Text>{currentSlide ? <><Pressable onPress={() => setTab("Itinerary")}><Text style={styles.gold}>{currentSlide.status}</Text><Text style={styles.light}>{currentSlide.item.title}</Text><Text style={styles.mutedLight}>{itineraryDay(currentSlide.item.startsAt)} · {currentSlide.item.timeTbd ? "Tee time TBD" : itineraryTime(currentSlide.item.startsAt)}</Text></Pressable><View style={styles.actions}><Pressable accessibilityLabel="Previous plan" onPress={() => setSlide(Math.max(0, slide - 1))}><Text style={styles.gold}>‹</Text></Pressable><Text style={styles.mutedLight}>{Math.min(slide + 1, slides.length)} / {slides.length}</Text><Pressable accessibilityLabel="Next plan" onPress={() => setSlide(Math.min(slides.length - 1, slide + 1))}><Text style={styles.gold}>›</Text></Pressable></View></> : <Text style={styles.mutedLight}>Nothing else coming up</Text>}</View>
-        </View>
-        <View style={styles.card}><Text style={styles.heading}>Balata Live</Text><Text style={styles.body}>Invite your peers to follow along.</Text>{watch ? <><Text style={styles.body} selectable>{watch}</Text><View style={styles.actions}><Pressable onPress={() => void Linking.openURL(shareUrl(watch)).catch(() => setNote("Couldn't open Balata Live."))}><Text style={styles.action}>View</Text></Pressable><Pressable onPress={() => void copyWatch(watch)}><Text style={styles.action}>Copy link</Text></Pressable><Pressable onPress={() => void shareWatch(watch)}><Text style={styles.action}>Share</Text></Pressable></View></> : <Text style={styles.body}>Balata Live link unavailable</Text>}<Text style={styles.muted} accessibilityLiveRegion="polite">{note}</Text></View>
-        {(types?.team || types?.individual) && <View style={styles.card}><Text style={styles.heading}>Drafts</Text>{types.team && setup.teamSelection === "Draft" && <><Text style={styles.body}>Team Draft</Text><Text style={styles.muted}>{typeof setup.draftDate === "string" && setup.draftDate && typeof setup.draftTime === "string" && setup.draftTime ? `${setup.draftDate} · ${setup.draftTime}` : "No Date Set"}</Text></>}{matchRounds.map(round => <Text key={round.key} style={styles.body}>Round {round.number} · {round.course} · {round.method || "Match selection not set"}</Text>)}{setup.teamSelection !== "Draft" && !matchRounds.length && <Text style={styles.muted}>No drafts coming up</Text>}</View>}
-        <View style={styles.card}><Text style={styles.heading}>{teams ? "Teams" : `Players ${trip.trip.expected_traveler_count ? `${members.length}/${trip.trip.expected_traveler_count}` : members.length}`}</Text>{!homeRosterFull(members.length, trip.trip.expected_traveler_count, !!teams) && <View><Text style={styles.body} selectable>{invite?.url ?? (inviteError || "Getting your link…")}</Text><Pressable disabled={!invite?.url} onPress={() => void copyInvite()}><Text style={styles.action}>Copy link</Text></Pressable><Text style={styles.muted} accessibilityLiveRegion="polite">{inviteNote}</Text></View>}{teams ? teams.map(team => <View key={team.name}><Text style={styles.action}>{team.name}</Text>{team.players.map((member, index) => <View key={`${member.name}-${index}`} style={styles.player}><Text style={styles.body}>{index + 1}</Text><Avatar name={member.name} photoUrl={member.avatarUrl} size={32} onLight /><View><Text style={styles.body}>{member.name}</Text>{member.username ? <Text style={styles.muted}>@{member.username}</Text> : null}</View></View>)}</View>) : members.length ? members.map((member, index) => <View key={`${member.name}-${index}`} style={styles.player}><Text style={styles.body}>{index + 1}</Text><Avatar name={member.name} photoUrl={member.avatarUrl} size={32} onLight /><View><Text style={styles.body}>{member.name}</Text>{member.username ? <Text style={styles.muted}>@{member.username}</Text> : null}</View></View>) : <Text style={styles.body}>Players show up here as they join the trip.</Text>}</View>
-        <View style={styles.card}><Text style={styles.heading}>Competition</Text>{summary ? <><Text style={styles.body}>{summary.type}</Text>{summary.teamFormat && <Text style={styles.body}>Team format · {summary.teamFormat}</Text>}{summary.teamFormat && <Text style={styles.body}>{summary.teamFormat === "2 Teams" ? "Your team" : "Teammates"} · {assigned || "Not on a team yet"}</Text>}{summary.individualFormat && <Text style={styles.body}>Individual · {summary.individualFormat}</Text>}<Text style={styles.body}>Days · {summary.days}    Rounds · {summary.rounds.length}</Text>{summary.recordStandings && <Text style={styles.body}>Round robin standings · W-L-T / winning percentage</Text>}{summary.rounds.map(round => <Text style={styles.body} key={round.number}>Round {round.number} · {round.format} · {round.course}</Text>)}{summary.totalPoints !== null && summary.toWin !== null && <Text style={styles.body}>Total points · {halves(summary.totalPoints)}    To win · {halves(summary.toWin)}</Text>}</> : <Text style={styles.body}>{trip.trip.includes_tournament === "yes" ? "Team drafts, matches and skins will show here." : "No competition"}</Text>}</View>
-        <Text style={styles.muted} accessibilityLiveRegion="polite">{note}</Text>
-      </ScrollView>}
-    </>}
-  </SafeAreaView>;
-}
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.cream }, header: { paddingHorizontal: gutter }, tabs: { flexDirection: "row", borderBottomWidth: 1, borderColor: colors.line }, tab: { flex: 1, alignItems: "center", paddingVertical: 12 }, tabText: { fontFamily: fonts.regular, color: colors.inkMuted, fontSize: 16 }, selected: { color: colors.maroon700, fontFamily: fonts.bold }, content: { paddingBottom: 30, gap: 16 }, hero: { backgroundColor: colors.maroon900, padding: gutter, gap: 6 }, label: { fontFamily: fonts.regular, color: colors.onMaroon, fontSize: 16 }, destination: { fontFamily: fonts.bold, color: colors.cream, fontSize: 26 }, gold: { fontFamily: fonts.semibold, color: colors.goldBright }, board: { borderColor: colors.gold, borderWidth: 1, borderRadius: 16, padding: 16, gap: 8, marginTop: 12 }, headingLight: { fontFamily: fonts.bold, fontSize: 18, color: colors.cream }, light: { fontFamily: fonts.regular, color: colors.onMaroon, fontSize: 16 }, mutedLight: { fontFamily: fonts.regular, color: colors.boardInk }, divider: { height: 1, backgroundColor: colors.boardBorderSoft, marginVertical: 8 }, card: { marginHorizontal: gutter, padding: 16, borderRadius: 16, backgroundColor: colors.card, gap: 8 }, heading: { fontFamily: fonts.bold, color: colors.ink, fontSize: 20 }, body: { fontFamily: fonts.regular, color: colors.ink, fontSize: 16 }, muted: { fontFamily: fonts.regular, color: colors.inkMuted }, action: { fontFamily: fonts.semibold, color: colors.maroon700, paddingVertical: 10 }, actions: { flexDirection: "row", gap: 20 }, player: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 4 },
-});
+  const [sheet, setSheet] = useState<"feed" | "chat" | null>(null);
+  // Part 2e: the draft rooms open over the trip page.
+  const [room, setRoom] = useState<"draft" | "selection" | "robin" | null>(null);
+  // Part 2f: my plans (Itinerary, Venue → Add to itinerary), Flights, and a place being added.
+  const plans = useTripPlans(id, live?.planSnapshot ?? null);
+  const [flightsOpen, setFlightsOpen] = useState(false);
+  const [addingPlace, setAddingPlace] = useState<{ place: Place; done: () => void } | null>(null);
+  const [invitingPlan, setInvitingPlan] = useState<string | null>(null);
+  // "Now" is read once, when Home opens (website rule), so plans don't jump while you look at them.
+  const [now] = useState(() => localNow(new Date()));
+  const view = useMemo(() => live ? tripHomeView(live, now, momentum) : null, [live, now, momentum]);
+  const title = view?.tripName ?? (state.kind === "imported" ? state.name : name || "Golf trip");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settings = () => setSettingsOpen(true);
 
+  // Part 2g slice 3: an imported past trip shows its results, read only.
+  if (state.kind === "imported") return <SafeAreaView style={styles.page} edges={["top"]}><ImportedTrip data={state.data} onBack={() => router.back()} /></SafeAreaView>;
+
+  return (
+    <SafeAreaView style={styles.page} edges={["top"]}>
+      <View style={styles.gutter}>
+        {live ? (
+          <View style={styles.header}>
+            <View style={styles.headerSide}>
+              <HeaderIcon icon="chevron.left" label="Back" onPress={() => router.back()} />
+              <HeaderIcon icon="newspaper" label="Trip feed" onPress={() => setSheet("feed")} />
+              <HeaderIcon icon="message" label="Trip chat" onPress={() => setSheet("chat")} />
+            </View>
+            <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">{title}</Text>
+            <View style={[styles.headerSide, { justifyContent: "flex-end" }]}><HeaderIcon icon="gearshape" label="Trip settings" onPress={settings} /></View>
+          </View>
+        ) : <PageHeader title={title} back onBack={() => router.back()} tone="dark" />}
+      </View>
+      {live && <TabBar tab={tab} onChange={setTab} />}
+      {state.kind === "loading" && <StateSlot state={{ kind: "loading" }} height={240} tone="dark" />}
+      {state.kind === "not-found" && <Problem text="Trip not found. It may have been deleted, or you're not on it." action="Back to Golf Trips" onPress={() => router.back()} />}
+      {state.kind === "signed-out" && <Problem text="You're signed out. Sign in again to see this trip." action="Sign in" onPress={() => router.replace("/start/log-in")} />}
+      {state.kind === "error" && <Problem text={state.message} action="Try again" onPress={() => void reload(true)} />}
+      {view && (tab === "Home" ? (
+        <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reload(true)} tintColor={colors.goldBright} />}>
+          <TripHome view={view} invite={invite}
+            onOpenItinerary={() => setTab("Itinerary")}
+            onOpenFlights={() => setFlightsOpen(true)} onSettings={settings}
+            onRoom={setRoom} onOpenLive={() => setTab("Golf")} />
+        </ScrollView>
+      ) : tab === "Golf" ? (
+        <TripGolf match={view.match} schedule={view.draft} structure={view.structure} viewerName={view.viewerName} roundLive={view.roundLive}
+          playerStats={live!.setupSnapshot.values.playerStats === true} predict={view.predict} games={view.games}
+          notice={live!.scoring?.profileId === live!.viewer.profileId ? tripScoringNote(live!.scoring.scoring, live!.viewer.profileId) : null} />
+      ) : tab === "Venue" ? (
+        <TripVenue tripId={id} destination={view.draft.destination ?? ""}
+          center={Number.isFinite(Number(view.draft.destinationLatitude)) && Number.isFinite(Number(view.draft.destinationLongitude)) && view.draft.destinationLatitude && view.draft.destinationLongitude
+            ? { latitude: Number(view.draft.destinationLatitude), longitude: Number(view.draft.destinationLongitude) } : null}
+          onAddToItinerary={plans.available ? (place, done) => setAddingPlace({ place, done }) : undefined} />
+      ) : (
+        <TripItinerary tripId={id} plans={plans} rounds={view.rounds} tripDays={tripDates(view.draft.startDate, view.draft.endDate)}
+          activeRound={view.roundLive ? view.match.round : undefined} refreshing={refreshing} onRefresh={() => void reload(true)} />
+      ))}
+      {live && view && <>
+        <TripFeed open={sheet === "feed"} onClose={() => setSheet(null)} />
+        <TripChat open={sheet === "chat"} onClose={() => setSheet(null)} tripName={view.tripName}
+          members={view.roster.players.map((p) => p.name).filter((n) => n !== live.savedTrip.members.find((m) => m.profileId === live.viewer.profileId)?.displayName)} />
+        <TripTips profileId={live.viewer.profileId} isOrganizer={live.viewer.isOrganizer} />
+        <RatePlaces tripId={id} visits={view.rateVisits} />
+        {settingsOpen && <TripSettings trip={live.savedTrip} draft={view.draft} viewer={{ profileId: live.viewer.profileId, memberId: live.savedTrip.members.find((m) => m.profileId === live.viewer.profileId)?.id ?? "", isOrganizer: live.viewer.isOrganizer }}
+          setupValues={live.setupSnapshot.values as Record<string, unknown>} basis={live.setupSnapshot.basis} onChanged={() => void reload(true)}
+          onClose={() => { setSettingsOpen(false); void reload(true); }} onLeft={() => { setSettingsOpen(false); router.replace("/(tabs)/golf-trips"); }} />}
+        {flightsOpen && <TripFlights tripId={id} onClose={() => setFlightsOpen(false)} />}
+        {addingPlace && <TripTravelForm kind="other" initial={{ name: addingPlace.place.name, place: addingPlace.place.address, placeId: addingPlace.place.id }} onClose={() => setAddingPlace(null)}
+          onSave={(details, startsAt, endsAt, invite) => {
+            const planId = `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+            plans.change({ type: "add", item: { id: planId, kind: "other", details: { ...details, placeId: addingPlace.place.id }, startsAt, endsAt, joinPolicy: "none" } });
+            addingPlace.done(); setAddingPlace(null);
+            if (invite) setInvitingPlan(planId);
+          }} />}
+        {invitingPlan && <InvitePeople travel={plans.travel} itemId={invitingPlan} onClose={() => setInvitingPlan(null)}
+          onSend={(memberIds) => { plans.change({ type: "invite", id: invitingPlan, memberIds }); setInvitingPlan(null); }} />}
+        {room === "draft" && <TripDraftRoom tripId={id} onSettings={() => { setRoom(null); settings(); }}
+          when={view.drafts?.team?.kind === "board" ? view.drafts.team.countdown.when : null} target={view.drafts?.team?.kind === "board" ? view.drafts.team.countdown.target : null}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {room === "selection" && <TripSelectionRoom tripId={id} rounds={view.drafts?.match?.rounds ?? []} initialRound={view.drafts?.match?.next?.key ?? null}
+          onSettings={() => { setRoom(null); settings(); }} onGoToMatches={() => { setRoom(null); setTab("Golf"); void reload(true); }}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {room === "robin" && view.drafts?.match?.robin?.ready && <TripRoundRobin tripId={id} sides={view.drafts.match.robin.sides} roster={view.drafts.match.robin.roster}
+          courses={view.drafts.match.robin.courses} canEdit={view.isOrganizer}
+          initial={live.setupSnapshot.values.roundRobinResults as RoundRobinResults | undefined}
+          onClose={() => { setRoom(null); void reload(true); }} />}
+        {/* Player & Attest (part 2d slice 3): today's round, for a seated member only; the sheet tucks into the bottom. */}
+        {live.scoring && live.scoring.profileId === live.viewer.profileId && (tab === "Home" || tab === "Golf") &&
+          <TripScoringSheet key={`${live.scoring.scoring.roundId}:${live.viewer.profileId}`} tripId={id} profileId={live.viewer.profileId} initial={live.scoring.scoring} initialCorrections={live.scoring.corrections} />}
+      </>}
+    </SafeAreaView>
+  );
+}
+
+function HeaderIcon({ icon, label, onPress }: { icon: "chevron.left" | "newspaper" | "message" | "gearshape"; label: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.headerIcon}><SymbolView name={icon} size={icon === "chevron.left" ? 20 : 22} tintColor={colors.onMaroon} /></Pressable>;
+}
+
+/** Home · Golf · Venue · Itinerary. A tap gives a small bump (none with Reduce Motion). */
+function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+  const [bump] = useState(() => new Animated.Value(1));
+  const [bumped, setBumped] = useState<Tab | null>(null);
+  const press = async (name: Tab) => {
+    onChange(name);
+    if (await AccessibilityInfo.isReduceMotionEnabled()) return;
+    setBumped(name);
+    bump.setValue(1);
+    Animated.sequence([Animated.timing(bump, { toValue: 1.05, duration: 110, useNativeDriver: true }), Animated.timing(bump, { toValue: 1, duration: 110, useNativeDriver: true })]).start();
+  };
+  return (
+    <View style={styles.tabs} accessibilityRole="tablist" accessibilityLabel="Trip sections">
+      {GOLF_TRIP_TABS.map((name) => (
+        <Animated.View key={name} style={{ flex: 1, transform: [{ scale: bumped === name ? bump : 1 }] }}>
+          <Pressable accessibilityRole="tab" accessibilityState={{ selected: tab === name }} onPress={() => void press(name)} style={[styles.tab, tab === name && styles.tabOn]}>
+            <Text style={[styles.tabText, tab === name && styles.tabTextOn]}>{name}</Text>
+          </Pressable>
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
+
+function Problem({ text, action, onPress }: { text: string; action: string; onPress: () => void }) {
+  return (
+    <View style={[styles.gutter, { marginTop: 24 }]}>
+      <Card tone="dark">
+        <Text style={styles.problem}>{text}</Text>
+        <Pressable accessibilityRole="button" onPress={onPress} style={styles.problemAction}><Text style={styles.problemActionText}>{action}</Text></Pressable>
+      </Card>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.maroon900 },
+  gutter: { paddingHorizontal: gutter },
+  scroll: { paddingBottom: 48 },
+  header: { height: 52, flexDirection: "row", alignItems: "center" },
+  headerSide: { width: minTap * 3, flexDirection: "row", alignItems: "center" },
+  headerIcon: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
+  headerTitle: { flex: 1, textAlign: "center", fontFamily: fonts.bold, fontSize: 20, color: colors.onMaroon },
+  tabs: { flexDirection: "row", gap: 6, marginHorizontal: gutter, marginTop: 4, padding: 4, borderRadius: 999, backgroundColor: colors.inputOnMaroon, borderWidth: 1, borderColor: colors.avatarRing },
+  tab: { height: 36, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  tabOn: { backgroundColor: colors.cream },
+  tabText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.boardInk },
+  tabTextOn: { color: colors.maroon900 },
+  laterHeading: { fontFamily: fonts.bold, fontSize: 20, color: colors.cream, marginBottom: 6 },
+  laterBody: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 21, color: colors.boardInk },
+  problem: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 22, color: colors.cream },
+  problemAction: { marginTop: 10, minHeight: minTap, justifyContent: "center" },
+  problemActionText: { fontFamily: fonts.semibold, fontSize: 16, color: colors.goldBright },
+});

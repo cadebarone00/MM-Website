@@ -12,7 +12,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { HolePicks, Standings } from "./PlayRound";
 import type { GolfMatchPreview } from "@/lib/platform/golfTripPreviewFixture";
 import { gameDef, scoreGame, wolfFor, type GameConfig, type GameId, type GameResult, type HoleInput } from "@/lib/platform/roundGames";
-import { tripGameRound, tripGameSettled, currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
+import { tidyTripGameResult, tripGameNeedsSetup, tripGameRound, tripGameSettled, currentHole, gameCourse, gamePlayers, gameStrokes, groupOf, holesThru, meOn, organizerGames as fromOrganizer, parThru, snakeFromPutts, teamsOn, TRIP_GAMES, vegasByHole, type TripGame } from "@/lib/platform/tripGames";
 import { roundDay } from "./GolfTripMatch";
 import styles from "./GolfTripGames.module.css";
 
@@ -41,11 +41,15 @@ export function GolfTripGames({ match, rounds, roundInfo, signedInName, saved, o
   // Saved games have loaded (from this device or the server), so the organizer's games can be added without duplicates.
   const [loaded, setLoaded] = useState(false);
   // App simulator "Sample games, mid-round": made-up games partway through the round (kept in memory, never saved).
-  const sample = useSimulator()?.state.sampleGames === true;
+  const simulator = useSimulator()?.state;
+  const sample = simulator?.sampleGames === true;
+  const sampleOnly = simulator?.sampleGame, sampleStarted = simulator?.sampleGamesStarted;
+  // Picks follow the holes my group has scored on the shown round (Live round / End of round / Trip complete).
+  const groupThru = holesThru(gameStrokes(match, { round: match.round, players: group.slice(0, 4) }), match.par.length);
   const groupKey = group.join("|");
   const holeCount = match.par.length, shownRound = match.round;
   const fieldKey = match.leaderboard.map((row) => row.golfer.name).join("|");
-  useEffect(() => { if (!saved) { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|")) : readGames()); setLoaded(true); } }, [saved, sample, shownRound, holeCount, groupKey, fieldKey]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
+  useEffect(() => { if (!saved) { setGames(sample ? sampleTripGames(shownRound, holeCount, groupKey.split("|"), fieldKey.split("|"), { played: groupThru, only: sampleOnly, started: sampleStarted }) : readGames()); setLoaded(true); } }, [saved, sample, shownRound, holeCount, groupKey, fieldKey, groupThru, sampleOnly, sampleStarted]); // eslint-disable-line react-hooks/set-state-in-effect -- loads this device's saved games (or the sample) when the source changes
   const save = (next: TripGame[]) => { setGames(next); if (!sample && !saved) try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* private mode */ } };
 
   // Saved trip: load from the server, refresh on any change to this trip's games (Realtime), on return to the tab, and every 15s.
@@ -121,7 +125,7 @@ export function GolfTripGames({ match, rounds, roundInfo, signedInName, saved, o
       };
       const canRemove = !saved || (game as TripGame & { mine?: boolean }).mine !== false;
       // Games with nothing to set up (Vegas included, even ones saved before it picked teams by hole) go straight to the game card.
-      return game.started || !needsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={withPars(match, game)} settled={view === "Settled"} onRemove={canRemove && view === "Active" ? remove : undefined}
+      return game.started || !tripGameNeedsSetup(game.config.id) ? <GameCard key={game.key} game={game} match={withPars(match, game)} settled={view === "Settled"} onRemove={canRemove && view === "Active" ? remove : undefined}
         onInput={pick} />
         : <PreRound key={game.key} game={game} onChange={(config) => update({ config })} onStart={() => update({ started: true })} onRemove={canRemove ? remove : undefined} />;
     })}
@@ -151,7 +155,7 @@ function GameCard({ game, match, onInput, onRemove, settled = false }: { settled
   const inputs = def.holeInput === "snake" ? snakeFromPutts(match, game) : game.inputs;
   const vegas = game.config.id === "vegas";
   const result = !live ? null : vegas ? vegasByHole(game, players, gameCourse(match), strokes)
-    : tidy(scoreGame(game.config, players, gameCourse(match), range, strokes, inputs), game.config.id, parThru(match, strokes));
+    : tidyTripGameResult(scoreGame(game.config, players, gameCourse(match), range, strokes, inputs), game.config.id, parThru(match, strokes));
   const thru = holesThru(strokes, holes);
   const names = game.players.map(firstName);
   return <article className={styles.section} aria-label={def.name}>
@@ -180,8 +184,6 @@ function GameCard({ game, match, onInput, onRemove, settled = false }: { settled
   </article>;
 }
 
-/** Games that still need something before teeing off: picking teams (Vegas picks teams hole by hole instead). */
-const needsSetup = (id: GameId) => gameDef(id).teams && id !== "vegas";
 
 /** Before the round: pick the teams, then Start. Handicaps and birdies double were chosen when the game was created. */
 function PreRound({ game, onChange, onStart, onRemove }: { game: TripGame; onChange: (config: GameConfig) => void; onStart: () => void; onRemove?: () => void }) {
@@ -245,7 +247,7 @@ function NewGame({ group, rounds, roundInfo, match, onClose, onCreate }: { group
   const toggle = (name: string) => setPlayers((list) => list.includes(name) ? list.filter((n) => n !== name) : group.filter((n) => list.includes(n) || n === name));
   const create = () => {
     if (!def || !fits) return;
-    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: !needsSetup(def.id),
+    onCreate({ key: `${Date.now()}`, round, players, inputs: [], started: !tripGameNeedsSetup(def.id),
       config: { id: def.id, net, birdiesDouble: def.points && birdiesDouble, ...(def.teams ? { teams: players.map((_, i) => i < players.length / 2 ? 0 : 1) } : {}) } });
   };
   const sw = (on: boolean, label: string, onClick: () => void, disabled = false) =>
@@ -308,18 +310,6 @@ export function InfoCard({ title, text, onClose }: { title: string; text: string
       <p>{text}</p>
     </div>
   </div>, document.body);
-}
-
-/**
- * Small tidy-ups to Play's standings for the trip card: Match Play's extra line repeats the leader (dropped), and team
- * stroke totals (Best Ball and the team formats) show to par, like Stroke Play.
- */
-function tidy(result: GameResult, id: GameId, parSoFar: number): GameResult {
-  const repeats = (id === "match" || id === "nassau") && result.note && result.standings.some((s) => s.label && result.note!.startsWith(s.label));
-  const teamTotal = id === "bestball" || id === "scramble" || id === "shamble" || id === "alternate" || id === "chapman";
-  const toPar = (n: number) => n === parSoFar ? "E" : n > parSoFar ? `+${n - parSoFar}` : String(n - parSoFar);
-  return { ...result, note: repeats ? undefined : result.note,
-    standings: teamTotal ? result.standings.map((s) => /^\d+$/.test(s.value) ? { ...s, value: `${s.value} (${toPar(Number(s.value))})` } : s) : result.standings };
 }
 
 /** Wolf: the Wolf on top with Go Lone Wolf beside them; the others underneath to pick as partner. Same picks as Play. */

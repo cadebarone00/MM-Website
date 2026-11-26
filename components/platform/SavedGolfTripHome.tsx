@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { GolfTripHome } from "./GolfTripHome";
+import { tripGamesGroup } from "@/lib/platform/tripHome";
 import type { SavedGolfTrip } from "@/lib/platform/golfTripCreate";
 import { savedTripPresentation } from "@/lib/platform/savedTripPresentation";
 import { roundScoringFrom } from "@/lib/platform/teamPoints";
@@ -297,9 +298,7 @@ function SavedGolfTripHomeInner({ scoring, savedTrip, setupSnapshot: _setupSnaps
   // Games on the trip: my group from the round's scoring groups; before groups exist, everyone who accepted.
   const myId = scoring?.profileId ?? home.alertScope?.profileId;
   const accepted = savedTrip?.members.filter((m) => m.profileId && m.invitationStatus === "accepted") ?? [];
-  const myGroupIds = live?.groups.find((g) => g.players.some((p) => p.profileId === myId))?.players.map((p) => p.profileId);
-  const savedGames = savedTrip && myId ? { tripId: savedTrip.trip.id, meId: myId,
-    group: accepted.filter((m) => !myGroupIds || myGroupIds.includes(m.profileId as string)).map((m) => ({ profileId: m.profileId as string, name: m.displayName })) } : undefined;
+  const savedGames = savedTrip && myId ? { tripId: savedTrip.trip.id, meId: myId, group: tripGamesGroup(savedTrip.members, live?.groups, myId) } : undefined;
   const shownHome: ComponentProps<typeof GolfTripHome> = savedTrip ? { ...home, savedGames, organizerGames: selected?.gameRounds as Record<string, GameId[]> | undefined, previewMatch: { ...savedTripPresentation(savedTrip, live), roundScoring: roundScoringFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), selected?.compFormats as Record<string, RoundCompSettings> | undefined, selected?.compRounds as Record<string, boolean> | undefined, Number(selected?.playerTotal) || accepted.length),
     skins: skinsRoundsFrom(savedTrip.rounds.map((r) => ({ number: r.roundNumber, dayNumber: r.dayNumber })), selected ?? {}, accepted.map((m) => m.displayName)) }, competitionKey: savedTrip.trip.id,
     savedCompetitionType: types, savedTeamColors: selected?.teamColors as (string | null)[] | undefined,

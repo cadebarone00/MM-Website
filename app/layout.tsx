@@ -4,9 +4,12 @@ import type { Metadata, Viewport } from "next";
 import { spectral, barlow, barlowCondensed } from "@/lib/fonts/brand";
 import "@/lib/fonts/fallbacks.css";
 import "./globals.css";
+import "./color-schemes.css";
 import { SiteChrome } from "@/components/nav/SiteChrome";
 import { cookies } from "next/headers";
 import { appMode, MODE_COOKIE } from "@/lib/theme/appMode";
+import { colorScheme, schemeAttribute, SCHEME_COOKIE } from "@/lib/theme/colorSchemes";
+import { ColorSchemeSync } from "@/components/ColorSchemeSync";
 
 export const dynamic = "force-dynamic";
 
@@ -32,15 +35,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [catalog, cookieStore] = await Promise.all([getSeasonCatalog(), cookies()]);
-  // Settings → Appearance: Light on this device (dark = none).
+  // Settings → Appearance: Light on this device (dark = none); colour scheme (The Maroon = none), the account's copy is checked by ColorSchemeSync.
   return (
     <html
       lang="en"
       className={`${spectral.variable} ${barlow.variable} ${barlowCondensed.variable}`}
       data-mode={appMode(cookieStore.get(MODE_COOKIE)?.value) === "light" ? "light" : undefined}
+      data-scheme={schemeAttribute(colorScheme(cookieStore.get(SCHEME_COOKIE)?.value))}
     >
       <body className="min-h-screen bg-cream-50 font-sans text-ink-900 antialiased">
         <ModalScrollLock />
+        <ColorSchemeSync />
         <SiteChrome catalog={catalog}>{children}</SiteChrome>
       </body>
     </html>

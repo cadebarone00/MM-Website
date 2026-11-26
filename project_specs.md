@@ -6112,6 +6112,14 @@ prompt to add by hand"):**
   tees Black 75.1/133, Blue 70.2/126, Green 69.3/120, Red 70.0/122; yardages from the post-2024 card; stroke index not on
   file). Tested on a practice database: saved once even when run twice; Play reads the 18 pars and 4 tees.
 - Still to do (Part B): the Add a course screen, and saving a built scorecard to the library.
+- **Courses from the owner's scorecard screenshots (2026-11-24):** each card goes in `scripts/courses/<course>.ts`;
+  `npx tsx scripts/build-course-sql.ts` checks every card (18 pars, handicaps 1–18, each tee adds up to its printed
+  total) and writes ONE file, `supabase/course_library_new_courses.sql` (Eagle Pointe's shape; men's and women's
+  ratings; Play uses men's). Owner decisions: add each card without asking to confirm; run the one file in Supabase
+  once all cards are in (~40). `lib/platform/golfGps/repository/courseFiles.test.ts` runs the file twice on a practice
+  database and checks Play reads every course. Owner can also give course names: The Maroon finds the card online (GolfPass
+  scorecard pages), runs the same checks and notes the source in the card file. 19 courses so far (see the file's header).
+  NOT run in Supabase yet.
 - **Play circle (owner request 2026-11-21):** Cade's new Play home (circles: Play · Live · On The Range) had no way to
   start a round; the **Play** circle (handicap) now opens Play a round (`/rounds/new`). Look unchanged.
 
@@ -6486,11 +6494,37 @@ carryover); type check, lint, tests; `npm run build:app`; checked in the browser
 - B. Greenie rule: just tap whoever won it (plan — the group decides), or only offer it to someone who hit the green
   in one and made par or better?
 - C. Can a hole have both a greenie and closest to the pin (par 3s), or does picking greenies replace closest to the pin there? (plan: both allowed)
-- **Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.** In Round settings the
+- **Superseded 2026-11-23 (owner: "stick with Cade's") — see "Cancel / leave a round".** ~~Owner (2026-11-22): Delete round replaces End round and Leave round on this phone.~~ In Round settings the
   scorekeeper has one red **Delete round** button (confirm first): the round is deleted for every player and from the
   database (its players, scores, game picks, guest scores and invite code go with it — `deleteSharedRound`). Friends
   don't get the button (so nobody but the scorekeeper can wipe a round); when it's deleted their phone says so with
   Back to Play. After deleting, the scorekeeper goes to the Play home screen.
+- **Owner (2026-11-22): Round complete pop-up.** After the scorekeeper's Next on the last hole, a pop-up shows the final
+  leaderboard (scores, to par, game count, money; "Final") with **Save & exit round** (saves the scorekeeper's card and
+  every joined player's round, then Play home) and Keep editing.
+- **Owner (2026-11-22): simulator sample "Round complete (sample)"** (Play → Active, `/dev/round-complete`): the pop-up on
+  a made-up finished round (4 players, Skins $5, greenies $2), nothing saved. The pop-up is `RoundCompleteSheet`, shared
+  with the real round.
+- **Owner (2026-11-22): Round complete is a hole-by-hole card, few words.** The course name, then everyone's scores hole by
+  hole (front nine + Out, back nine + In), ending with each player's **Tot** and **$** (best money first); buttons
+  **Save & exit** and **Back**.
+- **Owner (2026-11-22): Round complete layout = like the Card tab** — holes down the side (1–18 with Par), one column per
+  player (best money first), Out / In rows, then **Tot** and **$** at the bottom.
+- **Owner (2026-11-22): Round complete = swipe between players**, each a normal scorecard (front / back nine with Par,
+  Score and $ per hole), name + total + to par + money on top, dots underneath; best money first. Everyone in a round
+  shows by first name — the scorekeeper too, instead of "You".
+
+## Fix: an unfinished account never reaches the app (owner report 2026-11-22)
+
+**What happened:** a new tester got into the app with sign-up not finished; trying to create a trip led to an old
+"set up your profile" screen and a loop. **Rule (owner): the sign-up steps are the only place a profile is made — that
+should never happen.**
+**Fix (iPhone app):** whenever a signed-in account changes screen, the app asks the server where it is
+(GET /api/account/onboarding); if sign-up isn't finished (password, name + username, birthday, terms / settings) it goes
+straight to that step (`unfinishedRedirect`, lib/account/onboardingRoutes.ts) — before any tab, Create a trip or Play.
+Once the server says Active, it stops checking (starts again if someone else signs in). The Profile tab's old setup form
+is gone in the app: no profile → back to sign-up. The website isn't changed (its onboarding pages sit behind the
+MAROON_V2_ONBOARDING switch).
 
 ## Feature: Simulator Studio — build your own rehearsal, phones play themselves (owner request 2026-11-23) — APPROVED; Phase 1 (Play) BUILT 2026-11-24 (uncommitted)
 
@@ -6502,6 +6536,118 @@ Full design: `docs/superpowers/specs/2026-11-23-simulator-studio-design.md`. Cha
 - **No faked results:** a step that can't find its button stops in red. No sim UI inside phone screens.
 - **Data:** in-memory only (fake Supabase); nothing in Supabase prod.
 - **Done (Phase 1):** a 4-ball created in the form plays start → invites → accepts → 18 holes → submit on the real screens with all checks green; take-over works; resize keeps all phones visible; tests (layout math, step generation, driver actions, custom seed, one Playwright end-to-end run) + full suite + type check pass; checked in Chrome.
+
+**Owner decision (2026-11-23): keep Cade's "Cancel / leave a round"** — the scorekeeper's Cancel round → Save & exit /
+Delete round / Keep playing, and friends' Leave round — instead of the Delete-round-only version. Needs
+`supabase/shared_round_delete.sql` run in Supabase for Delete round and Leave round to work.
+
+## Feature: Colour schemes in Settings → Appearance (owner request 2026-11-23) — APPROVED 2026-11-23 (A: saved on the account; B: Step 1 first). Step 1 BUILT 2026-11-23, uncommitted — re-run `supabase/profile_preferences.sql` in Supabase to add `color_scheme`
+
+**What / who:** every user can pick the app's colours. Settings → Appearance gets a **Colour scheme** row under the
+Dark mode switch: 7 round swatches, tap one and the whole app recolours straight away. Dark mode still works with every
+scheme (Dark = the scheme's deep colour fills the pages; Light = cream pages with the scheme's colour on buttons and
+accents — exactly how Maroon works today).
+
+| Scheme | Main (deep) | Background | Accent |
+|---|---|---|---|
+| **The Maroon** (default, unchanged) | `#500001` | `#f7f4ee` | `#d6a75c` gold |
+| **Clubhouse Green** | `#0b4d2c` | `#f6f3ea` | `#e8c547` yellow |
+| **Links Navy** | `#14213d` | `#f4f1ea` | `#b33a3a` brick red |
+| **Desert Resort** | `#b5562f` terracotta | `#faf3e8` | `#2f7d7a` teal |
+| **Rivalry Cup** | `#1d3b6e` | `#ffffff` | `#c8102e` red |
+| **Midnight** | `#0f1115` | `#eef0f3` (cool grey; dark pages come from the deep colour) | `#c9a86e` gold |
+| **Stone** | `#2b2a27` | `#faf9f6` | `#8a7f6a` taupe |
+
+**How it works (tech):**
+- New `lib/theme/colorSchemes.ts`: the 7 schemes (id, name, swatch, and a full ramp for each — deep ×17 shades, accent
+  ×6, background ×4) + `applyScheme()`. Saved **on this device** in a `scheme` cookie, same as Dark mode, so the right
+  colours show from the first paint (website and iPhone app).
+- `app/layout.tsx` sets `<html data-scheme="green">` etc. from the cookie (nothing set = Maroon).
+- `app/globals.css`: one block per scheme that swaps the shared colour tokens the app already uses — the `maroon-*`,
+  `gold-*`, `cream-*` ramps, the `--brand-*` maroons and the dark-mode `--lm-bg-*` maroons. About 3,200 colour uses
+  already go through these tokens, so most of the app follows automatically.
+- `AppearanceSetting.tsx`: adds the swatch row.
+
+**Honest gap:** about 2,000 colours are still typed straight into individual screens (raw `#hex` / `rgba`). Those stay
+maroon after Step 1. **Step 2** goes screen by screen (main tabs first: Home, Golf Trips, Play, Profile, Settings,
+bottom menu) and points the maroon ones at the tokens. Step 2 is reviewed in the simulator and approved separately.
+
+**Not changed by the scheme:**
+- A tournament's or trip's own colours, and team colours (Team Maroon vs Team White).
+- Golf score colours (red under par, etc.).
+- The public Maroon tournament website and Admin Center.
+- The app icon and splash screen.
+
+**Done looks like:** pick each scheme in Settings → the app recolours immediately and is still set after a reload, on
+the website and in the iPhone app (`build:app`); works in both Dark and Light; Maroon looks exactly like today; text
+stays readable (contrast test for each scheme); tests, type check, lint and build pass; checked on screen in the simulator.
+
+**Open owner decisions:**
+- A. Save the choice **on this device** (recommended, matches Dark mode) or **on the account** (follows you to other phones; needs a SQL change).
+- B. Build Step 1 now and Step 2 after you've seen it (recommended), or both together.
+
+**Step 1 as built (2026-11-23):**
+- Saved on the account: `profile_preferences.color_scheme` (+ `{ colorScheme }` in `set_my_preference`); GET
+  `/api/account/preferences` returns it. The `scheme` cookie is this device's copy for the first paint; the website
+  (`ColorSchemeSync` in `app/layout.tsx`) and the app (`AppShell`, once signed in) check the account and follow it.
+  Until the SQL is re-run, everything else in Settings works and the colour row saves fail with "These settings aren't
+  switched on yet."
+- `app/color-schemes.css` is generated (`npm run build:schemes`) from `app/globals.css`: each token keeps its lightness
+  and takes the scheme's hue, so readability matches The Maroon. A test fails if the file is out of date.
+- Colour row shows only when signed in (it needs the account).
+
+
+## Simulator: every Play-a-round game mid round (owner request 2026-11-24) — APPROVED 2026-11-24 with A (Round complete per game) and B (Golf Trip → Games) both in; BUILT 2026-11-24 (uncommitted)
+
+**What / who:** dev only, for the owner. In the /dev simulator, **Play → Active → Round (sample)** (`/dev/round`) gets
+Conditionals so every game in `lib/platform/roundGames.ts` can be seen part way through a round, on the real round
+screens (standings card, the pull-up Scoring tab with that game's per-hole picks). Today the page is Skins only.
+
+**Conditionals (side panel), each its own section:**
+- **Game:** all 17: Stroke Play, Stableford, Match Play, Nassau, Best Ball, Skins, Wolf, Vegas, Daytona, Bingo Bango
+  Bongo, Nines, Sixes, Snake, Scramble, Shamble, Alternate Shot, Chapman.
+- **Players:** only the group sizes that game allows (e.g. Nines = 3, Daytona = 5, Match Play = 2 or 4); picking a game
+  jumps to its first allowed size.
+- **Where in the round:** Early (thru 3) · Halfway (thru 9) · Late (thru 15) · Last hole to play (thru 17).
+- **Options** (only the ones the game has): Net or Gross · Birdies double / Eagles triple · Money on (sample $ stake) ·
+  Hole doubled · Skins carry-overs on / off · Nassau auto-press · Side games (greenies, longest drive, closest to the pin).
+- **You are:** Host (scorekeeper) or Player.
+
+**Sample scores:** made up but fixed (same picks = same screen), chosen so each game shows its interesting moment:
+a skins carry-over, a Nassau press, Wolf / Daytona / Bingo Bango Bongo / Snake picks filled in on played holes, a
+tight match ("1 UP"), a Vegas birdie flip. Teams filled in for team games. Scores entered on the page still work and
+are forgotten on reload, as today.
+
+**Tech:** Conditionals in `lib/dev/simulatorRoutes.ts` pass `game=`, `players=`, `thru=` and option flags to
+`/dev/round`'s address; `components/dev/DevRoundPreview.tsx` reads them and builds the game config + sample scores
+from a new `lib/dev/sampleRoundGames.ts`. The real round components and scoring rules are reused unchanged. The
+existing Cancel round / Leave round pages keep working.
+
+**Not in this step:** any change to the real app. (Round complete and Golf Trip → Games were added by the owner, see A / B.)
+
+**Done looks like:** every game × allowed player count × moment shows in the simulator without errors, with standings
+that match the scoring rules (test that each sample scores with `scoreGame` and shows its moment); options that don't
+apply to a game are hidden; typecheck, lint and tests pass; checked on screen in the simulator.
+
+**Open owner decisions:**
+- A. Also add **Round complete** for each game (the swipe-between-players end screen)? Recommended: yes, as a second step.
+- B. Also cover **Golf Trip → Games** (games inside a trip round)? Recommended: later, separate step.
+
+**As built (2026-11-24):**
+- **Play → Active → "Games mid round":** one page per game (`/dev/round?game=<id>`). It shows the **real** round-with-friends
+  screen (`SharedRoundScreen` in `components/platform/PlayRound.tsx`) on a made-up round held in memory: the screen's
+  reads, saves and Save & exit go to the sample instead of the server (`SharedRoundSourceProvider`; the real app still
+  uses the server, unchanged). Conditionals: Players (only the sizes the game allows; starts on 4 when it can), Where in
+  the round (thru 3 / 9 / 15 / 17, **Round complete** = the Round complete pop-up for the scorekeeper, "Round ended" for a
+  player), and only the options that game has (Scoring, Birdies, Money, Double bet, Carry-overs, Auto-press, Side games),
+  You are (Scorekeeper / Player watching). The scorekeeper's phone has its card, so Scoring opens on the hole being played.
+- **Golf Trip → Golf → Games:** new Conditionals "Sample game" (one game at a time) and "Sample game setup" (Started /
+  Not started yet). Picks follow the holes the group has scored, so Live round / End of round / Trip complete each show
+  the game right (a finished game moves to the Settled tab).
+- **Simulator fix:** pages whose address has a "?" (these, and the existing Cancel / Leave round pages) now stay picked
+  and load their own address (`simulatorPageForLocation`, the bridge's navigate, `isSimulatorPath`).
+- **Found, not changed:** Nassau, Match Play and other games with no per-hole pick show an empty box in Scoring (the
+  real app does this too). The old Round (sample) page logs a server-render error from the invite code card.
 
 **Progress (Phase 1, Play) — BUILT 2026-11-24 (uncommitted):**
 - **How to use:** run `npm run dev` (port 3001) and `npm run sim`, open `/dev` then Simulators then Scoring then Setup. Pick players 1–4 with names, the host, a sample course and tee, the game (None or Skins), whether there is a guest, and a seed. Press Create, then Next / Play all / Pause / Skip, change the speed, or fast-forward. Tap any phone to take it over yourself. If a step cannot find its button it stops in red (nothing is faked).
@@ -6590,6 +6736,90 @@ screens, and editing rounds from Insights.
 **Done means:** tests pass for the stats math (with empty, 9-hole, no-stats and Private cases); the type check and
 lint are clean; every screen and state can be seen in the simulator; and Step 2 shows real numbers for a logged-in
 account on the local dev site.
+
+## Feature: The Maroon website, red edition: marketing + read-only stats and history (owner request 2026-11-24, revised same day) — APPROVED 2026-11-24: **keep Cade's look and layout** (owner: "keep his formatting but add to it"), add the missing tabs; step 1 BUILT 2026-11-24 (uncommitted): tabs + Features, Tutorials, Games, Help
+
+**What / who:** the public website (not the app). Visitors learn what The Maroon does; signed-in golfers look back at
+their own golf. **Rule (owner, 2026-11-24): the website is look-only.** Nobody plays, scores, creates or joins
+anything here (no rounds, trips, tournaments, leagues, invites or settings). Every "do something" button says
+**Get the app** and goes to Download.
+
+**Look (owner decision 2026-11-24): keep Cade's current `/website` look and layout**: maroon header and footer,
+cream sections, gold accents, Spectral headings, its section and card styles. The red / Supabase-style restyle is
+dropped. New tabs are new pages in that same style. At phone width everything stacks (16px gutter, no sideways scroll).
+
+**Tabs (top menu; the signed-in tabs show a lock and "Sign in" when signed out):**
+| Tab | Who | What it shows |
+|---|---|---|
+| **Home** | everyone | Hero + Get the app, feature cards, how it works, numbers band, download. |
+| **Features** | everyone | One section per app feature with screenshots: Golf Trips, Play a round, Tourneys, Leagues, The Maroon Live + TV mode, GPS, Profiles. |
+| **Tutorials** | everyone | Step-by-step guides with screenshots: create a trip, invite your crew, team draft and match selection, start a round, keep score, pick a game, watch live / TV mode, import a past trip. Each ends with Get the app. |
+| **Games** | everyone | The rule book: all 17 games + side games (greenies, longest drive, closest to the pin), each with how it's scored, group sizes and a worked example. |
+| **Live** | everyone | The existing Maroon Live directory (`/tap-in`): watch Public events, read-only. |
+| **Stats** | signed in | Your Insights numbers: handicap, rounds, scoring average, best round, last-20 trend, par 3/4/5 averages, birdie / par / bogey split, putts, fairways, greens. |
+| **History** | signed in | Every saved round, newest first (course, date, score, to par, game, money); open one for the hole-by-hole scorecard. Plus your past trips, tournaments and leagues with results. Read-only. |
+| **Help** | everyone | FAQ, contact us, Terms / Privacy (as in the app). |
+
+**Connected dashboard (owner request 2026-11-24: "connect all profiles … say connected and show an option to get in to
+each part"), building.** `/dashboard` reads the signed-in golfer's own profile (`loadProfileReadModel`, owner view)
+and shows a card per part, each marked **Connected** with its count and an Open button: **Stats** (`/dashboard/stats`),
+**Round history** (`/dashboard/history`), **Golf trips** and **Tournaments** (sections of History). The Stats and
+History tabs open those pages. They live under `/dashboard` (not `/website/…`) because they read account data, which
+the marketing boundary keeps out of `/website`. Signed out → sign in, then back. Dev: `?sample=1` on these pages shows
+made-up rounds (local dev server only), for checking the look.
+
+**Stats tab, the full breakdown (owner request 2026-11-24: "a very big breakdown"), building with the connected dashboard.**
+Every number comes from the saved rounds (each hole: par, strokes, putts, fairway hit or miss direction, green hit
+or miss direction, penalties; each round: course, tee rating / slope, date, 9 or 18, where it came from). A filter at the top:
+**Last 10 · Last 20 · This year · All time**, and **18-hole only** on or off. Sections, top to bottom:
+1. **Overview:** handicap index (and its trend), rounds played, scoring average, average to par, best and worst round,
+   lowest 9, last 5 compared with career (better / worse arrow).
+2. **Scoring:** score mix (eagle or better, birdie, par, bogey, double, triple+) as a bar and per round; birdies per
+   round; bogey-free rounds; average to par on par 3s, 4s and 5s; front 9 compared with back 9; average on each hole
+   number 1–18; bounce-back % (birdie or better right after a bogey or worse).
+3. **Off the tee:** fairways hit %, misses left / right %, penalties per round, average score when the fairway is hit
+   compared with missed.
+4. **Approach:** greens in regulation %, miss pattern (short / long / left / right) on a small green picture, GIR on
+   par 3s, 4s and 5s, average score with and without the green.
+5. **Short game & putting:** putts per round, putts per green hit, 1-putt %, 3-putt % and 3-putts per round,
+   scrambling % (par or better after missing the green).
+6. **Trends:** charts over time for score, handicap, fairways, greens and putts.
+7. **Courses:** every course played: rounds, average, best, most played first.
+8. **Where you played:** Play rounds, trips, tournaments and leagues: rounds and average for each.
+9. **Records:** best round, most birdies in a round, longest run of pars or better, eagles and holes-in-one (when and where).
+Sections built from fairway / green / putt data say "from N rounds with stats tracked", and show "Turn on Track stats in
+the app" when there are none. Built in the stats maths file (`lib/insights/stats.ts`) with tests for each number.
+
+**Why /dashboard says "Not connected yet":** Cade's dashboard was built as a sign-in shell only. Its boxes (handicap,
+round history, trips, tournaments) were placeholders, deliberately not reading any golf data yet
+(`components/marketing/WebsiteAccountDashboard.tsx`: "Real identity only. No … statistics, scores"). The Stats and
+History tabs replace those placeholders.
+
+**Builds on what exists:** `/website` (`components/marketing/…`) gets the new look and tabs, keeping its marketing
+boundary rule (`scripts/check-marketing-boundary.cjs`). `/dashboard` becomes Stats + History. The Insights spec above
+supplies the stats (its maroon + cream look becomes red; its "Compare" and "Feed" pages wait for a later step). Live
+reuses `/tap-in`. Tutorial / Features screenshots are captured from the /dev simulator on sample data.
+
+**Data:** nothing new stored, nothing written. Rounds from `player_rounds` via `list_profile_rounds` (follows Public /
+Private); trips / tournaments / leagues via the readers Profile already uses. The numbers band needs one small
+read-only count; if that needs SQL, the file is written but not run until the owner runs it.
+
+**Build order (each step checked before the next):**
+1. Red look + Home, Features, Games, Help on `/website` (simulator Website group, Desktop + Mobile).
+2. Tutorials with screenshots.
+3. Stats + History on sample golfers in the simulator (no rounds, no tracked stats, 9-hole only, lots of rounds;
+   signed out), stats maths in `lib/insights/stats.ts` + tests.
+4. Real data for signed-in users; Live tab linked.
+
+**Done looks like:** no page on the website can start, score, create, join or change anything; signed-out visitors
+can't see Stats / History; a signed-in golfer sees their real stats and history; every tab looks right at computer and
+phone width; boundary check, tests, type check, lint pass; checked on screen.
+
+**Owner decisions (2026-11-24):** keep Cade's look (A/C settled); tab list as above (D: nothing added).
+**Step 1 (building):** shared header with the tabs + footer for every website page (`WebsiteShell`), Home keeps its
+sections; new pages `/website/features`, `/website/tutorials` (text steps; screenshots in step 2),
+`/website/games`, `/website/help`. Stats and History open the existing `/dashboard` until step 3. The marketing
+boundary check covers every `app/website/**/page.tsx`.
 
 ## Feature: Expo app Step 0 (building blocks) + Step 1 (Play) (owner request 2026-11-24) — APPROVED 2026-11-24 (tab bar: B, Apple's real iOS tab bar). Step 0 BUILT + owner-checked on the phone 2026-11-24 (dev gallery Profile → Building blocks; owner will tune the look as real screens arrive — change the block, every screen follows). Step 1a (Play home) BUILT + owner-checked 2026-11-24 ("really like it"; tweaks later) (round screens open placeholders until 1b/1c; course GPS map + "Plan this trip" wait for later steps; solo phone-only rounds join the board in 1b). Step 1b (Start a round) BUILT + owner-checked 2026-11-24 ("all good") (setup rules moved to shared lib/platform/roundSetupForm.ts and the website uses them too; 2,250 website tests pass; scoring screen still a placeholder until 1c). Step 1c split: 3a (live round screen + leaderboard + scorecards, shared lib/platform/roundBoard.ts, used by the website too) BUILT + committed 2026-11-24; 3b (scoring sheet: hole chips, swipe, score boxes, stats, Wolf/Daytona/BBB/Snake, Double bet, side games, Next hole, Card + Submit & Save, friends' own stats; rules in shared lib/platform/roundScoring.ts used by the website too) BUILT + committed 2026-11-24 (owner: tuck-in cream sheet like Kalshi, website card layout; tweaks later). 1d round settings (gear: players + remove, Add players, Change game, Wolf / playing order, invite code, Cancel round → Save & exit / Delete round, Leave round; order + Change game rules shared in lib/platform/roundBoard.ts + roundSetupForm.ts) BUILT + committed 2026-11-24. PLAY DONE (owner tunes the look later)
 
@@ -6737,6 +6967,165 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Done when (2b):** a trip created in the app shows up in the current app's Golf Trips with the same name, destination, dates, players, golf days, courses and competition settings as one made on the website; every checkbox works on the owner's iPhone; tests (step order + draft rules stay shared; the app's draft storage and create retry), type checks, website tests, iPhone build pass.
 
+### Part 2c checklist — Trip page shell + Home tab (from `app/golf-trips/[tripId]/page.tsx`, `SavedGolfTripHome`, `GolfTripHome` (`InfoAccount`), `GolfTripHeader`, `TripFeedTab` / `TripFeed`, `GolfTripChat`, `TripBigBoard`, `TripMomentum` (`TripMomentum`, `TripDraftWidget`), `MomSection`, `TripTapInInvite`, `TripHomeInvite`, `TripHomeRoster`, `TripHomeCompetition`, `TripTips`, `RatePlacesPrompt`; shared `lib/platform/bigBoard`, `homeCompetition`, `homeRoster`, `homeDraft`, `momNotifications`, `golfTripItinerary`, `tripTravel`, `golfTripFlights`, `tapIn`, `savedTripPresentation`) — APPROVED 2026-11-24 (owner also asked: weather later, likely via WeatherKit on the server). Slice 1 BUILT 2026-11-24, awaiting phone check: shell + tabs + placeholders, head, Big Board (scores / highlights / Mom countdown + next round, upcoming slides), The Maroon Live, Players / Teams + invite link, Competition; Home rules shared in lib/platform/tripHome.ts (the website uses its date + flights rules). Slice 2 BUILT 2026-11-24, awaiting phone check: Drafts (Team Draft countdown / No Date Set / Set up teams; Match Selection per round, Matches Selected, blocked reasons, round robin sides; rules shared in lib/platform/tripHomeDrafts.ts), Feed + Chat (memory only, like the website; photo picker = expo-image-picker), first-visit tips, "How was yesterday?" ratings. Differences until later parts, my calls: (1) Draft Room, Selection Room and round-robin result entry open the part 2e placeholder (the website enters round-robin results right on Home); (2) a match selection confirmed in the room shows as Matches Selected after the next reload (the website watches the room live); (3) first-visit tips are cards with Next / Done instead of bubbles pointing at the buttons
+
+**Side:** App (`mobile/`). Server: none expected. The data already comes from `GET /api/app/golf-trips/<id>` (the same `loadTripPageData` the website uses), `GET /api/golf-trips/<id>/momentum` and `GET /api/golf-trips/<id>/join-link`. If either of the last two refuses the app's login, it gets the same Bearer support as the rest (that would be the only server change).
+
+**How it's built (my calls, correct me).**
+- **Same brain.** Every number, label and rule on Home comes from the shared `lib/` code the website uses. That covers Big Board score, upcoming plans, countdown and next-round reminder, competition summary, roster order, teams, Your team and invite-link states. The few rules that only live inside a website screen move into `lib/` first and the website uses them from there. These are `dateRangeLabel`, `validDay`, the flights slide text, the plan-slide text and Home's "which competition" choice.
+- **Trip tabs.** The four tabs (Home · Golf · Venue · Itinerary) are built now. Golf, Venue and Itinerary open "coming in part 2d / 2f" placeholders until those parts.
+- **Weather is left out.** The website's saved trips have weather switched off ("the app will use the phone's own weather"). Apple Weather needs a full app build, not Expo Go. So there's no weather on Home, same as the website today. Weather comes with the EAS build step.
+- **Chat and Feed stay memory-only.** On the website, Trip Chat and the Feed don't save or send anything: messages and posts vanish on reload. The app copies that exactly and doesn't invent a backend. Making them real is a separate spec.
+- **Imported past trips** open a "coming in part 2g" placeholder, because the imported trip page is part 2g.
+- **No live scoring sheet yet.** Today's round scoring (Player & Attest) is part 2d. Home still shows a round as LIVE when the server says it's in play.
+
+**Trip page shell**
+- [ ] Opening a trip from the Golf Trips tab, an invite, or "Your trip is ready" (2b) loads `/api/app/golf-trips/<id>`.
+- [ ] While it loads: the trip's name if we have it, plus a loading state. No blank flash.
+- [ ] **Errors:**
+  - Not a member, or the trip doesn't exist → "Trip not found" with Back.
+  - Signed out → Sign in.
+  - Server down or offline → "Couldn't load this trip. Try again." with Try again.
+- [ ] Imported trip → part 2g placeholder with the trip's name.
+- [ ] **Header:**
+  - ← back to Golf Trips.
+  - Feed icon (newspaper) and Chat icon on the left.
+  - Trip name centered (`GolfTripTitle` rules; "Your Golf Trip" when empty).
+  - Settings gear on the right. It opens a "coming in part 2g" placeholder for now.
+- [ ] **Tab bar:**
+  - Home · Golf · Venue · Itinerary; Home is selected on open.
+  - A tap gives a small bump (none with Reduce Motion) and switches tabs.
+  - Golf opens on Board for team trips, else Overview. That's the placeholder for now.
+- [ ] Pull down to refresh reloads the trip.
+- [ ] Coming back to the app reloads it too.
+
+**Feed (header icon) — memory only, like the website**
+- [ ] Full-screen "Feed" sheet with the maroon X.
+- [ ] **Upload pictures** and **Make a post** buttons.
+- [ ] **Post sheet:**
+  - "What is happening on the course?" box, up to 2,000 characters.
+  - Add pictures from the phone's library: up to 6, JPG/PNG/WebP, 10 MB each. Otherwise: "Choose up to 6 JPG, PNG or WebP pictures, 10 MB each."
+  - Post is disabled until there's text or a picture. The X discards.
+- [ ] Posts list newest first, "You" as author, with **Delete post**.
+- [ ] Posts reset when the trip page closes, same as the website.
+
+**Chat (header icon) — memory only, like the website**
+- [ ] 85% slide-up sheet titled with the trip name and the maroon X. Tapping outside closes it.
+- [ ] **Inbox:**
+  - "Find someone in your group" search.
+  - Column labels "Conversation · Messages".
+  - Pinned **Trip Chat** row (group icon, "Your whole group, together" until a message).
+  - Direct chats that have messages, newest first, numbered 01, 02…
+  - With none: "Your conversations will appear here." / "Find someone in your group to start a chat."
+- [ ] **Search:**
+  - "In your group" lists members (not me) matching the text. Tap = start a direct chat.
+  - No match: "No group members match "…"."
+- [ ] **A conversation:**
+  - ← back to chats, the avatar (group icon for Trip Chat) and the name.
+  - Empty welcome text, Trip Chat: "Everyone. One conversation." / "Tee times, dinner plans, and everything in between."
+  - Empty welcome text, a person: "Say hello to {first name}." / "Start your conversation with a message below."
+  - Bubbles with time, day separators ("Today" or the date), autoscroll to newest.
+  - Message box up to 4,000 characters; Send is disabled while empty.
+
+**Home: maroon head**
+- [ ] "Your trip to" plus the destination on one line (`shortPlace`: "City, ST" in the US, "City, CC" abroad). Just "Your trip" with no destination.
+- [ ] The trip dates in gold ("Jan 7 – Jan 10, 2026"; the year once, or on both if it crosses a year; one date if only one is set). Left out with no dates.
+- [ ] **Big Board top half, competition trips:** once a round is in play or done, `bigBoardScore`.
+  - Team: both team names and points with TO WIN between.
+  - Individual: Leader, total, thru.
+  - Team & Individual: the team side, a divider, then the Top 4 including me.
+  - Points shown as halves (½).
+  - Highlights rotate under the score every 10 s, newest 5.
+- [ ] **Big Board top half, otherwise:** the Momentum strip.
+  - Highlights from `/momentum`, refreshed every 10 s and when the app comes back.
+  - With no highlights, the Mom section:
+    - My live notifications, rotating every 10 s with a fade, plus a small link button when a note has one.
+    - Otherwise a Days · Hrs · Min · Sec flip countdown to arrival day's first plan, or 7:00 AM that day.
+    - Once the trip has started: "Next up is {course}" over "{format} · Round {n} · {tee time}".
+    - Nothing when no rounds are left.
+- [ ] **Big Board bottom half (upcoming):** `upcomingSlides` from the itinerary of plans I'm going on.
+  - Each slide: icon plus kind, the status (LIVE in play / NOW / NEXT / UPCOMING), when, the detail, and the title under it.
+  - Swipe sideways, ‹ › arrows (disabled at the ends), and dots under the board. A new list starts at the first slide.
+  - Tapping a slide opens the Itinerary tab (its placeholder until 2f).
+  - Nothing left: "Nothing else coming up · See the full itinerary".
+  - No itinerary at all: a Flights slide.
+    - Next flight: "AA1234 · RDU → DFW", NEXT, the time, the counts.
+    - Otherwise: "No upcoming flights" or "Add your flights".
+    - Tapping it opens the Flights placeholder (2f).
+- [ ] The board keeps the same height in every state, and the dots row keeps its height even with one slide.
+
+**Home: The Maroon Live card**
+- [ ] "The Maroon Live", **View** (opens the live page in the browser), and "Invite your peers to follow along."
+- [ ] The tap-in link (`tapInPath` on themaroon.site), **Copy link** (shows "Copied"), and Share (the phone's share sheet: "Follow {trip} on The Maroon Live").
+- [ ] With no code: "The Maroon Live link unavailable", and View, Copy and Share are disabled.
+
+**Home: Drafts (trips with a team or individual competition)**
+- [ ] **Team draft card** (`TripDraftWidget`), with the same states and words as the website:
+  - Set up teams / team selection.
+  - "Set team draft date and time".
+  - "No Date Set".
+  - Countdown to the draft (Days · Hrs · Mins · Secs).
+  - Draft Room open.
+  - Waiting To Start.
+  - Teams complete · View teams.
+  - Snake / Captain's Picks / Duck Race labels.
+  - Organizer only: **Edit**, which goes to Settings (placeholder until 2g).
+  - Blocked reasons: "Add at least two players first." / "Complete team assignments first." / "Complete the team draft first."
+- [ ] **Match selection cards per match-play round:**
+  - "Round x @ Course" plus its format, and its when.
+  - Set up match selection / "Set match selection date and time".
+  - Match Room open, Matches Selected, Match selection complete.
+  - "Add match-play rounds to set up match selection."
+- [ ] Tapping into the Draft Room or Match Room opens a "coming in part 2e" placeholder. "View teams" and "go to matches" open the Golf tab (its placeholder until 2d).
+- [ ] With no draft or match card: "No drafts coming up". The section is hidden when teams are already shown.
+
+**Home: Players / Teams**
+- [ ] **"Players"** with "{joined}/{allotted}" (or just the count when there's no player number), sorted like the website (`sortHomeRoster`).
+  - Each row: number, gold-ring avatar (photo or initials), name, @username (`shownUsername`).
+  - None: "Players show up here as they join the trip."
+- [ ] **Once teams are set** (draft done or saved in Settings) it becomes **"Teams"**: each team's name as a small gold label with its players under it (`homeTeamRoster`).
+- [ ] **Invite link box under the heading** (hidden once the roster is full, `homeRosterFull`):
+  - The trip's 30-minute link, plus Copy link → "Copied". If copying fails: "Hold link to copy". A fresh link is fetched on copy.
+  - "Getting your link…" while loading.
+  - "Invite links aren't switched on yet".
+  - The server's error text.
+  - Same height in every state.
+
+**Home: Competition**
+- [ ] The "Competition" heading.
+- [ ] **The summary card** (`homeCompetitionSummary`):
+  - Type, Team format, then "Your team" (2 Teams) or "Teammates" ("Not on a team yet" when none).
+  - Individual format, Days, Rounds.
+  - "Round robin standings: W-L-T / winning percentage" when a round uses round robin.
+- [ ] **Formats:** Round n, format and course, with "Format not set" / "Course TBD" dimmed.
+- [ ] Total points and To win (halves) when known.
+- [ ] No tournament: "No competition". A tournament with nothing set up yet: "Team drafts, matches and skins will show here."
+
+**Home: extras**
+- [ ] **First-visit tips:** coach marks once per account (`coachStops`, organizer or player stops), starting 600 ms after the page settles. Settings → "Show tips again" will bring them back (2g).
+- [ ] **"How was yesterday?" after-visit ratings:** for my going plans made from Venue (`placesToRate`, within `RATE_WITHIN_DAYS`), the same prompt and choices as the website, saved through the same route.
+- [ ] **Not shown:** weather (see above), the website's unused Golf / The Trip / Travelers / Logistics sheets (dead code there), and anything from the /dev simulator.
+
+**/dev simulator Conditionals to match.** Each of the website's Home Conditionals has a real counterpart the phone shows. This is checked side by side, not built as a simulator in the app:
+- Overview: normal, no destination, no dates (weather-loading doesn't apply).
+- Momentum: team scores, split, leader, highlights, arrival countdown, next round, empty.
+- Upcoming: live, next, none, flights.
+- Competition: none, empty.
+- Invite: ready, loading, off, copied.
+- Players: none, list, photos.
+
+**Not in 2c:**
+- Golf tab and trip scoring (2d), Team Draft / Match Selection rooms (2e), Venue / Itinerary / My Travel / Flights (2f), Settings and imported trip page (2g).
+- Real weather.
+- A real chat and feed backend.
+
+**Done when (2c):**
+- On the owner's iPhone, our test trip opens in the app and its Home matches the website's Home for the same account, section by section: head, Big Board, The Maroon Live, drafts, players / teams, invite link, competition.
+- Feed and Chat work as on the website.
+- Every error state shows its message.
+- Tests: the newly shared rules, plus the app's trip loading and errors.
+- Type checks, website tests and app tests pass.
+
 ### Part 2c checklist — trip page + Home (from `GolfTripHome` / `InfoAccount`, `SavedGolfTripHome`, `TripBigBoard`, `TripMomentum`, `TripHomeRoster`, `TripHomeInvite`, `TripHomeCompetition`, `TripTapInInvite`, `GolfTripHeader`, `TripFeed`, `GolfTripChat`, `TripTips` and `loadTripPageData`) — APPROVED by Cade 2026-11-24; implementation in progress
 **Side:** App + Server + shared `lib/` where needed. Implementation is incomplete; deployment and phone verification are outstanding.
 
@@ -6774,7 +7163,7 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Questions for Cade:** The current saved-trip page does not show the four expandable sections and has no weather source; feed and chat do not actually send or save anything. Is the proposed treatment above OK for 2c?
 
-### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; implementation in progress
+### Part 2d checklist — Golf tab + trip scoring (from `GolfSlides`, `GolfDayBoard`, `GolfTripMatch`, `GolfTripCompetitionMatchPreview`, `GolfTripGames`, `GolfTripStats`, `GolfTripPredict`, `GolfTripScoring`, `SavedGolfTripHome`, and shared `lib/platform` scoring / leaderboard code) — CADE REQUESTED BUILD 2026-11-24; APPROVED by Cam 2026-11-25 (Cade not on 2d; scoring sheet stays two across; Predict moves to the account: see "Predict follows the account" below, its own approval). Built in slices: 1a Golf tab views BUILT 2026-11-25, awaiting phone check (golf-day board with collapse remembered, Board · Games · Stats · Predict pill, Team / Indi, round pills + course / format, standings-after notice, leaderboard with Gross / Net + skins, tee sheet, team points + TO WIN, the round's matches with status; shared rules in lib/platform/golfTab.ts, used by the website too; Games / Stats / Predict show a next-step note); 1b BUILT 2026-11-25, awaiting phone check: match detail (status, hole-by-hole match scorecard, chance to win after each hole as bars, stats when on), player card from the leaderboard (photo, POS / TOT / THRU, this round's card; the website's round-by-round history and trip stats come with Stats in slice 2), team points box opens points by player (shared playerPoints); 2 BUILT 2026-11-25, awaiting phone check: Games (my group's games saved on the trip, organizer games made once, new game, team setup, hole picks, standings, Active / Settled; refreshes every 15s and on return), Stats (same views as the website; live trips show the same "once players record rounds" note as the website, since only imported trips have recorded stats — imported trips are 2g), Predict (same odds model and seed, all bet kinds, buy / sell, wallet on the account; the organizer's on / off and bet switches read from the trip's saved settings); the player card's round history waits on recorded stats like the website; 3 BUILT 2026-11-25, awaiting phone check: Player & Attest scoring mounted on the trip page for a member seated in today's round (Cade's queue / transport / storage scaffolding, reviewed), two across, par reference only, status line (Saved locally · Pending sync / Synced / Verified / Conflict / Submitted), hole-by-hole check against my attester (must match) and my attestee's own card (shown only), conflicts keep mine / use saved, locked-card refusals shown, Submit & Save enabled only when complete + synced + attester agrees (server rechecks), notes when pars aren't confirmed or there's no attestee; par 3s need no fairway (shared submit rule + `supabase/golf_trip_par3_fairway.sql`, owner runs it — before it, any card with a par 3 was refused on the website too); 4 BUILT 2026-11-25, awaiting phone check: corrections on the scoring sheet's Card — Request a correction (holes + reason) on my submitted card, its status and the organizer's decision / note, the organizer's pending requests with Approve / Deny (note required to deny), submission history; an approved correction reopens only its holes (other holes refuse on the phone and in the database), the attester's re-entry carries the request id, Submit & Save resubmits with those holes; refreshed every 15s, on return and after each action; Trip Settings → Corrections (any day) stays part 2g
 **Side:** App + Server + shared `lib/` where needed. Cade requested starting 2d now; 2c remains incomplete and both parts still need phone checks.
 
 **Codex's call:** Keep the existing two-across scoring layout for now. Keep Predict's existing device-local behavior, subject to its outstanding compliance review, and do not expose unfinished scoring as complete.
@@ -6808,6 +7197,118 @@ Most of the rules are already shared (`tripBuilderSteps.ts`: step order, skipped
 
 **Questions for Cade:** Should the scoring sheet keep two players across, or put one player on each row? The current website's Predict book is device-only; this checklist retains that behavior subject to review. OK?
 
+### Part 2e checklist — Draft rooms (from `TripDraftRoom`, `TripMatchDraftRoom`, `TripRoundRobin`, `DraftPlayerProfile`, `DraftResetConfirm`, `MatchDraftStatus`; shared `lib/platform/teamDraft`, `teamDraftPicks`, `matchDraft`, `matchDraftSession`, `matchSelection`, `roundRobin`, `draftSchedule`; routes `/api/golf-trips/<id>/team-draft`, `/match-selection`, `/setup`) — APPROVED 2026-11-25; BUILT 2026-11-25, awaiting phone check on two phones: Team Draft room (`TripDraftRoom.tsx`, room rules now shared as `teamDraftRoomState` in teamDraftPicks.ts and used by the website), Match Selection room (`TripSelectionRoom.tsx`), Round robin (`TripRoundRobin.tsx`, saves `roundRobinResults` by reading the latest settings and saving with their revision); Home's shared draft rules now also give the selection rounds, the next round's key and the round-robin lineup key (same key as the website). Rooms refresh every 10s, on return to the app and when a turn timer runs out; closing a room reloads the trip so Home shows Matches Selected / Teams straight away. Player stats in the rooms show "—" (saved trips have none yet, same as the website).
+**Side:** App (+ shared `lib/` where a screen-only rule is still inside a website component). No new tables, no new SQL, no new server routes: the app uses the same routes as the website, with the app login.
+
+**What it is.** Today the app's Home → Drafts cards open a "coming in part 2e" placeholder. 2e builds the three rooms they open, so a trip's teams and matches can be picked on the phone.
+
+**1. Team Draft room** (Home → Team Draft card → Enter Draft Room)
+- [ ] Header "Draft Room", the countdown to the draft time and the day / time in the corner; organizer sees **Start Draft Now** until it starts, everyone else **Waiting To Start** once the time passes.
+- [ ] Team boxes two across: 2 Teams = two tall boxes; Pairs / 3-Ball / 4-Ball = one box per team (captain in spot 1). Snake or Straight order across every team, skipping full teams, stopping when all are full. Whose turn it is.
+- [ ] Players pull-up at the bottom (rests partway, tap to raise): the players still available with their stats (HCP, AVG, ADJ, PPG, FWY%, GIR%, BPR; "—" when missing). Tap a player to see their mini profile; **Draft** sends the pick.
+- [ ] Only the captain on the clock (or the organizer) can pick; the server decides, and a drafted player stays on that team for good. Organizer: **Reset** (with a confirm) and **Confirm teams** once every spot is full.
+- [ ] Stays current: refresh every 10s and when the app comes back (the website also uses live updates). Loading, offline, refused pick, not set up / wrong number of players, and done states.
+
+**2. Match Selection room** (Home → Match Selection card → Enter Selection Room)
+- [ ] Same header / countdown / Start Draft Now rules. The VS board: one row per match, [Team A] VS [Team B], each match's tee time from Settings → Golf; a slim bar with the round, whose turn, and the buttons.
+- [ ] Tap a box you may fill → the Players pull-up lists that team's players → place. After a placement it moves to the next empty spot. Remove, Submit, Lock, Randomize, Reset and Confirm exactly as the website offers them to captains / the organizer.
+- [ ] Round picker when several rounds need matches. Refresh every 10s and on return. After Confirm, Home shows Matches Selected straight away (closes the 2c difference where it waited for a reload), with a "Go to matches" link to the Golf tab.
+
+**3. Round robin results** (Home → round robin card)
+- [ ] The standings table (side, W / L / T, PCT; byes don't count) and each pairing with its result; the organizer enters or changes results, saved to the trip's settings exactly like the website (same saved field, same revision check so two phones can't overwrite each other); everyone else sees them read only.
+
+**Same brain / data**
+- [ ] Draft and selection rules come from the shared lib files above; any rule still only inside a website component moves to `lib/` and the website uses it too. The app talks only to the existing routes (`apiRaw` with the app login); nothing reads the database directly.
+
+**Not in 2e (my calls, correct me)**
+- Live push updates (the website's Supabase Realtime) — the app refreshes every 10s instead; real-time can come with notifications later.
+- The simulator's mock drafts / sample players — website only.
+- Editing draft date / time / type and captains stays in Trip Settings (part 2g); the rooms link there.
+
+**Done when:** a draft started on the website can be finished on the phone (and the reverse) with the same picks; a phone that isn't on the clock can't pick; match selection confirmed on the phone shows on both; round-robin results entered on one phone show on the other; app tests, type checks, iPhone build and website tests pass. Phone check on two phones.
+
+### Part 2f checklist — Venue, Itinerary and Flights (from `VenuePlaces`, the Itinerary tab in `GolfTripHome` (`ItineraryList`), `ItineraryDetailSheet`, `GolfTripMyTravel` (`GolfTripAddTravel`, `GolfTripAddPlace`, invite people), `GolfTripFlights`; shared `lib/platform/tripTravel`, `golfTripItinerary`, `venuePlaces`, `golfTripFlights`, `roundRsvp`; routes `/plans`, `/places`, `/places/<id>`, `/flights`) — APPROVED 2026-11-25 (Cam: "start 2f and approve"); BUILT 2026-11-25, awaiting phone check: Itinerary tab (`TripItinerary.tsx`: day view, Play / Sit out on this phone, invites, plan sheet with Open in Maps / Edit / Delete, + Add with the same form and checks, Save & Invite), Venue tab (`TripVenue.tsx`: places, categories, filters, hearts, Add to itinerary, Open in Maps), Flights (`TripFlights.tsx`) with the new members-only `GET /api/golf-trips/<id>/flights`; plans save through `useTripPlans` (one save at a time with the revision; stops and says so on a conflict or failure; picks up the saved plans on reload); plan labels now shared in tripTravel.ts. The app's server helper (`apiRaw`) can now send DELETE.
+**Side:** App + Server (one small addition) + shared `lib/`. No new tables, no new SQL.
+
+**What it is.** The app's Venue and Itinerary tabs and Home's Flights link still show "coming in part 2f". 2f builds them.
+
+**1. Itinerary tab**
+- [ ] One day at a time: < weekday / date >, opening on today when today is a trip day; that day's plans in time order, grouped by type, each a box with the time, title and details. "Nothing planned for today" / "Nothing on the itinerary yet".
+- [ ] Golf rounds: Play / Sit out (Sit out asks first), locked once the tee time (or the day) has started; Live / Playing tag. Kept on this device, exactly as the website does today (`roundRsvp`, device only).
+- [ ] Invites from other members: Accept / Decline (Decline asks first), "Invited by …", Going.
+- [ ] Tap a plan → its detail sheet (type, title, when, where, who's going, Open in Maps when it has a place; Delete for my own plans, asks first).
+- [ ] **+ Add**: Flight / Ride or rental car / Lodging / Other plans → the same form and checks as the website (`checkTravelInput`, `cleanDetails`); Save, or Save & Invite → pick members. Edit my own plans.
+- [ ] Saved to my account through `/api/golf-trips/<id>/plans` with the revision check (one save at a time; "changed on another device" reloads instead of overwriting). Offline / not installed / refused states shown, never pretending it saved.
+
+**2. Venue tab** (members of a saved trip)
+- [ ] Search pill with the destination, category circles (Food, Bars & Breweries, Golf, Coffee, To Do), filters (distance, category, minimum Maroon Rating, saved by our group, sort), place cards (category art, distance, heart, name, address, detail, badge, Maroon Rating stars), **Add to itinerary** (opens the Other plans form with the place filled in) and **Open in Maps** (Apple Maps on iPhone). Credit line.
+- [ ] Loading, no destination, "Places are coming soon" (not installed), "Finding places", no results and error states. Heart answers at once and flips back if saving fails.
+
+**3. Flights** (Home → Flights)
+- [ ] My own flights grouped Getting There / Heading Home: airline, flight number, route, departs / arrives (local times), confirmation and notes; add, edit, delete (asks first) with the same checks as the server. "Only you can see your flights."
+- [ ] **Server addition:** `GET /api/golf-trips/<id>/flights` (members only, my own flights; the website page loads them on the server, the app needs a route). Not installed → "Saving flights isn't switched on yet."
+
+**Same brain:** the plan labels (`whenLabel`, `rowLabel`, `placeLabel`) move from `GolfTripMyTravel` into `lib/platform/tripTravel.ts` and the website uses them from there.
+
+**Not in 2f (my calls):** the website's old Venue summary page (only spectators / non-saved trips see it); the photo hero (no real photos yet); live flight status (no flight provider yet).
+
+**Done when:** a plan added on the phone shows on the website's Itinerary (and the reverse); invites and Play / Sit out work; places load, hearts save and Add to itinerary puts the place on the itinerary; flights add / edit / delete; app tests, type checks, iPhone build and website tests pass.
+
+### Part 2g checklist — Trip Settings + imported trips (from `SavedTripSettingsWorkspace`, `GolfTripSettingsPreview`, `GolfTripMembers`, `TripLiveSettings`, `GolfTripCorrections`, `GolfTripPredictSettings`, `TripRoundPars`, `RoundCompetitionSettings`, `GolfGameScoringSettings`, the delete page, `ImportedGolfTripHome`, `PastTripImport`, `GolfTripHistory`; shared `lib/platform/tripSettingsSections`, `savedTripSetup`, `liveVisibility`, `golfTripMembers`, `tripCorrections`, `predictBets`, `importedTripPresentation`; routes `/setup`, `/members`, `/live`, `/leave`, `/invite-code`, `/scoring/corrections`, `/round-pars`, `DELETE /api/golf-trips/<id>`) — APPROVED 2026-11-25 (Cam: "start and approve 2g"); slice 1 BUILT 2026-11-25, awaiting phone check (`TripSettings.tsx` opened from the trip's gear; settings saved by `useTripSetup`, which re-reads the latest settings and saves with their revision). Deny on a correction uses the iPhone text prompt (Android comes with the Android build). The app's `apiRaw` can now send PATCH. Slice 2 BUILT 2026-11-25, awaiting phone check (`TripSetupEditors.tsx`: Golf Schedule — golf on arrival / departure, rounds per day, course names, tee times; Games per round; Individual / Team Competition — type, competition rounds, each round's format, team names, Manual / Draft / Random with draft order, type, day, time and captains, manual teams; Skins — on, scoring, rounds and players; Match Selection — all rounds or per round, method, selection type, day and time; General Settings editing — name / destination (trip details route), arrival, length, player amount). Schedule rules shared as `lib/platform/tripScheduleView.ts`, tested against the server's setupPlan. Rounds lock once their day has come (the website locks once play starts). Course changes are typed names (no course search in the app's schedule yet), so a changed round has no course link until it's picked on the website. Slice 3 BUILT 2026-11-25, awaiting phone check: the imported past trip page (`ImportedTrip.tsx`: Past trip, headline, the Golf tab read only with Stats) and Import past trip (`app/trips/import.tsx`: the website's 7-step walkthrough with the same shared checks; the spreadsheet upload stays on the website); Settings → History lists the saved past trips (remove; adding rounds and scores there stays on the website).
+**Side:** App + shared `lib/` where a screen-only rule is still inside a website component. No new tables or SQL expected.
+
+**What it is.** The trip's gear icon and the imported past trips still open "coming in part 2g". 2g builds Trip Settings (the same General / Organizer card grid as the website) and the imported trip page. Built in three slices:
+
+**Slice 1 — Settings home and the everyday sections**
+- [ ] Settings home: General (everyone) and Organizer (organizer only) card grids, same cards and order as the website (`tripSettingsSections`).
+- [ ] **Players:** The Maroon Live (organizer picks who can watch / players can share; the link for those allowed), the trip's invite code, members with Organizer / Member / Invited / Declined badges, organizer: invite someone (name + optional email → invite link to copy), new invite link, cancel invite, remove member (asks first); members: Leave trip (asks first).
+- [ ] **General Settings:** trip name, destination, dates, player amount and golf schedule shown; editing them is slice 2 (with the other setup editors).
+- [ ] **Notifications** and **Scorecard View:** what the app does today (scoring opens from the bottom sheet; push notifications aren't in the app yet) — no fake switches.
+- [ ] **Show tips again** (the first-visit tips come back on the trip page).
+- [ ] **Player Scoring** (organizer): Player Stats on / off and the fields players enter, saved to the trip's settings; the trip's corrections list on any day with Approve / Deny where allowed.
+- [ ] **Predict** (organizer): Predict on / off and each bet on / off, saved to the trip's settings (same as the website).
+- [ ] **Delete Trip** (organizer): explains what's lost, asks twice, then deletes and goes back to Golf Trips.
+- [ ] Settings save through `/api/golf-trips/<id>/setup` by reading the latest settings and saving them back with their revision (never overwriting a change made on another device); players see everything read only.
+
+**Slice 2 — Setup editors:** Golf Schedule (courses, dates, tee times, pars), Games, Individual / Team Competition (formats, teams, captains, draft settings), Skins, Match Selection, and editing General Settings.
+
+**Slice 3 — Imported trips:** the imported past trip page (results, leaderboard, stats) and Import past trip / History.
+
+**Done when (slice 1):** each section above works on the phone and matches the website; a setting changed on the phone shows on the website; players can't change organizer settings; app tests, type checks, iPhone build and website tests pass.
+
+### Predict follows the account (owner request 2026-11-25) — APPROVED 2026-11-25 — BUILT 2026-11-25 (2d slice 2): shared maths `lib/platform/predictBook.ts`, loader `predictWalletClient.ts`, server `predictBookServer.ts`, route `/api/golf-trips/<id>/predict-book`, table `supabase/golf_trip_predict_books.sql` (owner runs it; until then Predict stays on the device). Organizer switches were already saved in the trip's settings on the website.
+
+**Side:** Server + App + Website (+ one new Supabase table the owner runs).
+
+**What changes and why.** Today Predict (play-only Maroon Coins, never real money) is kept only on the device:
+- **The coin wallet** (`golfTripPredictBook`) is one per phone or browser, shared by every trip.
+- **The organizer's Predict on / off and bet switches** (`golfTripPredict`) are also one per device. Another phone always sees the default (on).
+
+The owner wants Predict to follow the account. Sign in anywhere, see the same coins and picks.
+
+**How (my calls, correct me).**
+- **One wallet per player per trip**, starting at 1,000 coins. Each trip starts fresh, so coins from one trip don't carry into the next.
+- **New table `golf_trip_predict_books`.** It holds: trip, player, balance, positions (what you bought: market, outcome, shares, coins paid) and a version number.
+  - **Who can see it:** only the player themselves. The server reads and writes it.
+  - **Delete:** removing a trip or a player removes their wallet.
+  - **SQL file:** `supabase/golf_trip_predict_books.sql`. The owner runs it in Supabase. Its comments explain what it does.
+- **Server route `/api/golf-trips/<id>/predict-book`:**
+  - **GET** gives back your wallet, or a fresh 1,000-coin one.
+  - **PUT** saves a buy or sell.
+  - **Members only.** It works with the website login and the app login.
+  - **Two phones can't overwrite each other.** Each save says which version it started from. If the other phone saved in between, the server answers "changed elsewhere" and the screen reloads your wallet.
+  - **The server checks the maths:** never spending more coins than you have, and only selling what you own.
+- **The organizer's Predict on / off and bet switches** move into the trip's saved settings (Trip Settings). Every member and every device then sees the same thing. Editing them stays in Settings (part 2g on the app; the website's existing Settings screen saves there too).
+- **Moving over:** if the database table isn't installed yet, Predict keeps working on the device exactly as today and says nothing. Once the table is there, the first time you open Predict, any coins on this device for this trip are copied to your account once, then the account copy is used.
+- **Same brain:** the buy / sell maths moves into shared `lib/` code, so the website and the app give the same results.
+- **Still play-only:** no money, no prizes, no cash-out. The wallet says "Maroon Coins — play only".
+
+**Done when:**
+- Buying on the website, then opening the same trip on the phone, shows the same coins and positions, and the reverse.
+- Two phones buying at once never lose a trade.
+- The organizer turning Predict off hides it for everyone.
+- Tests cover the maths, the version conflict, members-only access and not installed / offline.
+- Website tests, app tests and type checks pass.
 ## Feature: Expo app Step 3 — Profile (owner request 2026-11-25) — FAST MODE (owner: build without stopping; checklists are the record; look fixed later with screenshots)
 
 **Side:** App (`mobile/`). Server unchanged (every route already takes the app login). Cam builds Golf Trips in parallel: this step stays out of `mobile/src/app/trips/`, `mobile/src/components/trips/`, `mobile/src/lib/trip*`.

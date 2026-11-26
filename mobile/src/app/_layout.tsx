@@ -50,6 +50,7 @@ function Screens() {
           <Stack.Screen name="trips/join" />
           <Stack.Screen name="trips/invite" />
           <Stack.Screen name="trips/[id]" />
+          <Stack.Screen name="trips/part" />
           <Stack.Screen name="trips/new" />
           <Stack.Screen name="trips/import" />
           {/* Leagues (project_specs.md "Expo app Step 5"). */}

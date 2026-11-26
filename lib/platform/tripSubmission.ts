@@ -29,7 +29,9 @@ export function submissionCheck(scoring: TripRoundScoring, actorId: string, golf
   if (me.submittedAt) return { ok: true, alreadySubmitted: true };
   if (!me.attesterProfileId) return { ok: false, reason: "no-attester" };
   const row = (by: string, hole: number) => scoring.entries.find((e) => e.scoredProfileId === golferId && e.enteredByProfileId === by && e.hole === hole);
-  const incomplete = HOLES.filter((h) => { const e = row(golferId, h); return !e || e.strokes === null || e.putts === null || e.fairway === null || e.green === null; });
+  // No fairway on a par 3 (the round's confirmed pars say which holes are); with no pars, every hole asks for one.
+  const par3 = (h: number) => scoring.pars?.pars?.[h - 1] === 3;
+  const incomplete = HOLES.filter((h) => { const e = row(golferId, h); return !e || e.strokes === null || e.putts === null || (e.fairway === null && !par3(h)) || e.green === null; });
   if (incomplete.length) return { ok: false, reason: "incomplete", holes: incomplete };
   const unattested = correctionHoles.filter((h) => (row(me.attesterProfileId as string, h)?.strokes ?? null) === null);
   if (unattested.length) return { ok: false, reason: "unattested", holes: unattested };

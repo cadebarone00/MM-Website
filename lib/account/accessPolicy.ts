@@ -28,6 +28,8 @@ export const API_RULES: readonly AccessRule[] = [
     why: "onboarding steps, recovery, correction and deletion must work for Pending / Ineligible accounts" },
   { pattern: /^\/api\/account\/(links|preferences)$/, category: "active", methods: ["PUT"],
     why: "profile links and preferences require an active account and a completed profile" },
+  { pattern: /^\/api\/account\/preferences$/, category: "account", methods: ["GET"],
+    why: "read your own saved colour scheme (asked on every page load, signed out gets a quiet nothing)" },
   { pattern: /^\/api\/golf-trips\/invitations\/[^/]+(\/decline)?$/, category: "invite", why: "view / hold (Pending) / accept (Active) / decline a trip invitation" },
   { pattern: /^\/api\/(platform\/tournament-invitations|code-tournaments\/invite)\/[^/]+$/, category: "invite", methods: READS, why: "view a tournament invitation" },
   { pattern: /^\/api\/platform\/tournament-invitations\/[^/]+\/decline$/, category: "invite", why: "decline a tournament invitation" },
@@ -46,7 +48,7 @@ export const API_RULES: readonly AccessRule[] = [
     category: "active", why: "golf / social / organizer / admin features" },
   // The iPhone / Android app's data for Play, Golf Trips and Profile (project_specs.md "The Maroon as a real iPhone app"):
   // the same Active-only rule as those pages.
-  { pattern: /^\/api\/app\/(play|golf-trips|profile|tourneys|tournament)(\/|$)/, category: "active", why: "the app's Play, Golf Trips, Profile and Tourneys screens" },
+  { pattern: /^\/api\/app\/(play|golf-trips|profile|tourneys|tournament|code-tournaments)(\/|$)/, category: "active", why: "the app's Play, Golf Trips, Profile and Tourneys screens (and its code tournaments)" },
   { pattern: /^\/api\/app\/version$/, category: "public", why: "the oldest app build the server still supports, checked before sign-in" },
   { pattern: /^\/api\/app\/(push-devices|push-test)$/, category: "active", why: "the app turns phone notifications on / off and sends itself a test (Expo app Step 6)" },
 ];
@@ -66,7 +68,7 @@ export const PAGE_RULES: readonly AccessRule[] = [
   { pattern: /^\/watch\/[^/]+$/, category: "public", why: "watch code, no sign-in" },
   { pattern: /^\/tap-in(?:\/[^/]+)?$/, category: "public", why: "The Maroon Live directory and code-based spectator pages, no sign-in" },
   { pattern: /^\/t\//, category: "public", why: "public tournament websites" },
-  { pattern: /^\/(website|contact|merchandise|sponsorship|the-maroon(\/.*)?|schedule(\/.*)?|videos(\/.*)?)$/, category: "public", why: "marketing / public info" },
+  { pattern: /^\/(website(\/(features|tutorials|games|help))?|contact|merchandise|sponsorship|the-maroon(\/.*)?|schedule(\/.*)?|videos(\/.*)?)$/, category: "public", why: "marketing / public info" },
   { pattern: /^\/(portal|wagers|fantasy|my-team|vault|history|leaderboard|players|teams|watch-live|broadcast)(\/.*)?$/, category: "public",
     why: "retired V1 pages: they only redirect to pages that are themselves gated" },
   { pattern: /^\/$/, category: "active", why: "Play (home)" },

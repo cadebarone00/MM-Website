@@ -4,7 +4,9 @@ const path = require('node:path');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 const ui = path.join(root, 'components/marketing');
-const entries = ['app/dev-website/page.tsx', 'app/website/page.tsx'].map(file => path.join(root, file));
+// Every website page is an entry (the tabs: /website, /website/features, …).
+const websitePages = dir => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap(item => item.isDirectory() ? websitePages(`${dir}/${item.name}`) : item.name === 'page.tsx' ? [`${dir}/page.tsx`] : []);
+const entries = ['app/dev-website/page.tsx', ...websitePages('app/website')].map(file => path.join(root, file));
 const allowedPackages = new Set(['react', 'react/jsx-runtime', 'next', 'next/image', 'next/link', 'next/navigation', 'lucide-react']);
 const errors = [];
 const sources = [...entries];

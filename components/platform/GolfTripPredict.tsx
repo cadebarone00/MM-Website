@@ -1,9 +1,13 @@
 "use client";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Coins, X } from "lucide-react";
 import { BET_CATEGORIES, betDef, type BetCategory, type Market, type PlayerLine } from "@/lib/platform/predictBets";
+import { buyPrice, parseBook, STARTING_COINS, type Trade } from "@/lib/platform/predictBook";
+import { poolsFor, type Pool } from "@/lib/platform/predictPools";
 import { STAT_LABELS, type StatKey } from "@/lib/platform/predictStats";
 import { usePredictSettings } from "@/lib/platform/predictSetting";
+import { loadingWallet, openWallet, walletTrade, type DeviceWallet, type WalletRequest, type WalletState } from "@/lib/platform/predictWalletClient";
+import { useSavedTripSetup } from "./SavedTripSetupProvider";
 import { Wheel } from "./Wheel";
 import styles from "./GolfTripPredict.module.css";
 import home from "./GolfTripHome.module.css";
@@ -13,41 +17,45 @@ import home from "./GolfTripHome.module.css";
  * chance (lib/platform/predictBets.ts): from history before the trip, then re-run with the live scores, so odds move
  * with play, never with bets (owner decision 2026-10-11). Buying locks in today's price: shares = coins ÷ price, and
  * each share pays 1 coin if it comes true. Selling cashes out at the current price. Three tabs: Winners · Scoring ·
- * Props. Preview: my coins and positions are kept on this device until the trip's market is saved to the database.
+ * Props. My coins and picks are saved on my account for this trip (one wallet per player per trip), so every device shows the
+ * same ones; before the account table is installed they stay on this browser.
  */
 
-const STARTING_COINS = 1000;
 const BOOK_KEY = "golfTripPredictBook";
+const MOVED_KEY = "golfTripPredictBookMoved";
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const coins = (n: number) => Math.round(n).toLocaleString();
 
-/** One tradable market: its outcomes (names) and the model's current chance for each. */
-type Pool = { key: string; title: string; outcomes: string[]; chances: number[] };
-type Book = { balance: number; positions: { key: string; outcome: number; shares: number; paid: number }[] };
-/** The price you buy at: the chance, kept between 1% and 99% so nothing is free or impossible to buy. */
-const buyPrice = (chance: number) => Math.min(0.99, Math.max(0.01, chance));
+/** This browser's wallet: used before the account table is installed, and moved onto the account once. */
+const device: DeviceWallet = {
+  read: () => { try { return parseBook(JSON.parse(localStorage.getItem(BOOK_KEY) ?? "null")); } catch { return null; } },
+  write: (book) => { try { localStorage.setItem(BOOK_KEY, JSON.stringify(book)); } catch { /* private mode */ } },
+  moved: () => { try { return localStorage.getItem(MOVED_KEY) === "1"; } catch { return false; } },
+  markMoved: () => { try { localStorage.setItem(MOVED_KEY, "1"); } catch { /* private mode */ } },
+};
+const requestFor = (tripId: string): WalletRequest => async (method, body) => {
+  const response = await fetch(`/api/golf-trips/${tripId}/predict-book`, { method, cache: "no-store", ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}) });
+  return { status: response.status, body: await response.json().catch(() => ({})) };
+};
 
-/** Every pool a market needs: outcome bets = one pool; ladders / spreads = one yes / no pool per line; two-sided = most + least. */
-function poolsFor(market: Market): Pool[] {
-  const title = betDef(market.bet).title;
-  switch (market.kind) {
-    case "outcomes": return [{ key: market.bet, title, outcomes: market.outcomes.map((o) => o.label), chances: market.outcomes.map((o) => o.chance) }];
-    case "twoSided": return [
-      { key: `${market.bet}:most`, title: `Most ${title.toLowerCase()}`, outcomes: market.most.map((o) => o.label), chances: market.most.map((o) => o.chance) },
-      { key: `${market.bet}:least`, title: `Fewest ${title.toLowerCase()}`, outcomes: market.least.map((o) => o.label), chances: market.least.map((o) => o.chance) }];
-    case "ladder": return market.lines.map((l) => ({ key: `${market.bet}:${l.line}`, title: `${title}: ${l.label}`, outcomes: ["Yes", "No"], chances: [l.chance, 1 - l.chance] }));
-    case "spread": return market.lines.map((l) => ({ key: `${market.bet}:${l.spread}`, title: `${market.teams[0]} ${l.spread > 0 ? "+" : ""}${l.spread}`, outcomes: [`${market.teams[0]} ${l.spread > 0 ? "+" : ""}${l.spread}`, `${market.teams[1]} ${-l.spread > 0 ? "+" : ""}${-l.spread}`], chances: [l.chanceA, 1 - l.chanceA] }));
-    case "yesNo": return [{ key: market.bet, title, outcomes: ["Yes", "No"], chances: [market.chance, 1 - market.chance] }];
-    case "matches": return market.matches.map((m, i) => ({ key: `${market.bet}:${market.round}:${i}`, title: `Round ${market.round + 1} · ${m.left} vs ${m.right}`, outcomes: [m.left, "Halved", m.right], chances: m.chances }));
-    case "playerLines": return market.rows.map((row) => ({ key: `${market.bet}:${market.round}:${row.id}:${row.line}`, title: `${market.round === null ? "Trip" : `Round ${market.round + 1}`} · ${title}`,
-      outcomes: [`${row.name} over ${row.line}`, `${row.name} under ${row.line}`], chances: [row.over, 1 - row.over] }));
-    case "statLines": return (Object.keys(market.stats) as StatKey[]).flatMap((stat) => market.stats[stat].map((row) => ({
-      key: `${market.bet}:${stat}:${row.id}:${row.line}`, title: `${market.round === null ? "Trip" : `Round ${market.round + 1}`} · ${STAT_LABELS[stat]}`,
-      outcomes: [`${row.name} over ${row.line} ${STAT_LABELS[stat].toLowerCase()}`, `${row.name} under ${row.line} ${STAT_LABELS[stat].toLowerCase()}`], chances: [row.over, 1 - row.over] })));
-  }
+/** My wallet for this trip (lib/platform/predictWalletClient.ts does the work). `device` must be the same object every render. */
+function usePredictWallet(tripId: string | null, request: WalletRequest | null, device: DeviceWallet) {
+  const [state, setState] = useState<WalletState>(loadingWallet);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void openWallet(request, device).then((next) => { if (live) setState(next); });
+    return () => { live = false; };
+  }, [tripId, request, device]);
+  const trade = useCallback(async (next: Trade) => {
+    setBusy(true);
+    const result = await walletTrade(state, next, request, device);
+    setState(result.state);
+    setBusy(false);
+    return result.ok;
+  }, [state, request, device]);
+  return { ...state, busy, trade };
 }
-
-const readBook = (): Book | null => { try { return JSON.parse(localStorage.getItem(BOOK_KEY) ?? "null"); } catch { return null; } };
 
 /** `markets`: the trip's odds, worked out once in the background by Home (useTripMarkets) and shared with the leaderboard's
  *  win-odds line. null = still being worked out (the Wallet shows, the numbers fill in a moment later). */
@@ -57,26 +65,22 @@ export function GolfTripPredict({ markets: ready }: { markets: Market[] | null }
   const markets = useMemo(() => ready ?? [], [ready]);
   const shown = markets.filter((m) => !settings.off.includes(m.bet));
   const pools = useMemo(() => new Map(markets.flatMap(poolsFor).map((p) => [p.key, p])), [markets]);
-  const [book, setBook] = useState<Book>({ balance: STARTING_COINS, positions: [] });
-  // Pick up the saved book after the first render (so server and browser agree).
-  useEffect(() => { const saved = readBook(); if (saved) setBook(saved); }, []); // eslint-disable-line react-hooks/set-state-in-effect -- reads this device's saved book once
-  const save = (next: Book) => { setBook(next); try { localStorage.setItem(BOOK_KEY, JSON.stringify(next)); } catch { /* private mode */ } };
+  // My wallet on the account (same coins on every device), or this browser's before the account table is installed.
+  const tripId = useSavedTripSetup()?.tripId ?? null;
+  const request = useMemo(() => tripId ? requestFor(tripId) : null, [tripId]);
+  const wallet = usePredictWallet(tripId, request, device);
+  const book = wallet.book;
   const priceOf = (pool: Pool) => pool.chances;
   const [tab, setTab] = useState<BetCategory>("Winners");
   const [trade, setTrade] = useState<{ pool: Pool; outcome: number } | null>(null);
 
-  function buy(pool: Pool, outcome: number, spend: number) {
-    const paid = Math.min(spend, book.balance);
-    if (paid <= 0) return;
-    const shares = paid / buyPrice(pool.chances[outcome]);
-    save({ balance: book.balance - paid, positions: [...book.positions, { key: pool.key, outcome, shares, paid }] });
-    setTrade(null);
+  async function buy(pool: Pool, outcome: number, spend: number) {
+    if (await wallet.trade({ kind: "buy", key: pool.key, outcome, chance: pool.chances[outcome], spend })) setTrade(null);
   }
   /** Cash out at the model's current chance (100% = paid in full, 0% = nothing back). */
   function sell(index: number) {
     const pos = book.positions[index], pool = pools.get(pos.key);
-    if (!pool) return;
-    save({ balance: book.balance + pos.shares * pool.chances[pos.outcome], positions: book.positions.filter((_, i) => i !== index) });
+    if (pool) void wallet.trade({ kind: "sell", index, key: pos.key, chance: pool.chances[pos.outcome] });
   }
 
   const open = book.positions.map((pos, i) => {
@@ -95,11 +99,14 @@ export function GolfTripPredict({ markets: ready }: { markets: Market[] | null }
         <h2 className={styles.walletTitle}>Wallet</h2>
         <b className={styles.walletCoins} aria-label={`${coins(book.balance)} Maroon Coins`}><Coins size={16} aria-hidden="true" />{coins(book.balance)}</b>
       </div>
+      <p className={styles.cardBlurb}>Maroon Coins · play only, no cash value</p>
       <dl className={styles.walletStats}>
         <div><dt>In play</dt><dd>{loading ? "…" : coins(invested)}</dd></div>
         <div><dt>Profit/Loss</dt>{loading ? <dd>…</dd> : <dd className={profit >= 0 ? styles.up : styles.down}>{profit >= 0 ? "+" : ""}{coins(profit)}</dd>}</div>
       </dl>
     </header>
+
+    {wallet.error && <p className={styles.empty} role="alert">{wallet.error}</p>}
 
     <div className={`${home.tabs} ${home.tripTabs} ${styles.betTabs}`} role="tablist" aria-label="Bet categories">
       {BET_CATEGORIES.map((c) => <button key={c} type="button" role="tab" aria-selected={tab === c} className={`${home.tab} ${tab === c ? home.tabActive : ""}`} onClick={() => setTab(c)}>{c}</button>)}
@@ -117,11 +124,11 @@ export function GolfTripPredict({ markets: ready }: { markets: Market[] | null }
       {open.map((p) => <div key={p.index} className={styles.positionRow}>
         <span><b>{p.pool!.outcomes[p.outcome]}</b><small>{p.pool!.title} · {p.shares.toFixed(1)} shares · pays {coins(p.shares)} if right</small></span>
         <span className={styles.positionValue}><b className={p.value >= p.paid ? styles.up : styles.down}>{coins(p.value)}</b><small>paid {coins(p.paid)}</small></span>
-        <button type="button" className={styles.sell} onClick={() => sell(p.index)}>Sell</button>
+        <button type="button" className={styles.sell} disabled={wallet.busy} onClick={() => sell(p.index)}>Sell</button>
       </div>)}
     </section>}
 
-    {trade && <TradeSheet pool={trade.pool} outcome={trade.outcome} balance={book.balance}
+    {trade && <TradeSheet pool={trade.pool} outcome={trade.outcome} balance={book.balance} busy={wallet.busy}
       onBuy={(spend) => buy(trade.pool, trade.outcome, spend)} onClose={() => setTrade(null)} />}
   </div>;
 }
@@ -244,7 +251,7 @@ function MarketCard({ market, spread, pools, priceOf, onPick }: { market: Market
   </section>;
 }
 
-function TradeSheet({ pool, outcome, balance, onBuy, onClose }: { pool: Pool; outcome: number; balance: number; onBuy: (spend: number) => void; onClose: () => void }) {
+function TradeSheet({ pool, outcome, balance, busy, onBuy, onClose }: { pool: Pool; outcome: number; balance: number; busy: boolean; onBuy: (spend: number) => void; onClose: () => void }) {
   const [spend, setSpend] = useState(Math.min(50, Math.floor(balance)));
   const now = pool.chances[outcome];
   const shares = spend / buyPrice(now);
@@ -265,7 +272,7 @@ function TradeSheet({ pool, outcome, balance, onBuy, onClose }: { pool: Pool; ou
         <div><dt>Pays if right</dt><dd className={styles.up}>{coins(shares)}</dd></div>
         <div><dt>Profit if right</dt><dd className={styles.up}>+{coins(shares - spend)}</dd></div>
       </dl>
-      <button type="button" className={styles.buy} disabled={spend <= 0 || spend > balance} onClick={() => onBuy(spend)}>Buy for {coins(spend)} coins</button>
+      <button type="button" className={styles.buy} disabled={busy || spend <= 0 || spend > balance} onClick={() => onBuy(spend)}>Buy for {coins(spend)} coins</button>
     </div>
   </div>;
 }

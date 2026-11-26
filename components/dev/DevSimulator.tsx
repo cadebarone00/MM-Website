@@ -17,6 +17,14 @@ import { DRAFT_SIM_DEFAULTS } from "@/lib/dev/draftSim";
 import { MockDraftPanel } from "./MockDraftPanel";
 import { MockMatchPanel } from "./MockMatchPanel";
 import styles from "./DevSimulator.module.css";
+import { ROUND_SAMPLE_DEFAULTS } from "@/lib/dev/sampleRoundGames";
+
+/** Play → Games mid round and Golf Trip → Games sample: what each choice is before it's picked, so its card shows pressed. */
+const ROUND_PRESSED_DEFAULTS: Record<string, unknown> = {
+  roundThru: ROUND_SAMPLE_DEFAULTS.thru, roundNet: ROUND_SAMPLE_DEFAULTS.net, roundBirdies: ROUND_SAMPLE_DEFAULTS.birdies, roundMoney: ROUND_SAMPLE_DEFAULTS.money,
+  roundDoubled: ROUND_SAMPLE_DEFAULTS.doubled, roundCarry: ROUND_SAMPLE_DEFAULTS.carryovers, roundPress: ROUND_SAMPLE_DEFAULTS.autoPress, roundSide: ROUND_SAMPLE_DEFAULTS.sideGames,
+  roundViewer: ROUND_SAMPLE_DEFAULTS.viewer, sampleGamesStarted: true,
+};
 
 const initialDevice = SIMULATOR_DEVICES[4];
 const bounded = (value: string, min: number, max: number, fallback: number) => value === "" || !Number.isFinite(Number(value)) ? fallback : Math.max(min, Math.min(max, Math.round(Number(value))));
@@ -288,7 +296,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       if (path !== next.path) iframe.current?.contentWindow?.postMessage({ channel: SIMULATOR_CHANNEL, type: "navigate", path: next.path }, window.location.origin);
     } else if (path !== next.path) {
       setReady(false);
-      setFrameSrc(`${frameUrl(next)}?simulator=1&command=${++command.current}`);
+      setFrameSrc(withParams(frameUrl(next), `simulator=1&command=${++command.current}`));
     }
   }
   function chooseDevice(id: string) {
@@ -375,7 +383,7 @@ export function DevSimulator({ pages: registryPages, unmapped, initialGroup, ini
       </aside>)}
       <aside ref={conditionalColumn} className={styles.controls} aria-label="Conditionals">
         <div className={styles.panelHeading}>Conditionals</div>
-        <div className={styles.cards}>{conditions?.length ? conditions.map((condition, index) => <Fragment key={condition.id}>{condition.section && condition.section !== conditions[index - 1]?.section && <h3 className={styles.conditionSection}>{condition.section}</h3>}{condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : key === "tvPhase" ? "live" : key === "tvKind" ? "trip" : key === "tvTeams" ? "two" : key === "tvGroup" ? "2" : key === "liveMode" ? "board" : key === "liveStats" ? "closed" : key === "liveFull" ? "off" : key === "draftSim" ? "off" : state.draftSim && state.draftSim !== "off" ? DRAFT_SIM_DEFAULTS[key as keyof typeof DRAFT_SIM_DEFAULTS] : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state }));
+        <div className={styles.cards}>{conditions?.length ? conditions.map((condition, index) => <Fragment key={condition.id}>{condition.section && condition.section !== conditions[index - 1]?.section && <h3 className={styles.conditionSection}>{condition.section}</h3>}{condition.playerCount ? <section key={condition.id} className={styles.controlSection}><label>{condition.label}<input type="number" aria-label={condition.label} min={1} max={64} placeholder="From data source" value={state.playerCount ?? ""} onChange={event => updateState("playerCount", event.target.value)} /></label></section> : <Fragment key={condition.id}><button className={styles.card} type="button" aria-pressed={condition.source ? source === condition.source : Object.entries(condition.state ?? {}).every(([key, value]) => (state[key as keyof SimulatorState] ?? (key === "wallpaper" ? "default" : key === "brandStyle" ? "gold" : key === "brandStage" ? "drawing" : key === "tvPhase" ? "live" : key === "tvKind" ? "trip" : key === "tvTeams" ? "two" : key === "tvGroup" ? "2" : key === "liveMode" ? "board" : key === "liveStats" ? "closed" : key === "liveFull" ? "off" : key in ROUND_PRESSED_DEFAULTS ? ROUND_PRESSED_DEFAULTS[key] : key === "draftSim" ? "off" : state.draftSim && state.draftSim !== "off" ? DRAFT_SIM_DEFAULTS[key as keyof typeof DRAFT_SIM_DEFAULTS] : undefined)) === value)} onClick={() => { if (condition.source) chooseSource(condition.source); if (condition.state) setState(current => ({ ...current, ...condition.state }));
             // TV mode has no simulator bridge: load it again with the picked stage / event kind in its address.
             if (condition.state && isTvPage(selectedPage)) { setReady(false); setFrameSrc(withParams(frameUrl(selectedPage), `simulator=1${liveParam(selectedPage, view, { ...state, ...condition.state })}&command=${++command.current}`)); } }}>{condition.label}</button>
           {/* Just created: wipe everything set up on it and go back to the fresh, just-onboarded trip. */}

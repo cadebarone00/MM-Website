@@ -417,6 +417,7 @@ begin
 end $$;
 
 -- submit_trip_scorecard, Step 6: the same checks as Step 5; a reopened card can be submitted again (new revision).
+-- (golf_trip_par3_fairway.sql replaces this function so par 3s need no fairway: run it again after re-running this file.)
 create or replace function public.submit_trip_scorecard(p_profile uuid, p_group uuid, p_golfer uuid, p_card_version integer)
 returns jsonb
 language plpgsql security definer set search_path = public as $$

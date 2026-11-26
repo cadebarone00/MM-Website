@@ -35,6 +35,19 @@ test("one change at a time; the rest keep their values; the app reads the result
   assert.deepEqual(prefs.notifications.tripInvites, { push: true, email: true }, "untouched types keep the defaults");
   assert.deepEqual([prefs.distance, prefs.usualTees, prefs.scoreEntry], ["meters", "Blue", "full"]);
   assert.equal((await change(db, me, { usualTees: "" }) as { usualTees: string }).usualTees, "", "tees can be cleared");
+  assert.equal(prefs.colorScheme, "maroon", "colour scheme starts as The Maroon");
+  const recoloured = preferencesFromRow(await change(db, me, { colorScheme: "green" }));
+  assert.deepEqual([recoloured.colorScheme, recoloured.distance], ["green", "meters"], "colour scheme saves without touching the rest");
+  await assert.rejects(change(db, me, { colorScheme: "pink" }), /colour schemes/);
+});
+
+test("a table made before colour schemes gets the column when the file is run again", async () => {
+  const db = await database();
+  for (const file of ["golf_trips.sql", "golf_trip_invitations.sql", "profile_v1.sql"]) await db.exec(sqlFile(file));
+  await db.exec(sqlFile("profile_preferences.sql").replace(/alter table public\.profile_preferences add column if not exists color_scheme[^;]*;/, ""));
+  await db.exec(sqlFile("profile_preferences.sql"));
+  const me = await golfer(db, "samuel");
+  assert.equal(preferencesFromRow(await change(db, me, { colorScheme: "stone" })).colorScheme, "stone");
 });
 
 test("anything else is refused and nothing changes; closed accounts lose their preferences", async () => {

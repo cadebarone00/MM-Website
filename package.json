@@ -12,6 +12,7 @@
     "sim": "tsx scripts/sim/start.ts",
     "test:sim": "tsx --test scripts/sim/driver.test.ts scripts/sim/frontDoor.test.ts && tsx scripts/test-sim-play.ts && tsx scripts/test-sim-studio.ts",
     "dev:app": "MAROON_APP_BUILD=1 NEXT_PUBLIC_MAROON_API_BASE=http://localhost:3001 next dev -p 3002",
+    "build:schemes": "tsx scripts/build-color-schemes.ts",
     "build:app": "MAROON_APP_BUILD=1 next build && cap sync ios && next typegen",
     "build": "next build",
     "start": "next start",

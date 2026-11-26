@@ -1,10 +1,9 @@
-import Link from "next/link";
-import { ArrowUpRight, Flag, MapPin, Medal, Trophy, Users } from "lucide-react";
+import { Flag, MapPin, Medal, Trophy, Users } from "lucide-react";
 import type { ReactNode } from "react";
-import { WebsiteBrand } from "./WebsiteBrand";
 import { WebsiteDownloads } from "./WebsiteDownloads";
 import { WebsiteEcosystem } from "./WebsiteEcosystem";
 import { WebsiteHero } from "./WebsiteHero";
+import { SectionHeading, WebsiteShell } from "./WebsiteShell";
 import styles from "./MarketingWebsite.module.css";
 
 const features = [
@@ -16,18 +15,8 @@ const features = [
   { icon: Users, title: "Profiles", copy: "A place for your golf identity, your playing partners, and the rounds you remember." },
 ];
 
-function SectionHeading({ label, title, copy }: { label: string; title: string; copy?: string }) {
-  return <div className={styles.sectionHeading}><p className={styles.eyebrow}>{label}</p><h2>{title}</h2>{copy && <p>{copy}</p>}</div>;
-}
-
 export function MarketingWebsite({ accountActions }: { accountActions?: ReactNode }) {
-  return <div className={styles.website} id="top">
-    <a className={styles.skip} href="#main">Skip to content</a>
-    <header className={styles.header}>
-      <WebsiteBrand />
-      <nav aria-label="Website navigation"><a href="#features">Features</a><a href="#how-it-works">How It Works</a><a href="#our-story">Our Story</a><a href="#support">Support</a><Link href="/tap-in">The Maroon Live</Link><span className={styles.navActions}>{accountActions ?? <a className={styles.navSignIn} href="/login/email?next=%2Fdashboard">Sign In</a>}<a className={styles.navDownload} href="#download">Download <ArrowUpRight size={15} aria-hidden="true" /></a></span></nav>
-    </header>
-    <main id="main">
+  return <WebsiteShell active="Home" accountActions={accountActions}>
       <WebsiteHero />
       <div className={styles.ribbon}><span>BUILT AROUND YOUR CREW.</span><span>FROM THE FIRST TEE TO THE LAST STORY.</span><span>THIS IS YOUR GAME.</span></div>
       <section id="features" className={styles.section}><SectionHeading label="ALL TOGETHER. ALL IN ONE PLACE." title="Less planning. More playing." copy="A look at the experience we’re building for your golf life." /><div className={styles.featureGrid}>{features.map(({ icon: Icon, title, copy }, i) => <article className={styles.feature} key={title}><div className={styles.featureTop}><Icon size={26} strokeWidth={1.3} aria-hidden="true" /><span>0{i + 1}</span></div><h3>{title}</h3><p>{copy}</p></article>)}</div></section>
@@ -36,15 +25,5 @@ export function MarketingWebsite({ accountActions }: { accountActions?: ReactNod
       <section id="our-story" className={`${styles.section} ${styles.story}`}><div className={styles.storyMark} aria-hidden="true"><span>M</span><p>MORE THAN<br />A ROUND.</p></div><div><p className={styles.eyebrow}>OUR STORY</p><h2>Some things start<br />with a tee time.</h2><p>We believe the best part of golf is who you share it with. The early starts. The friendly pressure. The stories that get a little better every year.</p><p>The story behind The Maroon is coming soon. This is where we’ll share how it all began, and where we’re headed next.</p><span className={styles.storySign}>Here’s to the next round.</span></div></section>
       <section id="support" className={styles.section}><SectionHeading label="SUPPORT" title="Here for the next round." copy="Support details will be available when The Maroon launches." /></section>
       <section id="download" className={styles.download}><p className={styles.eyebrow}>THE NEXT CHAPTER IS COMING</p><h2>Keep your crew close.<br /><em>Your next round closer.</em></h2><p>The Maroon is coming to iOS and Android.<br />We’ll meet you at the first tee.</p><WebsiteDownloads /></section>
-    </main>
-    <footer className={styles.footer}>
-      <div className={styles.footerTop}><WebsiteBrand /><p>Golf is better together.</p></div>
-      <nav className={styles.footerLinks} aria-label="Footer destinations">
-        <div><h2>The Maroon</h2><a href="#our-story">About The Maroon</a><a href="#features">Features</a><a href="#how-it-works">How It Works</a></div>
-        <div><h2>Your game</h2><a href="/dashboard">Player Dashboard</a><Link href="/tap-in">The Maroon Live</Link><a href="#download">iOS &amp; Android</a></div>
-        <div><h2>Get in touch</h2><a href="#support">Support &amp; Feedback</a></div>
-      </nav>
-      <div className={styles.footerBottom}><span>&copy; {new Date().getFullYear()} The Maroon</span><a href="#top">BACK TO TOP &uarr;</a></div>
-    </footer>
-  </div>;
+  </WebsiteShell>;
 }
