@@ -78,10 +78,12 @@ Update the Status column when an area is done.
 ## 5. How to run the app
 
 1. One-time setup: sign in to the **same free Expo account** on the computer (`npx expo login`) and in the **Expo Go** app on the iPhone.
-2. `cd mobile`, then `npx expo start`, then scan the QR code with the iPhone camera. If the phone can't connect, use `npx expo start --tunnel`.
+2. `cd mobile`, then **`npx expo start --go`** (the `--go` matters since 2026-11-25: `expo-dev-client` is installed, so plain `npx expo start` makes a QR code for the development build, which the iPhone camera can't open). Then open the project from inside the **Expo Go** app (Development servers, or Enter URL manually). If the phone can't find the computer, use **`npx expo start --go --tunnel`**. This PC also has a WSL network address that Expo may advertise instead of the Wi-Fi one. Press `s` in a running Expo terminal to switch between Expo Go and the development build.
 3. Changes show on the phone in about a second (Fast Refresh).
 4. Checks before calling anything done: `npm test` and `npx tsc --noEmit` inside `mobile/`, plus the area's spec checklist on a real phone.
 5. Add packages with `npx expo install <package>` (it picks versions that match the Expo SDK), never plain `npm install`. Some native features (maps, widgets, Live Activities, the watch) don't run in Expo Go and need an EAS "development build". Plan for that in the area's spec.
+6. **EAS is set up (2026-11-25).** The Expo project id is in `mobile/app.json` (`extra.eas.projectId`, owner `cadebarone00`), and `mobile/eas.json` has the `development` / `preview` / `production` profiles. The development build is **"The Maroon (Dev)"**, app id `site.themaroon.app.dev` (`mobile/app.config.js`), so it installs next to the TestFlight app. Production uses `site.themaroon.app`, the same id as the current Capacitor TestFlight app, so the first Expo production build **replaces** it. Don't run `eas build` / `eas submit` for production without Cade. Builds need the Apple login that owns the paid developer team.
+7. **Phone notifications (Expo app Step 6, project_specs.md).** Day-to-day testing is in Expo Go on an iPhone. Expo Go on Android can't receive them. In the app: Settings → Notifications → Phone notifications → Allow → Send a test notification. Server: `lib/notifications/pushServer.ts` → `sendPush({ to, kind, values })`, with each kind from `lib/notifications/catalog.ts`. `supabase/push_devices.sql` is **run in production**. To add a type, call `sendPush` where its change already saves on the server, then add the tap target to `mobile/src/lib/pushRoutes.ts`. Notifications reach real users once they're in a production (TestFlight) build.
 
 ---
 
