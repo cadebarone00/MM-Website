@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking } from "react-native";
+import { AppState, Linking } from "react-native";
 import { apiJson } from "~/lib/api.ts";
 import { pushState, turnOffPush, turnOnPush, type PushState } from "~/lib/push.ts";
 import { SettingsError, SettingsNote, SettingsRow } from "./SettingsParts.tsx";
@@ -19,7 +19,12 @@ export function PhoneNotifications() {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const refresh = useCallback(async () => setState(await pushState().catch(() => "off" as const)), []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    // Coming back from iPhone Settings (where notifications get allowed): check again.
+    const sub = AppState.addEventListener("change", (next) => { if (next === "active") void refresh(); });
+    return () => sub.remove();
+  }, [refresh]);
 
   async function toggle() {
     if (!state || busy) return;
