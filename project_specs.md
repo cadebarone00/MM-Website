@@ -7540,6 +7540,12 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] Highlights Admin brought back at **/admin/highlights** (platform admins only; retired with /portal in 03388067): upload the sheet's .xlsx → check → save draft → publish.
 - Competition for the engine comes from the trip setup's `localCompetitionType`; the engine's own preference defaults apply (Balanced, all categories on), and our Settings → Big moments switch is checked on top.
 - **Built in, like Sleeper (owner decision 2026-11-27):** the approved sheet (all 75 rules, 264 wordings) is built into the code as `lib/highlights/builtInConfig.json` (`scripts/build-highlights-builtin.ts`), so every user and trip gets these notifications with nothing to publish. A version published at /admin/highlights replaces it (that's only for changing wording without a code update). To change the built-in wording: edit the sheet, download .xlsx, run the script, commit.
+### 6f checklist — match-play highlights (owner pick "A", 2026-11-27) — BUILT, committed, not phone-checked
+- [ ] A trip round's matches come from the setup (`lib/platform/tripRoundMatches.ts`: the round's slot → `compFormats` (Match Play only) + `teeMatches`, player numbers = members in join order). Tested.
+- [ ] The match engine (`lib/highlights/detect/matchMoments.ts`, tested): attested scores only, best ball per side, playing order (shotgun too), a hole counts once everyone in the match has it, gross only (Claude's call: trips don't store handicaps yet), ends when one side is up more than holes left or after 18.
+- [ ] Detectors, now in the catalog (sheet checker: 49 → 39 "no detector" warnings): HL-011 back to all square after 5+, HL-012 3 holes in a row, HL-013 comeback from 3+ down, HL-014 lead change, HL-015 dormie, HL-016 goes to the last hole (not on the same hole as dormie), HL-017 won on the last hole, HL-018 halved, HL-019 clinched, HL-021 big win (4&3 or better / by 15, instead of HL-019). "Team A" = the side the moment is about. Singles vs fourball wording picked by the engine (`format`, `sides`); new fill-in `{Opponent}`.
+- [ ] Live: the same score-save hook (`highlightPushes.ts`) now passes the round's matches; a round with matches counts as match play for eligibility.
+- **Waiting:** HL-020 upset (needs player rankings); net matches (need trip handicaps).
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

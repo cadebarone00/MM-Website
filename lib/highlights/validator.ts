@@ -1,4 +1,5 @@
 import { detectorFor } from "./catalog.ts";
+import { FORMAT_TIER_LABELS } from "./engine/evaluate.ts";
 import { ruleMetaProblems } from "./metadata.ts";
 import { BODY_LIMIT, TITLE_LIMIT } from "../notifications/format.ts";
 import { checkTemplate, LONG_SAMPLE_VALUES, renderTemplate } from "./template.ts";
@@ -150,6 +151,9 @@ export function validateHighlightConfig(config: HighlightConfig, importIssues: H
       if (detector) {
         const tiers = detector.tiers;
         if (tiers.kind === "none" && conditional.tier !== null) add(triggerSeverity, "unsupported-tier", `${detector.name} has no tiers; leave Tier blank.`, conditional);
+        if (tiers.kind === "format" && conditional.tier !== null && !Object.values(FORMAT_TIER_LABELS).flat().includes(String(conditional.tier).toLowerCase())) {
+          add(triggerSeverity, "unsupported-tier", `${detector.name}: Tier must be blank or a match format (Single, Fourball, Team of 2, Team of 3+), not "${conditional.tier}".`, conditional);
+        }
         if (tiers.kind === "integer" && !(typeof conditional.tier === "number" && conditional.tier >= tiers.min && conditional.tier <= tiers.max)) {
           add(triggerSeverity, "unsupported-tier", `${detector.name} needs a whole-number Tier from ${tiers.min} to ${tiers.max}${conditional.tier === null ? "" : `, not "${conditional.tier}"`}.`, conditional);
         }

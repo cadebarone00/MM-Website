@@ -7,6 +7,7 @@ import { evaluateAlert, type AlertEvent, type Check, type RenderedAlert } from "
 import { DEFAULT_PREFERENCES, type AlertPreferences } from "../engine/preferences.ts";
 import { seededRandom } from "../engine/selection.ts";
 import { detectRoundMoments, type DetectedMoment, type DetectionInput } from "./scoreMoments.ts";
+import { detectMatchMoments } from "./matchMoments.ts";
 
 /**
  * H5B SHADOW MODE — test only. Runs the TypeScript detectors over a round and decides, per trip member, what WOULD be
@@ -62,12 +63,17 @@ export interface ShadowReport {
   state: ShadowState;
 }
 
-const eventOf = (tripId: string, moment: DetectedMoment): AlertEvent => ({ tripId, ruleId: moment.ruleId, tier: moment.tier, values: moment.values, key: moment.key });
+const eventOf = (tripId: string, moment: DetectedMoment): AlertEvent => ({ tripId, ruleId: moment.ruleId, tier: moment.tier, values: moment.values, key: moment.key, format: moment.format ?? null, sides: moment.sides ?? null });
 const hash = (text: string) => [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 17);
 
 export function runShadow(input: ShadowInput): ShadowReport {
   const previous = input.previous ?? EMPTY_SHADOW_STATE;
-  const { moments, notes } = detectRoundMoments(input.detection);
+  const scored = detectRoundMoments(input.detection);
+  const d = input.detection;
+  const moments = d.matches?.length
+    ? [...scored.moments, ...detectMatchMoments({ tripId: d.tripId, scoring: d.scoring, matches: d.matches, startHoles: d.startHoles, course: d.course })].sort((a, b) => a.at.localeCompare(b.at) || a.key.localeCompare(b.key))
+    : scored.moments;
+  const notes = scored.notes;
   const keys = moments.map((m) => m.key);
   const { withdraw: withdrawn, add } = reconcile(previous.active, keys);
   const picks = { ...previous.picks };

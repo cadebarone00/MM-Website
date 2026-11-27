@@ -1,6 +1,8 @@
 import type { HoleScoreEntry, TripRoundScoring } from "../../platform/tripScoring.ts";
 import type { TemplateValues } from "../template.ts";
 import { classifyHole } from "../../golf/holeResult.ts";
+import type { MatchFormat } from "../engine/evaluate.ts";
+import type { MatchSetup } from "./matchMoments.ts";
 
 /**
  * H5B — the first automatic golf detectors, in TypeScript (spec: "Highlights Engine", decision 1: gradual move from SQL).
@@ -25,6 +27,8 @@ export interface DetectionInput {
   course: string | null;
   /** Shotgun: scoring group id → the hole that group starts on (1–18). Missing = hole 1. */
   startHoles?: Record<string, number>;
+  /** The round's matches (match play only), for the match-play detectors (matchMoments.ts). */
+  matches?: MatchSetup[];
 }
 
 /** The order a group plays its holes: start → 18, then 1 → start − 1. */
@@ -33,7 +37,7 @@ export function playingOrder(startHole = 1): number[] {
   return Array.from({ length: HOLES }, (_, i) => ((start - 1 + i) % HOLES) + 1);
 }
 
-export type DetectorRule = "HL-001" | "HL-002" | "HL-003" | "HL-004";
+export type DetectorRule = string;
 export interface DetectedMoment {
   /** Stable identity: the same moment always has the same key (idempotency, corrections). */
   key: string;
@@ -47,6 +51,9 @@ export interface DetectedMoment {
   /** When it happened: the later of the two agreeing entries for that hole. */
   at: string;
   values: TemplateValues;
+  /** Match moments: the format (picks the singles / fourball wording) and golfers per side. */
+  format?: MatchFormat | null;
+  sides?: { a: number; b: number } | null;
 }
 export interface DetectionResult { moments: DetectedMoment[]; notes: string[] }
 
