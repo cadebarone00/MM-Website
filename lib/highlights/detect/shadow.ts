@@ -9,6 +9,7 @@ import { seededRandom } from "../engine/selection.ts";
 import { detectRoundMoments, type DetectedMoment, type DetectionInput } from "./scoreMoments.ts";
 import { detectMatchMoments } from "./matchMoments.ts";
 import { detectTeamMoments } from "./teamMoments.ts";
+import { detectLeaderboardMoments } from "./leaderboardMoments.ts";
 
 /**
  * H5B SHADOW MODE — test only. Runs the TypeScript detectors over a round and decides, per trip member, what WOULD be
@@ -75,6 +76,7 @@ export function runShadow(input: ShadowInput): ShadowReport {
     ...scored.moments,
     ...(d.matches?.length ? detectMatchMoments({ tripId: d.tripId, scoring: d.scoring, matches: d.matches, startHoles: d.startHoles, course: d.course }) : []),
     ...(d.team ? detectTeamMoments(d.team) : []),
+    ...(d.leaderboard ? detectLeaderboardMoments(d.leaderboard) : []),
   ].sort((a, b) => a.at.localeCompare(b.at) || a.key.localeCompare(b.key));
   const notes = scored.notes;
   const keys = moments.map((m) => m.key);

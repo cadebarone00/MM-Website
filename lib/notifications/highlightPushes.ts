@@ -14,6 +14,7 @@ import { getTripRoundScoring } from "@/lib/platform/tripScoringServer";
 import { tripSchedule } from "@/lib/platform/tripScheduleView";
 import { matchOutcomes } from "@/lib/highlights/detect/matchMoments";
 import type { TeamDetectionInput, TeamRound } from "@/lib/highlights/detect/teamMoments";
+import type { LeaderboardInput, LeaderboardRound } from "@/lib/highlights/detect/leaderboardMoments";
 import type { TripRoundScoring } from "@/lib/platform/tripScoring";
 import { sendPush } from "./pushServer.ts";
 
@@ -33,7 +34,9 @@ const RECENT_MS = 20 * 60_000;
  * The trip's team competition for the team highlights: only when the setup says "2 Teams" and two teams are set; every
  * match-play round's matches and how they stand (this round from the save, the others loaded as the saving golfer).
  */
-async function teamInput(tripId: string, profileId: string, values: Record<string, unknown>, basis: never, placeIds: (string | null)[], scoring: TripRoundScoring, names: Map<string, string>): Promise<TeamDetectionInput | undefined> {
+type RoundLoader = (roundNumber: number) => Promise<TripRoundScoring | null>;
+
+async function teamInput(tripId: string, values: Record<string, unknown>, basis: never, placeIds: (string | null)[], loadRound: RoundLoader, names: Map<string, string>): Promise<TeamDetectionInput | undefined> {
   const teams = selectionTeamsFrom(values, placeIds.map((id) => id ?? ""));
   if (!teams) return undefined;
   const rounds: TeamRound[] = [];
@@ -41,8 +44,7 @@ async function teamInput(tripId: string, profileId: string, values: Record<strin
     const comp = (values.compFormats as Record<string, RoundCompSettings> | undefined)?.[slot.key] ?? defaultRoundComp(0);
     const matches = tripRoundMatches(values, basis, slot.number, placeIds);
     if (comp.matchType !== "Match Play" || !matches.length) continue;
-    const roundScoring = slot.number === scoring.roundNumber ? scoring : await getTripRoundScoring(profileId, tripId, slot.number);
-    const usable = roundScoring && roundScoring !== "failed" ? roundScoring : null;
+    const usable = await loadRound(slot.number);
     const outcomes = usable ? matchOutcomes({ tripId, scoring: usable, matches, startHoles: detectionSetup(usable).startHoles })
       : matches.map((m) => ({ index: m.index, a: m.a, b: m.b, result: null, endedAt: null, upAfter9: null, at9: null }));
     rounds.push({ roundNumber: slot.number, roundId: usable?.roundId ?? slot.key, pointsPerMatch: comp.pointsPerMatch > 0 ? comp.pointsPerMatch : 1, outcomes });
@@ -83,11 +85,26 @@ async function sendHighlights(tripId: string, scoring: TripRoundScoring, profile
   if (matches.length && !setup.team) setup.team = "Pairs";
 
   const names = new Map(members.map((m) => [m.id, m.name]));
-  const team = setup.team === "2 Teams" && profileId && saved?.settings && saved.basis && validSetup(saved.settings)
-    ? await teamInput(tripId, profileId, saved.settings, saved.basis as never, placeIds, scoring, names) : undefined;
+  // Every round's scoring, loaded at most once (this round from the save, the others as the golfer who saved).
+  const loaded = new Map<number, TripRoundScoring | null>([[scoring.roundNumber, scoring]]);
+  const loadRound: RoundLoader = async (n) => {
+    if (!loaded.has(n)) { const r = profileId ? await getTripRoundScoring(profileId, tripId, n) : null; loaded.set(n, r && r !== "failed" ? r : null); }
+    return loaded.get(n) ?? null;
+  };
+  const usableSetup = saved?.settings && saved.basis?.startDate && Array.isArray(saved.basis.rounds) && validSetup(saved.settings) ? saved : null;
+  const team = setup.team === "2 Teams" && usableSetup
+    ? await teamInput(tripId, usableSetup.settings!, usableSetup.basis as never, placeIds, loadRound, names) : undefined;
+  // The individual leaderboard (stroke play only): every round with confirmed pars.
+  let leaderboard: LeaderboardInput | undefined;
+  if (comp.individual === "Stroke Play" && usableSetup) {
+    const slots = tripSchedule(usableSetup.settings!, usableSetup.basis as never).slots;
+    const rounds: LeaderboardRound[] = [];
+    for (const slot of slots) { const r = await loadRound(slot.number); if (r) rounds.push({ roundNumber: slot.number, scoring: r, pars: detectionSetup(r).pars }); }
+    if (rounds.length) leaderboard = { tripId, rounds, finalRound: Math.max(...slots.map((x) => x.number)), names };
+  }
 
   const { pars, startHoles } = detectionSetup(scoring);
-  const report = runShadow({ detection: { tripId, scoring, pars, course: null, startHoles, matches, team }, config: active.config, configVersion: active.version, competition: competitionProfile(setup), members });
+  const report = runShadow({ detection: { tripId, scoring, pars, course: null, startHoles, matches, team, leaderboard }, config: active.config, configVersion: active.version, competition: competitionProfile(setup), members });
   const now = Date.now();
   let sent = 0;
   for (const moment of report.moments) {

@@ -4,6 +4,7 @@ import { classifyHole } from "../../golf/holeResult.ts";
 import type { MatchFormat } from "../engine/evaluate.ts";
 import type { MatchSetup } from "./matchMoments.ts";
 import type { TeamDetectionInput } from "./teamMoments.ts";
+import type { LeaderboardInput } from "./leaderboardMoments.ts";
 
 /**
  * H5B — the first automatic golf detectors, in TypeScript (spec: "Highlights Engine", decision 1: gradual move from SQL).
@@ -32,6 +33,8 @@ export interface DetectionInput {
   matches?: MatchSetup[];
   /** The trip's team competition (two teams + every match-play round's outcomes), for the team detectors (teamMoments.ts). */
   team?: TeamDetectionInput;
+  /** The trip's individual leaderboard (every round), for the leaderboard detectors (leaderboardMoments.ts). */
+  leaderboard?: LeaderboardInput;
 }
 
 /** The order a group plays its holes: start → 18, then 1 → start − 1. */

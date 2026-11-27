@@ -84,11 +84,11 @@ test("Draft rows only warn about copy; Disabled rows are skipped", () => {
 test("warns about an Approved conditional under a non-Approved rule, a rule with no detector, and an empty rule", () => {
   const { report } = load((config) => {
     rule(config, "HL-002").conditionals[0].status = "Approved";
-    rule(config, "HL-031").status = "Approved";
+    rule(config, "HL-046").status = "Approved"; // still has no detector (HL-031 got one 2026-11-27)
     rule(config, "HL-040").conditionals = [];
   });
   assert.equal(report.ok, true);
-  assert.deepEqual(list(report.warnings), ["parent-not-approved:HL-002-C01", "no-detector:HL-031", "no-conditionals:HL-040"]);
+  assert.deepEqual(list(report.warnings), ["parent-not-approved:HL-002-C01", "no-conditionals:HL-040", "no-detector:HL-046"]);
 });
 
 test("two live rows with the same tier are an error; Disabled ones don't count", () => {

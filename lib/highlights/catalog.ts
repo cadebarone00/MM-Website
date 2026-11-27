@@ -43,6 +43,11 @@ export const DETECTOR_CATALOG: readonly DetectorCapability[] = [
     ["HL-022", "Team takes the lead"], ["HL-023", "Teams tied"], ["HL-024", "3 match wins in a row"], ["HL-025", "Team comeback"], ["HL-026", "Match point"],
     ["HL-027", "Title clinched"], ["HL-028", "Last match decides it"], ["HL-029", "Session sweep"], ["HL-030", "Leads every match after 9"],
   ] as const).map(([ruleId, name]): DetectorCapability => ({ ruleId, name, tiers: { kind: "none" }, variables: TEAM_VARIABLES })),
+  // 2026-11-27: individual leaderboard, stroke play (lib/highlights/detect/leaderboardMoments.ts). HL-037 (record) waits for past records.
+  ...([
+    ["HL-031", "New solo leader"], ["HL-032", "Ties the lead"], ["HL-033", "Breakaway"], ["HL-034", "Leaderboard shakeup"],
+    ["HL-035", "Big climb"], ["HL-036", "Lead change on 18"], ["HL-038", "Playoff needed"], ["HL-039", "Individual champion"],
+  ] as const).map(([ruleId, name]): DetectorCapability => ({ ruleId, name, tiers: { kind: "none" }, variables: ["Player", "Players", "Count", "Hole", "Round"] })),
 ];
 
 export function detectorFor(ruleId: string): DetectorCapability | null {
