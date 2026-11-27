@@ -106,6 +106,9 @@ type MomentRow = { id: string; golf_trip_id: string; actor_id: string | null; ca
  * only moments from the last 20 minutes, never one that was withdrawn (a score corrected). Called right after a score
  * saves (that trip) and by the 5-minute timer as a backup (every trip). Returns how many phones got one.
  */
+/** Since the Highlights engine went live (part 6e, owner decision 2026-11-27) it sends these; the old alerts would double up. */
+const ENGINE_COVERS = new Set<string>(["hole_in_one", "birdie_2", "birdie_3", "birdie_4"]);
+
 export async function sendMoments(tripId?: string): Promise<number> {
   const since = new Date(Date.now() - 20 * 60_000).toISOString();
   let query = db().from("trip_momentum_events").select("id, golf_trip_id, actor_id, cause, subject_name, result_label")
@@ -115,7 +118,7 @@ export async function sendMoments(tripId?: string): Promise<number> {
   if (error || !data?.length) return 0;
   let sent = 0;
   for (const moment of data as MomentRow[]) {
-    if (!moment.cause || !(moment.cause in MOMENTUM_RESPONSES)) continue;
+    if (!moment.cause || !(moment.cause in MOMENTUM_RESPONSES) || ENGINE_COVERS.has(moment.cause)) continue;
     const { error: taken } = await db().from("push_reminders_sent").insert({ key: `moment:${moment.id}` });
     if (taken) continue;
     const { data: members } = await db().from("golf_trip_members").select("profile_id").eq("golf_trip_id", moment.golf_trip_id).eq("invitation_status", "accepted");

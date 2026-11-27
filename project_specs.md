@@ -7534,6 +7534,11 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] Sent right after the score saves (`/api/golf-trips/<id>/scoring` → `pushMoments`), with the 5-minute timer as a backup; each moment once (`push_reminders_sent` key `moment:<id>`), only from the last 20 minutes, never a withdrawn one (score corrected).
 - `sendPush` takes `words` for types whose wording isn't in the master list.
 - **Not hooked up (nothing live to hook into):** the sheet-driven Highlights engine still runs in practice mode only (`lib/highlights`); travel reminders (the travel tab of the sheet isn't live) and organizer announcements (no trip announcements feature yet). When those go live, they call `sendPush` with their own `words`.
+### 6e checklist — the Highlights engine goes LIVE (owner decision 2026-11-27: publish the library, switch now, no practice run) — BUILT, committed, not live until a sheet is published
+- [ ] After every trip score saves, the engine looks at the whole round with the **published** sheet (`lib/notifications/highlightPushes.ts` → the H5B detectors + `runShadow`'s per-member decision). It sends each fresh moment (last 20 minutes) once (`hl:<key>`) to the members the engine says, in the approved sheet words, as a Big moment (Settings switch). Nothing published = nothing sent.
+- [ ] Cutover: the old momentum alerts no longer push hole in one or birdie streaks (`ENGINE_COVERS` in `tripPushes.ts`); only "won the match early" still comes from them (the engine has no detector for it). The momentum feed on trip Home is unchanged. Birdie streaks now start at 3, per the sheet (decision #6), so a 2-birdie streak no longer notifies.
+- [ ] Highlights Admin brought back at **/admin/highlights** (platform admins only; retired with /portal in 03388067): upload the sheet's .xlsx → check → save draft → publish.
+- Competition for the engine comes from the trip setup's `localCompetitionType`; the engine's own preference defaults apply (Balanced, all categories on), and our Settings → Big moments switch is checked on top.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

@@ -3,6 +3,7 @@ import { getCurrentProfileForRequest } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { holeEntriesFromBody, holeOpsFromBody } from "@/lib/platform/tripScoring";
 import { checkTripScoringWriteScope, getTripRoundScoring, saveTripHoleOps, saveTripHoleScores } from "@/lib/platform/tripScoringServer";
+import { pushHighlights } from "@/lib/notifications/highlightPushes";
 import { pushMoments } from "@/lib/notifications/tripPushes";
 
 /**
@@ -40,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
         if (saved.status >= 500) console.error("save_hole_score_ops failed:", saved.error);
         return NextResponse.json({ ok: false, error: saved.error, ...("reason" in saved && saved.reason ? { reason: saved.reason } : {}) }, { status: saved.status });
       }
-      pushMoments(tripId); // big moments this score made (Expo app Step 6d; never waits)
+      pushHighlights(tripId, saved.scoring); pushMoments(tripId); // big moments: the Highlights engine + early match wins (Step 6d/6e; never waits)
       return NextResponse.json({ ok: true, results: saved.results, scoring: saved.scoring });
     }
 
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
       if (saved.status >= 500) console.error("save_hole_scores failed:", saved.error);
       return NextResponse.json({ ok: false, error: saved.error }, { status: saved.status });
     }
-    pushMoments(tripId); // big moments this score made (Expo app Step 6d; never waits)
+    pushHighlights(tripId, saved.scoring); pushMoments(tripId); // big moments: the Highlights engine + early match wins (Step 6d/6e; never waits)
     return NextResponse.json({ ok: true, scoring: saved.scoring });
   } catch {
     return NextResponse.json({ ok: false, error: "Couldn't save the score. Try again." }, { status: 500 });
