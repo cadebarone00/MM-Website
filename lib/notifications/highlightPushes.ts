@@ -1,5 +1,6 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { BUILT_IN_HIGHLIGHTS } from "@/lib/highlights/builtIn";
 import { activeConfigFromJson } from "@/lib/highlights/configRows";
 import { detectionSetup } from "@/lib/highlights/detect/roundPars";
 import { runShadow } from "@/lib/highlights/detect/shadow";
@@ -10,17 +11,19 @@ import { sendPush } from "./pushServer.ts";
 /**
  * The Highlights engine, LIVE (project_specs.md "Expo app Step 6", part 6e; owner decision 2026-11-27: switch now, no
  * practice run). After a trip score saves, the engine looks at the whole round with the PUBLISHED sheet (Admin Center →
- * Highlights): the detectors find the moments (birdie streaks from 3, eagles, albatrosses, hole in one), the engine
+ * Highlights, or the app's BUILT-IN highlights when nothing is published, lib/highlights/builtIn.ts): the detectors find the moments (birdie streaks from 3, eagles, albatrosses, hole in one), the engine
  * decides per trip member who hears each one and in which approved words (the same decision the simulator shows:
  * competition, audience, categories, intensity, approval, placeholders, volume limit). Each moment goes out once
  * (push_reminders_sent "hl:<key>"), only moments from the last 20 minutes, and Settings → Notifications → Big moments can
- * turn them off. Nothing is published = nothing sent. Never waits; a failure never touches the score that was saved.
+ * turn them off. Never waits; a failure never touches the score that was saved.
  */
 const db = () => createSupabaseServiceRoleClient();
 const RECENT_MS = 20 * 60_000;
 
 async function sendHighlights(tripId: string, scoring: TripRoundScoring): Promise<number> {
-  const active = activeConfigFromJson((await db().rpc("get_active_highlight_config", {})).data);
+  // A version published in the Highlights Admin wins; otherwise the app's built-in highlights (every user, nothing to publish).
+  const published = activeConfigFromJson((await db().rpc("get_active_highlight_config", {})).data);
+  const active = published ?? (BUILT_IN_HIGHLIGHTS ? { version: null, config: BUILT_IN_HIGHLIGHTS } : null);
   if (!active) return 0;
   const [{ data: setupRow }, { data: memberRows }] = await Promise.all([
     db().from("golf_trip_setup").select("settings").eq("golf_trip_id", tripId).maybeSingle(),

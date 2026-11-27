@@ -7539,6 +7539,7 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] Cutover: the old momentum alerts no longer push hole in one or birdie streaks (`ENGINE_COVERS` in `tripPushes.ts`); only "won the match early" still comes from them (the engine has no detector for it). The momentum feed on trip Home is unchanged. Birdie streaks now start at 3, per the sheet (decision #6), so a 2-birdie streak no longer notifies.
 - [ ] Highlights Admin brought back at **/admin/highlights** (platform admins only; retired with /portal in 03388067): upload the sheet's .xlsx → check → save draft → publish.
 - Competition for the engine comes from the trip setup's `localCompetitionType`; the engine's own preference defaults apply (Balanced, all categories on), and our Settings → Big moments switch is checked on top.
+- **Built in, like Sleeper (owner decision 2026-11-27):** the approved sheet (all 75 rules, 264 wordings) is built into the code as `lib/highlights/builtInConfig.json` (`scripts/build-highlights-builtin.ts`), so every user and trip gets these notifications with nothing to publish. A version published at /admin/highlights replaces it (that's only for changing wording without a code update). To change the built-in wording: edit the sheet, download .xlsx, run the script, commit.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App
