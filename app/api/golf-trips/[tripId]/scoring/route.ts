@@ -3,6 +3,7 @@ import { getCurrentProfileForRequest } from "@/lib/profile/currentProfile";
 import { isGolfTripId } from "@/lib/platform/golfTripCreate";
 import { holeEntriesFromBody, holeOpsFromBody } from "@/lib/platform/tripScoring";
 import { checkTripScoringWriteScope, getTripRoundScoring, saveTripHoleOps, saveTripHoleScores } from "@/lib/platform/tripScoringServer";
+import { pushMoments } from "@/lib/notifications/tripPushes";
 
 /**
  * Saved-trip scoring: save hole entries the signed-in golfer typed, for themselves (strokes + stats) or for the one
@@ -39,6 +40,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
         if (saved.status >= 500) console.error("save_hole_score_ops failed:", saved.error);
         return NextResponse.json({ ok: false, error: saved.error, ...("reason" in saved && saved.reason ? { reason: saved.reason } : {}) }, { status: saved.status });
       }
+      pushMoments(tripId); // big moments this score made (Expo app Step 6d; never waits)
       return NextResponse.json({ ok: true, results: saved.results, scoring: saved.scoring });
     }
 
@@ -53,6 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tri
       if (saved.status >= 500) console.error("save_hole_scores failed:", saved.error);
       return NextResponse.json({ ok: false, error: saved.error }, { status: saved.status });
     }
+    pushMoments(tripId); // big moments this score made (Expo app Step 6d; never waits)
     return NextResponse.json({ ok: true, scoring: saved.scoring });
   } catch {
     return NextResponse.json({ ok: false, error: "Couldn't save the score. Try again." }, { status: 500 });

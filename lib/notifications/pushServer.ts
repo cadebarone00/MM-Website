@@ -44,8 +44,9 @@ async function deliver(messages: ExpoMessage[]): Promise<{ sent: number; failed:
 }
 
 /** One type from the master list to some people. `values` fill the wording's {Blanks} and the link's {Trip ID}. */
-/** `link`: open this instead of the type's usual link (e.g. a trip invite opens its invite page). */
-export async function sendPush(input: { to: string[]; kind: NotificationKind; values: Record<string, string | number>; groupId?: string | null; link?: string }): Promise<PushResult> {
+/** `link`: open this instead of the type's usual link (e.g. a trip invite opens its invite page). `words`: the title and
+ *  body for a type whose wording lives outside the master list (big moments use the approved momentum words). */
+export async function sendPush(input: { to: string[]; kind: NotificationKind; values: Record<string, string | number>; groupId?: string | null; link?: string; words?: { title: string; body: string } }): Promise<PushResult> {
   try {
     const entry = catalogEntry(input.kind);
     const people = [...new Set(input.to)];
@@ -65,6 +66,11 @@ export async function sendPush(input: { to: string[]; kind: NotificationKind; va
     const messages: ExpoMessage[] = [];
     const versions: { profile_id: string; kind: string; version: number; updated_at: string }[] = [];
     for (const owner of owners) {
+      if (input.words) {
+        const content: PushContent = { title: input.words.title, body: input.words.body, link, kind: input.kind, groupId: input.groupId };
+        for (const d of devices) if (d.profile_id === owner) messages.push(expoMessage(d.token, content));
+        continue;
+      }
       const picked = pickWording(input.kind, lastOf.get(owner) ?? null);
       if (!picked) continue; // Highlights-sheet types bring their own wording (not sent from here yet)
       const content: PushContent = { title: fillBlanks(picked.wording.title, input.values), body: fillBlanks(picked.wording.body, input.values), link, kind: input.kind, groupId: input.groupId };

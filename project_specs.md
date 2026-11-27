@@ -7529,6 +7529,11 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] Timer route `GET /api/internal/push-reminders` (`Authorization: Bearer <CRON_SECRET>`), every 5 minutes from Supabase Cron: **Tee time in 30 minutes** (sent 20–35 minutes before, to that group's players: placed in the group + the players of its matches) and **The draft starts in 15 minutes** (8–20 minutes before, to everyone joined). Rules in `lib/notifications/reminders.ts` (tested); work in `remindersServer.ts`.
 - Claude's calls: the website's General Settings doesn't show Time zone yet (app first); tee-group player numbers are read as places in the trip's members in join order (the setup editors' order). If that's wrong for some trip, the reminder goes to the wrong group, so it needs a real-trip check.
 - **Cade's steps:** run the SQL; Supabase → Integrations → Cron → a job every 5 minutes calling the route with the CRON_SECRET from Vercel; push + deploy.
+### 6d checklist — big moments (owner pick "B", 2026-11-27) — BUILT, committed, not phone-checked
+- [ ] The momentum milestones the database already records during live trip scoring (hole in one, 2 / 3 / 4 birdies in a row, a match won before 16) go to everyone else on the trip as **Big moment** notifications (Settings → Notifications → Big moments), in the owner-approved momentum words (`lib/platform/momentumCopy.ts`: "Heating Up!" · "3 birdies in a row for Cam"). Tapping opens the trip.
+- [ ] Sent right after the score saves (`/api/golf-trips/<id>/scoring` → `pushMoments`), with the 5-minute timer as a backup; each moment once (`push_reminders_sent` key `moment:<id>`), only from the last 20 minutes, never a withdrawn one (score corrected).
+- `sendPush` takes `words` for types whose wording isn't in the master list.
+- **Not hooked up (nothing live to hook into):** the sheet-driven Highlights engine still runs in practice mode only (`lib/highlights`); travel reminders (the travel tab of the sheet isn't live) and organizer announcements (no trip announcements feature yet). When those go live, they call `sendPush` with their own `words`.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

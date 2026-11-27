@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { golfTripInvitePath } from "@/lib/platform/golfTripInvitations";
+import { MOMENTUM_RESPONSES, momentumHeadline, momentumSubheading, type MomentumCause } from "@/lib/platform/momentumCopy";
 import { sendPush } from "./pushServer.ts";
 
 /**
@@ -94,4 +95,40 @@ export function pushCardMismatch(groupId: string, golferId: string, holes: numbe
       sendPush({ to: [attester], kind: "cardMismatch", values: values(golferId), groupId: round.tripId }),
     ]);
   });
+}
+
+type MomentRow = { id: string; golf_trip_id: string; actor_id: string | null; cause: MomentumCause | null; subject_name: string | null; result_label: string | null };
+
+/**
+ * Big moments (part 6d): the momentum milestones the database records during live scoring (hole in one, 2 / 3 / 4
+ * birdies in a row, a match won early) go to everyone else on the trip, in the owner-approved momentum words
+ * (lib/platform/momentumCopy.ts), under Settings → Notifications → Big moments. Each moment once (push_reminders_sent),
+ * only moments from the last 20 minutes, never one that was withdrawn (a score corrected). Called right after a score
+ * saves (that trip) and by the 5-minute timer as a backup (every trip). Returns how many phones got one.
+ */
+export async function sendMoments(tripId?: string): Promise<number> {
+  const since = new Date(Date.now() - 20 * 60_000).toISOString();
+  let query = db().from("trip_momentum_events").select("id, golf_trip_id, actor_id, cause, subject_name, result_label")
+    .eq("kind", "milestone").not("cause", "is", null).is("withdrawn_at", null).gte("created_at", since).order("created_at").limit(50);
+  if (tripId) query = query.eq("golf_trip_id", tripId);
+  const { data, error } = await query;
+  if (error || !data?.length) return 0;
+  let sent = 0;
+  for (const moment of data as MomentRow[]) {
+    if (!moment.cause || !(moment.cause in MOMENTUM_RESPONSES)) continue;
+    const { error: taken } = await db().from("push_reminders_sent").insert({ key: `moment:${moment.id}` });
+    if (taken) continue;
+    const { data: members } = await db().from("golf_trip_members").select("profile_id").eq("golf_trip_id", moment.golf_trip_id).eq("invitation_status", "accepted");
+    const to = ((members ?? []) as { profile_id: string | null }[]).flatMap((m) => (m.profile_id && m.profile_id !== moment.actor_id ? [m.profile_id] : []));
+    if (!to.length) continue;
+    const words = { title: momentumHeadline(moment.cause), body: momentumSubheading(moment.cause, moment.subject_name ?? "a golfer", moment.result_label ?? undefined) };
+    const result = await sendPush({ to, kind: "highlight", values: { "Trip ID": moment.golf_trip_id }, groupId: moment.golf_trip_id, words });
+    if (result.status === "ok") sent += result.sent;
+  }
+  return sent;
+}
+
+/** After a score saves: that trip's new big moments, without waiting. */
+export function pushMoments(tripId: string) {
+  quietly(() => sendMoments(tripId));
 }

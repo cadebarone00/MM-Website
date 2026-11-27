@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { validSetup } from "@/lib/platform/savedTripSetup";
 import { DEFAULT_TRIP_TIME_ZONE, dueDraft, dueTeeTimes, isTimeZone, localNow } from "./reminders.ts";
 import { sendPush } from "./pushServer.ts";
+import { sendMoments } from "./tripPushes.ts";
 
 /**
  * The 5-minute timer's work (project_specs.md "Expo app Step 6", part 6c): for every trip that isn't over, what's due
@@ -60,6 +61,8 @@ export async function runReminders(now = new Date()): Promise<ReminderRun> {
       if (result.status === "ok") sent += result.sent;
     }
   }
+  // Backup for big moments: any the score-save step missed (each moment is still sent only once).
+  sent += await sendMoments().catch(() => 0);
   await db().from("push_reminders_sent").delete().lt("sent_at", new Date(now.getTime() - 30 * 86_400_000).toISOString());
   return { status: "ok", trips: rows.length, sent };
 }
