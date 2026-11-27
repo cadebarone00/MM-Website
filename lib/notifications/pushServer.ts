@@ -85,12 +85,13 @@ export async function sendPush(input: { to: string[]; kind: NotificationKind; va
 }
 
 /** Settings → "Send a test notification": to my own phones only, fixed words. */
-export async function sendTestPush(profileId: string): Promise<PushResult> {
+/** `words`: a chosen test (Building blocks → Notifications); without it, the Settings test. */
+export async function sendTestPush(profileId: string, words?: { title: string; body: string }): Promise<PushResult> {
   try {
     const devices = await devicesFor([profileId]);
     if (devices === "not_installed") return { status: "not_installed" };
     if (devices === null) return { status: "failed" };
-    const content: PushContent = { title: "Notifications are on ⛳", body: "This is what The Maroon's notifications look like.", link: "/profile", kind: "test" };
+    const content: PushContent = words ? { ...words, link: "/profile", kind: "test" } : { title: "Notifications are on ⛳", body: "This is what The Maroon's notifications look like.", link: "/profile", kind: "test" };
     return { status: "ok", ...(await deliver(devices.map((d) => expoMessage(d.token, content)))) };
   } catch {
     return { status: "failed" };

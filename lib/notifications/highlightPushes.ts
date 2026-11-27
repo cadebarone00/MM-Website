@@ -2,6 +2,7 @@ import "server-only";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { BUILT_IN_HIGHLIGHTS } from "@/lib/highlights/builtIn";
 import { activeConfigFromJson } from "@/lib/highlights/configRows";
+import type { HighlightConfig } from "@/lib/highlights/types";
 import { detectionSetup } from "@/lib/highlights/detect/roundPars";
 import { runShadow } from "@/lib/highlights/detect/shadow";
 import { competitionProfile, type CompetitionSetup } from "@/lib/highlights/engine/competition";
@@ -49,10 +50,14 @@ async function teamInput(tripId: string, profileId: string, values: Record<strin
   return rounds.length ? { tripId, teams: [{ name: teams.teamNames[0], ids: teams.rosters[0] }, { name: teams.teamNames[1], ids: teams.rosters[1] }], rounds, names } : undefined;
 }
 
-async function sendHighlights(tripId: string, scoring: TripRoundScoring, profileId: string | null): Promise<number> {
-  // A version published in the Highlights Admin wins; otherwise the app's built-in highlights (every user, nothing to publish).
+/** The highlights in use: a version published in the Highlights Admin wins; otherwise the app's built-in ones. */
+export async function activeHighlights(): Promise<{ version: number | null; config: HighlightConfig } | null> {
   const published = activeConfigFromJson((await db().rpc("get_active_highlight_config", {})).data);
-  const active = published ?? (BUILT_IN_HIGHLIGHTS ? { version: null, config: BUILT_IN_HIGHLIGHTS } : null);
+  return published ?? (BUILT_IN_HIGHLIGHTS ? { version: null, config: BUILT_IN_HIGHLIGHTS } : null);
+}
+
+async function sendHighlights(tripId: string, scoring: TripRoundScoring, profileId: string | null): Promise<number> {
+  const active = await activeHighlights();
   if (!active) return 0;
   const [{ data: setupRow }, { data: memberRows }] = await Promise.all([
     db().from("golf_trip_setup").select("settings, basis").eq("golf_trip_id", tripId).maybeSingle(),
