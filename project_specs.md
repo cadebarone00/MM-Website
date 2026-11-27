@@ -7546,6 +7546,10 @@ Uncertain settings or deletion responses and unsuccessful post-save reads requir
 - [ ] Detectors, now in the catalog (sheet checker: 49 → 39 "no detector" warnings): HL-011 back to all square after 5+, HL-012 3 holes in a row, HL-013 comeback from 3+ down, HL-014 lead change, HL-015 dormie, HL-016 goes to the last hole (not on the same hole as dormie), HL-017 won on the last hole, HL-018 halved, HL-019 clinched, HL-021 big win (4&3 or better / by 15, instead of HL-019). "Team A" = the side the moment is about. Singles vs fourball wording picked by the engine (`format`, `sides`); new fill-in `{Opponent}`.
 - [ ] Live: the same score-save hook (`highlightPushes.ts`) now passes the round's matches; a round with matches counts as match play for eligibility.
 - **Waiting:** HL-020 upset (needs player rankings); net matches (need trip handicaps).
+### 6g checklist — team-competition highlights (owner request 2026-11-27) — BUILT, committed, not phone-checked
+- [ ] Only for trips whose setup says **2 Teams** and has two teams set (`selectionTeamsFrom`: `submittedTeams` + `teamNames`). On every trip score save, every match-play round's matches and how they stand (`matchOutcomes`; this round from the save, the others loaded as the saving golfer).
+- [ ] `lib/highlights/detect/teamMoments.ts` (tested, incl. end to end with the built-in sheet): HL-022 takes / retakes the lead, HL-023 tied ({Player} won the match that tied it), HL-024 3 match wins in a row, HL-025 comeback from 3+ points (instead of "tied"), HL-026 match point, HL-027 title clinched, HL-028 the last match decides it, HL-029 session sweep, HL-030 leads every match of a round after 9. Sheet checker: 39 → 30 "no detector" warnings.
+- Claude's calls: each match is worth its round's points (halved = split); Nassau rounds count the overall match only; a session = a round; the title = more than half of all points on offer.
 
 **2026-11-25 Expo platform tournament overview**
 **Side:** App

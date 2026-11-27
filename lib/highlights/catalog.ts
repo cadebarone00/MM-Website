@@ -23,6 +23,8 @@ export interface DetectorCapability {
 
 const MATCH_VARIABLES: TemplateVariable[] = ["Player 1, Team A", "Player 2, Team A", "Player 1, Team B", "Player 2, Team B", "Team A", "Team B", "Opponent", "Player", "Count", "Margin", "Hole", "Round", "Course"];
 
+const TEAM_VARIABLES: TemplateVariable[] = ["Team", "Team A", "Team B", "Opponent", "Player", "Count", "Round"];
+
 export const DETECTOR_CATALOG: readonly DetectorCapability[] = [
   // Owner decision 2026-10-16: birdie streaks fire from 3 in a row, tiers 3–10.
   { ruleId: "HL-001", name: "Birdie streak", tiers: { kind: "integer", min: 3, max: 10 }, variables: ["Player", "Count", "Hole", "Round", "Course"] },
@@ -36,6 +38,11 @@ export const DETECTOR_CATALOG: readonly DetectorCapability[] = [
     ["HL-015", "Dormie"], ["HL-016", "Match goes to the last hole"], ["HL-017", "Won on the last hole"], ["HL-018", "Match halved"],
     ["HL-019", "Match clinched"], ["HL-021", "Big win (4&3 or better)"],
   ] as const).map(([ruleId, name]): DetectorCapability => ({ ruleId, name, tiers: { kind: "format" }, variables: MATCH_VARIABLES })),
+  // 2026-11-27: team competition (lib/highlights/detect/teamMoments.ts), from every match-play round's results.
+  ...([
+    ["HL-022", "Team takes the lead"], ["HL-023", "Teams tied"], ["HL-024", "3 match wins in a row"], ["HL-025", "Team comeback"], ["HL-026", "Match point"],
+    ["HL-027", "Title clinched"], ["HL-028", "Last match decides it"], ["HL-029", "Session sweep"], ["HL-030", "Leads every match after 9"],
+  ] as const).map(([ruleId, name]): DetectorCapability => ({ ruleId, name, tiers: { kind: "none" }, variables: TEAM_VARIABLES })),
 ];
 
 export function detectorFor(ruleId: string): DetectorCapability | null {

@@ -7,6 +7,12 @@ import { runShadow } from "@/lib/highlights/detect/shadow";
 import { competitionProfile, type CompetitionSetup } from "@/lib/highlights/engine/competition";
 import { validSetup } from "@/lib/platform/savedTripSetup";
 import { tripRoundMatches } from "@/lib/platform/tripRoundMatches";
+import { selectionTeamsFrom } from "@/lib/platform/matchSelectionSetup";
+import { defaultRoundComp, type RoundCompSettings } from "@/lib/platform/roundCompetition";
+import { getTripRoundScoring } from "@/lib/platform/tripScoringServer";
+import { tripSchedule } from "@/lib/platform/tripScheduleView";
+import { matchOutcomes } from "@/lib/highlights/detect/matchMoments";
+import type { TeamDetectionInput, TeamRound } from "@/lib/highlights/detect/teamMoments";
 import type { TripRoundScoring } from "@/lib/platform/tripScoring";
 import { sendPush } from "./pushServer.ts";
 
@@ -22,7 +28,28 @@ import { sendPush } from "./pushServer.ts";
 const db = () => createSupabaseServiceRoleClient();
 const RECENT_MS = 20 * 60_000;
 
-async function sendHighlights(tripId: string, scoring: TripRoundScoring): Promise<number> {
+/**
+ * The trip's team competition for the team highlights: only when the setup says "2 Teams" and two teams are set; every
+ * match-play round's matches and how they stand (this round from the save, the others loaded as the saving golfer).
+ */
+async function teamInput(tripId: string, profileId: string, values: Record<string, unknown>, basis: never, placeIds: (string | null)[], scoring: TripRoundScoring, names: Map<string, string>): Promise<TeamDetectionInput | undefined> {
+  const teams = selectionTeamsFrom(values, placeIds.map((id) => id ?? ""));
+  if (!teams) return undefined;
+  const rounds: TeamRound[] = [];
+  for (const slot of tripSchedule(values, basis).slots) {
+    const comp = (values.compFormats as Record<string, RoundCompSettings> | undefined)?.[slot.key] ?? defaultRoundComp(0);
+    const matches = tripRoundMatches(values, basis, slot.number, placeIds);
+    if (comp.matchType !== "Match Play" || !matches.length) continue;
+    const roundScoring = slot.number === scoring.roundNumber ? scoring : await getTripRoundScoring(profileId, tripId, slot.number);
+    const usable = roundScoring && roundScoring !== "failed" ? roundScoring : null;
+    const outcomes = usable ? matchOutcomes({ tripId, scoring: usable, matches, startHoles: detectionSetup(usable).startHoles })
+      : matches.map((m) => ({ index: m.index, a: m.a, b: m.b, result: null, endedAt: null, upAfter9: null, at9: null }));
+    rounds.push({ roundNumber: slot.number, roundId: usable?.roundId ?? slot.key, pointsPerMatch: comp.pointsPerMatch > 0 ? comp.pointsPerMatch : 1, outcomes });
+  }
+  return rounds.length ? { tripId, teams: [{ name: teams.teamNames[0], ids: teams.rosters[0] }, { name: teams.teamNames[1], ids: teams.rosters[1] }], rounds, names } : undefined;
+}
+
+async function sendHighlights(tripId: string, scoring: TripRoundScoring, profileId: string | null): Promise<number> {
   // A version published in the Highlights Admin wins; otherwise the app's built-in highlights (every user, nothing to publish).
   const published = activeConfigFromJson((await db().rpc("get_active_highlight_config", {})).data);
   const active = published ?? (BUILT_IN_HIGHLIGHTS ? { version: null, config: BUILT_IN_HIGHLIGHTS } : null);
@@ -50,8 +77,12 @@ async function sendHighlights(tripId: string, scoring: TripRoundScoring): Promis
   // A round with matches is a match-play competition for the engine's eligibility, even if the trip-level setup says otherwise.
   if (matches.length && !setup.team) setup.team = "Pairs";
 
+  const names = new Map(members.map((m) => [m.id, m.name]));
+  const team = setup.team === "2 Teams" && profileId && saved?.settings && saved.basis && validSetup(saved.settings)
+    ? await teamInput(tripId, profileId, saved.settings, saved.basis as never, placeIds, scoring, names) : undefined;
+
   const { pars, startHoles } = detectionSetup(scoring);
-  const report = runShadow({ detection: { tripId, scoring, pars, course: null, startHoles, matches }, config: active.config, configVersion: active.version, competition: competitionProfile(setup), members });
+  const report = runShadow({ detection: { tripId, scoring, pars, course: null, startHoles, matches, team }, config: active.config, configVersion: active.version, competition: competitionProfile(setup), members });
   const now = Date.now();
   let sent = 0;
   for (const moment of report.moments) {
@@ -68,7 +99,8 @@ async function sendHighlights(tripId: string, scoring: TripRoundScoring): Promis
 }
 
 /** After a trip score saves (with the round's scoring the save returned). */
-export function pushHighlights(tripId: string, scoring: TripRoundScoring | null | undefined) {
+/** profileId: the golfer who saved (team highlights load the trip's other rounds as them). */
+export function pushHighlights(tripId: string, scoring: TripRoundScoring | null | undefined, profileId: string | null = null) {
   if (!scoring) return;
-  void sendHighlights(tripId, scoring).catch(() => undefined);
+  void sendHighlights(tripId, scoring, profileId).catch(() => undefined);
 }

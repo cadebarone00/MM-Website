@@ -115,3 +115,30 @@ export function detectMatchMoments(input: MatchDetectionInput): DetectedMoment[]
   }
   return out;
 }
+
+/** How one match stands right now (for team-competition moments): who won (or "halved"), when it ended, and the state
+ *  after 9 holes played. Same rules as detectMatchMoments: attested scores, best ball, playing order, gross. */
+export interface MatchOutcome { index: number; a: string[]; b: string[]; result: "a" | "b" | "halved" | null; endedAt: string | null; upAfter9: number | null; at9: string | null }
+export function matchOutcomes(input: MatchDetectionInput): MatchOutcome[] {
+  const scores = attestedScores(input.scoring);
+  const groupOf = new Map(input.scoring.groups.flatMap((g) => g.players.map((p) => [p.profileId, g.id] as const)));
+  return input.matches.map((match) => {
+    const outcome: MatchOutcome = { index: match.index, a: match.a, b: match.b, result: null, endedAt: null, upAfter9: null, at9: null };
+    const everyone = [...match.a, ...match.b];
+    if (!match.a.length || !match.b.length || everyone.some((id) => !scores.has(id))) return outcome;
+    let diff = 0, played = 0;
+    for (const hole of playingOrder(input.startHoles?.[groupOf.get(match.a[0]) ?? ""] ?? 1)) {
+      const i = hole - 1;
+      const holeScores = everyone.map((id) => scores.get(id)?.[i] ?? null);
+      if (holeScores.some((s) => !s)) break;
+      const best = (ids: string[]) => Math.min(...ids.map((id) => scores.get(id)![i]!.strokes));
+      const at = holeScores.reduce((latest, s) => (s!.at > latest ? s!.at : latest), "");
+      const a = best(match.a), b = best(match.b);
+      diff += a < b ? 1 : b < a ? -1 : 0;
+      played++;
+      if (played === 9) { outcome.upAfter9 = diff; outcome.at9 = at; }
+      if (Math.abs(diff) > HOLES - played || played === HOLES) { outcome.result = diff > 0 ? "a" : diff < 0 ? "b" : "halved"; outcome.endedAt = at; break; }
+    }
+    return outcome;
+  });
+}
